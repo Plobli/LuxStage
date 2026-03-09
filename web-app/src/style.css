@@ -236,6 +236,24 @@ dialog form { padding: 20px; }
 .lightbox-dialog { background: rgba(0,0,0,.9); border: none; border-radius: 8px; width: auto; max-width: 95vw; max-height: 95vh; padding: 8px; cursor: pointer; }
 .lightbox-img { max-width: 90vw; max-height: 90vh; display: block; border-radius: 4px; }
 
+/* ─── Aufbau Markdown ────────────────────────────────────────────────── */
+.aufbau-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.aufbau-header .aufbau-label { flex: 1; margin-bottom: 0; }
+.aufbau-toolbar { display: flex; gap: 4px; }
+.aufbau-rendered { font-size: 13px; line-height: 1.6; cursor: text; }
+.aufbau-rendered p { margin-bottom: 6px; }
+.aufbau-rendered ul, .aufbau-rendered ol { padding-left: 18px; margin-bottom: 6px; }
+.aufbau-rendered strong { font-weight: 700; }
+.aufbau-rendered em { font-style: italic; }
+.aufbau-empty { color: var(--text-dim); font-size: 13px; cursor: text; padding: 2px 0; }
+.aufbau-print { display: none; }
+
+/* ─── Backup (Settings) ──────────────────────────────────────────────── */
+.backup-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.backup-import-btn { cursor: pointer; }
+.import-preview { margin-top: 12px; padding: 10px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; }
+.import-ok { color: var(--green); margin-top: 6px; font-size: 13px; }
+
 /* ─── Settings ───────────────────────────────────────────────────────── */
 .settings-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 12px; }
 .settings-section h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-dim); margin-bottom: 12px; }
@@ -270,13 +288,17 @@ dialog form { padding: 20px; }
   .page-header { order: 0; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 12px; }
   .page-header h2 { font-size: 18px; }
   .aufbau-section  { order: 1; break-inside: avoid; border: 1px solid #ccc; }
-  .aufbau-textarea { border: none; padding: 0; resize: none; }
+  .aufbau-textarea, .aufbau-rendered, .aufbau-empty { display: none !important; }
+  .aufbau-print { display: block !important; font-size: 12px; line-height: 1.5; }
+  .aufbau-print p { margin-bottom: 4px; }
+  .aufbau-print ul, .aufbau-print ol { padding-left: 16px; margin-bottom: 4px; }
   .custom-fields-section { order: 2; break-inside: avoid; border: 1px solid #ccc; }
   .channel-section { order: 3; }
-  .photos-section  { order: 4; break-before: page; }
+  .photos-section  { order: 4; break-before: page; background: none; border: none; padding: 0; }
 
-  /* Kanäle: nur Zeilen mit Beschreibung */
+  /* Kanäle: nur Zeilen/Kategorien mit Beschreibung */
   .channel-row:not(.has-description) { display: none !important; }
+  tbody:not(:has(.channel-row.has-description)) { display: none !important; }
   .channel-table-wrapper { overflow: visible; }
   .channel-table { width: 100%; font-size: 11px; }
   .channel-row { break-inside: avoid; }

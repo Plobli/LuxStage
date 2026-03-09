@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.DS_Store
+pocketbase/pb_data/
+pocketbase/pocketbase
+pocketbase/pb_public/
+ios-app/DerivedData/
+ios-app/*.xcworkspace/xcuserdata/

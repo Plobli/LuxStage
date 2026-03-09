@@ -1,0 +1,58 @@
+﻿# LuxStage Venue Template — Format Version: 1.0
+venue_name;Theater Magdeburg
+venue_hall;Kasino
+---
+channel_number;address;device;color;description;category
+1;;2x650W;NC;Saal;
+2;;2x650W;NC;Saal;
+3;;2x650W;NC;Saal;
+4;;2x650W;NC;Treppe;
+5;;2x650W;NC;Saaltür;
+6;;2x650W;NC;Nische;
+7;;1,2KW;NC;;
+8;;1,2KW;NC;;
+9;;650W Profil;NC;;
+10;;1,2KW;NC;;
+11;;1,2KW;NC;;
+12;;650W Profil;NC;;
+13;;1,2KW;NC;;
+14;;1,2KW;NC;;
+15;;650W;NC;;
+16;;1,2KW PC;NC;;
+17;;1,2KW PC;NC;;
+18;;650W;NC;;
+19;;650W;NC;;
+20;;1,2KW PC;NC;;
+21;;1,2KW PC;NC;;
+22;;650W;NC;;
+23;;2xPAR;NC;Nische Fenster;
+24;;4xPIN Spott;NC;Auf Spiegelkugel;
+25;;Spiegelkugel;NC;;
+26;;2xCP64;NC;;
+27;;2xCP64;NC;;
+28;;2xCP64;NC;;
+29;;2xCP64;NC;;
+30;;Bühnen Vers.;NC;;
+31;;Bühnen Vers.;NC;;
+32;;1,2KW Profil;NC;;
+41;;LED PAR alt;NC;Decke über Saal (2x SWZ);
+42;;LED PAR alt;NC;Decke über Saal (2x SWZ);
+43;;LED PAR alt;NC;Decke über Bühne (2x SWZ);
+44;;LED PAR alt;NC;Decke über Bühne (2x SWZ);
+51;;LED Retro;NC;Saal;
+52;;LED Retro;NC;;
+53;;LED Retro;NC;Saal;
+54;;LED Retro;NC;;
+55;;LED Retro;NC;Bühne RL;
+56;;LED Retro;NC;;
+61;;Cameo;NC;Steil auf Säule, ohne Trussschatten;
+62;;Cameo;NC;Steil auf Säule, ohne Trussschatten;
+63;;Cameo;NC;Steil auf Säule, ohne Trussschatten;
+64;;Cameo;NC;Steil auf Säule, ohne Trussschatten;
+65;;Cameo;NC;Steil auf Säule, ohne Trussschatten;
+66;;Cameo;NC;Steil auf Säule, ohne Trussschatten;
+67;;Cameo;NC;Steil auf Säule, ohne Trussschatten;
+68;;Cameo;NC;Steil auf Säule, ohne Trussschatten;
+69;;Cameo;NC;;
+70;;Cameo;NC;;
+71;;Cameo;NC;;

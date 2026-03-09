@@ -4,16 +4,29 @@
       <button class="btn-ghost" @click="router.push('/')">← {{ $t('action.back') }}</button>
       <h2>{{ show?.name }}</h2>
       <span class="show-date">{{ formatDate(show?.date) }}</span>
+      <button class="btn-ghost-sm" @click="exportShow">↓ JSON</button>
       <button class="btn-ghost-sm" @click="printPage">⎙ PDF</button>
     </div>
 
     <div v-if="loading" class="loading">…</div>
 
     <template v-else>
-      <!-- Aufbau — always-present build notes textarea -->
+      <!-- Aufbau — Markdown-Editor -->
       <section class="aufbau-section">
-        <label class="aufbau-label">{{ $t('show.aufbau') }}</label>
+        <div class="aufbau-header">
+          <span class="aufbau-label">{{ $t('show.aufbau') }}</span>
+          <template v-if="aufbauEditing">
+            <div class="aufbau-toolbar">
+              <button class="btn-ghost-sm" @mousedown.prevent="insertMd('**', '**')"><b>B</b></button>
+              <button class="btn-ghost-sm" @mousedown.prevent="insertMd('*', '*')"><i>I</i></button>
+              <button class="btn-ghost-sm" @mousedown.prevent="insertMd('- ', '')">≡</button>
+            </div>
+            <button class="btn-ghost-sm" @click="aufbauEditing = false">✓</button>
+          </template>
+          <button v-else class="btn-ghost-sm" @click="startAufbauEdit">✎</button>
+        </div>
         <textarea
+          v-show="aufbauEditing"
           ref="aufbauTextarea"
           class="aufbau-textarea"
           :value="customValues['Aufbau'] ?? ''"
@@ -21,6 +34,15 @@
           @change="updateCustomField('Aufbau', $event.target.value)"
           :placeholder="$t('show.aufbau.placeholder')"
         />
+        <div
+          v-show="!aufbauEditing && customValues['Aufbau']"
+          class="aufbau-rendered"
+          v-html="renderMarkdown(customValues['Aufbau'])"
+          @click="startAufbauEdit"
+        />
+        <div v-show="!aufbauEditing && !customValues['Aufbau']" class="aufbau-empty" @click="startAufbauEdit">{{ $t('show.aufbau.placeholder') }}</div>
+        <!-- Immer im DOM: gerenderte Version für @media print -->
+        <div class="aufbau-print" v-html="renderMarkdown(customValues['Aufbau'])" />
       </section>
 
       <section class="custom-fields-section">
@@ -236,12 +258,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { marked } from 'marked'
 import { fetchPhotos, uploadPhoto, updateCaption, deletePhoto, getThumbUrl, getFullUrl } from '../api/photos.js'
+import { subscribeChannels } from '../api/realtime.js'
 import { useRouter } from 'vue-router'
 import { fetchShow, updateShow } from '../api/shows.js'
 import { fetchChannels, updateChannel, createChannel, deleteChannel } from '../api/channels.js'
 import { fetchTemplateCustomFields } from '../api/templates.js'
+import { exportShowBackup } from '../api/backup.js'
 import { formatAddress } from '../api/csv.js'
 import ColorPicker from '../components/ColorPicker.vue'
 
@@ -269,6 +294,7 @@ const addingCategory = ref(null)
 const addForm = ref({})
 
 const aufbauTextarea = ref(null)
+const aufbauEditing = ref(false)
 const addFieldDialog = ref(null)
 
 const newShowField = ref({ field_name: '', unit_hint: '' })
@@ -374,6 +400,8 @@ const groupedChannels = computed(() => {
 
 const totalVisible = computed(() => groupedChannels.value.reduce((s, g) => s + g.channels.length, 0))
 
+let unsubscribeRealtime = null
+
 onMounted(async () => {
   const [s, chs] = await Promise.all([fetchShow(props.id), fetchChannels(props.id)])
   show.value = s
@@ -383,7 +411,45 @@ onMounted(async () => {
   loading.value = false
   await nextTick()
   if (aufbauTextarea.value) resizeTextarea(aufbauTextarea.value)
+  unsubscribeRealtime = subscribeChannels(props.id, {
+    onUpsert(record) {
+      const idx = channels.value.findIndex(c => c.id === record.id)
+      if (idx !== -1) channels.value[idx] = record
+      else channels.value.push(record)
+    },
+    onDelete(id) {
+      channels.value = channels.value.filter(c => c.id !== id)
+    },
+  })
 })
+
+onUnmounted(() => { unsubscribeRealtime?.() })
+
+function renderMarkdown(text) {
+  return marked.parse(text || '', { breaks: true })
+}
+
+async function startAufbauEdit() {
+  aufbauEditing.value = true
+  await nextTick()
+  if (aufbauTextarea.value) resizeTextarea(aufbauTextarea.value)
+}
+
+function insertMd(before, after) {
+  const el = aufbauTextarea.value
+  if (!el) return
+  const start = el.selectionStart
+  const end = el.selectionEnd
+  const text = el.value
+  const newText = text.slice(0, start) + before + text.slice(start, end) + after + text.slice(end)
+  updateCustomField('Aufbau', newText)
+  nextTick(() => {
+    el.value = newText
+    el.setSelectionRange(start + before.length, end + before.length)
+    el.focus()
+    resizeTextarea(el)
+  })
+}
 
 function resizeTextarea(el) {
   el.style.height = 'auto'
@@ -547,6 +613,7 @@ async function confirmDeleteFromDialog() {
   } catch { /* silently ignore */ }
 }
 
+function exportShow() { exportShowBackup(props.id) }
 function printPage() { window.print() }
 
 function formatDate(d) {

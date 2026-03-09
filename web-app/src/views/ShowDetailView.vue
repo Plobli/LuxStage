@@ -4,6 +4,7 @@
       <button class="btn-ghost" @click="router.push('/')">← {{ $t('action.back') }}</button>
       <h2>{{ show?.name }}</h2>
       <span class="show-date">{{ formatDate(show?.date) }}</span>
+      <button class="btn-ghost-sm" @click="printPage">⎙ PDF</button>
     </div>
 
     <div v-if="loading" class="loading">…</div>
@@ -61,9 +62,49 @@
       </form>
     </dialog>
 
+      <!-- Foto-Galerie -->
+      <section class="photos-section">
+        <div class="photos-header">
+          <span class="photos-label">{{ $t('show.photos') }}</span>
+          <label class="btn-ghost-sm photos-upload-btn">
+            + {{ $t('photo.add') }}
+            <input type="file" accept="image/*" multiple @change="onFileInput" hidden />
+          </label>
+        </div>
+        <div
+          class="photos-dropzone"
+          :class="{ 'drag-over': dragging }"
+          @dragover.prevent="dragging = true"
+          @dragleave="dragging = false"
+          @drop.prevent="onDrop"
+        >
+          <div v-if="photos.length === 0 && !dragging" class="photos-empty">{{ $t('photo.add') }}</div>
+          <div class="photos-grid">
+            <div v-for="photo in photos" :key="photo.id" class="photo-item">
+              <img :src="getThumbUrl(photo)" :alt="photo.caption" @click="openPhoto(photo)" />
+              <div class="photo-caption-row">
+                <input
+                  class="photo-caption-input"
+                  :value="photo.caption"
+                  :placeholder="$t('photo.caption')"
+                  @change="onCaptionChange(photo, $event.target.value)"
+                />
+                <button class="btn-icon-danger" @click="onDeletePhoto(photo)" :title="$t('photo.delete')">🗑</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Lightbox -->
+      <dialog ref="lightboxDialog" class="lightbox-dialog" @click="lightboxDialog.close()">
+        <img v-if="lightboxPhoto" :src="getFullUrl(lightboxPhoto)" :alt="lightboxPhoto.caption" class="lightbox-img" />
+      </dialog>
+
       <section class="channel-section">
         <div class="channel-toolbar">
           <input v-model="search" type="search" :placeholder="$t('channel.search')" class="search-input" />
+          <button class="btn-ghost-sm" :class="{ active: lightingMode }" @click="lightingMode = !lightingMode">{{ $t('mode.lighting') }}</button>
           <span class="channel-count">{{ totalVisible }} / {{ channels.length }}</span>
         </div>
 
@@ -71,6 +112,7 @@
           <table class="channel-table">
             <thead>
               <tr>
+                <th v-if="lightingMode" class="col-check"></th>
                 <th class="col-channel">{{ $t('field.channel_number') }}</th>
                 <th class="col-address">{{ $t('field.address') }}</th>
                 <th class="col-device">{{ $t('field.device') }}</th>
@@ -80,7 +122,7 @@
             </thead>
             <tbody v-for="group in groupedChannels" :key="group.category">
               <tr class="category-header-row">
-                <td colspan="5">
+                <td :colspan="lightingMode ? 6 : 5">
                   <span class="category-name">{{ group.category || $t('channel.no_category') }}</span>
                   <span class="category-count">{{ group.channels.length }}</span>
                 </td>
@@ -89,12 +131,13 @@
                 v-for="ch in group.channels"
                 :key="ch.id"
                 class="channel-row"
-                :class="{ editing: editingId === ch.id, 'has-description': ch.description }"
+                :class="{ editing: editingId === ch.id, 'has-description': ch.description, 'lighting-checked': isChecked(ch.id) }"
                 @click="onRowClick(ch, $event)"
                 @focusout="onRowFocusOut($event, ch)"
                 @keydown.enter.prevent="saveInline(ch)"
                 @keydown.escape="cancelInline"
               >
+                <td v-if="lightingMode" class="col-check" @click.stop><input type="checkbox" :checked="isChecked(ch.id)" @change="toggleCheck(ch.id)" /></td>
                 <td class="col-channel">{{ ch.channel_number }}</td>
                 <td class="col-address">
                   <input v-if="editingId === ch.id" class="inline-input" v-model="inlineForm.address" placeholder="1/001" @click.stop />
@@ -112,12 +155,16 @@
                   </template>
                 </td>
                 <td class="col-description">
-                  <input v-if="editingId === ch.id" ref="descriptionInput" class="inline-input inline-input-wide" v-model="inlineForm.description" type="text" @click.stop />
+                  <div v-if="editingId === ch.id" class="add-row-actions">
+                    <input ref="descriptionInput" class="inline-input inline-input-wide" v-model="inlineForm.description" type="text" @click.stop />
+                    <button class="btn-danger-sm" @click.stop="confirmDeleteChannel(ch)" :title="$t('action.delete')">🗑</button>
+                  </div>
                   <template v-else>{{ ch.description || '' }}</template>
                 </td>
               </tr>
               <!-- Add row trigger / form -->
               <tr v-if="addingCategory === group.category" class="channel-row editing add-row-form" @keydown.escape="addingCategory = null">
+                <td v-if="lightingMode"></td>
                 <td class="col-channel">
                   <input class="inline-input" v-model="addForm.channel_number" placeholder="Nr." @click.stop />
                 </td>
@@ -139,7 +186,7 @@
                 </td>
               </tr>
               <tr v-else class="add-row-trigger" @click.stop="startAdd(group.category)">
-                <td colspan="5">+ {{ $t('channel.add') }}</td>
+                <td :colspan="lightingMode ? 6 : 5">+ {{ $t('channel.add') }}</td>
               </tr>
             </tbody>
           </table>
@@ -179,6 +226,7 @@
           </div>
         </div>
         <div class="modal-footer">
+          <button type="button" class="btn-danger-sm" style="margin-right:auto" @click="confirmDeleteFromDialog">{{ $t('action.delete') }}</button>
           <button type="button" class="btn-ghost" @click="editDialog.close()">{{ $t('action.cancel') }}</button>
           <button type="submit" class="btn-primary" :disabled="saving">{{ saving ? '…' : $t('action.save') }}</button>
         </div>
@@ -189,9 +237,10 @@
 
 <script setup>
 import { ref, computed, onMounted, nextTick } from 'vue'
+import { fetchPhotos, uploadPhoto, updateCaption, deletePhoto, getThumbUrl, getFullUrl } from '../api/photos.js'
 import { useRouter } from 'vue-router'
 import { fetchShow, updateShow } from '../api/shows.js'
-import { fetchChannels, updateChannel, createChannel } from '../api/channels.js'
+import { fetchChannels, updateChannel, createChannel, deleteChannel } from '../api/channels.js'
 import { fetchTemplateCustomFields } from '../api/templates.js'
 import { formatAddress } from '../api/csv.js'
 import ColorPicker from '../components/ColorPicker.vue'
@@ -223,6 +272,71 @@ const aufbauTextarea = ref(null)
 const addFieldDialog = ref(null)
 
 const newShowField = ref({ field_name: '', unit_hint: '' })
+
+// Fotos
+const photos = ref([])
+const dragging = ref(false)
+const lightboxDialog = ref(null)
+const lightboxPhoto = ref(null)
+
+async function loadPhotos() {
+  photos.value = await fetchPhotos(props.id)
+}
+
+async function uploadFiles(files) {
+  for (const file of files) {
+    const created = await uploadPhoto(props.id, file)
+    photos.value.unshift(created)
+  }
+}
+
+function onFileInput(e) { uploadFiles([...e.target.files]); e.target.value = '' }
+
+function onDrop(e) {
+  dragging.value = false
+  const files = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'))
+  if (files.length) uploadFiles(files)
+}
+
+async function onCaptionChange(photo, caption) {
+  const updated = await updateCaption(photo.id, caption)
+  const idx = photos.value.findIndex(p => p.id === photo.id)
+  if (idx !== -1) photos.value[idx] = updated
+}
+
+async function onDeletePhoto(photo) {
+  if (!window.confirm('Foto wirklich löschen?')) return
+  await deletePhoto(photo.id)
+  photos.value = photos.value.filter(p => p.id !== photo.id)
+}
+
+function openPhoto(photo) {
+  lightboxPhoto.value = photo
+  lightboxDialog.value.showModal()
+}
+
+// Einleucht-Checklist
+const lightingMode = ref(false)
+const LIGHTING_TTL = 6 * 60 * 60 * 1000 // 6h
+function lightingKey() { return 'lighting_check_' + props.id }
+function loadChecks() {
+  try {
+    const raw = localStorage.getItem(lightingKey())
+    if (!raw) return {}
+    const { checks, ts } = JSON.parse(raw)
+    if (Date.now() - ts > LIGHTING_TTL) { localStorage.removeItem(lightingKey()); return {} }
+    return checks || {}
+  } catch { return {} }
+}
+const checks = ref(loadChecks())
+function saveChecks() {
+  localStorage.setItem(lightingKey(), JSON.stringify({ checks: checks.value, ts: Date.now() }))
+}
+function isChecked(id) { return !!checks.value[id] }
+function toggleCheck(id) {
+  checks.value = { ...checks.value, [id]: !checks.value[id] }
+  saveChecks()
+}
 
 const customValues = computed(() => {
   try { return JSON.parse(show.value?.custom_field_values || '{}') }
@@ -265,6 +379,7 @@ onMounted(async () => {
   show.value = s
   channels.value = chs
   if (s.template) customFields.value = await fetchTemplateCustomFields(s.template)
+  loadPhotos()
   loading.value = false
   await nextTick()
   if (aufbauTextarea.value) resizeTextarea(aufbauTextarea.value)
@@ -412,6 +527,27 @@ async function saveAdd(category) {
   } catch { /* silently ignore */ }
   addingCategory.value = null
 }
+
+async function confirmDeleteChannel(ch) {
+  if (!window.confirm('Kanal ' + ch.channel_number + ' wirklich löschen?')) return
+  try {
+    await deleteChannel(ch.id)
+    channels.value = channels.value.filter(c => c.id !== ch.id)
+    editingId.value = null
+  } catch { /* silently ignore */ }
+}
+
+async function confirmDeleteFromDialog() {
+  if (!editing.value) return
+  if (!window.confirm('Kanal ' + editing.value.channel_number + ' wirklich löschen?')) return
+  try {
+    await deleteChannel(editing.value.id)
+    channels.value = channels.value.filter(c => c.id !== editing.value.id)
+    editDialog.value.close()
+  } catch { /* silently ignore */ }
+}
+
+function printPage() { window.print() }
 
 function formatDate(d) {
   if (!d) return ''

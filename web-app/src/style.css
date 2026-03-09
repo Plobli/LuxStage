@@ -145,6 +145,10 @@ input[type=search]:focus { outline: none; border-color: var(--accent); }
 .add-row-trigger:hover td { color: var(--accent); background: var(--surface2); }
 .add-row-form td { vertical-align: middle; }
 .add-row-actions { display: flex; align-items: center; gap: 4px; }
+.col-check { width: 36px; text-align: center; }
+.channel-row.lighting-checked { background: rgba(60, 184, 122, 0.08); }
+.channel-row.lighting-checked:hover { background: rgba(60, 184, 122, 0.13); }
+.btn-ghost-sm.active { color: var(--accent); border-color: var(--accent); background: var(--surface2); }
 
 /* ─── Template detail custom fields ─────────────────────────────────── */
 .detail-custom-fields { padding: 16px 20px 8px; border-bottom: 1px solid var(--border); }
@@ -209,6 +213,29 @@ dialog form { padding: 20px; }
 .error-list ul { padding-left: 18px; color: var(--danger); font-size: 13px; margin-top: 8px; }
 .import-success { padding: 40px; text-align: center; font-size: 16px; }
 
+/* ─── Foto-Galerie ───────────────────────────────────────────────────── */
+.photos-section {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 14px 16px; margin-bottom: 16px;
+}
+.photos-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.photos-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-dim); flex: 1; }
+.photos-upload-btn { cursor: pointer; }
+.photos-dropzone { border: 2px dashed transparent; border-radius: var(--radius); transition: border-color .15s; min-height: 32px; }
+.photos-dropzone.drag-over { border-color: var(--accent); background: rgba(245,166,35,.05); }
+.photos-empty { color: var(--text-dim); font-size: 13px; text-align: center; padding: 16px 0; }
+.photos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+.photo-item { display: flex; flex-direction: column; gap: 4px; }
+.photo-item img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius); cursor: pointer; border: 1px solid var(--border); transition: opacity .15s; }
+.photo-item img:hover { opacity: .85; }
+.photo-caption-row { display: flex; gap: 4px; align-items: center; }
+.photo-caption-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 4px; padding: 3px 6px; font-size: 12px; font-family: var(--font); }
+.photo-caption-input:focus { outline: none; border-color: var(--accent); }
+.btn-icon-danger { background: none; border: none; color: var(--text-dim); padding: 2px 4px; cursor: pointer; font-size: 13px; flex-shrink: 0; }
+.btn-icon-danger:hover { color: var(--danger); }
+.lightbox-dialog { background: rgba(0,0,0,.9); border: none; border-radius: 8px; width: auto; max-width: 95vw; max-height: 95vh; padding: 8px; cursor: pointer; }
+.lightbox-img { max-width: 90vw; max-height: 90vh; display: block; border-radius: 4px; }
+
 /* ─── Settings ───────────────────────────────────────────────────────── */
 .settings-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 12px; }
 .settings-section h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-dim); margin-bottom: 12px; }
@@ -226,6 +253,50 @@ dialog form { padding: 20px; }
 .color-input-row { display: flex; gap: 8px; }
 .color-select { flex: 1; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: var(--radius); padding: 8px; font-size: 13px; }
 .color-text { flex: 1; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: var(--radius); padding: 8px; font-size: 13px; }
+
+/* ─── Print / PDF ────────────────────────────────────────────────────── */
+@media print {
+  .navbar, .page-header button, .channel-toolbar, .add-row-trigger,
+  .add-row-form, .photos-upload-btn, .photo-caption-row button,
+  .btn-ghost, .btn-ghost-sm, .btn-primary, .btn-danger, .btn-danger-sm,
+  .custom-fields-section .add-field-form, .field-delete-btn,
+  .lightbox-dialog, dialog { display: none !important; }
+
+  body { background: #fff; color: #000; font-size: 12px; }
+  :root { --bg: #fff; --surface: #fff; --surface2: #f4f4f4; --border: #ccc; --text: #000; --text-dim: #555; --accent: #000; }
+
+  /* Reihenfolge: Kanaltabelle vor Fotos */
+  .page { padding: 0; display: flex; flex-direction: column; }
+  .page-header { order: 0; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 12px; }
+  .page-header h2 { font-size: 18px; }
+  .aufbau-section  { order: 1; break-inside: avoid; border: 1px solid #ccc; }
+  .aufbau-textarea { border: none; padding: 0; resize: none; }
+  .custom-fields-section { order: 2; break-inside: avoid; border: 1px solid #ccc; }
+  .channel-section { order: 3; }
+  .photos-section  { order: 4; break-before: page; }
+
+  /* Kanäle: nur Zeilen mit Beschreibung */
+  .channel-row:not(.has-description) { display: none !important; }
+  .channel-table-wrapper { overflow: visible; }
+  .channel-table { width: 100%; font-size: 11px; }
+  .channel-row { break-inside: avoid; }
+  .channel-row:hover { background: none; }
+
+  /* Fotos: 2×3 pro A4-Seite */
+  .photos-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 5mm;
+  }
+  .photo-item { break-inside: avoid; }
+  .photo-item img {
+    width: 100%;
+    height: 115mm;
+    aspect-ratio: auto;
+    object-fit: cover;
+  }
+  .photo-caption-input { border: none; padding: 0; font-size: 10px; background: transparent; }
+}
 
 /* ─── Utilities ──────────────────────────────────────────────────────── */
 .loading { color: var(--text-dim); padding: 40px 0; text-align: center; }

@@ -209,8 +209,8 @@ final class LocalStore {
         let existingIds = Set(existing.map { $0.id })
         let newIds = Set(channels.map { $0.id })
 
-        // Gelöschte entfernen
-        for cached in existing where !newIds.contains(cached.id) {
+        // Gelöschte entfernen (lokale Offline-Channels mit "local_"-Prefix behalten)
+        for cached in existing where !newIds.contains(cached.id) && !cached.id.hasPrefix("local_") {
             context.delete(cached)
         }
         // Neue/aktualisierte speichern

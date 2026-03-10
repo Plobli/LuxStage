@@ -27,8 +27,14 @@ final class SyncEngine {
 
     init() {
         monitor.pathUpdateHandler = { [weak self] path in
+            let online = path.status == .satisfied
             DispatchQueue.main.async {
-                self?.isOnline = path.status == .satisfied
+                guard let self else { return }
+                let wasOffline = !self.isOnline
+                self.isOnline = online
+                if online && wasOffline {
+                    Task { await self.sync() }
+                }
             }
         }
         monitor.start(queue: monitorQueue)

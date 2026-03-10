@@ -8,6 +8,7 @@ struct ShowDetailView: View {
 
     @Environment(PocketBaseClient.self) private var pb
     @Environment(AppLocale.self) private var locale
+    @Environment(SyncEngine.self) private var sync
 
     @State private var show: Show?
     @State private var oscSettings = OSCSettings()
@@ -36,7 +37,7 @@ struct ShowDetailView: View {
             Text(error ?? "")
         }
         .sheet(item: $editingChannel) { ch in
-            ChannelEditSheet(channel: ch, onSave: { updated in
+            ChannelEditSheet(channel: ch, showId: showId, onSave: { updated in
                 updateLocal(channel: updated)
             }, onDelete: { id in
                 channels.removeAll { $0.id == id }
@@ -166,7 +167,7 @@ struct ShowDetailView: View {
     private func reload() async {
         do {
             async let s = pb.fetchShow(id: showId)
-            async let chs = pb.fetchChannels(showId: showId)
+            async let chs = sync.fetchChannels(showId: showId)
             let (fs, fc) = try await (s, chs)
             show = fs
             channels = fc
@@ -217,7 +218,7 @@ struct ShowDetailView: View {
 
     private func persistCustomValues(_ values: [String: Any]) async {
         do {
-            let updated = try await pb.updateShow(id: showId, fields: ["custom_field_values": values])
+            let updated = try await sync.updateShow(id: showId, fields: ["custom_field_values": values], showId: showId)
             show = updated
         } catch { self.error = error.localizedDescription }
     }

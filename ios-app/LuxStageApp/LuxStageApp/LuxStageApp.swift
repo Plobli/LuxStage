@@ -1,9 +1,11 @@
 import SwiftUI
+import SwiftData
 
 @main
 struct LuxStageApp: App {
     @State private var pb = PocketBaseClient.shared
     @State private var locale = AppLocale.shared
+    @State private var sync = SyncEngine.shared
 
     var body: some Scene {
         WindowGroup {
@@ -11,6 +13,9 @@ struct LuxStageApp: App {
                 MainTabView()
                     .environment(pb)
                     .environment(locale)
+                    .environment(sync)
+                    .modelContainer(LocalStore.shared.container)
+                    .task { await sync.sync() }
             } else {
                 LoginView()
                     .environment(pb)

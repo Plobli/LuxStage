@@ -163,12 +163,20 @@ input[type=search]:focus { outline: none; border-color: var(--accent); }
   padding: 14px 16px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px;
 }
 .aufbau-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-dim); }
-.aufbau-textarea {
-  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
-  border-radius: var(--radius); padding: 8px 10px; font-size: 13px; font-family: var(--font);
-  resize: none; line-height: 1.5; width: 100%; overflow: hidden; min-height: 3.5em;
+/* Tiptap editor */
+.aufbau-tiptap {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 8px 10px; min-height: 3.5em; cursor: text;
 }
-.aufbau-textarea:focus { outline: none; border-color: var(--accent); }
+.aufbau-tiptap:focus-within { border-color: var(--accent); }
+.aufbau-editor-content { font-size: 13px; line-height: 1.6; outline: none; }
+.aufbau-editor-content p { margin-bottom: 4px; }
+.aufbau-editor-content ul, .aufbau-editor-content ol { padding-left: 18px; margin-bottom: 4px; }
+.aufbau-editor-content h2 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.aufbau-editor-content p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--text-dim); pointer-events: none; float: left; height: 0;
+}
 
 /* ─── Custom fields section ──────────────────────────────────────────── */
 .custom-fields-section {
@@ -236,17 +244,10 @@ dialog form { padding: 20px; }
 .lightbox-dialog { background: rgba(0,0,0,.9); border: none; border-radius: 8px; width: auto; max-width: 95vw; max-height: 95vh; padding: 8px; cursor: pointer; }
 .lightbox-img { max-width: 90vw; max-height: 90vh; display: block; border-radius: 4px; }
 
-/* ─── Aufbau Markdown ────────────────────────────────────────────────── */
+/* ─── Aufbau Header & Toolbar ────────────────────────────────────────── */
 .aufbau-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
 .aufbau-header .aufbau-label { flex: 1; margin-bottom: 0; }
 .aufbau-toolbar { display: flex; gap: 4px; }
-.aufbau-rendered { font-size: 13px; line-height: 1.6; cursor: text; }
-.aufbau-rendered p { margin-bottom: 6px; }
-.aufbau-rendered ul, .aufbau-rendered ol { padding-left: 18px; margin-bottom: 6px; }
-.aufbau-rendered strong { font-weight: 700; }
-.aufbau-rendered em { font-style: italic; }
-.aufbau-empty { color: var(--text-dim); font-size: 13px; cursor: text; padding: 2px 0; }
-.aufbau-print { display: none; }
 
 /* ─── Backup (Settings) ──────────────────────────────────────────────── */
 .backup-row { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -288,10 +289,10 @@ dialog form { padding: 20px; }
   .page-header { order: 0; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 12px; }
   .page-header h2 { font-size: 18px; }
   .aufbau-section  { order: 1; break-inside: avoid; border: 1px solid #ccc; }
-  .aufbau-textarea, .aufbau-rendered, .aufbau-empty { display: none !important; }
-  .aufbau-print { display: block !important; font-size: 12px; line-height: 1.5; }
-  .aufbau-print p { margin-bottom: 4px; }
-  .aufbau-print ul, .aufbau-print ol { padding-left: 16px; margin-bottom: 4px; }
+  .aufbau-tiptap { border: none; background: none; padding: 0; }
+  .aufbau-editor-content { font-size: 12px; line-height: 1.5; }
+  .aufbau-editor-content p { margin-bottom: 4px; }
+  .aufbau-editor-content ul, .aufbau-editor-content ol { padding-left: 16px; margin-bottom: 4px; }
   .custom-fields-section { order: 2; break-inside: avoid; border: 1px solid #ccc; }
   .channel-section { order: 3; }
   .photos-section  { order: 4; break-before: page; background: none; border: none; padding: 0; }

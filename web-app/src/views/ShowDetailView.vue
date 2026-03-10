@@ -11,38 +11,18 @@
     <div v-if="loading" class="loading">…</div>
 
     <template v-else>
-      <!-- Aufbau — Markdown-Editor -->
+      <!-- Aufbau — WYSIWYG-Editor -->
       <section class="aufbau-section">
         <div class="aufbau-header">
           <span class="aufbau-label">{{ $t('show.aufbau') }}</span>
-          <template v-if="aufbauEditing">
-            <div class="aufbau-toolbar">
-              <button class="btn-ghost-sm" @mousedown.prevent="insertMd('**', '**')"><b>B</b></button>
-              <button class="btn-ghost-sm" @mousedown.prevent="insertMd('*', '*')"><i>I</i></button>
-              <button class="btn-ghost-sm" @mousedown.prevent="insertMd('- ', '')">≡</button>
-            </div>
-            <button class="btn-ghost-sm" @click="aufbauEditing = false">✓</button>
-          </template>
-          <button v-else class="btn-ghost-sm" @click="startAufbauEdit">✎</button>
+          <div class="aufbau-toolbar">
+            <button class="btn-ghost-sm" :class="{ active: aufbauEditor?.isActive('bold') }" @click="aufbauEditor?.chain().focus().toggleBold().run()"><b>B</b></button>
+            <button class="btn-ghost-sm" :class="{ active: aufbauEditor?.isActive('italic') }" @click="aufbauEditor?.chain().focus().toggleItalic().run()"><i>I</i></button>
+            <button class="btn-ghost-sm" :class="{ active: aufbauEditor?.isActive('bulletList') }" @click="aufbauEditor?.chain().focus().toggleBulletList().run()">≡</button>
+            <button class="btn-ghost-sm" :class="{ active: aufbauEditor?.isActive('heading', { level: 2 }) }" @click="aufbauEditor?.chain().focus().toggleHeading({ level: 2 }).run()">H2</button>
+          </div>
         </div>
-        <textarea
-          v-show="aufbauEditing"
-          ref="aufbauTextarea"
-          class="aufbau-textarea"
-          :value="customValues['Aufbau'] ?? ''"
-          @input="autoResizeAufbau"
-          @change="updateCustomField('Aufbau', $event.target.value)"
-          :placeholder="$t('show.aufbau.placeholder')"
-        />
-        <div
-          v-show="!aufbauEditing && customValues['Aufbau']"
-          class="aufbau-rendered"
-          v-html="renderMarkdown(customValues['Aufbau'])"
-          @click="startAufbauEdit"
-        />
-        <div v-show="!aufbauEditing && !customValues['Aufbau']" class="aufbau-empty" @click="startAufbauEdit">{{ $t('show.aufbau.placeholder') }}</div>
-        <!-- Immer im DOM: gerenderte Version für @media print -->
-        <div class="aufbau-print" v-html="renderMarkdown(customValues['Aufbau'])" />
+        <EditorContent :editor="aufbauEditor" class="aufbau-tiptap" />
       </section>
 
       <section class="custom-fields-section">
@@ -54,6 +34,7 @@
           </label>
           <input
             :value="customValues[field.field_name] ?? ''"
+            @input="debouncedUpdateCustomField(field.field_name, $event.target.value)"
             @change="updateCustomField(field.field_name, $event.target.value)"
             type="text"
           />
@@ -258,8 +239,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import { marked } from 'marked'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { useEditor, EditorContent } from '@tiptap/vue-3'
+import StarterKit from '@tiptap/starter-kit'
 import { fetchPhotos, uploadPhoto, updateCaption, deletePhoto, getThumbUrl, getFullUrl } from '../api/photos.js'
 import { subscribeChannels } from '../api/realtime.js'
 import { useRouter } from 'vue-router'
@@ -293,9 +275,21 @@ const editDialog = ref(null)
 const addingCategory = ref(null)
 const addForm = ref({})
 
-const aufbauTextarea = ref(null)
-const aufbauEditing = ref(false)
 const addFieldDialog = ref(null)
+
+let aufbauSaveTimer = null
+const aufbauEditor = useEditor({
+  extensions: [StarterKit],
+  content: '',
+  editorProps: { attributes: { class: 'aufbau-editor-content' } },
+  onUpdate({ editor }) {
+    clearTimeout(aufbauSaveTimer)
+    aufbauSaveTimer = setTimeout(() => {
+      const html = editor.getHTML()
+      updateCustomField('Aufbau', html === '<p></p>' ? '' : html)
+    }, 600)
+  },
+})
 
 const newShowField = ref({ field_name: '', unit_hint: '' })
 
@@ -364,10 +358,16 @@ function toggleCheck(id) {
   saveChecks()
 }
 
-const customValues = computed(() => {
-  try { return JSON.parse(show.value?.custom_field_values || '{}') }
-  catch { return {} }
-})
+const customValues = ref({})
+
+watch(() => show.value?.custom_field_values, (val) => {
+  if (val && typeof val === 'object') customValues.value = val
+  else if (typeof val === 'string') {
+    try { customValues.value = JSON.parse(val) } catch { customValues.value = {} }
+  } else {
+    customValues.value = {}
+  }
+}, { immediate: true })
 
 // All custom fields for this show: template fields (minus hidden) + show-specific extras
 const allCustomFields = computed(() => {
@@ -410,7 +410,7 @@ onMounted(async () => {
   loadPhotos()
   loading.value = false
   await nextTick()
-  if (aufbauTextarea.value) resizeTextarea(aufbauTextarea.value)
+  aufbauEditor.value?.commands.setContent(customValues.value['Aufbau'] || '', false)
   unsubscribeRealtime = subscribeChannels(props.id, {
     onUpsert(record) {
       const idx = channels.value.findIndex(c => c.id === record.id)
@@ -423,50 +423,30 @@ onMounted(async () => {
   })
 })
 
-onUnmounted(() => { unsubscribeRealtime?.() })
-
-function renderMarkdown(text) {
-  return marked.parse(text || '', { breaks: true })
-}
-
-async function startAufbauEdit() {
-  aufbauEditing.value = true
-  await nextTick()
-  if (aufbauTextarea.value) resizeTextarea(aufbauTextarea.value)
-}
-
-function insertMd(before, after) {
-  const el = aufbauTextarea.value
-  if (!el) return
-  const start = el.selectionStart
-  const end = el.selectionEnd
-  const text = el.value
-  const newText = text.slice(0, start) + before + text.slice(start, end) + after + text.slice(end)
-  updateCustomField('Aufbau', newText)
-  nextTick(() => {
-    el.value = newText
-    el.setSelectionRange(start + before.length, end + before.length)
-    el.focus()
-    resizeTextarea(el)
-  })
-}
-
-function resizeTextarea(el) {
-  el.style.height = 'auto'
-  el.style.height = el.scrollHeight + 'px'
-}
-
-function autoResizeAufbau(event) {
-  resizeTextarea(event.target)
-}
+onUnmounted(() => {
+  unsubscribeRealtime?.()
+  clearTimeout(aufbauSaveTimer)
+  Object.values(customFieldTimers).forEach(clearTimeout)
+})
 
 async function saveCustomValues(values) {
-  await updateShow(props.id, { custom_field_values: JSON.stringify(values) })
-  show.value.custom_field_values = JSON.stringify(values)
+  try {
+    await updateShow(props.id, { custom_field_values: values })
+    customValues.value = values
+    show.value = { ...show.value, custom_field_values: values }
+  } catch (e) {
+    console.error('[saveCustomValues]', e)
+  }
 }
 
 async function updateCustomField(fieldName, value) {
   await saveCustomValues({ ...customValues.value, [fieldName]: value })
+}
+
+const customFieldTimers = {}
+function debouncedUpdateCustomField(fieldName, value) {
+  clearTimeout(customFieldTimers[fieldName])
+  customFieldTimers[fieldName] = setTimeout(() => updateCustomField(fieldName, value), 600)
 }
 
 async function addShowField() {
@@ -500,7 +480,7 @@ function parseAddress(str) {
   return { universe: parseInt(u) || null, dmx_address: parseInt(d) || null }
 }
 
-function onRowClick(ch, event) {
+function onRowClick(ch, _event) {
   if (editMode.value === 'dialog') { openDialog(ch); return }
   if (editingId.value === ch.id) return
   if (editingId.value !== null) {

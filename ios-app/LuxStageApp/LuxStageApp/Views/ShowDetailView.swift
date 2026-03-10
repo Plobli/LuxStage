@@ -3,9 +3,11 @@ import WebKit
 
 struct ShowDetailView: View {
     let showId: String
+    @Binding var oscSettings: OSCSettings
+    @Binding var checks: Set<String>
+    let lightingMode: Bool
 
     @Environment(PocketBaseClient.self) private var pb
-    @Environment(\.dismiss) private var dismiss
 
     @State private var show: Show?
     @State private var channels: [Channel] = []
@@ -13,53 +15,18 @@ struct ShowDetailView: View {
     @State private var loading = true
     @State private var error: String?
     @State private var search = ""
-    @State private var lightingMode = false
     @State private var editingChannel: Channel?
-    @State private var showAddChannel = false
-    @State private var addCategory = ""
     @State private var customValues: [String: String] = [:]
     @State private var aufbauText = ""
     @State private var aufbauSaveTask: Task<Void, Never>?
-
-    // Einleucht-Checks (localStorage equivalent via UserDefaults, 6h TTL)
-    @State private var checks: Set<String> = []
-
-    // OSC
-    @State private var oscSettings = OSCSettings()
-    @State private var showOSCSettings = false
-
 
     var body: some View {
         Group {
             if loading {
                 ProgressView("Laden …")
-            } else if let show {
-                content(show: show)
+            } else if show != nil {
+                content
             }
-        }
-        .navigationTitle(show?.name ?? "")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                HStack {
-                    if lightingMode {
-                        Button {
-                            showOSCSettings = true
-                        } label: {
-                            Label("OSC", systemImage: "network")
-                        }
-                    }
-                    Button {
-                        lightingMode.toggle()
-                    } label: {
-                        Label("Einleuchten", systemImage: lightingMode ? "lightbulb.fill" : "lightbulb")
-                            .foregroundStyle(lightingMode ? .yellow : .primary)
-                    }
-                }
-            }
-        }
-        .sheet(isPresented: $showOSCSettings) {
-            OSCSettingsSheet(settings: $oscSettings, showId: showId)
         }
         .task { await load() }
         .alert("Fehler", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
@@ -78,23 +45,10 @@ struct ShowDetailView: View {
 
     // MARK: - Content
 
-    @ViewBuilder
-    private func content(show: Show) -> some View {
+    private var content: some View {
         List {
-            // Aufbau
             aufbauSection
-
-                    // Fotos (nicht im Einleuchtmodus)
-            if !lightingMode {
-                PhotosSection(showId: showId)
-            }
-
-            // Custom Fields
-            if !allCustomFields.isEmpty {
-                customFieldsSection
-            }
-
-            // Kanäle
+            if !allCustomFields.isEmpty { customFieldsSection }
             channelSection
         }
         .searchable(text: $search, prompt: "Suchen …")
@@ -106,8 +60,7 @@ struct ShowDetailView: View {
 
     private var aufbauSection: some View {
         Section("Aufbau") {
-            HTMLTextView(html: aufbauText)
-                .frame(minHeight: 80)
+            HTMLTextView(html: aufbauText).frame(minHeight: 80)
         }
     }
 
@@ -145,9 +98,7 @@ struct ShowDetailView: View {
 
     private var filteredGrouped: [(category: String, channels: [Channel])] {
         let q = search.lowercased()
-        var filtered = channels.sorted {
-            (Int($0.channel_number) ?? 0) < (Int($1.channel_number) ?? 0)
-        }
+        var filtered = channels.sorted { (Int($0.channel_number) ?? 0) < (Int($1.channel_number) ?? 0) }
         if !q.isEmpty {
             filtered = filtered.filter {
                 $0.channel_number.lowercased().contains(q) ||
@@ -163,12 +114,8 @@ struct ShowDetailView: View {
         var seen: [String: Int] = [:]
         for ch in filtered {
             let cat = ch.categoryOrEmpty
-            if let idx = seen[cat] {
-                groups[idx].1.append(ch)
-            } else {
-                seen[cat] = groups.count
-                groups.append((cat, [ch]))
-            }
+            if let idx = seen[cat] { groups[idx].1.append(ch) }
+            else { seen[cat] = groups.count; groups.append((cat, [ch])) }
         }
         return groups.map { (category: $0.0, channels: $0.1) }
     }
@@ -178,104 +125,55 @@ struct ShowDetailView: View {
         ForEach(filteredGrouped, id: \.category) { group in
             Section {
                 ForEach(group.channels) { ch in
-                    ChannelRow(
-                        channel: ch,
-                        lightingMode: lightingMode,
-                        isChecked: checks.contains(ch.id)
-                    ) {
-                        if lightingMode {
-                            oscToggle(ch)
-                        } else {
-                            editingChannel = ch
-                        }
+                    ChannelRow(channel: ch, lightingMode: lightingMode, isChecked: checks.contains(ch.id)) {
+                        if lightingMode { oscToggle(ch) } else { editingChannel = ch }
                     }
                 }
             } header: {
                 HStack {
                     Text(group.category.isEmpty ? "Ohne Kategorie" : group.category)
                     Spacer()
-                    Text("\(group.channels.count)")
-                        .foregroundStyle(.secondary)
+                    Text("\(group.channels.count)").foregroundStyle(.secondary)
                 }
             }
         }
-
-        // Add channel button
-        Section {
-            Button {
-                addCategory = filteredGrouped.first?.category ?? ""
-                showAddChannel = true
-            } label: {
-                Label("Kanal hinzufügen", systemImage: "plus")
+        if !lightingMode {
+            Section {
+                Button { } label: { Label("Kanal hinzufügen", systemImage: "plus") }
             }
         }
     }
 
     // MARK: - Data loading
 
-    // Pull-to-refresh: kein loading=true, damit die View nicht neu aufgebaut wird
     private func reload() async {
         do {
             async let s = pb.fetchShow(id: showId)
             async let chs = pb.fetchChannels(showId: showId)
-            let (fetchedShow, fetchedChannels) = try await (s, chs)
-            show = fetchedShow
-            channels = fetchedChannels
-            if let templateId = fetchedShow.template {
-                customFields = (try? await pb.fetchTemplateCustomFields(templateId: templateId)) ?? []
-            }
-            if let raw = fetchedShow.custom_field_values?.value as? [String: Any] {
+            let (fs, fc) = try await (s, chs)
+            show = fs; channels = fc
+            if let tid = fs.template { customFields = (try? await pb.fetchTemplateCustomFields(templateId: tid)) ?? [] }
+            if let raw = fs.custom_field_values?.value as? [String: Any] {
                 customValues = raw.compactMapValues { $0 as? String }
                 aufbauText = customValues["Aufbau"] ?? ""
             }
-            loadChecks()
-        } catch {
-            self.error = error.localizedDescription
-        }
+        } catch { self.error = error.localizedDescription }
     }
 
     private func load() async {
         loading = true
-        do {
-            async let s = pb.fetchShow(id: showId)
-            async let chs = pb.fetchChannels(showId: showId)
-            let (fetchedShow, fetchedChannels) = try await (s, chs)
-            show = fetchedShow
-            channels = fetchedChannels
-
-            if let templateId = fetchedShow.template {
-                customFields = (try? await pb.fetchTemplateCustomFields(templateId: templateId)) ?? []
-            }
-
-            // Parse custom values
-            if let raw = fetchedShow.custom_field_values?.value as? [String: Any] {
-                customValues = raw.compactMapValues { $0 as? String }
-                aufbauText = customValues["Aufbau"] ?? ""
-            }
-
-            loadChecks()
-            oscSettings = OSCSettings.load(showId: showId)
-        } catch {
-            self.error = error.localizedDescription
-        }
+        await reload()
         loading = false
     }
 
     private func updateLocal(channel: Channel) {
-        if let idx = channels.firstIndex(where: { $0.id == channel.id }) {
-            channels[idx] = channel
-        }
+        if let idx = channels.firstIndex(where: { $0.id == channel.id }) { channels[idx] = channel }
     }
 
     // MARK: - Custom field save
 
     private func saveCustomField(_ fieldName: String, value: String) async {
-        guard var raw = show?.custom_field_values?.value as? [String: Any] else {
-            var newRaw: [String: Any] = [:]
-            newRaw[fieldName] = value
-            await persistCustomValues(newRaw)
-            return
-        }
+        var raw = (show?.custom_field_values?.value as? [String: Any]) ?? [:]
         raw[fieldName] = value
         await persistCustomValues(raw)
     }
@@ -284,52 +182,16 @@ struct ShowDetailView: View {
         do {
             let updated = try await pb.updateShow(id: showId, fields: ["custom_field_values": values])
             show = updated
-        } catch {
-            self.error = error.localizedDescription
-        }
-    }
-
-    // MARK: - Einleucht-Checks
-
-    private func checksKey() -> String { "lighting_check_\(showId)" }
-    private let checksTTL: TimeInterval = 6 * 60 * 60
-
-    private func loadChecks() {
-        guard let raw = UserDefaults.standard.dictionary(forKey: checksKey()),
-              let ts = raw["ts"] as? TimeInterval,
-              Date().timeIntervalSince1970 - ts < checksTTL,
-              let ids = raw["checks"] as? [String]
-        else {
-            checks = []
-            return
-        }
-        checks = Set(ids)
-    }
-
-    private func saveChecks() {
-        UserDefaults.standard.set([
-            "checks": Array(checks),
-            "ts": Date().timeIntervalSince1970
-        ], forKey: checksKey())
-    }
-
-    private func toggleCheck(_ id: String) {
-        if checks.contains(id) { checks.remove(id) } else { checks.insert(id) }
-        saveChecks()
+        } catch { self.error = error.localizedDescription }
     }
 
     // MARK: - OSC
 
-    /// Toggle: abgehakt = Lampe war AUS → Full senden + abhaken entfernen
-    ///         nicht abgehakt = Lampe ist AN → Out senden + abhaken
     private func oscToggle(_ channel: Channel) {
-        let isChecked = checks.contains(channel.id)
-        if isChecked {
-            // War abgehakt (AUS) → wieder einschalten
+        if checks.contains(channel.id) {
             sendOSC(oscSettings.fullCommand, channel: channel.channel_number)
             checks.remove(channel.id)
         } else {
-            // War an → ausschalten + abhaken
             sendOSC(oscSettings.outCommand, channel: channel.channel_number)
             checks.insert(channel.id)
         }
@@ -338,8 +200,13 @@ struct ShowDetailView: View {
 
     private func sendOSC(_ template: String, channel: String) {
         guard !oscSettings.host.isEmpty else { return }
-        let address = oscSettings.address(for: template, channel: channel)
-        OSCClient.shared.send(address: address, host: oscSettings.host, port: oscSettings.port)
+        OSCClient.shared.send(address: oscSettings.address(for: template, channel: channel),
+                              host: oscSettings.host, port: oscSettings.port)
+    }
+
+    private func saveChecks() {
+        UserDefaults.standard.set(["checks": Array(checks), "ts": Date().timeIntervalSince1970],
+                                  forKey: "lighting_check_\(showId)")
     }
 }
 
@@ -359,49 +226,33 @@ private struct ChannelRow: View {
                         .foregroundStyle(isChecked ? .green : .secondary)
                         .font(.title3)
                 }
-
                 VStack(alignment: .leading, spacing: 3) {
                     HStack {
-                        Text("Kanal \(channel.channel_number)")
-                            .font(.headline)
+                        Text("Kanal \(channel.channel_number)").font(.headline)
                         if let device = channel.device, !device.isEmpty {
-                            Text("·")
-                                .foregroundStyle(.secondary)
-                            Text(device)
-                                .font(.subheadline)
+                            Text("·").foregroundStyle(.secondary)
+                            Text(device).font(.subheadline)
                         }
                     }
                     HStack(spacing: 6) {
-                        Text(channel.addressDisplay)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        Text(channel.addressDisplay).font(.caption).foregroundStyle(.secondary)
                         if let color = channel.color, !color.isEmpty {
-                            Text(color)
-                                .font(.caption)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 1)
-                                .background(.tint.opacity(0.15))
-                                .clipShape(Capsule())
+                            Text(color).font(.caption)
+                                .padding(.horizontal, 6).padding(.vertical, 1)
+                                .background(.tint.opacity(0.15)).clipShape(Capsule())
                         }
                     }
                     if let desc = channel.description, !desc.isEmpty {
-                        Text(desc)
-                            .font(.callout)
-                            .foregroundStyle(.primary)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
+                        Text(desc).font(.callout).foregroundStyle(.primary)
+                            .padding(.horizontal, 8).padding(.vertical, 4)
                             .background(.tint.opacity(0.12))
                             .clipShape(RoundedRectangle(cornerRadius: 6))
                             .padding(.top, 4)
                     }
                 }
-
                 Spacer()
-
                 if !lightingMode {
-                    Image(systemName: "chevron.right")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
+                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
                 }
             }
         }

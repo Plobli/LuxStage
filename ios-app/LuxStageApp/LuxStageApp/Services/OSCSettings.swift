@@ -1,7 +1,7 @@
 import Foundation
 
-/// OSC settings stored per show in UserDefaults.
-/// Key: "osc_settings_{showId}"
+/// OSC settings stored per venue template in UserDefaults.
+/// Key: "osc_settings_template_{templateId}"
 struct OSCSettings: Codable {
     var host: String = ""
     var port: UInt16 = 8000
@@ -12,18 +12,18 @@ struct OSCSettings: Codable {
         template.replacingOccurrences(of: "{chan}", with: channel)
     }
 
-    static func load(showId: String) -> OSCSettings {
+    static func load(templateId: String) -> OSCSettings {
         guard
-            let data = UserDefaults.standard.data(forKey: key(showId)),
+            let data = UserDefaults.standard.data(forKey: key(templateId)),
             let settings = try? JSONDecoder().decode(OSCSettings.self, from: data)
         else { return OSCSettings() }
         return settings
     }
 
-    func save(showId: String) {
+    func save(templateId: String) {
         guard let data = try? JSONEncoder().encode(self) else { return }
-        UserDefaults.standard.set(data, forKey: OSCSettings.key(showId))
+        UserDefaults.standard.set(data, forKey: OSCSettings.key(templateId))
     }
 
-    private static func key(_ showId: String) -> String { "osc_settings_\(showId)" }
+    private static func key(_ templateId: String) -> String { "osc_settings_template_\(templateId)" }
 }

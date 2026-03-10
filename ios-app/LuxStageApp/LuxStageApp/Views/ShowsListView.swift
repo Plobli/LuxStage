@@ -25,7 +25,7 @@ struct ShowsListView: View {
                 } else {
                     List {
                         ForEach(shows) { show in
-                            NavigationLink(destination: ShowDetailView(showId: show.id)) {
+                            NavigationLink(destination: ShowContainerView(showId: show.id)) {
                                 ShowRow(show: show)
                             }
                         }

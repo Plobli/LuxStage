@@ -24,6 +24,10 @@ struct ShowDetailView: View {
     // Einleucht-Checks (localStorage equivalent via UserDefaults, 6h TTL)
     @State private var checks: Set<String> = []
 
+    // OSC
+    @State private var oscSettings = OSCSettings()
+    @State private var showOSCSettings = false
+
     var body: some View {
         Group {
             if loading {
@@ -36,13 +40,25 @@ struct ShowDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    lightingMode.toggle()
-                } label: {
-                    Label("Einleuchten", systemImage: lightingMode ? "lightbulb.fill" : "lightbulb")
-                        .foregroundStyle(lightingMode ? .yellow : .primary)
+                HStack {
+                    if lightingMode {
+                        Button {
+                            showOSCSettings = true
+                        } label: {
+                            Label("OSC", systemImage: "network")
+                        }
+                    }
+                    Button {
+                        lightingMode.toggle()
+                    } label: {
+                        Label("Einleuchten", systemImage: lightingMode ? "lightbulb.fill" : "lightbulb")
+                            .foregroundStyle(lightingMode ? .yellow : .primary)
+                    }
                 }
             }
+        }
+        .sheet(isPresented: $showOSCSettings) {
+            OSCSettingsSheet(settings: $oscSettings, showId: showId)
         }
         .task { await load() }
         .alert("Fehler", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
@@ -162,7 +178,7 @@ struct ShowDetailView: View {
                         isChecked: checks.contains(ch.id)
                     ) {
                         if lightingMode {
-                            toggleCheck(ch.id)
+                            oscToggle(ch)
                         } else {
                             editingChannel = ch
                         }
@@ -232,6 +248,7 @@ struct ShowDetailView: View {
             }
 
             loadChecks()
+            oscSettings = OSCSettings.load(showId: showId)
         } catch {
             self.error = error.localizedDescription
         }
@@ -293,6 +310,30 @@ struct ShowDetailView: View {
     private func toggleCheck(_ id: String) {
         if checks.contains(id) { checks.remove(id) } else { checks.insert(id) }
         saveChecks()
+    }
+
+    // MARK: - OSC
+
+    /// Toggle: abgehakt = Lampe war AUS → Full senden + abhaken entfernen
+    ///         nicht abgehakt = Lampe ist AN → Out senden + abhaken
+    private func oscToggle(_ channel: Channel) {
+        let isChecked = checks.contains(channel.id)
+        if isChecked {
+            // War abgehakt (AUS) → wieder einschalten
+            sendOSC(oscSettings.fullCommand, channel: channel.channel_number)
+            checks.remove(channel.id)
+        } else {
+            // War an → ausschalten + abhaken
+            sendOSC(oscSettings.outCommand, channel: channel.channel_number)
+            checks.insert(channel.id)
+        }
+        saveChecks()
+    }
+
+    private func sendOSC(_ template: String, channel: String) {
+        guard !oscSettings.host.isEmpty else { return }
+        let address = oscSettings.address(for: template, channel: channel)
+        OSCClient.shared.send(address: address, host: oscSettings.host, port: oscSettings.port)
     }
 }
 

@@ -3,13 +3,13 @@ import WebKit
 
 struct ShowDetailView: View {
     let showId: String
-    @Binding var oscSettings: OSCSettings
     @Binding var checks: Set<String>
     let lightingMode: Bool
 
     @Environment(PocketBaseClient.self) private var pb
 
     @State private var show: Show?
+    @State private var oscSettings = OSCSettings()
     @State private var channels: [Channel] = []
     @State private var customFields: [TemplateCustomField] = []
     @State private var loading = true
@@ -152,7 +152,10 @@ struct ShowDetailView: View {
             async let chs = pb.fetchChannels(showId: showId)
             let (fs, fc) = try await (s, chs)
             show = fs; channels = fc
-            if let tid = fs.template { customFields = (try? await pb.fetchTemplateCustomFields(templateId: tid)) ?? [] }
+            if let tid = fs.template {
+                customFields = (try? await pb.fetchTemplateCustomFields(templateId: tid)) ?? []
+                oscSettings = OSCSettings.load(templateId: tid)
+            }
             if let raw = fs.custom_field_values?.value as? [String: Any] {
                 customValues = raw.compactMapValues { $0 as? String }
                 aufbauText = customValues["Aufbau"] ?? ""

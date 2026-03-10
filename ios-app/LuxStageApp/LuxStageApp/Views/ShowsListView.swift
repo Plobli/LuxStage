@@ -10,6 +10,17 @@ struct ShowsListView: View {
     @State private var showNewSheet = false
     @State private var templates: [VenueTemplate] = []
 
+    private var groupedShows: [(venue: String, shows: [Show])] {
+        var groups: [(String, [Show])] = []
+        var seen: [String: Int] = [:]
+        for show in shows {
+            let venue = show.venueNameDisplay
+            if let idx = seen[venue] { groups[idx].1.append(show) }
+            else { seen[venue] = groups.count; groups.append((venue, [show])) }
+        }
+        return groups.map { (venue: $0.0, shows: $0.1) }
+    }
+
     var body: some View {
         NavigationStack {
             Group {
@@ -24,9 +35,13 @@ struct ShowsListView: View {
                     )
                 } else {
                     List {
-                        ForEach(shows) { show in
-                            NavigationLink(destination: ShowContainerView(showId: show.id)) {
-                                ShowRow(show: show)
+                        ForEach(groupedShows, id: \.venue) { group in
+                            Section(group.venue) {
+                                ForEach(group.shows) { show in
+                                    NavigationLink(destination: ShowContainerView(showId: show.id)) {
+                                        ShowRow(show: show)
+                                    }
+                                }
                             }
                         }
                     }
@@ -111,9 +126,22 @@ struct NewShowSheet: View {
     @State private var name = ""
     @State private var date = Date()
     @State private var hasDate = false
+    @State private var selectedVenue: String = ""
     @State private var selectedTemplate: VenueTemplate?
     @State private var saving = false
     @State private var error: String?
+
+    private var venues: [String] {
+        var seen = Set<String>()
+        return templates.compactMap { t in
+            seen.insert(t.venue_name).inserted ? t.venue_name : nil
+        }.sorted()
+    }
+
+    private var filteredTemplates: [VenueTemplate] {
+        guard !selectedVenue.isEmpty else { return templates }
+        return templates.filter { $0.venue_name == selectedVenue }
+    }
 
     var body: some View {
         NavigationStack {
@@ -125,16 +153,31 @@ struct NewShowSheet: View {
                         DatePicker("Datum", selection: $date, displayedComponents: .date)
                     }
                 }
+
                 if !templates.isEmpty {
-                    Section("Vorlage") {
+                    Section("Bühne & Vorlage") {
+                        Picker("Bühne", selection: $selectedVenue) {
+                            Text("Keine Bühne").tag("")
+                            ForEach(venues, id: \.self) { v in
+                                Text(v).tag(v)
+                            }
+                        }
+                        .onChange(of: selectedVenue) { _, _ in
+                            if let t = selectedTemplate, !filteredTemplates.contains(t) {
+                                selectedTemplate = nil
+                            }
+                        }
+
                         Picker("Vorlage", selection: $selectedTemplate) {
                             Text("Keine Vorlage").tag(Optional<VenueTemplate>.none)
-                            ForEach(templates) { t in
+                            ForEach(filteredTemplates) { t in
                                 Text(t.name).tag(Optional(t))
                             }
                         }
+                        .disabled(filteredTemplates.isEmpty)
                     }
                 }
+
                 if let error {
                     Section { Text(error).foregroundStyle(.red).font(.footnote) }
                 }

@@ -17,27 +17,27 @@
     </div>
 
     <div v-else class="show-list">
-      <div
-        v-for="show in shows"
-        :key="show.id"
-        class="show-card"
-        @click="router.push(`/shows/${show.id}`)"
-      >
-        <div class="show-card-main">
-          <span class="show-name">{{ show.name }}</span>
-          <span class="show-date">{{ formatDate(show.date) }}</span>
-        </div>
-        <div class="show-card-meta">
-          <span v-if="show.expand?.template" class="tag">{{ show.expand.template.venue_name }}</span>
-        </div>
-        <div class="show-card-actions" @click.stop>
-          <button v-if="!showArchived" class="btn-ghost-sm" @click="archive(show.id)">
-            {{ $t('show.archive') }}
-          </button>
-          <button v-else class="btn-ghost-sm" @click="unarchive(show.id)">
-            {{ $t('show.unarchive') }}
-          </button>
-          <button class="btn-danger-sm" @click="confirmDelete(show)">{{ $t('show.delete') }}</button>
+      <div v-for="group in groupedShows" :key="group.venue" class="show-group">
+        <h3 class="show-group-title">{{ group.venue }}</h3>
+        <div
+          v-for="show in group.shows"
+          :key="show.id"
+          class="show-card"
+          @click="router.push(`/shows/${show.id}`)"
+        >
+          <div class="show-card-main">
+            <span class="show-name">{{ show.name }}</span>
+            <span class="show-date">{{ formatDate(show.date) }}</span>
+          </div>
+          <div class="show-card-actions" @click.stop>
+            <button v-if="!showArchived" class="btn-ghost-sm" @click="archive(show.id)">
+              {{ $t('show.archive') }}
+            </button>
+            <button v-else class="btn-ghost-sm" @click="unarchive(show.id)">
+              {{ $t('show.unarchive') }}
+            </button>
+            <button class="btn-danger-sm" @click="confirmDelete(show)">{{ $t('show.delete') }}</button>
+          </div>
         </div>
       </div>
     </div>
@@ -58,11 +58,18 @@
           <input v-model="form.date" type="date" />
         </div>
         <div class="field">
+          <label>Bühne</label>
+          <select v-model="form.venue" @change="form.template = ''">
+            <option value="">Keine Bühne</option>
+            <option v-for="v in venues" :key="v" :value="v">{{ v }}</option>
+          </select>
+        </div>
+        <div class="field">
           <label>{{ $t('show.template') }}</label>
-          <select v-model="form.template">
+          <select v-model="form.template" :disabled="!form.venue && filteredTemplates.length === 0">
             <option value="">{{ $t('show.template.none') }}</option>
-            <option v-for="t in templates" :key="t.id" :value="t.id">
-              {{ t.venue_name }} — {{ t.name }}
+            <option v-for="t in filteredTemplates" :key="t.id" :value="t.id">
+              {{ t.name }}
             </option>
           </select>
         </div>
@@ -125,8 +132,34 @@ const createDialog = ref(null)
 const deleteDialog = ref(null)
 const pendingDelete = ref(null)
 
-const form = ref({ name: '', date: '', template: '', custom_field_values: {} })
+const form = ref({ name: '', date: '', venue: '', template: '', custom_field_values: {} })
 const templateCustomFields = ref([])
+
+// Unique venue names sorted
+const venues = computed(() => {
+  const seen = new Set()
+  return templates.value
+    .map(t => t.venue_name)
+    .filter(v => v && !seen.has(v) && seen.add(v))
+    .sort()
+})
+
+// Templates filtered by selected venue
+const filteredTemplates = computed(() => {
+  if (!form.value.venue) return templates.value
+  return templates.value.filter(t => t.venue_name === form.value.venue)
+})
+
+// Shows grouped by venue_name
+const groupedShows = computed(() => {
+  const groups = new Map()
+  for (const show of shows.value) {
+    const venue = show.expand?.template?.venue_name ?? 'Ohne Bühne'
+    if (!groups.has(venue)) groups.set(venue, [])
+    groups.get(venue).push(show)
+  }
+  return Array.from(groups.entries()).map(([venue, s]) => ({ venue, shows: s }))
+})
 
 const selectedTemplateFields = computed(() => {
   return form.value.template ? templateCustomFields.value : []
@@ -158,7 +191,7 @@ async function loadTemplates() {
 }
 
 function openCreateDialog() {
-  form.value = { name: '', date: '', template: '', custom_field_values: {} }
+  form.value = { name: '', date: '', venue: '', template: '', custom_field_values: {} }
   createDialog.value.showModal()
 }
 
@@ -173,7 +206,6 @@ async function handleCreate() {
       archived: false,
     })
 
-    // Copy template channels into show channels
     if (form.value.template) {
       const { fetchTemplateChannels } = await import('../api/templates.js')
       const tplChannels = await fetchTemplateChannels(form.value.template)

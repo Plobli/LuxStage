@@ -2,6 +2,10 @@ import Foundation
 
 // MARK: - Show
 
+struct ShowExpand: Codable, Hashable {
+    var template: VenueTemplate?
+}
+
 struct Show: Identifiable, Codable, Hashable {
     var id: String
     var name: String
@@ -11,6 +15,9 @@ struct Show: Identifiable, Codable, Hashable {
     var custom_field_values: AnyCodable?
     var created: String
     var updated: String
+    var expand: ShowExpand?
+
+    var venueNameDisplay: String { expand?.template?.venue_name ?? "Ohne Bühne" }
 
     var customValues: [String: String] {
         guard let raw = custom_field_values?.value as? [String: Any] else { return [:] }

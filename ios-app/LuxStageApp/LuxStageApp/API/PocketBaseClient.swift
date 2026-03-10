@@ -93,7 +93,7 @@ final class PocketBaseClient {
         let filter = "archived=\(archived ? "true" : "false")"
         let data: Data = try await request(
             method: "GET",
-            path: "/api/collections/shows/records?filter=\(encoded(filter))&sort=-created&perPage=200"
+            path: "/api/collections/shows/records?filter=\(encoded(filter))&sort=-created&perPage=200&expand=template"
         )
         return try decode(PBList<Show>.self, from: data).items
     }

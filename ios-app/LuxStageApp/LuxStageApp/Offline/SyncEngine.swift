@@ -120,29 +120,37 @@ final class SyncEngine {
 
     // MARK: - Offline-aware data access
 
-    /// Lädt Shows: erst aus Cache, dann im Hintergrund vom Server
-    func fetchShows(archived: Bool) async throws -> [Show] {
-        let cached = store.loadShows(archived: archived)
-
+    /// Lädt Shows: bei Online vom Server, sonst aus Cache. Wirft nie einen Fehler.
+    func fetchShows(archived: Bool) async -> [Show] {
         if isOnline {
-            let fresh = try await pb.fetchShows(archived: archived)
-            store.saveShows(fresh)
-            return fresh
+            if let fresh = try? await pb.fetchShows(archived: archived) {
+                store.saveShows(fresh)
+                return fresh
+            }
         }
-
-        return cached
+        return store.loadShows(archived: archived)
     }
 
-    func fetchChannels(showId: String) async throws -> [Channel] {
-        let cached = store.loadChannels(showId: showId)
-
+    func fetchChannels(showId: String) async -> [Channel] {
         if isOnline {
-            let fresh = try await pb.fetchChannels(showId: showId)
-            store.saveChannels(fresh, showId: showId)
-            return fresh
+            if let fresh = try? await pb.fetchChannels(showId: showId) {
+                store.saveChannels(fresh, showId: showId)
+                return fresh
+            }
         }
+        return store.loadChannels(showId: showId)
+    }
 
-        return cached
+    /// Lädt eine einzelne Show: bei Online vom Server, sonst aus Cache.
+    func fetchShow(id: String) async -> Show? {
+        if isOnline {
+            if let fresh = try? await pb.fetchShow(id: id) {
+                store.saveShow(fresh)
+                return fresh
+            }
+        }
+        return store.loadShows(archived: false).first(where: { $0.id == id })
+            ?? store.loadShows(archived: true).first(where: { $0.id == id })
     }
 
     // MARK: - Offline-aware mutations

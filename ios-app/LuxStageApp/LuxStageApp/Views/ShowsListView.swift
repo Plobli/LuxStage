@@ -100,14 +100,10 @@ struct ShowsListView: View {
 
     private func load() async {
         loading = true
-        do {
-            async let s = sync.fetchShows(archived: showArchived)
-            async let t = pb.fetchTemplates()
-            shows = try await s
-            templates = (try? await t) ?? []
-        } catch {
-            self.error = error.localizedDescription
-        }
+        async let s = sync.fetchShows(archived: showArchived)
+        async let t = pb.fetchTemplates()
+        shows = await s
+        templates = (try? await t) ?? []
         loading = false
     }
 }

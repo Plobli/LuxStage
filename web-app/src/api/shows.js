@@ -27,7 +27,7 @@ export async function createShow(data) {
 }
 
 export async function updateShow(id, data) {
-  return await pb.collection('shows').update(id, data)
+  return await pb.collection('shows').update(id, data, { requestKey: null })
 }
 
 export async function archiveShow(id) {

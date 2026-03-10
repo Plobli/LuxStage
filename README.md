@@ -5,7 +5,7 @@ Lighting plan management for theatre productions.
 ## Project Structure
 
 ```
-einleuchtplan-v2/
+LuxStage/
   ios-app/        Native SwiftUI App (offline-first, iPad/iPhone, App Store)
   web-app/        Vue.js 3 web app (preparation tool, runs in browser)
   pocketbase/     Backend setup & documentation (single binary)

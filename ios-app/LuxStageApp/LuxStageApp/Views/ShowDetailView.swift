@@ -28,6 +28,7 @@ struct ShowDetailView: View {
     @State private var oscSettings = OSCSettings()
     @State private var showOSCSettings = false
 
+
     var body: some View {
         Group {
             if loading {
@@ -82,6 +83,11 @@ struct ShowDetailView: View {
         List {
             // Aufbau
             aufbauSection
+
+                    // Fotos (nicht im Einleuchtmodus)
+            if !lightingMode {
+                PhotosSection(showId: showId)
+            }
 
             // Custom Fields
             if !allCustomFields.isEmpty {

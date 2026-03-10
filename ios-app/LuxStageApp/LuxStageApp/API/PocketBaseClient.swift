@@ -172,6 +172,49 @@ final class PocketBaseClient {
         return try decode(PBList<TemplateCustomField>.self, from: data).items
     }
 
+    // MARK: - Photos
+
+    func fetchPhotos(showId: String) async throws -> [Photo] {
+        let filter = "show='\(showId)'"
+        let data: Data = try await request(
+            method: "GET",
+            path: "/api/collections/photos/records?filter=\(encoded(filter))&sort=-created&perPage=200"
+        )
+        return try decode(PBList<Photo>.self, from: data).items
+    }
+
+    func uploadPhoto(showId: String, imageData: Data, filename: String, caption: String = "") async throws -> Photo {
+        guard let url = URL(string: baseURL + "/api/collections/photos/records") else { throw PBError.invalidURL }
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        if let token { req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+
+        let boundary = UUID().uuidString
+        req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+
+        var body = Data()
+        func field(_ name: String, _ value: String) {
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n".data(using: .utf8)!)
+            body.append("\(value)\r\n".data(using: .utf8)!)
+        }
+        field("show", showId)
+        if !caption.isEmpty { field("caption", caption) }
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+        body.append(imageData)
+        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+        req.httpBody = body
+
+        let data = try await perform(req)
+        return try decode(Photo.self, from: data)
+    }
+
+    func deletePhoto(id: String) async throws {
+        let _: Data = try await request(method: "DELETE", path: "/api/collections/photos/records/\(id)")
+    }
+
     // MARK: - Photo URL helpers
 
     func thumbURL(collectionId: String = "photos", recordId: String, filename: String) -> URL? {

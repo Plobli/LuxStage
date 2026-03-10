@@ -70,6 +70,17 @@ struct TemplateCustomField: Identifiable, Codable, Hashable {
     var position: Int?
 }
 
+// MARK: - Photo
+
+struct Photo: Identifiable, Codable, Hashable {
+    var id: String
+    var show: String
+    var file: String
+    var caption: String?
+    var created: String
+    var collectionId: String
+}
+
 // MARK: - Filter Preset
 
 struct FilterPreset: Identifiable, Codable, Hashable {

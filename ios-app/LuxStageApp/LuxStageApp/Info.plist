@@ -21,6 +21,10 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>LuxStage lädt Fotos zur Show hoch.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>LuxStage kann Fotos direkt mit der Kamera aufnehmen.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

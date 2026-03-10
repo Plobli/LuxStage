@@ -97,11 +97,16 @@ final class SyncEngine {
         store.saveShows(shows)
 
         // Channels für alle aktiven Shows aktualisieren
-        await withTaskGroup(of: Void.self) { group in
+        await withTaskGroup(of: (String, [Channel]?).self) { group in
             for show in shows {
                 group.addTask {
-                    guard let channels = try? await self.pb.fetchChannels(showId: show.id) else { return }
-                    self.store.saveChannels(channels, showId: show.id)
+                    let channels = try? await self.pb.fetchChannels(showId: show.id)
+                    return (show.id, channels)
+                }
+            }
+            for await (showId, channels) in group {
+                if let channels {
+                    self.store.saveChannels(channels, showId: showId)
                 }
             }
         }
@@ -138,7 +143,7 @@ final class SyncEngine {
 
     func updateChannel(id: String, fields: [String: Any?], showId: String) async throws -> Channel {
         // Sofort lokal anwenden
-        var channels = store.loadChannels(showId: showId)
+        let channels = store.loadChannels(showId: showId)
         guard var ch = channels.first(where: { $0.id == id }) else {
             throw PBError.httpError(404, "Channel not found in cache")
         }
@@ -203,7 +208,7 @@ final class SyncEngine {
         } else {
             store.enqueue(PendingOperation(type: .updateShow, recordId: id, showId: showId, payload: fields))
             // Lokal aktualisieren (best-effort)
-            var shows = store.loadShows(archived: false) + store.loadShows(archived: true)
+            let shows = store.loadShows(archived: false) + store.loadShows(archived: true)
             if var show = shows.first(where: { $0.id == id }) {
                 // custom_field_values updaten
                 if let cfv = fields["custom_field_values"] as? [String: Any] {

@@ -16,10 +16,10 @@ struct SyncStatusButton: View {
                     .foregroundStyle(.red)
             case .done:
                 Image(systemName: sync.isOnline ? "checkmark.icloud" : "icloud.slash")
-                    .foregroundStyle(sync.isOnline ? .secondary : .orange)
+                    .foregroundStyle(sync.isOnline ? Color.secondary : Color.orange)
             case .idle:
                 Image(systemName: sync.isOnline ? "arrow.trianglehead.2.clockwise.rotate.90.icloud" : "icloud.slash")
-                    .foregroundStyle(sync.isOnline ? .secondary : .orange)
+                    .foregroundStyle(sync.isOnline ? Color.secondary : Color.orange)
             }
         }
         .disabled(!sync.isOnline || sync.state == .syncing)

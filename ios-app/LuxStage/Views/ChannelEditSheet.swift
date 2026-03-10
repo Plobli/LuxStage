@@ -1,0 +1,130 @@
+import SwiftUI
+
+struct ChannelEditSheet: View {
+    let channel: Channel
+    let onSave: (Channel) -> Void
+    let onDelete: (String) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var pb: PocketBaseClient
+
+    @State private var device: String
+    @State private var addressRaw: String
+    @State private var color: String
+    @State private var category: String
+    @State private var description: String
+    @State private var saving = false
+    @State private var confirmDelete = false
+    @State private var error: String?
+
+    init(channel: Channel, onSave: @escaping (Channel) -> Void, onDelete: @escaping (String) -> Void) {
+        self.channel = channel
+        self.onSave = onSave
+        self.onDelete = onDelete
+        _device = State(initialValue: channel.device ?? "")
+        _addressRaw = State(initialValue: channel.addressDisplay == "—" ? "" : channel.addressDisplay)
+        _color = State(initialValue: channel.color ?? "")
+        _category = State(initialValue: channel.category ?? "")
+        _description = State(initialValue: channel.description ?? "")
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Kanal \(channel.channel_number)") {
+                    LabeledContent("Adresse") {
+                        TextField("1/001", text: $addressRaw)
+                            .multilineTextAlignment(.trailing)
+                            .keyboardType(.numbersAndPunctuation)
+                    }
+                    LabeledContent("Gerät") {
+                        TextField("", text: $device)
+                            .multilineTextAlignment(.trailing)
+                    }
+                    LabeledContent("Kategorie") {
+                        TextField("", text: $category)
+                            .multilineTextAlignment(.trailing)
+                    }
+                    LabeledContent("Beschreibung") {
+                        TextField("", text: $description)
+                            .multilineTextAlignment(.trailing)
+                    }
+                }
+
+                Section("Farbe / Filter") {
+                    ColorPickerField(value: $color)
+                }
+
+                if let error {
+                    Section { Text(error).foregroundStyle(.red).font(.footnote) }
+                }
+
+                Section {
+                    Button("Kanal löschen", role: .destructive) {
+                        confirmDelete = true
+                    }
+                }
+            }
+            .navigationTitle("Kanal bearbeiten")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Abbrechen") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Speichern") { save() }
+                        .disabled(saving)
+                }
+            }
+            .confirmationDialog(
+                "Kanal \(channel.channel_number) wirklich löschen?",
+                isPresented: $confirmDelete,
+                titleVisibility: .visible
+            ) {
+                Button("Löschen", role: .destructive) { delete() }
+                Button("Abbrechen", role: .cancel) {}
+            }
+        }
+    }
+
+    private func parseAddress(_ s: String) -> (universe: Int?, dmx: Int?) {
+        let parts = s.split(separator: "/")
+        guard parts.count == 2 else { return (nil, nil) }
+        return (Int(parts[0]), Int(parts[1]))
+    }
+
+    private func save() {
+        saving = true
+        error = nil
+        let (universe, dmx) = parseAddress(addressRaw)
+        Task {
+            do {
+                let updated = try await pb.updateChannel(id: channel.id, fields: [
+                    "device": device.isEmpty ? nil : device,
+                    "color": color.isEmpty ? nil : color,
+                    "category": category.isEmpty ? nil : category,
+                    "description": description.isEmpty ? nil : description,
+                    "universe": universe,
+                    "dmx_address": dmx,
+                ])
+                onSave(updated)
+                dismiss()
+            } catch {
+                self.error = error.localizedDescription
+            }
+            saving = false
+        }
+    }
+
+    private func delete() {
+        Task {
+            do {
+                try await pb.deleteChannel(id: channel.id)
+                onDelete(channel.id)
+                dismiss()
+            } catch {
+                self.error = error.localizedDescription
+            }
+        }
+    }
+}

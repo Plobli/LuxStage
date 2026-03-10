@@ -8,11 +8,11 @@ export async function fetchChannels(showId) {
 }
 
 export async function updateChannel(id, data) {
-  return await pb.collection('channels').update(id, data)
+  return await pb.collection('channels').update(id, data, { requestKey: null })
 }
 
 export async function createChannel(showId, data) {
-  return await pb.collection('channels').create({ ...data, show: showId })
+  return await pb.collection('channels').create({ ...data, show: showId }, { requestKey: null })
 }
 
 export async function bulkCreateChannels(showId, channels) {

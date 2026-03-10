@@ -37,8 +37,8 @@
   "show.aufbau": "Setup",
   "show.aufbau.placeholder": "Setup notes, special conditions, remarks …",
 
-  "mode.lighting": "Lighting Mode",
-  "mode.preparation": "Preparation",
+  "mode.preparation": "Setup",
+  "mode.lighting": "Focus",
 
   "field.channel_number": "Channel",
   "field.universe": "Universe",

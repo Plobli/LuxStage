@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 
 // MARK: - Errors
 
@@ -22,13 +23,13 @@ enum PBError: LocalizedError {
 
 // MARK: - Client
 
-@MainActor
-final class PocketBaseClient: ObservableObject {
+@Observable
+final class PocketBaseClient {
 
     static let shared = PocketBaseClient()
 
-    @Published var isAuthenticated = false
-    @Published var currentUser: String? = nil  // user id
+    var isAuthenticated = false
+    var currentUser: String? = nil  // user id
 
     private(set) var token: String? {
         get { UserDefaults.standard.string(forKey: "pb_token") }

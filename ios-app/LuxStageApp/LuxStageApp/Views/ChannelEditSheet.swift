@@ -6,7 +6,7 @@ struct ChannelEditSheet: View {
     let onDelete: (String) -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var pb: PocketBaseClient
+    @Environment(PocketBaseClient.self) private var pb
 
     @State private var device: String
     @State private var addressRaw: String

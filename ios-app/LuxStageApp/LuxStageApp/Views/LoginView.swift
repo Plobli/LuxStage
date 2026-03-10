@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct LoginView: View {
-    @EnvironmentObject private var pb: PocketBaseClient
+    @Environment(PocketBaseClient.self) private var pb
 
     @State private var email = ""
     @State private var password = ""

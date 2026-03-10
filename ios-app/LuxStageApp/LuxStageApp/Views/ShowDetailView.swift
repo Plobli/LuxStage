@@ -1,9 +1,10 @@
 import SwiftUI
+import WebKit
 
 struct ShowDetailView: View {
     let showId: String
 
-    @EnvironmentObject private var pb: PocketBaseClient
+    @Environment(PocketBaseClient.self) private var pb
     @Environment(\.dismiss) private var dismiss
 
     @State private var show: Show?
@@ -76,22 +77,15 @@ struct ShowDetailView: View {
         }
         .searchable(text: $search, prompt: "Suchen …")
         .listStyle(.insetGrouped)
+        .refreshable { await reload() }
     }
 
     // MARK: - Aufbau Section
 
     private var aufbauSection: some View {
         Section("Aufbau") {
-            TextEditor(text: $aufbauText)
+            HTMLTextView(html: aufbauText)
                 .frame(minHeight: 80)
-                .onChange(of: aufbauText) { _, new in
-                    aufbauSaveTask?.cancel()
-                    aufbauSaveTask = Task {
-                        try? await Task.sleep(for: .milliseconds(600))
-                        guard !Task.isCancelled else { return }
-                        await saveCustomField("Aufbau", value: new)
-                    }
-                }
         }
     }
 
@@ -139,6 +133,9 @@ struct ShowDetailView: View {
                 ($0.description?.lowercased().contains(q) ?? false) ||
                 ($0.category?.lowercased().contains(q) ?? false)
             }
+        }
+        if lightingMode {
+            filtered = filtered.filter { !($0.description?.isEmpty ?? true) }
         }
         var groups: [(String, [Channel])] = []
         var seen: [String: Int] = [:]
@@ -193,6 +190,27 @@ struct ShowDetailView: View {
     }
 
     // MARK: - Data loading
+
+    // Pull-to-refresh: kein loading=true, damit die View nicht neu aufgebaut wird
+    private func reload() async {
+        do {
+            async let s = pb.fetchShow(id: showId)
+            async let chs = pb.fetchChannels(showId: showId)
+            let (fetchedShow, fetchedChannels) = try await (s, chs)
+            show = fetchedShow
+            channels = fetchedChannels
+            if let templateId = fetchedShow.template {
+                customFields = (try? await pb.fetchTemplateCustomFields(templateId: templateId)) ?? []
+            }
+            if let raw = fetchedShow.custom_field_values?.value as? [String: Any] {
+                customValues = raw.compactMapValues { $0 as? String }
+                aufbauText = customValues["Aufbau"] ?? ""
+            }
+            loadChecks()
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
 
     private func load() async {
         loading = true
@@ -295,7 +313,7 @@ private struct ChannelRow: View {
                         .font(.title3)
                 }
 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 3) {
                     HStack {
                         Text("Kanal \(channel.channel_number)")
                             .font(.headline)
@@ -321,8 +339,13 @@ private struct ChannelRow: View {
                     }
                     if let desc = channel.description, !desc.isEmpty {
                         Text(desc)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .font(.callout)
+                            .foregroundStyle(.primary)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(.tint.opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                            .padding(.top, 4)
                     }
                 }
 

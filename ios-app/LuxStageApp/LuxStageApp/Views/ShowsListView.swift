@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ShowsListView: View {
-    @EnvironmentObject private var pb: PocketBaseClient
+    @Environment(PocketBaseClient.self) private var pb
 
     @State private var shows: [Show] = []
     @State private var showArchived = false
@@ -106,7 +106,7 @@ struct NewShowSheet: View {
     let onCreated: (Show) -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var pb: PocketBaseClient
+    @Environment(PocketBaseClient.self) private var pb
 
     @State private var name = ""
     @State private var date = Date()

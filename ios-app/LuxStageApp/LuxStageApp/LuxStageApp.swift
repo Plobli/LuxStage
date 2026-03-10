@@ -2,16 +2,16 @@ import SwiftUI
 
 @main
 struct LuxStageApp: App {
-    @StateObject private var pb = PocketBaseClient.shared
+    @State private var pb = PocketBaseClient.shared
 
     var body: some Scene {
         WindowGroup {
             if pb.isAuthenticated {
                 MainTabView()
-                    .environmentObject(pb)
+                    .environment(pb)
             } else {
                 LoginView()
-                    .environmentObject(pb)
+                    .environment(pb)
             }
         }
     }

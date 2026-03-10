@@ -44,7 +44,12 @@ final class PocketBaseClient {
         set { UserDefaults.standard.set(newValue, forKey: "pb_server_url") }
     }
 
-    private let session = URLSession.shared
+    private let session: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 6
+        config.timeoutIntervalForResource = 6
+        return URLSession(configuration: config)
+    }()
     private let decoder: JSONDecoder = {
         let d = JSONDecoder()
         return d

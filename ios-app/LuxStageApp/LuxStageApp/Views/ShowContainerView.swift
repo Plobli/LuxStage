@@ -4,32 +4,26 @@ struct ShowContainerView: View {
     let showId: String
 
     @Environment(PocketBaseClient.self) private var pb
+    @Environment(AppLocale.self) private var locale
     @State private var show: Show?
     @State private var checks: Set<String> = []
-    @State private var lightingMode = false
 
     var body: some View {
-        ShowDetailView(showId: showId, checks: $checks, lightingMode: lightingMode)
-            .navigationTitle(show?.name ?? "Show")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Picker("Modus", selection: $lightingMode) {
-                        Text("Show").tag(false)
-                        Text("Einleuchten").tag(true)
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 220)
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    NavigationLink {
-                        PhotosTabView(showId: showId)
-                    } label: {
-                        Image(systemName: "photo.on.rectangle")
-                    }
-                }
+        TabView {
+            Tab(locale.t("show.aufbau"), systemImage: "wrench.and.screwdriver") {
+                ShowDetailView(showId: showId, checks: $checks, lightingMode: false)
             }
-            .task { await loadShow() }
+            Tab(locale.t("mode.lighting"), systemImage: "lightbulb") {
+                ShowDetailView(showId: showId, checks: $checks, lightingMode: true)
+            }
+            Tab(locale.t("show.photos"), systemImage: "photo.on.rectangle") {
+                PhotosTabView(showId: showId)
+            }
+        }
+        .navigationTitle(show?.name ?? "")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .tabBar)  // globale TabBar ausblenden
+        .task { await loadShow() }
     }
 
     private func loadShow() async {
@@ -44,4 +38,12 @@ struct ShowContainerView: View {
             checks = Set(ids)
         }
     }
+}
+
+#Preview {
+    NavigationStack {
+        ShowContainerView(showId: "preview")
+    }
+    .environment(PocketBaseClient.shared)
+    .environment(AppLocale.shared)
 }

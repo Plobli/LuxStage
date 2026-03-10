@@ -1,7 +1,9 @@
 import SwiftUI
+import UIKit
 
 struct SettingsView: View {
     @Environment(PocketBaseClient.self) private var pb
+    @Environment(AppLocale.self) private var locale
     @State private var serverURL = ""
     @State private var templates: [VenueTemplate] = []
     @State private var oscByTemplate: [String: OSCSettings] = [:]
@@ -14,11 +16,24 @@ struct SettingsView: View {
                         .keyboardType(.URL)
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
+                        .submitLabel(.done)
                 } header: {
-                    Text("Server")
+                    Text(locale.t("settings.server"))
                 } footer: {
                     Text("z.B. http://192.168.1.100:8090")
                         .font(.caption2)
+                }
+
+                Section {
+                    Picker(locale.t("settings.language"), selection: Binding(
+                        get: { locale.language },
+                        set: { locale.setLanguage($0) }
+                    )) {
+                        Text(locale.t("settings.language.de")).tag("de")
+                        Text(locale.t("settings.language.en")).tag("en")
+                    }
+                } header: {
+                    Text(locale.t("settings.language"))
                 }
 
                 ForEach(templates) { template in
@@ -26,14 +41,20 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    Button("Abmelden", role: .destructive) {
+                    Button(locale.t("settings.logout"), role: .destructive) {
                         pb.logout()
                     }
                 }
             }
-            .navigationTitle("Einstellungen")
+            .navigationTitle(locale.t("nav.settings"))
             .onAppear { serverURL = pb.baseURL; loadTemplates() }
             .onChange(of: serverURL) { _, new in pb.baseURL = new }
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Fertig") { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) }
+                }
+            }
         }
     }
 
@@ -59,48 +80,48 @@ struct SettingsView: View {
 private struct OSCTemplateSection: View {
     let template: VenueTemplate
     @Binding var settings: OSCSettings
-    @State private var saved = false
+    @State private var portText: String = ""
 
     var body: some View {
         Section {
-            TextField("IP-Adresse", text: $settings.host)
-                .keyboardType(.numbersAndPunctuation)
-                .autocorrectionDisabled()
-                .textInputAutocapitalization(.never)
-            HStack {
-                Text("Port")
-                Spacer()
-                TextField("8000", value: $settings.port, format: .number)
+            LabeledContent("IP-Adresse") {
+                TextField("192.168.1.100", text: $settings.host)
+                    .keyboardType(.numbersAndPunctuation)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+                    .submitLabel(.done)
+                    .multilineTextAlignment(.trailing)
+            }
+            LabeledContent("Port") {
+                TextField("8000", text: $portText)
                     .keyboardType(.numberPad)
                     .multilineTextAlignment(.trailing)
                     .frame(width: 80)
             }
             LabeledContent("Full") {
-                TextField("/etc/chan/{chan}/full", text: $settings.fullCommand)
+                TextField("/eos/chan/{chan}/full", text: $settings.fullCommand)
                     .multilineTextAlignment(.trailing)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
+                    .submitLabel(.done)
             }
             LabeledContent("Out") {
-                TextField("/etc/chan/{chan}/out", text: $settings.outCommand)
+                TextField("/eos/chan/{chan}/out", text: $settings.outCommand)
                     .multilineTextAlignment(.trailing)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
+                    .submitLabel(.done)
             }
-            Button(saved ? "Gespeichert ✓" : "Speichern") {
-                settings.save(templateId: template.id)
-                saved = true
-            }
-            .disabled(saved)
         } header: {
             Text("OSC – \(template.name)")
         } footer: {
-            Text("Gilt für alle Shows an dieser Bühne.")
+            Text("Wird automatisch gespeichert.")
                 .font(.caption2)
         }
-        .onChange(of: settings.host)        { _, _ in saved = false }
-        .onChange(of: settings.port)        { _, _ in saved = false }
-        .onChange(of: settings.fullCommand) { _, _ in saved = false }
-        .onChange(of: settings.outCommand)  { _, _ in saved = false }
+        .onAppear { portText = String(settings.port) }
+        .onChange(of: portText) { _, new in
+            if let val = UInt16(new.filter(\.isNumber)) { settings.port = val }
+        }
+        .onChange(of: settings) { _, _ in settings.save(templateId: template.id) }
     }
 }

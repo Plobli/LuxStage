@@ -2,11 +2,11 @@ import Foundation
 
 /// OSC settings stored per venue template in UserDefaults.
 /// Key: "osc_settings_template_{templateId}"
-struct OSCSettings: Codable {
+struct OSCSettings: Codable, Equatable {
     var host: String = ""
     var port: UInt16 = 8000
-    var fullCommand: String = "/etc/chan/{chan}/full"
-    var outCommand: String = "/etc/chan/{chan}/out"
+    var fullCommand: String = "/eos/chan/{chan}/full"
+    var outCommand: String = "/eos/chan/{chan}/out"
 
     func address(for template: String, channel: String) -> String {
         template.replacingOccurrences(of: "{chan}", with: channel)

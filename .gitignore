@@ -17,3 +17,6 @@ ios-app/.build/
 
 # Claude Code
 .claude/
+
+# Local dev scripts
+start.sh

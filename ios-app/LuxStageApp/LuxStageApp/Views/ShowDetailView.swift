@@ -7,11 +7,12 @@ struct ShowDetailView: View {
     let lightingMode: Bool
 
     @Environment(PocketBaseClient.self) private var pb
+    @Environment(AppLocale.self) private var locale
 
     @State private var show: Show?
     @State private var oscSettings = OSCSettings()
     @State private var channels: [Channel] = []
-    @State private var customFields: [TemplateCustomField] = []
+    @State private var customFields: [CustomFieldEntry] = []
     @State private var loading = true
     @State private var error: String?
     @State private var search = ""
@@ -47,11 +48,13 @@ struct ShowDetailView: View {
 
     private var content: some View {
         List {
-            aufbauSection
-            if !allCustomFields.isEmpty { customFieldsSection }
+            if !lightingMode {
+                aufbauSection
+                if !allCustomFields.isEmpty { customFieldsSection }
+            }
             channelSection
         }
-        .searchable(text: $search, prompt: "Suchen …")
+        .searchable(text: $search, prompt: locale.t("channel.search"))
         .listStyle(.insetGrouped)
         .refreshable { await reload() }
     }
@@ -59,21 +62,21 @@ struct ShowDetailView: View {
     // MARK: - Aufbau Section
 
     private var aufbauSection: some View {
-        Section("Aufbau") {
+        Section(locale.t("show.aufbau")) {
             HTMLTextView(html: aufbauText).frame(minHeight: 80)
         }
     }
 
     // MARK: - Custom Fields Section
 
-    private var allCustomFields: [TemplateCustomField] {
-        let hidden = (show?.custom_field_values?.value as? [String: Any])?
-            .compactMapValues { $0 as? [String] }["__hidden__"] ?? []
+    private var allCustomFields: [CustomFieldEntry] {
+        let raw = show?.custom_field_values?.value as? [String: Any] ?? [:]
+        let hidden = (raw["__hidden__"] as? [String]) ?? []
         return customFields.filter { !hidden.contains($0.field_name) }
     }
 
     private var customFieldsSection: some View {
-        Section("Felder") {
+        Section(locale.t("template.custom_fields")) {
             ForEach(allCustomFields) { field in
                 LabeledContent(field.field_name) {
                     TextField(field.unit_hint ?? "", text: Binding(
@@ -125,21 +128,35 @@ struct ShowDetailView: View {
         ForEach(filteredGrouped, id: \.category) { group in
             Section {
                 ForEach(group.channels) { ch in
-                    ChannelRow(channel: ch, lightingMode: lightingMode, isChecked: checks.contains(ch.id)) {
-                        if lightingMode { oscToggle(ch) } else { editingChannel = ch }
+                    if lightingMode {
+                        LightingChannelRow(
+                            channel: ch,
+                            isChecked: checks.contains(ch.id),
+                            onOSCToggle: { isOn in oscSend(ch, isOn: isOn) },
+                            onCheckToggle: { toggleCheck(ch) }
+                        )
+                    } else {
+                        ChannelRow(channel: ch) {
+                            editingChannel = ch
+                        }
                     }
                 }
             } header: {
                 HStack {
-                    Text(group.category.isEmpty ? "Ohne Kategorie" : group.category)
+                    Text(group.category.isEmpty ? locale.t("channel.no_category") : group.category)
                     Spacer()
-                    Text("\(group.channels.count)").foregroundStyle(.secondary)
+                    if lightingMode {
+                        let done = group.channels.filter { checks.contains($0.id) }.count
+                        Text("\(done)/\(group.channels.count)").foregroundStyle(.secondary)
+                    } else {
+                        Text("\(group.channels.count)").foregroundStyle(.secondary)
+                    }
                 }
             }
         }
         if !lightingMode {
             Section {
-                Button { } label: { Label("Kanal hinzufügen", systemImage: "plus") }
+                Button { } label: { Label(locale.t("channel.add"), systemImage: "plus") }
             }
         }
     }
@@ -151,14 +168,31 @@ struct ShowDetailView: View {
             async let s = pb.fetchShow(id: showId)
             async let chs = pb.fetchChannels(showId: showId)
             let (fs, fc) = try await (s, chs)
-            show = fs; channels = fc
+            show = fs
+            channels = fc
+            let raw = fs.custom_field_values?.value as? [String: Any] ?? [:]
+            customValues = raw.compactMapValues { $0 as? String }
+            aufbauText = customValues["Aufbau"] ?? ""
             if let tid = fs.template {
-                customFields = (try? await pb.fetchTemplateCustomFields(templateId: tid)) ?? []
+                if !lightingMode {
+                    let templateFields = (try? await pb.fetchTemplateCustomFields(templateId: tid)) ?? []
+                    let extraRaw = (raw["__extra__"] as? [[String: Any]]) ?? []
+                    let extraFields = extraRaw.compactMap { dict -> CustomFieldEntry? in
+                        guard let name = dict["field_name"] as? String else { return nil }
+                        return CustomFieldEntry(field_name: name, unit_hint: dict["unit_hint"] as? String)
+                    }
+                    let templateEntries = templateFields.map { CustomFieldEntry(field_name: $0.field_name, unit_hint: $0.unit_hint) }
+                    customFields = templateEntries + extraFields.filter { e in !templateEntries.contains(where: { $0.field_name == e.field_name }) }
+                }
                 oscSettings = OSCSettings.load(templateId: tid)
-            }
-            if let raw = fs.custom_field_values?.value as? [String: Any] {
-                customValues = raw.compactMapValues { $0 as? String }
-                aufbauText = customValues["Aufbau"] ?? ""
+            } else {
+                if !lightingMode {
+                    let extraRaw = (raw["__extra__"] as? [[String: Any]]) ?? []
+                    customFields = extraRaw.compactMap { dict -> CustomFieldEntry? in
+                        guard let name = dict["field_name"] as? String else { return nil }
+                        return CustomFieldEntry(field_name: name, unit_hint: dict["unit_hint"] as? String)
+                    }
+                }
             }
         } catch { self.error = error.localizedDescription }
     }
@@ -188,14 +222,17 @@ struct ShowDetailView: View {
         } catch { self.error = error.localizedDescription }
     }
 
-    // MARK: - OSC
+    // MARK: - OSC & Checks
 
-    private func oscToggle(_ channel: Channel) {
+    private func oscSend(_ channel: Channel, isOn: Bool) {
+        let cmd = isOn ? oscSettings.fullCommand : oscSettings.outCommand
+        sendOSC(cmd, channel: channel.channel_number)
+    }
+
+    private func toggleCheck(_ channel: Channel) {
         if checks.contains(channel.id) {
-            sendOSC(oscSettings.fullCommand, channel: channel.channel_number)
             checks.remove(channel.id)
         } else {
-            sendOSC(oscSettings.outCommand, channel: channel.channel_number)
             checks.insert(channel.id)
         }
         saveChecks()
@@ -213,22 +250,67 @@ struct ShowDetailView: View {
     }
 }
 
-// MARK: - Channel Row
+// MARK: - Lighting Channel Row
+
+private struct LightingChannelRow: View {
+    let channel: Channel
+    let isChecked: Bool
+    let onOSCToggle: (Bool) -> Void
+    let onCheckToggle: () -> Void
+
+    @State private var oscIsOn = false
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Fertig-Häkchen (links)
+            Button(action: onCheckToggle) {
+                Image(systemName: isChecked ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(isChecked ? .green : .secondary)
+                    .font(.title2)
+            }
+            .buttonStyle(.plain)
+
+            // Kanalinfo (mitte)
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Kanal \(channel.channel_number)").font(.headline)
+                if let desc = channel.description, !desc.isEmpty {
+                    Text(desc).font(.callout).foregroundStyle(.primary)
+                        .padding(.horizontal, 8).padding(.vertical, 4)
+                        .background(.tint.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                }
+            }
+
+            Spacer()
+
+            // AN/AUS OSC-Button (rechts)
+            Button(action: {
+                oscIsOn.toggle()
+                onOSCToggle(oscIsOn)
+            }) {
+                Text(oscIsOn ? "AN" : "AUS")
+                    .font(.caption).fontWeight(.semibold)
+                    .frame(width: 44, height: 30)
+                    .background(oscIsOn ? Color.orange : Color.secondary.opacity(0.2))
+                    .foregroundStyle(oscIsOn ? .black : .primary)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.vertical, 4)
+        .opacity(isChecked ? 0.5 : 1)
+    }
+}
+
+// MARK: - Channel Row (normal mode)
 
 private struct ChannelRow: View {
     let channel: Channel
-    let lightingMode: Bool
-    let isChecked: Bool
     let onTap: () -> Void
 
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 12) {
-                if lightingMode {
-                    Image(systemName: isChecked ? "checkmark.circle.fill" : "circle")
-                        .foregroundStyle(isChecked ? .green : .secondary)
-                        .font(.title3)
-                }
                 VStack(alignment: .leading, spacing: 3) {
                     HStack {
                         Text("Kanal \(channel.channel_number)").font(.headline)
@@ -254,12 +336,17 @@ private struct ChannelRow: View {
                     }
                 }
                 Spacer()
-                if !lightingMode {
-                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
-                }
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
             }
         }
         .foregroundStyle(.primary)
-        .opacity(lightingMode && isChecked ? 0.5 : 1)
     }
+}
+
+// MARK: - Custom Field Entry (vereinheitlicht Template + Extra)
+
+struct CustomFieldEntry: Identifiable, Hashable {
+    var id: String { field_name }
+    var field_name: String
+    var unit_hint: String?
 }

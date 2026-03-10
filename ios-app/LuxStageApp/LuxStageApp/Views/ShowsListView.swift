@@ -1,13 +1,17 @@
 import SwiftUI
 
 struct ShowsListView: View {
+    var showSettingsButton: Bool = false
+
     @Environment(PocketBaseClient.self) private var pb
+    @Environment(AppLocale.self) private var locale
 
     @State private var shows: [Show] = []
     @State private var showArchived = false
     @State private var loading = false
     @State private var error: String?
     @State private var showNewSheet = false
+    @State private var showSettings = false
     @State private var templates: [VenueTemplate] = []
 
     private var groupedShows: [(venue: String, shows: [Show])] {
@@ -25,13 +29,12 @@ struct ShowsListView: View {
         NavigationStack {
             Group {
                 if loading && shows.isEmpty {
-                    ProgressView("Laden …")
+                    ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if shows.isEmpty {
                     ContentUnavailableView(
-                        showArchived ? "Keine archivierten Shows" : "Noch keine Shows",
-                        systemImage: "theatermasks",
-                        description: Text(showArchived ? "" : "Erstelle deine erste Show.")
+                        showArchived ? locale.t("show.list.archived_empty") : locale.t("show.list.empty"),
+                        systemImage: "theatermasks"
                     )
                 } else {
                     List {
@@ -48,7 +51,7 @@ struct ShowsListView: View {
                     .refreshable { await load() }
                 }
             }
-            .navigationTitle("Shows")
+            .navigationTitle(showArchived ? locale.t("show.archived") : locale.t("nav.shows"))
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
@@ -56,23 +59,33 @@ struct ShowsListView: View {
                         Task { await load() }
                     } label: {
                         Label(
-                            showArchived ? "Aktiv" : "Archiv",
+                            showArchived ? locale.t("nav.shows") : locale.t("show.archived"),
                             systemImage: showArchived ? "tray.and.arrow.up" : "archivebox"
                         )
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button { showNewSheet = true } label: {
-                        Label("Neue Show", systemImage: "plus")
+                        Image(systemName: "plus")
                     }
                 }
+                if showSettingsButton {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button { showSettings = true } label: {
+                            Image(systemName: "gear")
+                        }
+                    }
+                }
+            }
+            .sheet(isPresented: $showSettings) {
+                SettingsView()
             }
             .sheet(isPresented: $showNewSheet) {
                 NewShowSheet(templates: templates, onCreated: { show in
                     shows.insert(show, at: 0)
                 })
             }
-            .alert("Fehler", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
+            .alert(locale.t("error.generic"), isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
                 Button("OK") {}
             } message: {
                 Text(error ?? "")
@@ -122,6 +135,7 @@ struct NewShowSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(PocketBaseClient.self) private var pb
+    @Environment(AppLocale.self) private var locale
 
     @State private var name = ""
     @State private var date = Date()
@@ -146,18 +160,18 @@ struct NewShowSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Show-Daten") {
-                    TextField("Name", text: $name)
-                    Toggle("Datum festlegen", isOn: $hasDate)
+                Section(locale.t("show.new")) {
+                    TextField(locale.t("field.name"), text: $name)
+                    Toggle(locale.t("field.date"), isOn: $hasDate)
                     if hasDate {
-                        DatePicker("Datum", selection: $date, displayedComponents: .date)
+                        DatePicker(locale.t("field.date"), selection: $date, displayedComponents: .date)
                     }
                 }
 
                 if !templates.isEmpty {
-                    Section("Bühne & Vorlage") {
-                        Picker("Bühne", selection: $selectedVenue) {
-                            Text("Keine Bühne").tag("")
+                    Section(locale.t("field.venue")) {
+                        Picker(locale.t("field.venue"), selection: $selectedVenue) {
+                            Text(locale.t("show.template.none")).tag("")
                             ForEach(venues, id: \.self) { v in
                                 Text(v).tag(v)
                             }
@@ -168,8 +182,8 @@ struct NewShowSheet: View {
                             }
                         }
 
-                        Picker("Vorlage", selection: $selectedTemplate) {
-                            Text("Keine Vorlage").tag(Optional<VenueTemplate>.none)
+                        Picker(locale.t("show.template"), selection: $selectedTemplate) {
+                            Text(locale.t("show.template.none")).tag(Optional<VenueTemplate>.none)
                             ForEach(filteredTemplates) { t in
                                 Text(t.name).tag(Optional(t))
                             }
@@ -182,14 +196,14 @@ struct NewShowSheet: View {
                     Section { Text(error).foregroundStyle(.red).font(.footnote) }
                 }
             }
-            .navigationTitle("Neue Show")
+            .navigationTitle(locale.t("show.new"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Abbrechen") { dismiss() }
+                    Button(locale.t("action.cancel")) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Erstellen") { create() }
+                    Button(locale.t("show.create")) { create() }
                         .disabled(name.isEmpty || saving)
                 }
             }

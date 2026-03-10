@@ -107,7 +107,6 @@
       <section class="channel-section">
         <div class="channel-toolbar">
           <input v-model="search" type="search" :placeholder="$t('channel.search')" class="search-input" />
-          <button class="btn-ghost-sm" :class="{ active: lightingMode }" @click="lightingMode = !lightingMode">{{ $t('mode.lighting') }}</button>
           <span class="channel-count">{{ totalVisible }} / {{ channels.length }}</span>
         </div>
 
@@ -115,7 +114,6 @@
           <table class="channel-table">
             <thead>
               <tr>
-                <th v-if="lightingMode" class="col-check"></th>
                 <th class="col-channel">{{ $t('field.channel_number') }}</th>
                 <th class="col-address">{{ $t('field.address') }}</th>
                 <th class="col-device">{{ $t('field.device') }}</th>
@@ -125,7 +123,7 @@
             </thead>
             <tbody v-for="group in groupedChannels" :key="group.category">
               <tr class="category-header-row">
-                <td :colspan="lightingMode ? 6 : 5">
+                <td colspan="5">
                   <span class="category-name">{{ group.category || $t('channel.no_category') }}</span>
                   <span class="category-count">{{ group.channels.length }}</span>
                 </td>
@@ -134,13 +132,12 @@
                 v-for="ch in group.channels"
                 :key="ch.id"
                 class="channel-row"
-                :class="{ editing: editingId === ch.id, 'has-description': ch.description, 'lighting-checked': isChecked(ch.id) }"
+                :class="{ editing: editingId === ch.id, 'has-description': ch.description }"
                 @click="onRowClick(ch, $event)"
                 @focusout="onRowFocusOut($event, ch)"
                 @keydown.enter.prevent="saveInline(ch)"
                 @keydown.escape="cancelInline"
               >
-                <td v-if="lightingMode" class="col-check" @click.stop><input type="checkbox" :checked="isChecked(ch.id)" @change="toggleCheck(ch.id)" /></td>
                 <td class="col-channel">{{ ch.channel_number }}</td>
                 <td class="col-address">
                   <input v-if="editingId === ch.id" class="inline-input" v-model="inlineForm.address" placeholder="1/001" @click.stop />
@@ -167,7 +164,6 @@
               </tr>
               <!-- Add row trigger / form -->
               <tr v-if="addingCategory === group.category" class="channel-row editing add-row-form" @keydown.escape="addingCategory = null">
-                <td v-if="lightingMode"></td>
                 <td class="col-channel">
                   <input class="inline-input" v-model="addForm.channel_number" placeholder="Nr." @click.stop />
                 </td>
@@ -189,7 +185,7 @@
                 </td>
               </tr>
               <tr v-else class="add-row-trigger" @click.stop="startAdd(group.category)">
-                <td :colspan="lightingMode ? 6 : 5">+ {{ $t('channel.add') }}</td>
+                <td colspan="5">+ {{ $t('channel.add') }}</td>
               </tr>
             </tbody>
           </table>
@@ -239,7 +235,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import { fetchPhotos, uploadPhoto, updateCaption, deletePhoto, getThumbUrl, getFullUrl } from '../api/photos.js'
@@ -336,38 +332,7 @@ function openPhoto(photo) {
 }
 
 // Einleucht-Checklist
-const lightingMode = ref(false)
-const LIGHTING_TTL = 6 * 60 * 60 * 1000 // 6h
-function lightingKey() { return 'lighting_check_' + props.id }
-function loadChecks() {
-  try {
-    const raw = localStorage.getItem(lightingKey())
-    if (!raw) return {}
-    const { checks, ts } = JSON.parse(raw)
-    if (Date.now() - ts > LIGHTING_TTL) { localStorage.removeItem(lightingKey()); return {} }
-    return checks || {}
-  } catch { return {} }
-}
-const checks = ref(loadChecks())
-function saveChecks() {
-  localStorage.setItem(lightingKey(), JSON.stringify({ checks: checks.value, ts: Date.now() }))
-}
-function isChecked(id) { return !!checks.value[id] }
-function toggleCheck(id) {
-  checks.value = { ...checks.value, [id]: !checks.value[id] }
-  saveChecks()
-}
-
 const customValues = ref({})
-
-watch(() => show.value?.custom_field_values, (val) => {
-  if (val && typeof val === 'object') customValues.value = val
-  else if (typeof val === 'string') {
-    try { customValues.value = JSON.parse(val) } catch { customValues.value = {} }
-  } else {
-    customValues.value = {}
-  }
-}, { immediate: true })
 
 // All custom fields for this show: template fields (minus hidden) + show-specific extras
 const allCustomFields = computed(() => {
@@ -406,7 +371,11 @@ onMounted(async () => {
   const [s, chs] = await Promise.all([fetchShow(props.id), fetchChannels(props.id)])
   show.value = s
   channels.value = chs
-  if (s.template) customFields.value = await fetchTemplateCustomFields(s.template)
+  const rawCfv = s.custom_field_values
+  if (typeof rawCfv === 'string') { try { customValues.value = JSON.parse(rawCfv) } catch { customValues.value = {} } }
+  else if (rawCfv && typeof rawCfv === 'object') customValues.value = rawCfv
+  const templateId = s.expand?.template?.id ?? s.template
+  if (templateId) customFields.value = await fetchTemplateCustomFields(templateId)
   loadPhotos()
   loading.value = false
   await nextTick()
@@ -431,9 +400,9 @@ onUnmounted(() => {
 
 async function saveCustomValues(values) {
   try {
-    await updateShow(props.id, { custom_field_values: values })
-    customValues.value = values
-    show.value = { ...show.value, custom_field_values: values }
+    const plain = JSON.parse(JSON.stringify(values))
+    await updateShow(props.id, { custom_field_values: plain })
+    customValues.value = plain
   } catch (e) {
     console.error('[saveCustomValues]', e)
   }

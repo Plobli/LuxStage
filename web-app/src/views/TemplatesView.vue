@@ -58,12 +58,14 @@
         <div v-else class="preview">
           <div class="preview-meta">
             <div class="field">
+              <label>Bühnenname</label>
+              <input v-model="importVenueName" type="text" required />
+            </div>
+            <div class="field">
               <label>{{ $t('template.name') }}</label>
               <input v-model="importName" type="text" required />
             </div>
             <div class="preview-stats">
-              <span>{{ $t('template.venue_name') }}: <strong>{{ parsed.venue_name }}</strong></span>
-              <span>{{ $t('template.venue_hall') }}: <strong>{{ parsed.venue_hall }}</strong></span>
               <span>{{ $t('csv.preview.channels', { count: parsed.channels.length }) }}</span>
               <span>{{ $t('csv.preview.custom_fields', { count: parsed.custom_fields.length }) }}</span>
             </div>
@@ -109,7 +111,7 @@
           <div class="modal-footer">
             <span v-if="importError" class="error-msg" style="flex:1">{{ importError }}</span>
             <button class="btn-ghost" @click="step = 'select'">{{ $t('action.back') }}</button>
-            <button class="btn-primary" :disabled="importing" @click="handleImport">
+            <button class="btn-primary" :disabled="importing || !importVenueName || !importName" @click="handleImport">
               {{ importing ? '…' : $t('template.upload.confirm') }}
             </button>
           </div>
@@ -126,7 +128,24 @@
     <!-- Detail dialog -->
     <dialog ref="detailDialog" class="modal modal-wide">
       <div class="modal-header">
-        <h3>{{ detailTemplate?.venue_name }} — {{ detailTemplate?.name }}</h3>
+        <div class="detail-title-edit">
+          <input
+            v-if="detailTemplate"
+            v-model="detailVenueName"
+            class="inline-input detail-venue-input"
+            placeholder="Bühnenname"
+            @blur="saveDetailNames"
+          />
+          <span class="detail-title-sep">—</span>
+          <input
+            v-if="detailTemplate"
+            v-model="detailTemplateName"
+            class="inline-input detail-name-input"
+            placeholder="Vorlagenname"
+            @blur="saveDetailNames"
+          />
+          <span v-if="detailNameSaved" class="detail-saved-hint">✓</span>
+        </div>
         <button class="btn-ghost" @click="detailDialog.close()">✕</button>
       </div>
 
@@ -223,7 +242,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import {
-  fetchTemplates, createTemplate, createTemplateChannel, createTemplateCustomField,
+  fetchTemplates, createTemplate, updateTemplate, createTemplateChannel, createTemplateCustomField,
   fetchTemplateChannels, fetchTemplateCustomFields, deleteTemplateCustomField,
 } from '../api/templates.js'
 import { parseTemplateCSV, formatAddress } from '../api/csv.js'
@@ -239,10 +258,14 @@ const step = ref('select')
 const parsed = ref(null)
 const parseErrors = ref([])
 const importName = ref('')
+const importVenueName = ref('')
 const importing = ref(false)
 const importError = ref('')
 
 const detailTemplate = ref(null)
+const detailVenueName = ref('')
+const detailTemplateName = ref('')
+const detailNameSaved = ref(false)
 const detailChannels = ref([])
 const detailCustomFields = ref([])
 const newField = ref({ field_name: '', unit_hint: '' })
@@ -269,11 +292,28 @@ onMounted(async () => {
 
 async function showDetail(t) {
   detailTemplate.value = t
+  detailVenueName.value = t.venue_name
+  detailTemplateName.value = t.name
+  detailNameSaved.value = false
   detailChannels.value = await fetchTemplateChannels(t.id)
   detailCustomFields.value = await fetchTemplateCustomFields(t.id)
   newField.value = { field_name: '', unit_hint: '' }
   detailAddingCategory.value = null
   detailDialog.value.showModal()
+}
+
+async function saveDetailNames() {
+  if (!detailTemplate.value) return
+  const vn = detailVenueName.value.trim()
+  const tn = detailTemplateName.value.trim()
+  if (!vn || !tn) return
+  if (vn === detailTemplate.value.venue_name && tn === detailTemplate.value.name) return
+  await updateTemplate(detailTemplate.value.id, { venue_name: vn, name: tn })
+  detailTemplate.value = { ...detailTemplate.value, venue_name: vn, name: tn }
+  const idx = templates.value.findIndex(t => t.id === detailTemplate.value.id)
+  if (idx !== -1) templates.value[idx] = { ...templates.value[idx], venue_name: vn, name: tn }
+  detailNameSaved.value = true
+  setTimeout(() => { detailNameSaved.value = false }, 2000)
 }
 
 async function addCustomField() {
@@ -335,6 +375,7 @@ function processFile(file) {
   reader.onload = (e) => {
     parsed.value = parseTemplateCSV(e.target.result)
     parseErrors.value = parsed.value.errors
+    importVenueName.value = parsed.value.venue_name || ''
     step.value = 'preview'
   }
   reader.readAsText(file, 'utf-8')
@@ -344,11 +385,11 @@ async function handleImport() {
   importing.value = true
   importError.value = ''
   try {
-    const existing = templates.value.filter(t => t.venue_name === parsed.value.venue_name)
+    const existing = templates.value.filter(t => t.venue_name === importVenueName.value)
     const version = existing.length ? Math.max(...existing.map(t => t.version ?? 1)) + 1 : 1
 
     const template = await createTemplate(
-      { name: importName.value, venue_name: parsed.value.venue_name, version },
+      { name: importName.value, venue_name: importVenueName.value, version },
       csvFile.value,
     )
 
@@ -385,6 +426,7 @@ function closeUpload() {
   parsed.value = null
   parseErrors.value = []
   importError.value = ''
+  importVenueName.value = ''
 }
 
 function formatAddr(ch) {

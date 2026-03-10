@@ -1,7 +1,6 @@
 import SwiftUI
 import PhotosUI
 
-/// Vollbild-Tab für die Foto-Galerie einer Show.
 struct PhotosTabView: View {
     let showId: String
     @Environment(PocketBaseClient.self) private var pb
@@ -15,56 +14,68 @@ struct PhotosTabView: View {
     @State private var deleteConfirm: Photo?
 
     var body: some View {
-        Group {
-            if loading {
-                ProgressView("Fotos laden …")
-            } else if photos.isEmpty {
-                ContentUnavailableView("Keine Fotos", systemImage: "photo.on.rectangle")
-            } else {
-                ScrollView {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), spacing: 3)], spacing: 3) {
-                        ForEach(photos) { photo in photoCell(photo) }
-                    }
-                    .padding(3)
+        mainContent
+            .navigationTitle("Fotos")
+            .toolbar { uploadToolbarItem }
+            .task { await load() }
+            .onChange(of: pickerItems) { _, items in Task { await uploadItems(items) } }
+            .alert("Fehler", isPresented: errorBinding) {
+                Button("OK") {}
+            } message: { Text(error ?? "") }
+            .confirmationDialog("Foto löschen?", isPresented: deleteBinding, titleVisibility: .visible) {
+                Button("Löschen", role: .destructive) {
+                    if let p = deleteConfirm { Task { await delete(p) } }
                 }
             }
-        }
-        .navigationTitle("Fotos")
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                PhotosPicker(selection: $pickerItems, maxSelectionCount: 10, matching: .images) {
-                    if uploading { ProgressView().scaleEffect(0.8) }
-                    else { Label("Hinzufügen", systemImage: "plus") }
-                }
-                .disabled(uploading)
+            .fullScreenCover(item: $selectedPhoto) { photo in
+                PhotoFullscreenView(photo: photo, pb: pb)
             }
-        }
-        .task { await load() }
-        .onChange(of: pickerItems) { _, items in Task { await uploadItems(items) } }
-        .alert("Fehler", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
-            Button("OK") {}
-        } message: { Text(error ?? "") }
-        .confirmationDialog("Foto löschen?",
-            isPresented: Binding(get: { deleteConfirm != nil }, set: { if !$0 { deleteConfirm = nil } }),
-            titleVisibility: .visible) {
-            Button("Löschen", role: .destructive) {
-                if let p = deleteConfirm { Task { await delete(p) } }
-            }
-        }
-        .fullScreenCover(item: $selectedPhoto) { photo in
-            PhotoFullscreenView(photo: photo, pb: pb)
+    }
+
+    @ViewBuilder
+    private var mainContent: some View {
+        if loading {
+            ProgressView("Fotos laden …")
+        } else if photos.isEmpty {
+            ContentUnavailableView("Keine Fotos", systemImage: "photo.on.rectangle")
+        } else {
+            photoGrid
         }
     }
 
-    private func photoCell(_ photo: Photo) -> some View {
-        Group {
-            if let url = pb.thumbURL(collectionId: photo.collectionId, recordId: photo.id, filename: photo.file) {
-                AsyncImage(url: url) { image in
-                    image.resizable().scaledToFill()
-                } placeholder: { Color.gray.opacity(0.2) }
-            } else {
-                Color.gray.opacity(0.2)
+    private var photoGrid: some View {
+        ScrollView {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), spacing: 3)], spacing: 3) {
+                ForEach(photos) { photo in photoCell(photo) }
             }
+            .padding(3)
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var uploadToolbarItem: some ToolbarContent {
+        ToolbarItem(placement: .navigationBarTrailing) {
+            PhotosPicker(selection: $pickerItems, maxSelectionCount: 10, matching: .images) {
+                if uploading { ProgressView().scaleEffect(0.8) }
+                else { Label("Hinzufügen", systemImage: "plus") }
+            }
+            .disabled(uploading)
+        }
+    }
+
+    private var errorBinding: Binding<Bool> {
+        Binding(get: { error != nil }, set: { if !$0 { error = nil } })
+    }
+    private var deleteBinding: Binding<Bool> {
+        Binding(get: { deleteConfirm != nil }, set: { if !$0 { deleteConfirm = nil } })
+    }
+
+    private func photoCell(_ photo: Photo) -> some View {
+        let url = pb.thumbURL(collectionId: photo.collectionId, recordId: photo.id, filename: photo.file)
+        return AsyncImage(url: url) { image in
+            image.resizable().scaledToFill()
+        } placeholder: {
+            Color.gray.opacity(0.2)
         }
         .frame(width: 110, height: 110)
         .clipped()
@@ -110,5 +121,39 @@ struct PhotosTabView: View {
         let renderer = UIGraphicsImageRenderer(size: newSize)
         let resized = renderer.image { _ in img.draw(in: CGRect(origin: .zero, size: newSize)) }
         return resized.jpegData(compressionQuality: quality) ?? data
+    }
+}
+
+// MARK: - Fullscreen Viewer
+
+struct PhotoFullscreenView: View {
+    let photo: Photo
+    let pb: PocketBaseClient
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            Color.black.ignoresSafeArea()
+            AsyncImage(url: pb.fileURL(collectionId: photo.collectionId, recordId: photo.id, filename: photo.file)) { image in
+                image.resizable().scaledToFit()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } placeholder: {
+                ProgressView().tint(.white)
+            }
+            if let caption = photo.caption, !caption.isEmpty {
+                Text(caption)
+                    .foregroundStyle(.white)
+                    .padding(8)
+                    .background(.black.opacity(0.5))
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .padding()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            }
+            Button { dismiss() } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.title).foregroundStyle(.white).padding()
+            }
+        }
+        .onTapGesture { dismiss() }
     }
 }

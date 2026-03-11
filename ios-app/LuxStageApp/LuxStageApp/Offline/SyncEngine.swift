@@ -120,37 +120,43 @@ final class SyncEngine {
 
     // MARK: - Offline-aware data access
 
-    /// Lädt Shows: bei Online vom Server, sonst aus Cache. Wirft nie einen Fehler.
+    /// Lädt Shows sofort aus Cache. Aktualisiert im Hintergrund wenn online.
     func fetchShows(archived: Bool) async -> [Show] {
+        let cached = store.loadShows(archived: archived)
         if isOnline {
-            if let fresh = try? await pb.fetchShows(archived: archived) {
-                store.saveShows(fresh)
-                return fresh
+            Task {
+                if let fresh = try? await pb.fetchShows(archived: archived) {
+                    store.saveShows(fresh)
+                }
             }
         }
-        return store.loadShows(archived: archived)
+        return cached
     }
 
     func fetchChannels(showId: String) async -> [Channel] {
+        let cached = store.loadChannels(showId: showId)
         if isOnline {
-            if let fresh = try? await pb.fetchChannels(showId: showId) {
-                store.saveChannels(fresh, showId: showId)
-                return fresh
+            Task {
+                if let fresh = try? await pb.fetchChannels(showId: showId) {
+                    store.saveChannels(fresh, showId: showId)
+                }
             }
         }
-        return store.loadChannels(showId: showId)
+        return cached
     }
 
-    /// Lädt eine einzelne Show: bei Online vom Server, sonst aus Cache.
+    /// Lädt eine einzelne Show sofort aus Cache. Aktualisiert im Hintergrund wenn online.
     func fetchShow(id: String) async -> Show? {
+        let cached = store.loadShows(archived: false).first(where: { $0.id == id })
+            ?? store.loadShows(archived: true).first(where: { $0.id == id })
         if isOnline {
-            if let fresh = try? await pb.fetchShow(id: id) {
-                store.saveShow(fresh)
-                return fresh
+            Task {
+                if let fresh = try? await pb.fetchShow(id: id) {
+                    store.saveShow(fresh)
+                }
             }
         }
-        return store.loadShows(archived: false).first(where: { $0.id == id })
-            ?? store.loadShows(archived: true).first(where: { $0.id == id })
+        return cached
     }
 
     // MARK: - Offline-aware mutations

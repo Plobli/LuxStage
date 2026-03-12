@@ -266,7 +266,7 @@ private struct LightingChannelRow: View {
             // Fertig-Häkchen (links)
             Button(action: onCheckToggle) {
                 Image(systemName: isChecked ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(isChecked ? .green : .secondary)
+                    .foregroundStyle(isChecked ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
                     .font(.title2)
             }
             .buttonStyle(.plain)
@@ -277,7 +277,7 @@ private struct LightingChannelRow: View {
                 if let desc = channel.description, !desc.isEmpty {
                     Text(desc).font(.callout).foregroundStyle(.primary)
                         .padding(.horizontal, 8).padding(.vertical, 4)
-                        .background(.tint.opacity(0.12))
+                        .background(Color(.systemGray5))
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
             }
@@ -292,8 +292,8 @@ private struct LightingChannelRow: View {
                 Text(oscIsOn ? "AN" : "AUS")
                     .font(.caption).fontWeight(.semibold)
                     .frame(width: 44, height: 30)
-                    .background(oscIsOn ? Color.orange : Color.secondary.opacity(0.2))
-                    .foregroundStyle(oscIsOn ? .black : .primary)
+                    .background(oscIsOn ? Color.orange : Color(.systemGray5))
+                    .foregroundStyle(oscIsOn ? Color.white : Color.primary)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
             .buttonStyle(.plain)
@@ -325,13 +325,13 @@ private struct ChannelRow: View {
                         if let color = channel.color, !color.isEmpty {
                             Text(color).font(.caption)
                                 .padding(.horizontal, 6).padding(.vertical, 1)
-                                .background(.tint.opacity(0.15)).clipShape(Capsule())
+                                .background(Color(.systemGray5)).clipShape(Capsule())
                         }
                     }
                     if let desc = channel.description, !desc.isEmpty {
                         Text(desc).font(.callout).foregroundStyle(.primary)
                             .padding(.horizontal, 8).padding(.vertical, 4)
-                            .background(.tint.opacity(0.12))
+                            .background(Color(.systemGray5))
                             .clipShape(RoundedRectangle(cornerRadius: 6))
                             .padding(.top, 4)
                     }

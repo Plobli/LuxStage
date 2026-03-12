@@ -4,10 +4,10 @@ import WebKit
 /// Renders Tiptap/HTML content as formatted text using a lightweight WKWebView.
 struct HTMLTextView: UIViewRepresentable {
     let html: String
+    @Environment(\.colorScheme) var colorScheme
 
     func makeUIView(context: Context) -> WKWebView {
-        let config = WKWebViewConfiguration()
-        let webView = WKWebView(frame: .zero, configuration: config)
+        let webView = WKWebView(frame: .zero)
         webView.isOpaque = false
         webView.backgroundColor = .clear
         webView.scrollView.isScrollEnabled = false
@@ -16,6 +16,7 @@ struct HTMLTextView: UIViewRepresentable {
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
+        let textColor = colorScheme == .dark ? "#FFFFFF" : "#000000"
         let styled = """
         <html>
         <head>
@@ -24,7 +25,7 @@ struct HTMLTextView: UIViewRepresentable {
           body {
             font-family: -apple-system, sans-serif;
             font-size: 15px;
-            color: \(colorSchemeCSS);
+            color: \(textColor);
             margin: 0; padding: 0;
             background: transparent;
           }
@@ -39,14 +40,5 @@ struct HTMLTextView: UIViewRepresentable {
         </html>
         """
         webView.loadHTMLString(styled, baseURL: nil)
-    }
-
-    private var colorSchemeCSS: String {
-        // Detect dark mode
-        if UITraitCollection.current.userInterfaceStyle == .dark {
-            return "#FFFFFF"
-        } else {
-            return "#000000"
-        }
     }
 }

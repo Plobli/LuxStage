@@ -1,6 +1,12 @@
 import SwiftUI
 import UIKit
 
+private extension View {
+    func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+}
+
 struct SettingsView: View {
     @Environment(PocketBaseClient.self) private var pb
     @Environment(AppLocale.self) private var locale
@@ -52,7 +58,7 @@ struct SettingsView: View {
             .toolbar {
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
-                    Button("Fertig") { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) }
+                    Button("Fertig") { hideKeyboard() }
                 }
             }
         }

@@ -309,36 +309,41 @@ private struct ChannelRow: View {
     let channel: Channel
     let onTap: () -> Void
 
+    private var paddedChannelNumber: String {
+        if let num = Int(channel.channel_number), num < 10 {
+            return String(format: "%02d", num)
+        }
+        return channel.channel_number
+    }
+
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 3) {
-                    HStack {
-                        Text("Kanal \(channel.channel_number)").font(.headline)
-                        if let device = channel.device, !device.isEmpty {
-                            Text("·").foregroundStyle(.secondary)
-                            Text(device).font(.subheadline)
-                        }
+            HStack(alignment: .center, spacing: 14) {
+                Text(paddedChannelNumber)
+                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .frame(minWidth: 48, alignment: .trailing)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    if let desc = channel.description, !desc.isEmpty {
+                        Text(desc).font(.subheadline).fontWeight(.medium)
                     }
                     HStack(spacing: 6) {
-                        Text(channel.addressDisplay).font(.caption).foregroundStyle(.secondary)
+                        if let device = channel.device, !device.isEmpty {
+                            Text(device).font(.caption).foregroundStyle(.secondary)
+                        }
                         if let color = channel.color, !color.isEmpty {
                             Text(color).font(.caption)
-                                .padding(.horizontal, 6).padding(.vertical, 1)
+                                .padding(.horizontal, 6).padding(.vertical, 2)
                                 .background(Color(.systemGray5)).clipShape(Capsule())
                         }
                     }
-                    if let desc = channel.description, !desc.isEmpty {
-                        Text(desc).font(.callout).foregroundStyle(.primary)
-                            .padding(.horizontal, 8).padding(.vertical, 4)
-                            .background(Color(.systemGray5))
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
-                            .padding(.top, 4)
-                    }
                 }
+
                 Spacer()
                 Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
             }
+            .padding(.vertical, 4)
         }
         .foregroundStyle(.primary)
     }

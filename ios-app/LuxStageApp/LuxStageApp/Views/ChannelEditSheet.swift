@@ -34,6 +34,16 @@ struct ChannelEditSheet: View {
         NavigationStack {
             Form {
                 Section("Kanal \(channel.channel_number)") {
+                    TextField("Beschreibung", text: $description, axis: .vertical)
+                        .lineLimit(3...6)
+                        .font(.body)
+                }
+
+                Section("Farbe / Filter") {
+                    ColorPickerField(value: $color)
+                }
+
+                Section("Details") {
                     LabeledContent("Adresse") {
                         TextField("1/001", text: $addressRaw)
                             .multilineTextAlignment(.trailing)
@@ -47,14 +57,6 @@ struct ChannelEditSheet: View {
                         TextField("", text: $category)
                             .multilineTextAlignment(.trailing)
                     }
-                    LabeledContent("Beschreibung") {
-                        TextField("", text: $description)
-                            .multilineTextAlignment(.trailing)
-                    }
-                }
-
-                Section("Farbe / Filter") {
-                    ColorPickerField(value: $color)
                 }
 
                 if let error {

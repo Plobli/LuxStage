@@ -8,6 +8,7 @@ struct ShowDetailView: View {
 
     @Environment(PocketBaseClient.self) private var pb
     @Environment(AppLocale.self) private var locale
+    @Environment(SyncEngine.self) private var sync
 
     @State private var show: Show?
     @State private var oscSettings = OSCSettings()
@@ -36,7 +37,7 @@ struct ShowDetailView: View {
             Text(error ?? "")
         }
         .sheet(item: $editingChannel) { ch in
-            ChannelEditSheet(channel: ch, onSave: { updated in
+            ChannelEditSheet(channel: ch, showId: showId, onSave: { updated in
                 updateLocal(channel: updated)
             }, onDelete: { id in
                 channels.removeAll { $0.id == id }
@@ -164,37 +165,37 @@ struct ShowDetailView: View {
     // MARK: - Data loading
 
     private func reload() async {
-        do {
-            async let s = pb.fetchShow(id: showId)
-            async let chs = pb.fetchChannels(showId: showId)
-            let (fs, fc) = try await (s, chs)
-            show = fs
-            channels = fc
-            let raw = fs.custom_field_values?.value as? [String: Any] ?? [:]
-            customValues = raw.compactMapValues { $0 as? String }
-            aufbauText = customValues["Aufbau"] ?? ""
-            if let tid = fs.template {
-                if !lightingMode {
-                    let templateFields = (try? await pb.fetchTemplateCustomFields(templateId: tid)) ?? []
-                    let extraRaw = (raw["__extra__"] as? [[String: Any]]) ?? []
-                    let extraFields = extraRaw.compactMap { dict -> CustomFieldEntry? in
-                        guard let name = dict["field_name"] as? String else { return nil }
-                        return CustomFieldEntry(field_name: name, unit_hint: dict["unit_hint"] as? String)
-                    }
-                    let templateEntries = templateFields.map { CustomFieldEntry(field_name: $0.field_name, unit_hint: $0.unit_hint) }
-                    customFields = templateEntries + extraFields.filter { e in !templateEntries.contains(where: { $0.field_name == e.field_name }) }
+        async let fetchedShow = sync.fetchShow(id: showId)
+        async let fetchedChannels = sync.fetchChannels(showId: showId)
+        guard let fs = await fetchedShow else { return }
+        let fc = await fetchedChannels
+
+        show = fs
+        channels = fc
+        let raw = fs.custom_field_values?.value as? [String: Any] ?? [:]
+        customValues = raw.compactMapValues { $0 as? String }
+        aufbauText = customValues["Aufbau"] ?? ""
+        if let tid = fs.template {
+            if !lightingMode {
+                let templateFields = (try? await pb.fetchTemplateCustomFields(templateId: tid)) ?? []
+                let extraRaw = (raw["__extra__"] as? [[String: Any]]) ?? []
+                let extraFields = extraRaw.compactMap { dict -> CustomFieldEntry? in
+                    guard let name = dict["field_name"] as? String else { return nil }
+                    return CustomFieldEntry(field_name: name, unit_hint: dict["unit_hint"] as? String)
                 }
-                oscSettings = OSCSettings.load(templateId: tid)
-            } else {
-                if !lightingMode {
-                    let extraRaw = (raw["__extra__"] as? [[String: Any]]) ?? []
-                    customFields = extraRaw.compactMap { dict -> CustomFieldEntry? in
-                        guard let name = dict["field_name"] as? String else { return nil }
-                        return CustomFieldEntry(field_name: name, unit_hint: dict["unit_hint"] as? String)
-                    }
+                let templateEntries = templateFields.map { CustomFieldEntry(field_name: $0.field_name, unit_hint: $0.unit_hint) }
+                customFields = templateEntries + extraFields.filter { e in !templateEntries.contains(where: { $0.field_name == e.field_name }) }
+            }
+            oscSettings = OSCSettings.load(templateId: tid)
+        } else {
+            if !lightingMode {
+                let extraRaw = (raw["__extra__"] as? [[String: Any]]) ?? []
+                customFields = extraRaw.compactMap { dict -> CustomFieldEntry? in
+                    guard let name = dict["field_name"] as? String else { return nil }
+                    return CustomFieldEntry(field_name: name, unit_hint: dict["unit_hint"] as? String)
                 }
             }
-        } catch { self.error = error.localizedDescription }
+        }
     }
 
     private func load() async {
@@ -217,7 +218,7 @@ struct ShowDetailView: View {
 
     private func persistCustomValues(_ values: [String: Any]) async {
         do {
-            let updated = try await pb.updateShow(id: showId, fields: ["custom_field_values": values])
+            let updated = try await sync.updateShow(id: showId, fields: ["custom_field_values": values], showId: showId)
             show = updated
         } catch { self.error = error.localizedDescription }
     }

@@ -1,9 +1,11 @@
 import SwiftUI
+import SwiftData
 
 @main
 struct LuxStageApp: App {
     @State private var pb = PocketBaseClient.shared
     @State private var locale = AppLocale.shared
+    @State private var sync = SyncEngine.shared
 
     var body: some Scene {
         WindowGroup {
@@ -11,6 +13,9 @@ struct LuxStageApp: App {
                 MainTabView()
                     .environment(pb)
                     .environment(locale)
+                    .environment(sync)
+                    .modelContainer(LocalStore.shared.container)
+                    .task { await sync.sync() }
             } else {
                 LoginView()
                     .environment(pb)
@@ -31,15 +36,24 @@ struct MainTabView: View {
             ShowsListView(showSettingsButton: true)
         } else {
             // iPhone: Tab Bar unten
-            TabView {
-                Tab(locale.t("nav.shows"), systemImage: "theatermasks") {
-                    ShowsListView()
+            if #available(iOS 26.0, *) {
+                TabView {
+                    Tab(locale.t("nav.shows"), systemImage: "theatermasks") {
+                        ShowsListView()
+                    }
+                    Tab(locale.t("nav.settings"), systemImage: "gear") {
+                        SettingsView()
+                    }
                 }
-                Tab(locale.t("nav.settings"), systemImage: "gear") {
+                .tabBarMinimizeBehavior(.onScrollDown)
+            } else {
+                TabView {
+                    ShowsListView()
+                        .tabItem { Label(locale.t("nav.shows"), systemImage: "theatermasks") }
                     SettingsView()
+                        .tabItem { Label(locale.t("nav.settings"), systemImage: "gear") }
                 }
             }
-            .tabBarMinimizeBehavior(.onScrollDown)
         }
     }
 }

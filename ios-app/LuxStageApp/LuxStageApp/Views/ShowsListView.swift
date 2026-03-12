@@ -5,6 +5,7 @@ struct ShowsListView: View {
 
     @Environment(PocketBaseClient.self) private var pb
     @Environment(AppLocale.self) private var locale
+    @Environment(SyncEngine.self) private var sync
 
     @State private var shows: [Show] = []
     @State private var showArchived = false
@@ -65,6 +66,9 @@ struct ShowsListView: View {
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
+                    SyncStatusButton()
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button { showNewSheet = true } label: {
                         Image(systemName: "plus")
                     }
@@ -96,14 +100,10 @@ struct ShowsListView: View {
 
     private func load() async {
         loading = true
-        do {
-            async let s = pb.fetchShows(archived: showArchived)
-            async let t = pb.fetchTemplates()
-            shows = try await s
-            templates = (try? await t) ?? []
-        } catch {
-            self.error = error.localizedDescription
-        }
+        async let s = sync.fetchShows(archived: showArchived)
+        async let t = pb.fetchTemplates()
+        shows = await s
+        templates = (try? await t) ?? []
         loading = false
     }
 }

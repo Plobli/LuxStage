@@ -2,11 +2,12 @@ import SwiftUI
 
 struct ChannelEditSheet: View {
     let channel: Channel
+    let showId: String
     let onSave: (Channel) -> Void
     let onDelete: (String) -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @Environment(PocketBaseClient.self) private var pb
+    @Environment(SyncEngine.self) private var sync
 
     @State private var device: String
     @State private var addressRaw: String
@@ -17,8 +18,9 @@ struct ChannelEditSheet: View {
     @State private var confirmDelete = false
     @State private var error: String?
 
-    init(channel: Channel, onSave: @escaping (Channel) -> Void, onDelete: @escaping (String) -> Void) {
+    init(channel: Channel, showId: String, onSave: @escaping (Channel) -> Void, onDelete: @escaping (String) -> Void) {
         self.channel = channel
+        self.showId = showId
         self.onSave = onSave
         self.onDelete = onDelete
         _device = State(initialValue: channel.device ?? "")
@@ -99,14 +101,18 @@ struct ChannelEditSheet: View {
         let (universe, dmx) = parseAddress(addressRaw)
         Task {
             do {
-                let updated = try await pb.updateChannel(id: channel.id, fields: [
-                    "device": device.isEmpty ? nil : device,
-                    "color": color.isEmpty ? nil : color,
-                    "category": category.isEmpty ? nil : category,
-                    "description": description.isEmpty ? nil : description,
-                    "universe": universe,
-                    "dmx_address": dmx,
-                ])
+                let updated = try await sync.updateChannel(
+                    id: channel.id,
+                    fields: [
+                        "device": device.isEmpty ? nil : device,
+                        "color": color.isEmpty ? nil : color,
+                        "category": category.isEmpty ? nil : category,
+                        "description": description.isEmpty ? nil : description,
+                        "universe": universe,
+                        "dmx_address": dmx,
+                    ],
+                    showId: showId
+                )
                 onSave(updated)
                 dismiss()
             } catch {
@@ -119,7 +125,7 @@ struct ChannelEditSheet: View {
     private func delete() {
         Task {
             do {
-                try await pb.deleteChannel(id: channel.id)
+                try await sync.deleteChannel(id: channel.id, showId: showId)
                 onDelete(channel.id)
                 dismiss()
             } catch {

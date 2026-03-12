@@ -3,22 +3,21 @@ import PhotosUI
 
 struct PhotosTabView: View {
     let showId: String
+    @Binding var externalUpload: [PhotosPickerItem]
     @Environment(PocketBaseClient.self) private var pb
 
     @State private var photos: [Photo] = []
     @State private var loading = true
     @State private var uploading = false
     @State private var error: String?
-    @State private var pickerItems: [PhotosPickerItem] = []
     @State private var selectedPhoto: Photo?
     @State private var deleteConfirm: Photo?
 
     var body: some View {
         mainContent
             .navigationTitle("Fotos")
-            .toolbar { uploadToolbarItem }
             .task { await load() }
-            .onChange(of: pickerItems) { _, items in Task { await uploadItems(items) } }
+            .onChange(of: externalUpload) { _, items in Task { await uploadItems(items) } }
             .alert("Fehler", isPresented: errorBinding) {
                 Button("OK") {}
             } message: { Text(error ?? "") }
@@ -27,8 +26,13 @@ struct PhotosTabView: View {
                     if let p = deleteConfirm { Task { await delete(p) } }
                 }
             }
-            .fullScreenCover(item: $selectedPhoto) { photo in
-                PhotoFullscreenView(photo: photo, pb: pb)
+            .sheet(item: $selectedPhoto) { photo in
+                PhotoFullscreenView(photo: photo, pb: pb) { newCaption in
+                    if let idx = photos.firstIndex(where: { $0.id == photo.id }) {
+                        photos[idx] = Photo(id: photo.id, show: photo.show, file: photo.file, caption: newCaption, created: photo.created, collectionId: photo.collectionId)
+                    }
+                }
+                .presentationDetents([.large])
             }
     }
 
@@ -49,17 +53,6 @@ struct PhotosTabView: View {
                 ForEach(photos) { photo in photoCell(photo) }
             }
             .padding(3)
-        }
-    }
-
-    @ToolbarContentBuilder
-    private var uploadToolbarItem: some ToolbarContent {
-        ToolbarItem(placement: .navigationBarTrailing) {
-            PhotosPicker(selection: $pickerItems, maxSelectionCount: 10, matching: .images) {
-                if uploading { ProgressView().scaleEffect(0.8) }
-                else { Label("Hinzufügen", systemImage: "plus") }
-            }
-            .disabled(uploading)
         }
     }
 
@@ -96,13 +89,13 @@ struct PhotosTabView: View {
         uploading = true
         for item in items {
             guard let data = try? await item.loadTransferable(type: Data.self) else { continue }
-            let compressed = compressJPEG(data, maxDimension: 1920, quality: 0.8)
+            let compressed = compressJPEG(data, maxDimension: 1200, quality: 0.78)
             do {
                 let photo = try await pb.uploadPhoto(showId: showId, imageData: compressed, filename: "\(UUID().uuidString).jpg")
                 photos.insert(photo, at: 0)
             } catch { self.error = error.localizedDescription }
         }
-        pickerItems = []
+        externalUpload = []
         uploading = false
     }
 
@@ -129,31 +122,76 @@ struct PhotosTabView: View {
 struct PhotoFullscreenView: View {
     let photo: Photo
     let pb: PocketBaseClient
+    var onCaptionUpdated: ((String) -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
 
+    @State private var caption: String = ""
+    @State private var editingCaption = false
+    @State private var saving = false
+    @State private var scale: CGFloat = 1.0
+    @State private var lastScale: CGFloat = 1.0
+
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            Color.black.ignoresSafeArea()
-            AsyncImage(url: pb.fileURL(collectionId: photo.collectionId, recordId: photo.id, filename: photo.file)) { image in
-                image.resizable().scaledToFit()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } placeholder: {
-                ProgressView().tint(.white)
+        NavigationStack {
+            GeometryReader { geo in
+                AsyncImage(url: pb.fileURL(collectionId: photo.collectionId, recordId: photo.id, filename: photo.file)) { image in
+                    image
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: geo.size.width, height: geo.size.height)
+                        .scaleEffect(scale)
+                        .gesture(
+                            MagnifyGesture()
+                                .onChanged { value in scale = max(1.0, lastScale * value.magnification) }
+                                .onEnded { _ in lastScale = scale }
+                        )
+                        .onTapGesture(count: 2) {
+                            withAnimation { scale = scale > 1.0 ? 1.0 : 2.0; lastScale = scale }
+                        }
+                } placeholder: {
+                    ProgressView().frame(width: geo.size.width, height: geo.size.height)
+                }
             }
-            if let caption = photo.caption, !caption.isEmpty {
-                Text(caption)
-                    .foregroundStyle(.white)
-                    .padding(8)
-                    .background(.black.opacity(0.5))
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                    .padding()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            .ignoresSafeArea(edges: .horizontal)
+            .navigationBarTitleDisplayMode(.inline)
+            .safeAreaInset(edge: .bottom) {
+                if editingCaption {
+                    TextField("Beschreibung", text: $caption, axis: .vertical)
+                        .textFieldStyle(.roundedBorder)
+                        .padding()
+                        .background(.regularMaterial)
+                } else if !caption.isEmpty {
+                    Text(caption)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
+                        .background(.regularMaterial)
+                }
             }
-            Button { dismiss() } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.title).foregroundStyle(.white).padding()
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Schließen") { dismiss() }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    if saving {
+                        ProgressView().scaleEffect(0.8)
+                    } else if editingCaption {
+                        Button("Fertig") { Task { await saveCaption() } }
+                            .fontWeight(.semibold)
+                    } else {
+                        Button("Bearbeiten") { editingCaption = true }
+                    }
+                }
             }
         }
-        .onTapGesture { dismiss() }
+        .onAppear { caption = photo.caption ?? "" }
+    }
+
+    private func saveCaption() async {
+        saving = true
+        if let updated = try? await pb.updateCaption(id: photo.id, caption: caption) {
+            onCaptionUpdated?(updated.caption ?? "")
+        }
+        saving = false
+        editingCaption = false
     }
 }

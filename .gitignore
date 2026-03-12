@@ -14,6 +14,7 @@ ios-app/DerivedData/
 ios-app/*.xcworkspace/xcuserdata/
 ios-app/*.xcodeproj/xcuserdata/
 ios-app/.build/
+**/*.xcuserstate
 
 # Claude Code
 .claude/

@@ -220,6 +220,11 @@ final class PocketBaseClient {
         let _: Data = try await request(method: "DELETE", path: "/api/collections/photos/records/\(id)")
     }
 
+    func updateCaption(id: String, caption: String) async throws -> Photo {
+        let data = try await request(method: "PATCH", path: "/api/collections/photos/records/\(id)", bodyAny: ["caption": caption])
+        return try JSONDecoder().decode(Photo.self, from: data)
+    }
+
     // MARK: - Photo URL helpers
 
     func thumbURL(collectionId: String = "photos", recordId: String, filename: String) -> URL? {

@@ -21,6 +21,7 @@ struct ShowDetailView: View {
     @State private var customValues: [String: String] = [:]
     @State private var aufbauText = ""
     @State private var aufbauSaveTask: Task<Void, Never>?
+    @State private var editingAufbau = false
 
     var body: some View {
         Group {
@@ -43,6 +44,12 @@ struct ShowDetailView: View {
                 channels.removeAll { $0.id == id }
             })
         }
+        .sheet(isPresented: $editingAufbau) {
+            AufbauEditSheet(html: aufbauText) { newHTML in
+                aufbauText = newHTML
+                Task { await saveCustomField("Aufbau", value: newHTML) }
+            }
+        }
     }
 
     // MARK: - Content
@@ -63,8 +70,18 @@ struct ShowDetailView: View {
     // MARK: - Aufbau Section
 
     private var aufbauSection: some View {
-        Section(locale.t("show.aufbau")) {
+        Section {
             HTMLTextView(html: aufbauText).frame(minHeight: 80)
+        } header: {
+            HStack {
+                Text(locale.t("show.aufbau"))
+                Spacer()
+                Button { editingAufbau = true } label: {
+                    Text("Bearbeiten")
+                        .font(.subheadline)
+                        .textCase(nil)
+                }
+            }
         }
     }
 
@@ -346,6 +363,42 @@ private struct ChannelRow: View {
             .padding(.vertical, 4)
         }
         .foregroundStyle(.primary)
+    }
+}
+
+// MARK: - Aufbau Edit Sheet
+
+private struct AufbauEditSheet: View {
+    let html: String
+    let onSave: (String) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var draft: String
+
+    init(html: String, onSave: @escaping (String) -> Void) {
+        self.html = html
+        self.onSave = onSave
+        _draft = State(initialValue: html)
+    }
+
+    var body: some View {
+        NavigationStack {
+            RichTextEditor(html: $draft)
+                .padding(.horizontal)
+                .navigationTitle("Aufbau bearbeiten")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Abbrechen") { dismiss() }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Fertig") {
+                            onSave(draft)
+                            dismiss()
+                        }
+                    }
+                }
+        }
     }
 }
 

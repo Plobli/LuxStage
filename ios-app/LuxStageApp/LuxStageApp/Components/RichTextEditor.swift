@@ -8,6 +8,7 @@ struct RichTextEditor: View {
 
     @Environment(\.fontResolutionContext) private var fontResolutionContext
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(AppLocale.self) private var locale
 
     @State private var attributedText: AttributedString = AttributedString("")
     @State private var selection = AttributedTextSelection()
@@ -54,7 +55,7 @@ struct RichTextEditor: View {
             .background(.bar)
 
             if showingColorPicker {
-                ColorPicker("Textfarbe", selection: $selectedForegroundColor)
+                ColorPicker(locale.t("color.picker.text"), selection: $selectedForegroundColor)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
                     .background(Color(.systemGray5))
@@ -363,7 +364,7 @@ private struct FormatButton: View {
 
     NavigationStack {
         RichTextEditor(html: $html)
-            .navigationTitle("Aufbau bearbeiten")
+            .navigationTitle("Edit setup notes")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -371,5 +372,6 @@ private struct FormatButton: View {
                 }
             }
     }
+    .environment(AppLocale.shared)
 }
 

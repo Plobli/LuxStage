@@ -13,6 +13,7 @@
   "auth.name": "Name",
   "auth.login.title": "Log in",
   "auth.login.submit": "Log in",
+  "auth.login.loading": "Logging in …",
   "auth.login.error": "Login failed. Please check your email and password.",
 
   "show.new": "New Show",
@@ -35,6 +36,7 @@
   "show.list.empty": "No shows yet.",
   "show.list.archived_empty": "No archived shows.",
   "show.aufbau": "Setup",
+  "show.aufbau.edit": "Edit setup notes",
   "show.aufbau.placeholder": "Setup notes, special conditions, remarks …",
 
   "mode.preparation": "Setup",
@@ -54,6 +56,7 @@
   "field.venue": "Venue",
   "field.archived": "Archived",
   "field.position": "Position",
+  "field.details": "Details",
 
   "channel.active": "Active",
   "channel.inactive": "Inactive",
@@ -104,18 +107,37 @@
 
   "channel.no_category": "No Category",
   "channel.add": "Add channel",
+  "channel.delete": "Delete channel",
+  "channel.delete.confirm": "Really delete channel {number}?",
+  "channel.label": "Channel {number}",
+  "channel.osc.on": "ON",
+  "channel.osc.off": "OFF",
+
+  "settings.server_url": "Server URL",
+  "settings.server_url.placeholder": "e.g. http://192.168.1.100:8090",
+  "settings.server_settings": "Server settings",
+  "settings.osc.ip": "IP address",
+  "settings.osc.port": "Port",
+  "settings.osc.full": "Full",
+  "settings.osc.out": "Out",
+  "settings.osc.autosave": "Saved automatically.",
 
   "settings.channel_edit": "Channel editing",
   "settings.channel_edit.inline": "Directly in the table (inline)",
   "settings.channel_edit.dialog": "In a dialog (popup)",
 
   "color.picker.label": "Color / Filter",
+  "color.picker.text": "Text color",
   "color.picker.custom": "Custom",
   "color.picker.placeholder": "e.g. R02 or warm white",
 
   "photo.add": "Add photo",
   "photo.caption": "Caption",
   "photo.delete": "Delete photo",
+  "photo.delete.confirm": "Delete photo?",
+  "photo.delete.message": "This photo will be permanently deleted.",
+  "photo.loading": "Loading photos …",
+  "photo.empty": "No photos",
 
   "action.save": "Save",
   "action.cancel": "Cancel",
@@ -124,11 +146,16 @@
   "action.close": "Close",
   "action.back": "Back",
   "action.search": "Search",
+  "action.done": "Done",
+  "action.edit": "Edit",
+  "action.add": "Add",
+  "action.ok": "OK",
 
-  "error.generic": "An error occurred.",
+  "error.generic": "Error",
   "error.network": "Cannot reach the server.",
   "error.not_found": "Not found.",
   "error.unauthorized": "Not logged in.",
+  "error.loading": "Loading …",
 
   "csv.error.duplicate_channel": "Duplicate channel number: {channel}",
   "csv.error.invalid_channel": "Invalid channel number on line {line}: \"{value}\"",

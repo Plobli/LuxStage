@@ -13,6 +13,7 @@
   "auth.name": "Name",
   "auth.login.title": "Anmelden",
   "auth.login.submit": "Anmelden",
+  "auth.login.loading": "Anmelden …",
   "auth.login.error": "Anmeldung fehlgeschlagen. Bitte E-Mail und Passwort prüfen.",
 
   "show.new": "Neue Show",
@@ -35,6 +36,7 @@
   "show.list.empty": "Noch keine Shows vorhanden.",
   "show.list.archived_empty": "Keine archivierten Shows.",
   "show.aufbau": "Aufbau",
+  "show.aufbau.edit": "Aufbau bearbeiten",
   "show.aufbau.placeholder": "Aufbaunotizen, Besonderheiten, Hinweise …",
 
   "mode.preparation": "Aufbau",
@@ -54,6 +56,7 @@
   "field.venue": "Spielstätte",
   "field.archived": "Archiviert",
   "field.position": "Position",
+  "field.details": "Details",
 
   "channel.active": "Aktiv",
   "channel.inactive": "Inaktiv",
@@ -124,6 +127,7 @@
   "settings.channel_edit.dialog": "Im Dialog (Popup)",
 
   "color.picker.label": "Farbe / Filter",
+  "color.picker.text": "Textfarbe",
   "color.picker.custom": "Freitext",
   "color.picker.placeholder": "z.B. R02 oder warm weiß",
 

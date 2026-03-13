@@ -18,7 +18,7 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Server-URL", text: $serverURL)
+                    TextField(locale.t("settings.server_url"), text: $serverURL)
                         .keyboardType(.URL)
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
@@ -26,7 +26,7 @@ struct SettingsView: View {
                 } header: {
                     Text(locale.t("settings.server"))
                 } footer: {
-                    Text("z.B. http://192.168.1.100:8090")
+                    Text(locale.t("settings.server_url.placeholder"))
                         .font(.caption2)
                 }
 
@@ -58,7 +58,7 @@ struct SettingsView: View {
             .toolbar {
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
-                    Button("Fertig") { hideKeyboard() }
+                    Button(locale.t("action.done")) { hideKeyboard() }
                 }
             }
         }
@@ -86,11 +86,12 @@ struct SettingsView: View {
 private struct OSCTemplateSection: View {
     let template: VenueTemplate
     @Binding var settings: OSCSettings
+    @Environment(AppLocale.self) private var locale
     @State private var portText: String = ""
 
     var body: some View {
         Section {
-            LabeledContent("IP-Adresse") {
+            LabeledContent(locale.t("settings.osc.ip")) {
                 TextField("192.168.1.100", text: $settings.host)
                     .keyboardType(.numbersAndPunctuation)
                     .autocorrectionDisabled()
@@ -98,20 +99,20 @@ private struct OSCTemplateSection: View {
                     .submitLabel(.done)
                     .multilineTextAlignment(.trailing)
             }
-            LabeledContent("Port") {
+            LabeledContent(locale.t("settings.osc.port")) {
                 TextField("8000", text: $portText)
                     .keyboardType(.numberPad)
                     .multilineTextAlignment(.trailing)
                     .frame(width: 80)
             }
-            LabeledContent("Full") {
+            LabeledContent(locale.t("settings.osc.full")) {
                 TextField("/eos/chan/{chan}/full", text: $settings.fullCommand)
                     .multilineTextAlignment(.trailing)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
                     .submitLabel(.done)
             }
-            LabeledContent("Out") {
+            LabeledContent(locale.t("settings.osc.out")) {
                 TextField("/eos/chan/{chan}/out", text: $settings.outCommand)
                     .multilineTextAlignment(.trailing)
                     .autocorrectionDisabled()
@@ -121,7 +122,7 @@ private struct OSCTemplateSection: View {
         } header: {
             Text("OSC – \(template.name)")
         } footer: {
-            Text("Wird automatisch gespeichert.")
+            Text(locale.t("settings.osc.autosave"))
                 .font(.caption2)
         }
         .onAppear { portText = String(settings.port) }

@@ -31,7 +31,7 @@ struct ShowContainerView: View {
             if selectedTab == 2 {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     PhotosPicker(selection: $photoPickerItems, maxSelectionCount: 10, matching: .images) {
-                        Label("Hinzufügen", systemImage: "plus")
+                        Label(locale.t("action.add"), systemImage: "plus")
                     }
                 }
             }

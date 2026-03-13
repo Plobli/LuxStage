@@ -2,6 +2,7 @@ import SwiftUI
 
 struct LoginView: View {
     @Environment(PocketBaseClient.self) private var pb
+    @Environment(AppLocale.self) private var locale
 
     @State private var email = ""
     @State private var password = ""
@@ -14,12 +15,12 @@ struct LoginView: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("E-Mail", text: $email)
+                    TextField(locale.t("auth.email"), text: $email)
                         .keyboardType(.emailAddress)
                         .textContentType(.emailAddress)
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
-                    SecureField("Passwort", text: $password)
+                    SecureField(locale.t("auth.password"), text: $password)
                         .textContentType(.password)
                 }
 
@@ -36,10 +37,10 @@ struct LoginView: View {
                         if loading {
                             HStack {
                                 ProgressView()
-                                Text("Anmelden …")
+                                Text(locale.t("auth.login.loading"))
                             }
                         } else {
-                            Text("Anmelden")
+                            Text(locale.t("auth.login.submit"))
                                 .frame(maxWidth: .infinity)
                         }
                     }
@@ -47,8 +48,8 @@ struct LoginView: View {
                 }
 
                 Section {
-                    DisclosureGroup("Server-Einstellungen", isExpanded: $showServerField) {
-                        TextField("Server-URL", text: $serverURL)
+                    DisclosureGroup(locale.t("settings.server_settings"), isExpanded: $showServerField) {
+                        TextField(locale.t("settings.server_url"), text: $serverURL)
                             .keyboardType(.URL)
                             .autocorrectionDisabled()
                             .textInputAutocapitalization(.never)
@@ -85,5 +86,6 @@ struct LoginView: View {
 #Preview {
     LoginView()
         .environment(PocketBaseClient.shared)
+        .environment(AppLocale.shared)
 }
 

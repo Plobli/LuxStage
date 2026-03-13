@@ -19,21 +19,21 @@ struct ShowDetailView: View {
     @State private var search = ""
     @State private var editingChannel: Channel?
     @State private var customValues: [String: String] = [:]
-    @State private var aufbauText = ""
-    @State private var aufbauSaveTask: Task<Void, Never>?
-    @State private var editingAufbau = false
+    @State private var setupText = ""
+    @State private var setupSaveTask: Task<Void, Never>?
+    @State private var editingSetup = false
 
     var body: some View {
         Group {
             if loading {
-                ProgressView("Laden …")
+                ProgressView(locale.t("error.loading"))
             } else if show != nil {
                 content
             }
         }
         .task { await load() }
-        .alert("Fehler", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
-            Button("OK") {}
+        .alert(locale.t("error.generic"), isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
+            Button(locale.t("action.ok")) {}
         } message: {
             Text(error ?? "")
         }
@@ -44,9 +44,9 @@ struct ShowDetailView: View {
                 channels.removeAll { $0.id == id }
             })
         }
-        .sheet(isPresented: $editingAufbau) {
-            AufbauEditSheet(html: aufbauText) { newHTML in
-                aufbauText = newHTML
+        .sheet(isPresented: $editingSetup) {
+            SetupEditSheet(html: setupText) { newHTML in
+                setupText = newHTML
                 Task { await saveCustomField("Aufbau", value: newHTML) }
             }
         }
@@ -57,7 +57,7 @@ struct ShowDetailView: View {
     private var content: some View {
         List {
             if !lightingMode {
-                aufbauSection
+                setupSection
                 if !allCustomFields.isEmpty { customFieldsSection }
             }
             channelSection
@@ -67,17 +67,17 @@ struct ShowDetailView: View {
         .refreshable { await reload() }
     }
 
-    // MARK: - Aufbau Section
+    // MARK: - Setup Section
 
-    private var aufbauSection: some View {
+    private var setupSection: some View {
         Section {
-            HTMLTextView(html: aufbauText).frame(minHeight: 80)
+            HTMLTextView(html: setupText).frame(minHeight: 80)
         } header: {
             HStack {
                 Text(locale.t("show.aufbau"))
                 Spacer()
-                Button { editingAufbau = true } label: {
-                    Text("Bearbeiten")
+                Button { editingSetup = true } label: {
+                    Text(locale.t("action.edit"))
                         .font(.subheadline)
                         .textCase(nil)
                 }
@@ -101,8 +101,8 @@ struct ShowDetailView: View {
                         get: { customValues[field.field_name] ?? "" },
                         set: { newVal in
                             customValues[field.field_name] = newVal
-                            aufbauSaveTask?.cancel()
-                            aufbauSaveTask = Task {
+                            setupSaveTask?.cancel()
+                            setupSaveTask = Task {
                                 try? await Task.sleep(for: .milliseconds(600))
                                 guard !Task.isCancelled else { return }
                                 await saveCustomField(field.field_name, value: newVal)
@@ -191,7 +191,7 @@ struct ShowDetailView: View {
         channels = fc
         let raw = fs.custom_field_values?.value as? [String: Any] ?? [:]
         customValues = raw.compactMapValues { $0 as? String }
-        aufbauText = customValues["Aufbau"] ?? ""
+        setupText = customValues["Aufbau"] ?? ""
         if let tid = fs.template {
             if !lightingMode {
                 let templateFields = (try? await pb.fetchTemplateCustomFields(templateId: tid)) ?? []
@@ -276,6 +276,7 @@ private struct LightingChannelRow: View {
     let onOSCToggle: (Bool) -> Void
     let onCheckToggle: () -> Void
 
+    @Environment(AppLocale.self) private var locale
     @State private var oscIsOn = false
 
     var body: some View {
@@ -290,7 +291,7 @@ private struct LightingChannelRow: View {
 
             // Kanalinfo (mitte)
             VStack(alignment: .leading, spacing: 3) {
-                Text("Kanal \(channel.channel_number)").font(.headline)
+                Text(locale.t("channel.label").replacingOccurrences(of: "{number}", with: channel.channel_number)).font(.headline)
                 if let desc = channel.description, !desc.isEmpty {
                     Text(desc).font(.callout).foregroundStyle(.primary)
                         .padding(.horizontal, 8).padding(.vertical, 4)
@@ -306,7 +307,7 @@ private struct LightingChannelRow: View {
                 oscIsOn.toggle()
                 onOSCToggle(oscIsOn)
             }) {
-                Text(oscIsOn ? "AN" : "AUS")
+                Text(oscIsOn ? locale.t("channel.osc.on") : locale.t("channel.osc.off"))
                     .font(.caption).fontWeight(.semibold)
                     .frame(width: 44, height: 30)
                     .background(oscIsOn ? Color.orange : Color(.systemGray5))
@@ -366,13 +367,14 @@ private struct ChannelRow: View {
     }
 }
 
-// MARK: - Aufbau Edit Sheet
+// MARK: - Setup Edit Sheet
 
-private struct AufbauEditSheet: View {
+private struct SetupEditSheet: View {
     let html: String
     let onSave: (String) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppLocale.self) private var locale
     @State private var draft: String
 
     init(html: String, onSave: @escaping (String) -> Void) {
@@ -384,11 +386,11 @@ private struct AufbauEditSheet: View {
     var body: some View {
         NavigationStack {
             RichTextEditor(html: $draft)
-                .navigationTitle("Aufbau bearbeiten")
+                .navigationTitle(locale.t("show.aufbau.edit"))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {
-                        Button("Fertig") {
+                        Button(locale.t("action.done")) {
                             onSave(draft)
                             dismiss()
                         }

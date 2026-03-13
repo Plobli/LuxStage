@@ -8,6 +8,7 @@ struct ChannelEditSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(SyncEngine.self) private var sync
+    @Environment(AppLocale.self) private var locale
 
     @State private var device: String
     @State private var addressRaw: String
@@ -33,27 +34,27 @@ struct ChannelEditSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Kanal \(channel.channel_number)") {
-                    TextField("Beschreibung", text: $description, axis: .vertical)
+                Section(locale.t("channel.label").replacingOccurrences(of: "{number}", with: channel.channel_number)) {
+                    TextField(locale.t("field.description"), text: $description, axis: .vertical)
                         .lineLimit(3...6)
                         .font(.body)
                 }
 
-                Section("Farbe / Filter") {
+                Section(locale.t("color.picker.label")) {
                     ColorPickerField(value: $color)
                 }
 
-                Section("Details") {
-                    LabeledContent("Adresse") {
+                Section(locale.t("field.details")) {
+                    LabeledContent(locale.t("field.address")) {
                         TextField("1/001", text: $addressRaw)
                             .multilineTextAlignment(.trailing)
                             .keyboardType(.numbersAndPunctuation)
                     }
-                    LabeledContent("Gerät") {
+                    LabeledContent(locale.t("field.device")) {
                         TextField("", text: $device)
                             .multilineTextAlignment(.trailing)
                     }
-                    LabeledContent("Kategorie") {
+                    LabeledContent(locale.t("field.category")) {
                         TextField("", text: $category)
                             .multilineTextAlignment(.trailing)
                     }
@@ -64,29 +65,29 @@ struct ChannelEditSheet: View {
                 }
 
                 Section {
-                    Button("Kanal löschen", role: .destructive) {
+                    Button(locale.t("channel.delete"), role: .destructive) {
                         confirmDelete = true
                     }
                 }
             }
-            .navigationTitle("Kanal bearbeiten")
+            .navigationTitle(locale.t("channel.edit"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Abbrechen") { dismiss() }
+                    Button(locale.t("action.cancel")) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Speichern") { save() }
+                    Button(locale.t("action.save")) { save() }
                         .disabled(saving)
                 }
             }
             .confirmationDialog(
-                "Kanal \(channel.channel_number) wirklich löschen?",
+                locale.t("channel.delete.confirm").replacingOccurrences(of: "{number}", with: channel.channel_number),
                 isPresented: $confirmDelete,
                 titleVisibility: .visible
             ) {
-                Button("Löschen", role: .destructive) { delete() }
-                Button("Abbrechen", role: .cancel) {}
+                Button(locale.t("action.delete"), role: .destructive) { delete() }
+                Button(locale.t("action.cancel"), role: .cancel) {}
             }
         }
     }
@@ -146,4 +147,5 @@ struct ChannelEditSheet: View {
     )
     ChannelEditSheet(channel: channel, showId: "show1", onSave: { _ in }, onDelete: { _ in })
         .environment(SyncEngine.shared)
+        .environment(AppLocale.shared)
 }

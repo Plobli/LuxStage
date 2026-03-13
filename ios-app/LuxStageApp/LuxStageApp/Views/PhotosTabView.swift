@@ -8,6 +8,7 @@ struct PhotosTabView: View {
     let showId: String
     @Binding var externalUpload: [PhotosPickerItem]
     @Environment(PocketBaseClient.self) private var pb
+    @Environment(AppLocale.self) private var locale
 
     @State private var photos: [Photo] = []
     @State private var loading = true
@@ -17,14 +18,14 @@ struct PhotosTabView: View {
 
     var body: some View {
         mainContent
-            .navigationTitle("Fotos")
+            .navigationTitle(locale.t("show.photos"))
             .task { await load() }
             .onChange(of: externalUpload) { _, items in Task { await uploadItems(items) } }
-            .alert("Fehler", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
-                Button("OK") {}
+            .alert(locale.t("error.generic"), isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
+                Button(locale.t("action.ok")) {}
             } message: { Text(error ?? "") }
-            .confirmationDialog("Foto löschen?", isPresented: Binding(get: { deleteConfirm != nil }, set: { if !$0 { deleteConfirm = nil } }), titleVisibility: .visible) {
-                Button("Löschen", role: .destructive) {
+            .confirmationDialog(locale.t("photo.delete.confirm"), isPresented: Binding(get: { deleteConfirm != nil }, set: { if !$0 { deleteConfirm = nil } }), titleVisibility: .visible) {
+                Button(locale.t("action.delete"), role: .destructive) {
                     if let p = deleteConfirm { Task { await delete(p) } }
                 }
             }
@@ -33,6 +34,10 @@ struct PhotosTabView: View {
                     urls: photos.map { pb.fileURL(collectionId: $0.collectionId, recordId: $0.id, filename: $0.file) },
                     startIndex: index,
                     totalCount: photos.count,
+                    deleteTitle: locale.t("photo.delete.confirm"),
+                    deleteMessage: locale.t("photo.delete.message"),
+                    cancelLabel: locale.t("action.cancel"),
+                    deleteLabel: locale.t("action.delete"),
                     onDelete: { deleteIndex in
                         let photo = photos[deleteIndex]
                         Task { await delete(photo) }
@@ -44,9 +49,9 @@ struct PhotosTabView: View {
     @ViewBuilder
     private var mainContent: some View {
         if loading {
-            ProgressView("Fotos laden …")
+            ProgressView(locale.t("photo.loading"))
         } else if photos.isEmpty {
-            ContentUnavailableView("Keine Fotos", systemImage: "photo.on.rectangle")
+            ContentUnavailableView(locale.t("photo.empty"), systemImage: "photo.on.rectangle")
         } else {
             photoGrid
         }
@@ -124,6 +129,10 @@ private struct NativePhotoGallery: UIViewControllerRepresentable {
     let urls: [URL?]
     let startIndex: Int
     let totalCount: Int
+    var deleteTitle: String = "Delete photo?"
+    var deleteMessage: String = "This photo will be permanently deleted."
+    var cancelLabel: String = "Cancel"
+    var deleteLabel: String = "Delete"
     var onDelete: ((Int) -> Void)?
 
     func makeUIViewController(context: Context) -> UINavigationController {
@@ -131,6 +140,10 @@ private struct NativePhotoGallery: UIViewControllerRepresentable {
             urls: urls,
             startIndex: startIndex,
             totalCount: totalCount,
+            deleteTitle: deleteTitle,
+            deleteMessage: deleteMessage,
+            cancelLabel: cancelLabel,
+            deleteLabel: deleteLabel,
             onDelete: onDelete
         )
         let nav = UINavigationController(rootViewController: galleryVC)
@@ -162,11 +175,22 @@ private final class GalleryContainerViewController: UIViewController,
     private let pageVC = UIPageViewController(transitionStyle: .scroll, navigationOrientation: .horizontal)
     private var barsHidden = false
     private let onDelete: ((Int) -> Void)?
+    private let deleteTitle: String
+    private let deleteMessage: String
+    private let cancelLabel: String
+    private let deleteLabel: String
 
-    init(urls: [URL?], startIndex: Int, totalCount: Int, onDelete: ((Int) -> Void)? = nil) {
+    init(urls: [URL?], startIndex: Int, totalCount: Int,
+         deleteTitle: String = "Delete photo?", deleteMessage: String = "This photo will be permanently deleted.",
+         cancelLabel: String = "Cancel", deleteLabel: String = "Delete",
+         onDelete: ((Int) -> Void)? = nil) {
         self.urls = urls
         self.currentIndex = startIndex
         self.totalCount = totalCount
+        self.deleteTitle = deleteTitle
+        self.deleteMessage = deleteMessage
+        self.cancelLabel = cancelLabel
+        self.deleteLabel = deleteLabel
         self.onDelete = onDelete
         super.init(nibName: nil, bundle: nil)
     }
@@ -225,12 +249,12 @@ private final class GalleryContainerViewController: UIViewController,
 
     @objc private func confirmDelete() {
         let alert = UIAlertController(
-            title: "Foto löschen?",
-            message: "Das Foto wird unwiderruflich gelöscht.",
+            title: deleteTitle,
+            message: deleteMessage,
             preferredStyle: .alert
         )
-        alert.addAction(UIAlertAction(title: "Abbrechen", style: .cancel))
-        alert.addAction(UIAlertAction(title: "Löschen", style: .destructive) { [weak self] _ in
+        alert.addAction(UIAlertAction(title: cancelLabel, style: .cancel))
+        alert.addAction(UIAlertAction(title: deleteLabel, style: .destructive) { [weak self] _ in
             guard let self else { return }
             self.onDelete?(self.currentIndex)
             self.dismiss(animated: true)
@@ -412,4 +436,5 @@ private final class ZoomPageViewController: UIViewController, UIScrollViewDelega
     @Previewable @State var uploads: [PhotosPickerItem] = []
     PhotosTabView(showId: "preview", externalUpload: $uploads)
         .environment(PocketBaseClient.shared)
+        .environment(AppLocale.shared)
 }

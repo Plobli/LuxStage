@@ -131,3 +131,11 @@ private struct OSCTemplateSection: View {
         .onChange(of: settings) { _, _ in settings.save(templateId: template.id) }
     }
 }
+
+#Preview {
+    NavigationStack {
+        SettingsView()
+    }
+    .environment(PocketBaseClient.shared)
+    .environment(AppLocale.shared)
+}

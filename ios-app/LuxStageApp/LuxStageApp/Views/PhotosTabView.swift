@@ -407,3 +407,9 @@ private final class ZoomPageViewController: UIViewController, UIScrollViewDelega
         galleryContainer?.toggleBars()
     }
 }
+
+#Preview {
+    @Previewable @State var uploads: [PhotosPickerItem] = []
+    PhotosTabView(showId: "preview", externalUpload: $uploads)
+        .environment(PocketBaseClient.shared)
+}

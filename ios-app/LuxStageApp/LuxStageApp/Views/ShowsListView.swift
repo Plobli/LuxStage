@@ -230,3 +230,12 @@ struct NewShowSheet: View {
         }
     }
 }
+#Preview {
+    NavigationStack {
+        ShowsListView(showSettingsButton: true)
+    }
+    .environment(PocketBaseClient.shared)
+    .environment(AppLocale.shared)
+    .environment(SyncEngine.shared)
+}
+

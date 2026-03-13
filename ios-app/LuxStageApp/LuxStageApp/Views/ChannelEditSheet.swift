@@ -136,3 +136,14 @@ struct ChannelEditSheet: View {
         }
     }
 }
+
+#Preview {
+    let channel = Channel(
+        id: "preview", show: "show1", channel_number: "1",
+        universe: 1, dmx_address: 42, device: "Sixbar 1000",
+        color: "R27", description: "Front links", category: "Frontlicht",
+        active: true, position: 0
+    )
+    ChannelEditSheet(channel: channel, showId: "show1", onSave: { _ in }, onDelete: { _ in })
+        .environment(SyncEngine.shared)
+}

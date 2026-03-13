@@ -384,13 +384,9 @@ private struct AufbauEditSheet: View {
     var body: some View {
         NavigationStack {
             RichTextEditor(html: $draft)
-                .padding(.horizontal)
                 .navigationTitle("Aufbau bearbeiten")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Abbrechen") { dismiss() }
-                    }
                     ToolbarItem(placement: .confirmationAction) {
                         Button("Fertig") {
                             onSave(draft)
@@ -409,3 +405,13 @@ struct CustomFieldEntry: Identifiable, Hashable {
     var field_name: String
     var unit_hint: String?
 }
+#Preview {
+    @Previewable @State var checks: Set<String> = []
+    NavigationStack {
+        ShowDetailView(showId: "preview", checks: $checks, lightingMode: false)
+    }
+    .environment(PocketBaseClient.shared)
+    .environment(AppLocale.shared)
+    .environment(SyncEngine.shared)
+}
+

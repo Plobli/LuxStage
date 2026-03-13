@@ -136,3 +136,10 @@ struct ColorPickerSheet: View {
         }
     }
 }
+
+#Preview {
+    @Previewable @State var color = "R27"
+    Form {
+        ColorPickerField(value: $color)
+    }
+}

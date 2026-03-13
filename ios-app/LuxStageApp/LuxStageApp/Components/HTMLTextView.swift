@@ -42,3 +42,8 @@ struct HTMLTextView: UIViewRepresentable {
         webView.loadHTMLString(styled, baseURL: nil)
     }
 }
+#Preview {
+    HTMLTextView(html: "<p>Sixbar <strong>1000</strong></p><ul><li>Cuepix 2x</li><li><em>Standard</em></li></ul>")
+        .padding()
+}
+

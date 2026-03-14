@@ -11,7 +11,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: '../pocketbase/pb_public',
+    outDir: '../web-app/dist',
     emptyOutDir: true,
   },
   server: {

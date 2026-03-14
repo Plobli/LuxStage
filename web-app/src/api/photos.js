@@ -1,56 +1,31 @@
-import { pb } from './pocketbase.js'
+/**
+ * photos.js — Foto-API v1.1
+ * Komprimierung passiert server-seitig (sharp) — kein Canvas mehr nötig.
+ */
+import { api, getToken } from './client.js'
+
+const BASE = () => localStorage.getItem('server_url') || 'http://localhost:3000'
 
 export async function fetchPhotos(showId) {
-  return await pb.collection('photos').getFullList({
-    filter: `show = "${showId}"`,
-    sort: '-created',
-  })
+  return api.get(`/api/shows/${showId}/photos`)
 }
 
-export async function uploadPhoto(showId, file, caption = '') {
-  const compressed = await compressImage(file)
+export async function uploadPhoto(showId, file) {
   const formData = new FormData()
-  formData.append('show', showId)
-  formData.append('file', compressed)
-  formData.append('caption', caption)
-  return await pb.collection('photos').create(formData)
-}
-
-export async function updateCaption(id, caption) {
-  return await pb.collection('photos').update(id, { caption })
-}
-
-export async function deletePhoto(id) {
-  return await pb.collection('photos').delete(id)
-}
-
-export function getThumbUrl(photo) {
-  return pb.files.getURL(photo, photo.file, { thumb: '400x400' })
-}
-
-export function getFullUrl(photo) {
-  return pb.files.getURL(photo, photo.file)
-}
-
-async function compressImage(file) {
-  const MAX_SIZE = 1920
-  const QUALITY = 0.8
-  return new Promise((resolve) => {
-    const img = new Image()
-    const url = URL.createObjectURL(file)
-    img.onload = () => {
-      URL.revokeObjectURL(url)
-      let { width, height } = img
-      if (width <= MAX_SIZE && height <= MAX_SIZE) { resolve(file); return }
-      const scale = MAX_SIZE / Math.max(width, height)
-      width = Math.round(width * scale)
-      height = Math.round(height * scale)
-      const canvas = document.createElement('canvas')
-      canvas.width = width
-      canvas.height = height
-      canvas.getContext('2d').drawImage(img, 0, 0, width, height)
-      canvas.toBlob(blob => resolve(new File([blob], file.name, { type: 'image/jpeg' })), 'image/jpeg', QUALITY)
-    }
-    img.src = url
+  formData.append('photo', file, file.name)
+  const res = await fetch(`${BASE()}/api/shows/${showId}/photos`, {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + getToken() },
+    body: formData,
   })
+  if (!res.ok) throw new Error(`Upload fehlgeschlagen: ${res.status}`)
+  return res.json()
+}
+
+export async function deletePhoto(showId, filename) {
+  return api.delete(`/api/shows/${showId}/photos/${filename}`)
+}
+
+export function getPhotoUrl(showId, filename) {
+  return `${BASE()}/api/shows/${showId}/photos/${filename}?token=${getToken()}`
 }

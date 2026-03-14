@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { isLoggedIn } from '../api/pocketbase.js'
+import { isLoggedIn } from '../api/client.js'
 
 const routes = [
   {

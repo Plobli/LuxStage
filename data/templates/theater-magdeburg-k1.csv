@@ -1,0 +1,309 @@
+﻿# LuxStage Venue Template — Format Version: 1.0
+venue_name;Theater Magdeburg
+venue_hall;K1
+---
+channel_number;address;device;color;description;category
+1;1/121;VK Bühne unten Lks;NC;;Versatz Bühne hinten links
+2;1/122;VK Bühne unten Lks;NC;;Versatz Bühne hinten links
+3;1/123;VK Bühne unten Lks;NC;;Versatz Bühne hinten links
+4;1/124;VK Bühne unten Lks;NC;;Versatz Bühne hinten links
+5;1/125;VK Bühne unten Lks;NC;;Versatz Bühne hinten links
+6;1/126;VK Bühne unten Lks;NC;;Versatz Bühne hinten links
+7;1/145;5 KW;NC;;Versatz Bühne hinten links
+9;1/127;VK Bühne unten Rs;NC;;Versatz Bühne hinten rechts
+10;1/128;VK Bühne unten Rs;NC;;Versatz Bühne hinten rechts
+11;1/129;VK Bühne unten Rs;NC;;Versatz Bühne hinten rechts
+12;1/130;VK Bühne unten Rs;NC;;Versatz Bühne hinten rechts
+13;1/131;VK Bühne unten Rs;NC;;Versatz Bühne hinten rechts
+14;1/132;VK Bühne unten Rs;NC;;Versatz Bühne hinten rechts
+15;1/146;5 KW;NC;;Versatz Bühne hinten rechts
+17;1/133;VK Bühne Bodentank links und rechts;NC;;Versatzklappe Bühne links und rechts
+18;1/134;VK Bühne Bodentank links und rechts;NC;;Versatzklappe Bühne links und rechts
+19;1/135;VK Bühne Bodentank links und rechts;NC;;Versatzklappe Bühne links und rechts
+20;1/136;VK Bühne Bodentank links und rechts;NC;;Versatzklappe Bühne links und rechts
+21;1/137;VK Bühne Bodentank links und rechts;NC;;Versatzklappe Bühne links und rechts
+22;1/138;VK Bühne Bodentank links und rechts;NC;;Versatzklappe Bühne links und rechts
+23;1/115;VK I-Pult Hölzerner;NC;;Unterbühne Mitte bzw. I-Pult an Treppe
+24;1/116;VK I-Pult Hölzerner;NC;;Unterbühne Mitte bzw. I-Pult an Treppe
+25;1/117;VK I-Pult Hölzerner;NC;;Unterbühne Mitte bzw. I-Pult an Treppe
+26;1/118;VK I-Pult Hölzerner;NC;;Unterbühne Mitte bzw. I-Pult an Treppe
+27;1/119;VK I-Pult Hölzerner;NC;;Unterbühne Mitte bzw. I-Pult an Treppe
+28;1/120;VK I-Pult Hölzerner;NC;;Unterbühne Mitte bzw. I-Pult an Treppe
+36;1/25;VK I-Pult (SD);NC;;Versatz I-Pult links
+37;1/26;VK I-Pult (SD);NC;;Versatz I-Pult links
+38;1/27;VK I-Pult (SD);NC;;Versatz I-Pult links
+39;1/28;VK I-Pult (SD);NC;;Versatz I-Pult links
+40;1/29;VK I-Pult (SD);NC;;Versatz I-Pult links
+41;1/30;VK I-Pult (SD);NC;;Versatz I-Pult links
+42;1/34;VK FW-Platz;NC;;Versatz FW-Platz rechts
+43;1/35;VK FW-Platz;NC;;Versatz FW-Platz rechts
+44;1/36;VK FW-Platz;NC;;Versatz FW-Platz rechts
+45;1/37;VK FW-Platz;NC;;Versatz FW-Platz rechts
+46;1/38;VK FW-Platz;NC;;Versatz FW-Platz rechts
+47;1/39;VK FW-Platz;NC;;Versatz FW-Platz rechts
+48;1/31;VK Portal Lks;NC;;Portal Lks
+49;1/32;VK Portal Lks;NC;;Portal Lks
+50;1/33;VK Portal Lks;NC;;Portal Lks
+623;2/193;Flat Pro Outdoor Par Can 8ch;NC;;Portal Lks
+51;1/40;VK Portal Rs;NC;;Portal Rs
+52;1/41;VK Portal Rs;NC;;Portal Rs
+53;1/42;VK Portal Rs;NC;;Portal Rs
+626;2/217;Flat Pro Outdoor Par Can 8ch;NC;;Portal Rs
+101;1/1;1,2kW Profil;NC;;Brücke
+102;1/2;2kW F;NC;;Brücke
+103;1/3;2kW F;NC;;Brücke
+104;1/4;2kW F;NC;;Brücke
+105;1/5;1,2kW PC;NC;;Brücke
+106;1/6;1,2kW PC;NC;;Brücke
+107;1/43;1,2kW Profil;NC;;Brücke
+108;1/44;2kW F;NC;;Brücke
+109;1/45;1,2kW Profil;NC;;Brücke
+671;2/355;Retro Flat Par 18x10W RGBWAUV 8ch;NC;;Brücke
+110;1/7;2kW F;NC;;Brücke
+111;1/8;1,2kW PC;NC;;Brücke
+112;1/9;1,2kW PC;NC;;Brücke
+113;1/10;2kW F;NC;;Brücke
+114;1/11;2kW F;NC;;Brücke
+115;1/12;2kW F;NC;;Brücke
+116;1/13;1,2kW PC;NC;;Brücke
+117;1/14;1,2kW PC;NC;;Brücke
+118;1/15;1,2kW Profil;NC;;Brücke
+131;1/49;2kW PC;NC;;1. Galerie links
+132;1/50;2kW PC;NC;;1. Galerie links
+133;1/51;2kW PC;NC;;1. Galerie links
+134;1/52;2x PAR;NC;;1. Galerie links
+135;1/53;2x PAR;NC;;1. Galerie links
+136;1/54;Profil;NC;;1. Galerie links
+137;1/46;Dimmer;NC;;Bar 1. Galerie hinten links
+138;1/47;Dimmer;NC;;Bar 1. Galerie hinten links
+139;1/48;Dimmer;NC;;Bar 1. Galerie hinten links
+140;1/22;Dimmer;NC;;Bar 1. Galerie hinten links
+141;1/23;Dimmer;NC;;Bar 1. Galerie hinten links
+142;1/24;Dimmer;NC;;Bar 1. Galerie hinten links
+143;1/139;Dimmer;NC;;Bar 1. Galerie hinten rechts
+144;1/140;Dimmer;NC;;Bar 1. Galerie hinten rechts
+145;1/141;Dimmer;NC;;Bar 1. Galerie hinten rechts
+146;1/142;Dimmer;NC;;Bar 1. Galerie hinten rechts
+147;1/143;Dimmer;NC;;Bar 1. Galerie hinten rechts
+148;1/144;Dimmer;NC;;Bar 1. Galerie hinten rechts
+149;1/55;Dimmer;NC;;1. Galerie rechts
+150;1/56;Dimmer;NC;;1. Galerie rechts
+151;1/57;Dimmer;NC;;1. Galerie rechts
+153;1/59;Dimmer;NC;;1. Galerie rechts
+154;1/60;Dimmer;NC;;1. Galerie rechts
+161;1/61;Dimmer;NC;;2. Galerie
+162;1/62;Dimmer;NC;;2. Galerie
+163;1/63;Dimmer;NC;;2. Galerie
+164;1/64;Dimmer;NC;;2. Galerie
+165;1/65;Dimmer;NC;;2. Galerie
+166;1/66;Dimmer;NC;;2. Galerie
+167;1/67;Dimmer;NC;;2. Galerie
+168;1/68;Dimmer;NC;;2. Galerie
+169;1/69;Dimmer;NC;;2. Galerie
+170;1/70;Dimmer;NC;;2. Galerie
+171;1/71;Dimmer;NC;;2. Galerie
+172;1/72;Dimmer;NC;;2. Galerie
+181;1/79;Dimmer;NC;;Versatz 2. Galerie oder MZ
+182;1/80;Dimmer;NC;;Versatz 2. Galerie oder MZ
+183;1/81;Dimmer;NC;;Versatz 2. Galerie oder MZ
+184;1/82;Dimmer;NC;;Versatz 2. Galerie oder MZ
+185;1/83;Dimmer;NC;;Versatz 2. Galerie oder MZ
+186;1/84;Dimmer;NC;;Versatz 2. Galerie oder MZ
+187;1/73;Dimmer;NC;;Versatz 2. Galerie oder MZ
+188;1/74;Dimmer;NC;;Versatz 2. Galerie oder MZ
+189;1/75;Dimmer;NC;;Versatz 2. Galerie oder MZ
+190;1/76;Dimmer;NC;;Versatz 2. Galerie oder MZ
+191;1/77;Dimmer;NC;;Versatz 2. Galerie oder MZ
+192;1/78;Dimmer;NC;;Versatz 2. Galerie oder MZ
+193;1/147;5 KW;NC;;Versatz VB
+194;1/463;Dimmer;NC;;Versatz VB
+195;1/148;5 KW;NC;;Versatz VB
+196;1/476;Dimmer;NC;;Versatz VB
+201;1/97;Dimmer;NC;;2kW F Saal
+202;1/98;Dimmer;NC;;2kW F Saal
+203;1/99;Dimmer;NC;;2kW F Saal
+204;1/100;Dimmer;NC;;2kW F Saal
+205;1/101;Dimmer;NC;;2kW F Saal
+206;1/102;Dimmer;NC;;2kW F Saal
+207;1/149;5 KW;NC;;2kW F Saal
+208;1/103;Dimmer;NC;;2kW F Saal
+209;1/104;Dimmer;NC;;2kW F Saal
+210;1/105;Dimmer;NC;;2kW F Saal
+211;1/106;Dimmer;NC;;2kW F Saal
+212;1/107;Dimmer;NC;;2kW F Saal
+213;1/108;Dimmer;NC;;2kW F Saal
+214;1/150;5 KW;NC;;2kW F Saal
+221;1/151;Dimmer;NC;;Selecon
+222;1/152;Dimmer;NC;;Selecon
+223;1/153;Dimmer;NC;;Selecon
+224;1/154;Dimmer;NC;;Selecon
+225;1/85;Dimmer;NC;;Selecon
+226;1/86;Dimmer;NC;;Selecon
+227;1/87;Dimmer;NC;;Selecon
+228;1/88;Dimmer;NC;;Selecon
+231;1/155;Dimmer;NC;;Profiler 2kW
+232;1/156;Dimmer;NC;;Profiler 2kW
+233;1/157;Dimmer;NC;;Profiler 2kW
+234;1/158;Dimmer;NC;;Profiler 2kW
+235;1/89;Dimmer;NC;;Profiler 2kW
+236;1/90;Dimmer;NC;;Profiler 2kW
+237;1/91;Dimmer;NC;;Profiler 2kW
+238;1/92;Dimmer;NC;;Profiler 2kW
+241;1/159;Dimmer;NC;;Profiler 2kW
+242;1/160;Dimmer;NC;;Profiler 2kW
+243;1/161;Dimmer;NC;;Profiler 2kW
+244;1/162;Dimmer;NC;;Profiler 2kW
+245;1/93;Dimmer;NC;;Profiler 2kW
+246;1/94;Dimmer;NC;;Profiler 2kW
+247;1/95;Dimmer;NC;;Profiler 2kW
+248;1/96;Dimmer;NC;;Profiler 2kW
+271;1/332;S4 LED S2 Lustr QS General;NC;;ETC Lustre S2
+272;1/342;S4 LED S2 Lustr QS General;NC;;ETC Lustre S2
+273;1/352;S4 LED S2 Lustr QS General;NC;;ETC Lustre S2
+274;1/362;S4 LED S2 Lustr QS General;NC;;ETC Lustre S2
+275;1/372;S4 LED S2 Lustr QS General;NC;;ETC Lustre S2
+276;1/382;S4 LED S2 Lustr QS General;NC;;ETC Lustre S2
+277;1/392;S4 LED S2 Lustr QS General;NC;;ETC Lustre S2
+278;1/402;S4 LED S2 Lustr QS General;NC;;ETC Lustre S2
+301;1/109;Dimmer;NC;;Saaltruss
+302;1/110;Dimmer;NC;;Saaltruss
+303;1/111;Dimmer;NC;;Saaltruss
+304;1/112;Dimmer;NC;;Saaltruss
+305;1/113;Dimmer;NC;;Saaltruss
+306;1/114;Dimmer;NC;;Saaltruss
+307;1/181;Dimmer;NC;;Saaltruss
+308;1/182;Dimmer;NC;;Saaltruss
+309;1/183;Dimmer;NC;;Saaltruss
+310;1/184;Dimmer;NC;;Saaltruss
+311;1/185;Dimmer;NC;;Saaltruss
+312;1/186;Dimmer;NC;;Saaltruss
+313;1/187;Dimmer;NC;;Tontruss F
+314;1/188;Dimmer;NC;;Tontruss F
+315;1/189;Dimmer;NC;;Tontruss F
+316;1/190;Dimmer;NC;;Tontruss F
+317;1/191;Dimmer;NC;;Tontruss F
+318;1/192;Dimmer;NC;;Tontruss F
+327;1/193;Dimmer;NC;;Saaltruss PC
+328;1/194;Dimmer;NC;;Saaltruss PC
+329;1/195;Dimmer;NC;;Saaltruss PC
+330;1/196;Dimmer;NC;;Saaltruss PC
+331;1/197;Dimmer;NC;;Saaltruss PC
+332;1/198;Dimmer;NC;;Saaltruss PC
+335;1/199;Dimmer;NC;;Tontruss
+336;1/200;Dimmer;NC;;Tontruss
+337;1/201;Dimmer;NC;;Tontruss
+338;1/202;Dimmer;NC;;Tontruss
+339;1/203;Dimmer;NC;;Tontruss
+340;1/204;Dimmer;NC;;Tontruss
+401;1/163;Dimmer;NC;;Scheinwerferstand
+402;1/164;Dimmer;NC;;Scheinwerferstand
+403;1/165;Dimmer;NC;;Scheinwerferstand
+404;1/166;Dimmer;NC;;Scheinwerferstand
+405;1/167;Dimmer;NC;;Scheinwerferstand
+406;1/168;Dimmer;NC;;Scheinwerferstand
+407;1/169;Dimmer;NC;;Scheinwerferstand
+408;1/170;Dimmer;NC;;Scheinwerferstand
+411;1/171;Dimmer;NC;;Scheinwerferstand
+412;1/172;Dimmer;NC;;Scheinwerferstand
+413;1/173;Dimmer;NC;;Scheinwerferstand
+414;1/174;Dimmer;NC;;Scheinwerferstand
+421;1/175;Dimmer;NC;;Z-Kabine
+422;1/176;Dimmer;NC;;Z-Kabine
+423;1/177;Dimmer;NC;;Z-Kabine
+424;1/178;Dimmer;NC;;Z-Kabine
+425;1/179;Dimmer;NC;;Z-Kabine
+426;1/180;Dimmer;NC;;Z-Kabine
+491;1/491;Dimmer;NC;;Zusatzdimmer
+492;1/492;Dimmer;NC;;Zusatzdimmer
+493;1/493;Dimmer;NC;;Zusatzdimmer
+494;1/494;Dimmer;NC;;Zusatzdimmer
+495;1/495;Dimmer;NC;;Zusatzdimmer
+496;1/496;Dimmer;NC;;Zusatzdimmer
+551;3/283;Titan Tube 1: RGB 1 Pixel;NC;;Astera Titantubes
+552;3/286;Titan Tube 1: RGB 1 Pixel;NC;;Astera Titantubes
+553;3/289;Titan Tube 1: RGB 1 Pixel;NC;;Astera Titantubes
+554;3/292;Titan Tube 1: RGB 1 Pixel;NC;;Astera Titantubes
+555;3/295;Titan Tube 1: RGB 1 Pixel;NC;;Astera Titantubes
+556;3/298;Titan Tube 1: RGB 1 Pixel;NC;;Astera Titantubes
+557;3/301;Titan Tube 1: RGB 1 Pixel;NC;;Astera Titantubes
+558;3/304;Titan Tube 1: RGB 1 Pixel;NC;;Astera Titantubes
+561;3/307;NYX Bulb 1: RGB 1 Pixel;NC;;Astera NYX Bulbs
+562;3/310;NYX Bulb 1: RGB 1 Pixel;NC;;Astera NYX Bulbs
+563;3/313;NYX Bulb 1: RGB 1 Pixel;NC;;Astera NYX Bulbs
+564;3/316;NYX Bulb 1: RGB 1 Pixel;NC;;Astera NYX Bulbs
+565;3/335;NYX Bulb 1: RGB 1 Pixel;NC;;Astera NYX Bulbs
+566;3/338;NYX Bulb 1: RGB 1 Pixel;NC;;Astera NYX Bulbs
+567;3/497;NYX Bulb 1: RGB 1 Pixel;NC;;Astera NYX Bulbs
+568;;Bulb 1: RGB 1 Pixel;NC;;Astera NYX Bulbs
+615;1/412;CuePix Panel 6ch;NC;;CuePix Panel
+616;1/481;CuePix Panel 6ch;NC;;CuePix Panel
+620;2/273;Flat Pro Outdoor Par Can 8ch;NC;;Cameo Flat Pro
+621;2/177;Flat Pro Outdoor Par Can 8ch;NC;;Cameo Flat Pro
+622;2/185;Flat Pro Outdoor Par Can 8ch;NC;;Cameo Flat Pro
+624;2/201;Flat Pro Outdoor Par Can 8ch;NC;;Cameo Flat Pro
+625;2/209;Flat Pro Outdoor Par Can 8ch;NC;;Cameo Flat Pro
+641;2/225;NanoPIX 1440HP 7ch+control;NC;;LDDE NanoPix
+642;2/233;NanoPIX 1440HP 7ch+control;NC;;LDDE NanoPix
+643;2/241;NanoPIX 1440HP 7ch+control;NC;;LDDE NanoPix
+644;2/249;NanoPIX 1440HP 7ch+control;NC;;LDDE NanoPix
+645;2/257;NanoPIX 1440HP 7ch+control;NC;;LDDE NanoPix
+646;2/265;NanoPIX 1440HP 7ch+control;NC;;LDDE NanoPix
+651;2/379;CL PixBar 650 Pro 9ch;NC;;CL PixBar 650 Pro
+652;2/388;CL PixBar 650 Pro 9ch;NC;;CL PixBar 650 Pro
+653;2/397;CL PixBar 650 Pro 9ch;NC;;CL PixBar 650 Pro
+654;2/406;CL PixBar 650 Pro 9ch;NC;;CL PixBar 650 Pro
+655;2/415;CL PixBar 650 Pro 9ch;NC;;CL PixBar 650 Pro
+656;2/424;CL PixBar 650 Pro 9ch;NC;;CL PixBar 650 Pro
+657;2/433;CL PixBar 650 Pro 9ch;NC;;CL PixBar 650 Pro
+658;2/442;CL PixBar 650 Pro 9ch;NC;;CL PixBar 650 Pro
+661;3/319;NanoPix CYC 8 16b 16ch;NC;;LDDE CYC8
+662;3/385;NanoPix CYC 8 16b 16ch;NC;;LDDE CYC8
+663;3/401;NanoPix CYC 8 16b 16ch;NC;;LDDE CYC8
+664;3/417;NanoPix CYC 8 16b 16ch;NC;;LDDE CYC8
+665;3/433;NanoPix CYC 8 16b 16ch;NC;;LDDE CYC8
+666;3/449;NanoPix CYC 8 16b 16ch;NC;;LDDE CYC8
+667;3/465;NanoPix CYC 8 16b 16ch;NC;;LDDE CYC8
+668;3/481;NanoPix CYC 8 16b 16ch;NC;;LDDE CYC8
+681;1/237;Ape Stick 4ch;NC;;ApeLabs Sticks
+682;1/241;Ape Stick 4ch;NC;;ApeLabs Sticks
+683;1/245;Ape Stick 4ch;NC;;ApeLabs Sticks
+684;1/249;Ape Stick 4ch;NC;;ApeLabs Sticks
+685;1/253;Ape Stick 4ch;NC;;ApeLabs Sticks
+686;1/221;Ape Stick 4ch;NC;;ApeLabs Sticks
+687;1/225;Ape Stick 4ch;NC;;ApeLabs Sticks
+691;1/262;ApeLight Maxi 4ch;NC;;ApeLabs Maxi
+692;1/266;ApeLight Maxi 4ch;NC;;ApeLabs Maxi
+693;1/270;ApeLight Maxi 4ch;NC;;ApeLabs Maxi
+694;1/320;ApeLight Maxi 4ch;NC;;ApeLabs Maxi
+695;1/324;ApeLight Maxi 4ch;NC;;ApeLabs Maxi
+696;1/328;ApeLight Maxi 4ch;NC;;ApeLabs Maxi
+701;3/185;Robin LEDBeam 350 M1;NC;;Robin LEDBeam 350
+702;3/207;Robin LEDBeam 350 M1;NC;;Robin LEDBeam 350
+703;3/229;Robin LEDBeam 350 M1;NC;;Robin LEDBeam 350
+704;3/251;Robin LEDBeam 350 M1;NC;;Robin LEDBeam 350
+705;2/89;A8 Standard Standard RGB16 M16;NC;;A8 Standard
+706;2/111;A8 Standard Standard RGB16 M16;NC;;A8 Standard
+707;2/133;A8 Standard Standard RGB16 M16;NC;;A8 Standard
+708;2/155;A8 Standard Standard RGB16 M16;NC;;A8 Standard
+709;3/341;Robin LEDBeam 350 M1;NC;;A8 Standard
+710;3/363;Robin LEDBeam 350 M1;NC;;A8 Standard
+711;2/311;A8 Standard Standard RGB16 M16;NC;;A8 Standard
+712;2/67;A8 Standard Standard RGB16 M16;NC;;A8 Standard
+713;2/289;A8 Standard Standard RGB16 M16;NC;;A8 Standard
+714;2/333;A8 Standard Standard RGB16 M16;NC;;A8 Standard
+721;2/1;Rush Par 2 RGBW Zoom 5ch;NC;;Martin Rush Par
+722;2/6;Rush Par 2 RGBW Zoom 5ch;NC;;Martin Rush Par
+723;2/11;Rush Par 2 RGBW Zoom 5ch;NC;;Martin Rush Par
+724;2/16;Rush Par 2 RGBW Zoom 5ch;NC;;Martin Rush Par
+725;2/21;Rush Par 2 RGBW Zoom 5ch;NC;;Martin Rush Par
+726;2/26;Rush Par 2 RGBW Zoom 5ch;NC;;Martin Rush Par
+727;2/31;Rush Par 2 RGBW Zoom 5ch;NC;;Martin Rush Par
+728;2/36;Rush Par 2 RGBW Zoom 5ch;NC;;Martin Rush Par
+729;2/46;Rush Par 2 RGBW Zoom 5ch;NC;;Martin Rush Par
+730;2/51;Rush Par 2 RGBW Zoom 5ch;NC;;Martin Rush Par
+731;2/56;Rush Par 2 RGBW Zoom 5ch;NC;;Martin Rush Par
+732;2/61;Rush Par 2 RGBW Zoom 5ch;NC;;Martin Rush Par
+801;3/1;Opus SP5 Extended;NC;;Robe Opus / P12 Profile
+802;3/51;Opus SP5 Extended;NC;;Robe Opus / P12 Profile
+803;3/101;P12 Profile HC M1;NC;;Robe Opus / P12 Profile
+804;3/143;P12 Profile HC M1;NC;;Robe Opus / P12 Profile

@@ -241,11 +241,14 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import {
-  fetchTemplates, createTemplate, updateTemplate, createTemplateChannel, createTemplateCustomField,
-  fetchTemplateChannels, fetchTemplateCustomFields, deleteTemplateCustomField,
-} from '../api/templates.js'
-import { parseTemplateCSV, formatAddress } from '../api/csv.js'
+import { fetchTemplates, fetchTemplateChannels, saveTemplate, deleteTemplate, uploadTemplate } from '../api/templates.js'
+import { parseCsv as parseTemplateCSV } from '../api/channels.js'
+
+// formatAddress: "1/001" bleibt as-is in v1.1
+function formatAddress(universe, dmxAddress) {
+  if (universe == null || dmxAddress == null) return '—'
+  return `${universe}/${String(dmxAddress).padStart(3, '0')}`
+}
 
 const templates = ref([])
 const loading = ref(true)

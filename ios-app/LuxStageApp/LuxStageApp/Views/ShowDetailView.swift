@@ -71,7 +71,7 @@ struct ShowDetailView: View {
 
     private var setupSection: some View {
         Section {
-            HTMLTextView(html: setupText).frame(minHeight: 80)
+            MarkdownTextView(markdown: setupText).frame(minHeight: 80)
         } header: {
             HStack {
                 Text(locale.t("show.aufbau"))

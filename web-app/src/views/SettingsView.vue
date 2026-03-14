@@ -1,116 +1,74 @@
 <template>
   <div class="page">
     <div class="page-header">
-      <h2>{{ $t('nav.settings') }}</h2>
+      <h2>{{ t('nav.settings') }}</h2>
     </div>
 
     <section class="settings-section">
-      <h3>{{ $t('settings.language') }}</h3>
+      <h3>{{ t('settings.language') }}</h3>
       <div class="radio-group">
         <label>
-          <input type="radio" v-model="locale" value="de" @change="saveLocale" />
-          {{ $t('settings.language.de') }}
+          <input type="radio" :checked="locale === 'de'" value="de" @change="setLocale('de')" />
+          {{ t('settings.language.de') }}
         </label>
         <label>
-          <input type="radio" v-model="locale" value="en" @change="saveLocale" />
-          {{ $t('settings.language.en') }}
+          <input type="radio" :checked="locale === 'en'" value="en" @change="setLocale('en')" />
+          {{ t('settings.language.en') }}
         </label>
       </div>
     </section>
 
     <section class="settings-section">
-      <h3>{{ $t('settings.server') }}</h3>
-      <div class="radio-group">
-        <label>
-          <input type="radio" v-model="serverMode" value="vps" @change="applyServer" />
-          {{ $t('settings.server.vps') }} — theater.cfrlab.de
-        </label>
-        <label>
-          <input type="radio" v-model="serverMode" value="pi" @change="applyServer" />
-          {{ $t('settings.server.pi') }}
-        </label>
-      </div>
-      <div v-if="serverMode === 'pi'" class="field">
-        <label>{{ $t('settings.server.pi_url') }}</label>
-        <input v-model="piUrl" type="url" placeholder="http://192.168.1.100:8090" @change="applyServer" />
-      </div>
-    </section>
-
-    <section class="settings-section">
-      <h3>{{ $t('settings.channel_edit') }}</h3>
-      <div class="radio-group">
-        <label>
-          <input type="radio" v-model="editMode" value="inline" @change="saveEditMode" />
-          {{ $t('settings.channel_edit.inline') }}
-        </label>
-        <label>
-          <input type="radio" v-model="editMode" value="dialog" @change="saveEditMode" />
-          {{ $t('settings.channel_edit.dialog') }}
-        </label>
+      <h3>{{ t('settings.server') }}</h3>
+      <div class="field">
+        <label>Server-URL</label>
+        <input v-model="serverUrl" type="url" placeholder="http://192.168.1.100:3000" @change="applyServer" />
       </div>
     </section>
 
     <section class="settings-section">
       <h3>Backup</h3>
-      <div class="backup-row">
-        <button class="btn-ghost" @click="doExportAll">↓ Alle Shows exportieren</button>
-        <label class="btn-ghost backup-import-btn">
-          ↑ Backup importieren
-          <input type="file" accept=".json" @change="onImportFile" hidden />
-        </label>
-      </div>
-      <div v-if="importPreview" class="import-preview">
-        <p>{{ importPreview.shows.length }} Show(s), {{ importPreview.channels.length }} Kanäle</p>
-        <div class="backup-row" style="margin-top:8px">
-          <button class="btn-primary" @click="doImport" :disabled="importing">{{ importing ? '…' : 'Importieren' }}</button>
-          <button class="btn-ghost" @click="importPreview = null">Abbrechen</button>
-        </div>
-        <p v-if="importDone" class="import-ok">✓ Import abgeschlossen</p>
-      </div>
-      <p v-if="importError" class="error-msg" style="margin-top:8px">{{ importError }}</p>
+      <button class="btn-ghost" @click="downloadBackup">↓ ZIP-Backup herunterladen</button>
+    </section>
+
+    <section v-if="isAdmin" class="settings-section">
+      <h3>Update</h3>
+      <button class="btn-ghost" :disabled="updating" @click="doUpdate">
+        {{ updating ? '…' : 'Server aktualisieren (git pull)' }}
+      </button>
+      <p v-if="updateMsg" class="update-msg">{{ updateMsg }}</p>
     </section>
 
     <section class="settings-section">
-      <button class="btn-danger" @click="handleLogout">{{ $t('settings.logout') }}</button>
+      <button class="btn-danger" @click="handleLogout">{{ t('settings.logout') }}</button>
     </section>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { logout, setServerUrl } from '../api/pocketbase.js'
-import { exportAllBackup, parseBackupFile, importBackup } from '../api/backup.js'
+import { useLocale } from '../composables/useLocale.js'
+import { logout, setServerUrl, api } from '../api/client.js'
+import { downloadBackup } from '../api/backup.js'
+import { jwtDecode } from '../api/jwtDecode.js'
 
-const { locale } = useI18n()
+const { t, locale, setLocale } = useLocale()
 const router = useRouter()
 
-const serverMode = ref(localStorage.getItem('server_mode') || 'vps')
-const editMode = ref(localStorage.getItem('channel_edit_mode') || 'inline')
-const piUrl = ref(localStorage.getItem('pi_url') || 'http://192.168.1.100:8090')
+const serverUrl = ref(localStorage.getItem('server_url') || 'http://localhost:3000')
+const updating = ref(false)
+const updateMsg = ref('')
 
-const importPreview = ref(null)
-const importError = ref('')
-const importing = ref(false)
-const importDone = ref(false)
-
-function saveEditMode() {
-  localStorage.setItem('channel_edit_mode', editMode.value)
-}
-
-function saveLocale() {
-  localStorage.setItem('locale', locale.value)
-}
+// Rolle aus JWT lesen (kein extra API-Call nötig)
+const isAdmin = ref(false)
+try {
+  const token = localStorage.getItem('luxstage_token')
+  if (token) isAdmin.value = jwtDecode(token)?.role === 'admin'
+} catch { /* ignorieren */ }
 
 function applyServer() {
-  localStorage.setItem('server_mode', serverMode.value)
-  if (serverMode.value === 'pi') {
-    localStorage.setItem('pi_url', piUrl.value)
-    setServerUrl(piUrl.value)
-  } else {
-    setServerUrl('https://theater.cfrlab.de')
-  }
+  setServerUrl(serverUrl.value)
 }
 
 function handleLogout() {
@@ -118,38 +76,16 @@ function handleLogout() {
   router.push('/login')
 }
 
-function doExportAll() { exportAllBackup() }
-
-async function onImportFile(e) {
-  const file = e.target.files[0]
-  e.target.value = ''
-  if (!file) return
-  importError.value = ''
-  importDone.value = false
+async function doUpdate() {
+  updating.value = true
+  updateMsg.value = ''
   try {
-    const data = await parseBackupFile(file)
-    importPreview.value = {
-      shows: data.shows ?? (data.show ? [data.show] : []),
-      channels: data.channels ?? [],
-      _raw: data,
-    }
-  } catch (err) {
-    importError.value = err.message
-  }
-}
-
-async function doImport() {
-  if (!importPreview.value) return
-  importing.value = true
-  importError.value = ''
-  try {
-    await importBackup(importPreview.value._raw)
-    importDone.value = true
-    importPreview.value = null
-  } catch (err) {
-    importError.value = err.message
+    const res = await api.post('/api/update', {})
+    updateMsg.value = '✓ Update gestartet — Server wird neu gestartet'
+  } catch (e) {
+    updateMsg.value = '✗ ' + e.message
   } finally {
-    importing.value = false
+    updating.value = false
   }
 }
 </script>

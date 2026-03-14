@@ -56,7 +56,7 @@ export async function router(req, res) {
       const body = await readBody(req)
       const { id, content, channels } = JSON.parse(body)
       if (!id || !/^[a-z0-9_-]+$/i.test(id)) return json(res, 400, { error: 'Ungültige ID' })
-      await io.ensureDir(io.paths.shows())
+      await io.ensureDir(io.paths.showDir(id))
       await io.writeAtomic(io.paths.showMd(id), content || defaultShowContent(id))
       await io.writeAtomic(io.paths.showCsv(id), channels || 'channel;device;color;address;category;position;notes\n')
       return json(res, 201, { id })

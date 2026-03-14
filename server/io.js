@@ -11,9 +11,10 @@ export const paths = {
   shows:     () => path.join(config.dataPath, 'shows'),
   archiv:    () => path.join(config.dataPath, 'shows', 'archiv'),
   templates: () => path.join(config.dataPath, 'templates'),
-  showMd:    (id) => path.join(config.dataPath, 'shows', `${id}.md`),
-  showCsv:   (id) => path.join(config.dataPath, 'shows', `${id}.channels.csv`),
-  showLock:  (id) => path.join(config.dataPath, 'shows', `${id}.lock`),
+  showDir:   (id) => path.join(config.dataPath, 'shows', id),
+  showMd:    (id) => path.join(config.dataPath, 'shows', id, 'show.md'),
+  showCsv:   (id) => path.join(config.dataPath, 'shows', id, 'channels.csv'),
+  showLock:  (id) => path.join(config.dataPath, 'shows', id, 'show.lock'),
   showPhotos:(id) => path.join(config.dataPath, 'shows', id),
 }
 
@@ -90,10 +91,10 @@ export async function getLock(showId) {
 
 export async function listShows() {
   await ensureDir(paths.shows())
-  const files = await fs.readdir(paths.shows())
-  return files
-    .filter(f => f.endsWith('.md') && !f.startsWith('.'))
-    .map(f => f.slice(0, -3))
+  const entries = await fs.readdir(paths.shows(), { withFileTypes: true })
+  return entries
+    .filter(e => e.isDirectory() && e.name !== 'archiv' && !e.name.startsWith('.'))
+    .map(e => e.name)
 }
 
 export async function readShow(id) {
@@ -117,16 +118,7 @@ export async function writeChannels(id, content) {
 
 export async function archiveShow(id) {
   await ensureDir(paths.archiv())
-  for (const ext of ['.md', '.channels.csv']) {
-    const src = path.join(paths.shows(), `${id}${ext}`)
-    const dst = path.join(paths.archiv(), `${id}${ext}`)
-    try { await fs.rename(src, dst) } catch { /* existiert nicht */ }
-  }
-  // Fotos
-  const photoDir = paths.showPhotos(id)
-  try {
-    await fs.rename(photoDir, path.join(paths.archiv(), id))
-  } catch { /* kein Foto-Ordner */ }
+  await fs.rename(paths.showDir(id), path.join(paths.archiv(), id))
 }
 
 // ── Templates ─────────────────────────────────────────────────────────────

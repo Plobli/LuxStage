@@ -27,6 +27,16 @@
     </section>
 
     <section class="settings-section">
+      <h3>{{ t('settings.server') }}</h3>
+      <div v-if="status" class="status-list">
+        <div class="status-row"><span>{{ t('settings.status.version') }}</span><span>{{ status.version }}</span></div>
+        <div class="status-row"><span>{{ t('settings.status.disk') }}</span><span class="status-disk">{{ status.diskFree }}</span></div>
+      </div>
+      <div v-else-if="statusError" class="status-error">{{ statusError }}</div>
+      <div v-else class="status-loading">{{ t('error.loading') }}</div>
+    </section>
+
+    <section class="settings-section">
       <h3>Backup</h3>
       <button class="btn-ghost" @click="downloadBackup">↓ ZIP-Backup herunterladen</button>
     </section>
@@ -46,7 +56,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLocale } from '../composables/useLocale.js'
 import { logout, setServerUrl, api } from '../api/client.js'
@@ -59,6 +69,16 @@ const router = useRouter()
 const serverUrl = ref(localStorage.getItem('server_url') || 'http://localhost:3000')
 const updating = ref(false)
 const updateMsg = ref('')
+const status = ref(null)
+const statusError = ref('')
+
+onMounted(async () => {
+  try {
+    status.value = await api.get('/api/status')
+  } catch {
+    statusError.value = t('error.network')
+  }
+})
 
 // Rolle aus JWT lesen (kein extra API-Call nötig)
 const isAdmin = ref(false)

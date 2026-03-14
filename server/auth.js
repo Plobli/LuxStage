@@ -9,7 +9,12 @@ export function login(username, password) {
 
 export function authenticate(req) {
   const header = req.headers['authorization'] || ''
-  const token = header.startsWith('Bearer ') ? header.slice(7) : null
+  let token = header.startsWith('Bearer ') ? header.slice(7) : null
+  if (!token) {
+    // Fallback: ?token= query param (für SSE, PDF, Foto- und Backup-URLs)
+    const url = new URL(req.url, 'http://localhost')
+    token = url.searchParams.get('token')
+  }
   if (!token) return null
   try {
     return jwt.verify(token, config.jwtSecret)

@@ -12,7 +12,7 @@ NC='\033[0m'
 
 echo ""
 echo -e "${BOLD}╔══════════════════════════════════════╗${NC}"
-echo -e "${BOLD}║     LuxStage v1.1 — Setup           ║${NC}"
+echo -e "${BOLD}║           LuxStage — Setup           ║${NC}"
 echo -e "${BOLD}╚══════════════════════════════════════╝${NC}"
 echo ""
 

@@ -13,8 +13,6 @@ export async function saveTemplate(name, channels) {
   return api.put(`/api/templates/${name}`, { csv: serializeCsv(channels) })
 }
 
-export async function uploadTemplate(file) {
-  const text = await file.text()
-  const name = file.name.endsWith('.csv') ? file.name : file.name + '.csv'
+export async function uploadTemplate({ name, text }) {
   return api.put(`/api/templates/${name}`, { csv: text })
 }

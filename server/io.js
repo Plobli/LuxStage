@@ -165,8 +165,8 @@ export async function writeShowSections(id, raw) {
 /** Parst sections.md in eine Map<sectionId, string> */
 export function parseSectionsMd(raw) {
   const map = new Map()
-  const parts = raw.split(/\n?^---section: [^\s-]+---$\n?/m)
-  const ids = [...raw.matchAll(/^---section: ([^\s-]+)---$/mg)].map(m => m[1])
+  const parts = raw.split(/^---section: [^\s]+---$/m)
+  const ids = [...raw.matchAll(/^---section: ([^\s]+)---$/mg)].map(m => m[1])
   // Erster Teil (vor dem ersten Delimiter) ist Preamble — ignorieren
   for (let i = 0; i < ids.length; i++) {
     map.set(ids[i], (parts[i + 1] ?? '').trim())

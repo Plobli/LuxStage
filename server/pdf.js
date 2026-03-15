@@ -81,6 +81,8 @@ export function generatePDF(showContent, channelsCsv, sectionsRaw, templateSecti
   // ── Pro Gruppe: Überschrift + Tabelle ────────────────────────────────────
   let y = doc.y
   for (const [position, rows] of grouped) {
+    const filteredRows = rows.filter(r => r.notes?.trim())
+    if (!filteredRows.length) continue
     // Prüfen ob noch Platz für Überschrift + mind. 2 Zeilen
     const needed = HEADER_H + ROW_H * 3
     if (y + needed > doc.page.height - PAGE_MARGIN) {
@@ -105,8 +107,8 @@ export function generatePDF(showContent, channelsCsv, sectionsRaw, templateSecti
       { text: 'Notizen', w: COL.notes },
     ], true)
 
-    // Datenzeilen
-    for (const row of rows) {
+    // Datenzeilen — nur Kanäle mit Notizen
+    for (const row of filteredRows) {
       if (y + ROW_H > doc.page.height - PAGE_MARGIN) {
         doc.addPage()
         y = PAGE_MARGIN

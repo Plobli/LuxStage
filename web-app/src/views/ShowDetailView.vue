@@ -160,7 +160,7 @@
                 <td class="col-notes">
                   <div v-if="editingChannel === ch.channel" class="add-row-actions">
                     <input ref="notesInput" class="inline-input inline-input-wide" v-model="editForm.notes" @click.stop />
-                    <button class="btn-danger-sm" @click.stop="deleteChannel(ch)" :title="t('action.delete')">🗑</button>
+                    <button class="btn-danger-sm" @mousedown.prevent @click.stop="deleteChannel(ch)" :title="t('action.delete')">🗑</button>
                   </div>
                   <template v-else>{{ ch.notes }}</template>
                 </td>

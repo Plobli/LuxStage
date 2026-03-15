@@ -55,11 +55,15 @@ export async function router(req, res) {
     if (method === 'POST' && pathname === '/api/shows') {
       const user = requireAuth(req, res); if (!user) return
       const body = await readBody(req)
-      const { id, content, channels } = JSON.parse(body)
+      const { id, content, channels, template } = JSON.parse(body)
       if (!id || !/^[a-z0-9_-]+$/i.test(id)) return json(res, 400, { error: 'Ungültige ID' })
       await io.ensureDir(io.paths.showDir(id))
       await io.writeAtomic(io.paths.showMd(id), content || defaultShowContent(id))
       await io.writeAtomic(io.paths.showCsv(id), channels || 'channel;address;device;position;color;notes\n')
+      if (template) {
+        const templateSecs = await io.readTemplateSections(template)
+        if (templateSecs.length) await io.writeShowSectionDefs(id, templateSecs)
+      }
       return json(res, 201, { id })
     }
 
@@ -246,6 +250,23 @@ export async function router(req, res) {
       return json(res, 200, { ok: true })
     }
 
+    // ── Show Section Defs ──────────────────────────────────────────────────
+    if (method === 'GET' && pathname.match(/^\/api\/shows\/([^/]+)\/section-defs$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const id = pathname.split('/')[3]
+      const sections = await io.readShowSectionDefs(id)
+      return json(res, 200, sections)
+    }
+
+    if (method === 'PUT' && pathname.match(/^\/api\/shows\/([^/]+)\/section-defs$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const id = pathname.split('/')[3]
+      const body = await readBody(req)
+      const { sections } = JSON.parse(body)
+      await io.writeShowSectionDefs(id, sections)
+      return json(res, 200, { ok: true })
+    }
+
     if (method === 'POST' && pathname.match(/^\/api\/shows\/([^/]+)\/migrate-sections$/)) {
       const user = requireAuth(req, res); if (!user) return
       const id = pathname.split('/')[3]
@@ -268,8 +289,7 @@ export async function router(req, res) {
       const [content, csv, sectionsRaw] = await Promise.all([
         io.readShow(id), io.readChannels(id), io.readShowSections(id),
       ])
-      const fm = parseFrontmatterSimple(content)
-      const templateSections = fm.template ? await io.readTemplateSections(fm.template) : []
+      const templateSections = await io.readShowSectionDefs(id)
       generatePDF(content, csv, sectionsRaw, templateSections, res)
       return
     }

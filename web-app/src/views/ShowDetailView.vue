@@ -4,13 +4,41 @@
       <button class="btn-ghost" @click="router.push('/')">← {{ t('action.back') }}</button>
       <h2>{{ meta.name }}</h2>
       <span class="show-date">{{ meta.datum }}</span>
+      <button class="btn-ghost-sm" :class="{ active: editingSections }" @click="editingSections = !editingSections">Abschnitte</button>
       <a class="btn-ghost-sm" :href="pdfUrl" target="_blank">⎙ PDF</a>
     </div>
 
     <div v-if="loading" class="loading">…</div>
 
     <template v-else>
-      <!-- Sections from template -->
+      <!-- Sections editor -->
+      <div class="section-defs-editor" v-if="editingSections">
+        <div v-for="(sec, idx) in sectionDefs" :key="sec.id" class="section-card">
+          <div class="section-card-header">
+            <div class="section-reorder">
+              <button class="btn-ghost-sm" :disabled="idx === 0" @click="moveSectionDef(idx, -1)">↑</button>
+              <button class="btn-ghost-sm" :disabled="idx === sectionDefs.length - 1" @click="moveSectionDef(idx, 1)">↓</button>
+            </div>
+            <input :value="sec.title" placeholder="Titel" @input="sec.title = $event.target.value" @change="persistSectionDefs" />
+            <select class="section-type-select" :value="sec.type" @change="onSectionTypeChange(sec, $event.target.value)">
+              <option value="markdown">Markdown</option>
+              <option value="fields" :disabled="hasFieldsType() && sec.type !== 'fields'">Felder</option>
+            </select>
+            <button class="btn-ghost-sm danger" @click="deleteSectionDef(idx)">✕</button>
+          </div>
+          <div v-if="sec.type === 'fields'" class="fields-editor">
+            <div v-for="(field, fidx) in sec.fields" :key="field.key" class="fields-editor-row">
+              <input :value="field.label" placeholder="Label" @input="field.label = $event.target.value" @change="persistSectionDefs" />
+              <input :value="field.unit" placeholder="Einheit" style="max-width:80px" @input="field.unit = $event.target.value" @change="persistSectionDefs" />
+              <button class="btn-ghost-sm danger" @click="deleteFieldDef(sec, fidx)">✕</button>
+            </div>
+            <button class="btn-ghost-sm" @click="addFieldDef(sec)">+ Feld</button>
+          </div>
+        </div>
+        <button class="btn-ghost-sm" @click="addSection">+ Abschnitt</button>
+      </div>
+
+      <!-- Sections from show's own section defs -->
       <template v-if="sortedSections.length > 0">
         <section v-for="sec in sortedSections" :key="sec.id" class="aufbau-section">
           <div class="aufbau-header">
@@ -37,7 +65,7 @@
         </section>
       </template>
 
-      <!-- Fallback: old single aufbau section if no template sections defined -->
+      <!-- Fallback: single aufbau section if no section defs defined -->
       <section v-else class="aufbau-section">
         <div class="aufbau-header">
           <span class="aufbau-label">{{ t('show.setup') }}</span>
@@ -174,7 +202,7 @@ import { fetchPhotos, uploadPhoto, deletePhoto, getPhotoUrl } from '../api/photo
 import { subscribeChannels } from '../api/client.js'
 import { api } from '../api/client.js'
 import ColorPicker from '../components/ColorPicker.vue'
-import { fetchShowSections, saveShowSections, parseSectionsMd, serializeSectionsMd, fetchTemplateSections } from '../api/sections.js'
+import { fetchShowSections, saveShowSections, parseSectionsMd, serializeSectionsMd, fetchShowSectionDefs, saveShowSectionDefs } from '../api/sections.js'
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
@@ -194,6 +222,7 @@ const channelsSaving = ref(false)
 const sectionDefs = ref([])
 const sectionContents = ref(new Map())
 const sectionsSaving = ref(false)
+const editingSections = ref(false)
 let saveSectionsTimer = null
 
 const sortedSections = computed(() =>
@@ -385,16 +414,70 @@ function onFieldChange(sectionId, key, value) {
   onSectionChange(sectionId, raw)
 }
 
+// ── Section Defs verwalten ─────────────────────────────────────────────────
+
+async function persistSectionDefs() {
+  await saveShowSectionDefs(props.id, sectionDefs.value)
+}
+
+function addSection() {
+  sectionDefs.value.push({
+    id: crypto.randomUUID(),
+    title: '',
+    type: 'markdown',
+    order: sectionDefs.value.length,
+    fields: []
+  })
+  persistSectionDefs()
+}
+
+function deleteSectionDef(idx) {
+  sectionDefs.value.splice(idx, 1)
+  sectionDefs.value.forEach((s, i) => s.order = i)
+  persistSectionDefs()
+}
+
+function moveSectionDef(idx, dir) {
+  const arr = sectionDefs.value
+  const swap = idx + dir
+  if (swap < 0 || swap >= arr.length) return
+  ;[arr[idx], arr[swap]] = [arr[swap], arr[idx]]
+  arr.forEach((s, i) => s.order = i)
+  persistSectionDefs()
+}
+
+function addFieldDef(section) {
+  section.fields.push({ key: crypto.randomUUID().slice(0, 8), label: '', unit: '' })
+  persistSectionDefs()
+}
+
+function deleteFieldDef(section, idx) {
+  section.fields.splice(idx, 1)
+  persistSectionDefs()
+}
+
+function hasFieldsType() {
+  return sectionDefs.value.some(s => s.type === 'fields')
+}
+
+function onSectionTypeChange(section, newType) {
+  if (newType === 'fields' && hasFieldsType() && section.type !== 'fields') return
+  section.type = newType
+  if (newType === 'fields' && !section.fields) section.fields = []
+  persistSectionDefs()
+}
+
 // ── Laden ──────────────────────────────────────────────────────────────────
 let unsubscribeSSE = null
 
 onMounted(async () => {
   try {
-    const [showData, chs, photoList, sectionsData] = await Promise.all([
+    const [showData, chs, photoList, sectionsData, defs] = await Promise.all([
       fetchShow(props.id),
       fetchChannels(props.id),
       fetchPhotos(props.id),
       fetchShowSections(props.id),
+      fetchShowSectionDefs(props.id),
     ])
 
     meta.value = parseFrontmatter(showData.content)
@@ -403,11 +486,7 @@ onMounted(async () => {
     photos.value = photoList
 
     sectionContents.value = parseSectionsMd(sectionsData?.raw)
-
-    if (meta.value.template) {
-      const defs = await fetchTemplateSections(meta.value.template)
-      sectionDefs.value = Array.isArray(defs) ? defs : (defs?.sections ?? [])
-    }
+    sectionDefs.value = Array.isArray(defs) ? defs : []
   } catch (e) {
     console.error('Ladefehler:', e)
   } finally {

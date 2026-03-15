@@ -77,6 +77,7 @@ import { useLocale } from '../composables/useLocale.js'
 import { fetchShows, createShow, archiveShow } from '../api/shows.js'
 import { fetchTemplates, fetchTemplateChannels } from '../api/templates.js'
 import { saveChannels } from '../api/channels.js'
+import { fetchTemplateSections, saveShowSectionDefs } from '../api/sections.js'
 
 const router = useRouter()
 const { t } = useLocale()
@@ -110,12 +111,15 @@ async function handleCreate() {
   creating.value = true
   try {
     const content = buildInitialContent(form.value)
-    await createShow({ id: form.value.id, content })
+    await createShow({ id: form.value.id, content, template: form.value.template || undefined })
 
     // Template-Kanäle kopieren falls gewählt
     if (form.value.template) {
       const channels = await fetchTemplateChannels(form.value.template)
       if (channels.length) await saveChannels(form.value.id, channels)
+
+      const secs = await fetchTemplateSections(form.value.template)
+      if (secs.length) await saveShowSectionDefs(form.value.id, secs)
     }
 
     createDialog.value.close()
@@ -130,7 +134,8 @@ async function archive(id) {
   shows.value = shows.value.filter(s => s.id !== id)
 }
 
-function buildInitialContent({ id, name, venue, datum }) {
-  return `---\nname: ${name || id}\nvenue: ${venue || ''}\ndatum: ${datum || new Date().toISOString().slice(0, 10)}\n---\n\n## Setup\n\n## Hängerei\n`
+function buildInitialContent({ id, name, venue, datum, template }) {
+  const tplLine = template ? `template: ${template}\n` : ''
+  return `---\nname: ${name || id}\nvenue: ${venue || ''}\ndatum: ${datum || new Date().toISOString().slice(0, 10)}\n${tplLine}---\n\n`
 }
 </script>

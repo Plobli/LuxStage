@@ -15,6 +15,12 @@ export const saveShowSections = (id, raw) =>
 export const migrateShowSections = (id) =>
   api.post(`/api/shows/${id}/migrate-sections`)
 
+export const fetchShowSectionDefs = (id) =>
+  api.get(`/api/shows/${id}/section-defs`)
+
+export const saveShowSectionDefs = (id, sections) =>
+  api.put(`/api/shows/${id}/section-defs`, { sections })
+
 export function parseSectionsMd(raw) {
   const map = new Map()
   if (!raw) return map

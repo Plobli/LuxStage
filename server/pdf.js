@@ -245,10 +245,16 @@ function parseSetupSection(content) {
 function renderSetupBlocks(doc, blocks, margin, usableW) {
   for (const block of blocks) {
     if (block.type === 'heading') {
-      doc.moveDown(0.3)
-      const hSize = block.level <= 2 ? 11 : 8.5
-      doc.font(FONT_BOLD).fontSize(hSize).text(block.text, margin, doc.y)
-      doc.moveDown(0.2)
+      if (block.level <= 2) {
+        doc.moveDown(0.5)
+        doc.font(FONT_BOLD).fontSize(11).text(block.text, margin, doc.y)
+        doc.moveTo(margin, doc.y + 1).lineTo(margin + usableW, doc.y + 1).stroke('#cccccc')
+        doc.moveDown(0.3)
+      } else {
+        doc.moveDown(0.3)
+        doc.font(FONT_BOLD).fontSize(9).text(block.text, margin, doc.y)
+        doc.moveDown(0.1)
+      }
     } else if (block.type === 'text') {
       doc.font(FONT_NORMAL).fontSize(8.5).text(block.text, margin, doc.y, { width: usableW })
     } else if (block.type === 'list') {

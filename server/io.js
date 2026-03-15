@@ -16,8 +16,9 @@ export const paths = {
   showCsv:     (id) => path.join(config.dataPath, 'shows', id, 'channels.csv'),
   showLock:    (id) => path.join(config.dataPath, 'shows', id, 'show.lock'),
   showPhotos:  (id) => path.join(config.dataPath, 'shows', id),
-  sectionsTpl: (name) => path.join(config.dataPath, 'templates', name + '.sections.json'),
-  sectionsMd:  (id) => path.join(config.dataPath, 'shows', id, 'sections.md'),
+  sectionsTpl:      (name) => path.join(config.dataPath, 'templates', name + '.sections.json'),
+  sectionsMd:       (id)   => path.join(config.dataPath, 'shows', id, 'sections.md'),
+  showSectionDefs:  (id)   => path.join(config.dataPath, 'shows', id, 'sections.json'),
 }
 
 // ── Hilfsfunktionen ────────────────────────────────────────────────────────
@@ -147,6 +148,19 @@ export async function writeTemplateSections(name, sections) {
 
 export async function deleteTemplateSections(name) {
   try { await fs.unlink(paths.sectionsTpl(name)) } catch { /* ignorieren */ }
+}
+
+// ── Show Section Defs ──────────────────────────────────────────────────────
+
+export async function readShowSectionDefs(id) {
+  try {
+    const raw = await fs.readFile(paths.showSectionDefs(id), 'utf8')
+    return JSON.parse(raw)
+  } catch { return [] }
+}
+
+export async function writeShowSectionDefs(id, sections) {
+  await writeAtomic(paths.showSectionDefs(id), JSON.stringify(sections, null, 2))
 }
 
 // ── Show Sections ──────────────────────────────────────────────────────────

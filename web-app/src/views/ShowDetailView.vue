@@ -183,7 +183,6 @@
                 <td colspan="5"><button type="button" class="btn-ghost-sm" @click.stop="startAdd(group.position)">+ {{ t('channel.add') }}</button></td>
               </tr>
             </tbody>
-          </table>
           <tbody v-if="groupedChannels.length === 0">
             <tr v-if="addingPosition === ''" class="channel-row editing" @keydown.escape="addingPosition = null">
               <td><input class="inline-input" v-model="addForm.channel" :placeholder="t('show.channel.nr')" @click.stop /></td>
@@ -191,9 +190,11 @@
               <td><input class="inline-input" v-model="addForm.device" @click.stop /></td>
               <td><ColorPicker v-model="addForm.color" @click.stop /></td>
               <td>
-                <input class="inline-input inline-input-wide" v-model="addForm.notes" @click.stop />
-                <button class="btn-ghost-sm" @click.stop="saveAdd">✓</button>
-                <button class="btn-ghost-sm" @click.stop="addingPosition = null">✕</button>
+                <div class="add-row-actions">
+                  <input class="inline-input inline-input-wide" v-model="addForm.notes" @click.stop />
+                  <button class="btn-ghost-sm" @click.stop="saveAdd">✓</button>
+                  <button class="btn-ghost-sm" @click.stop="addingPosition = null">✕</button>
+                </div>
               </td>
             </tr>
             <tr v-else class="add-row-trigger">
@@ -203,6 +204,7 @@
               </td>
             </tr>
           </tbody>
+          </table>
         </div>
       </section>
     </template>

@@ -28,7 +28,7 @@ export async function router(req, res) {
     if (method === 'GET' && pathname === '/api/shows') {
       const user = requireAuth(req, res); if (!user) return
       const ids = await io.listShows()
-      // Frontmatter für jede Show lesen (name, datum, venue)
+      // Frontmatter für jede Show lesen (name, datum, template)
       const shows = await Promise.all(ids.map(async id => {
         try {
           const content = await io.readShow(id)
@@ -374,7 +374,7 @@ function parseFrontmatter(content) {
 }
 
 function defaultShowContent(id) {
-  return `---\nname: ${id}\nvenue: \ndatum: ${new Date().toISOString().slice(0, 10)}\n---\n\n## Setup\n\n## Hängerei\n`
+  return `---\nname: ${id}\ndatum: ${new Date().toISOString().slice(0, 10)}\n---\n\n`
 }
 
 function parseFrontmatterSimple(content) {

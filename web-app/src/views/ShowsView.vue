@@ -10,8 +10,8 @@
     <div v-else-if="shows.length === 0" class="empty">{{ t('show.list.empty') }}</div>
 
     <div v-else class="show-list">
-      <div v-for="group in groupedShows" :key="group.venue" class="show-group">
-        <h3 class="show-group-title">{{ group.venue || '—' }}</h3>
+      <div v-for="group in groupedShows" :key="group.template" class="show-group">
+        <h3 class="show-group-title">{{ group.template || '—' }}</h3>
         <div
           v-for="show in group.shows"
           :key="show.id"
@@ -43,10 +43,6 @@
         <div class="field">
           <label>{{ t('show.name') }}</label>
           <input v-model="form.name" type="text" required />
-        </div>
-        <div class="field">
-          <label>{{ t('show.venue') }}</label>
-          <input v-model="form.venue" type="text" />
         </div>
         <div class="field">
           <label>{{ t('show.date') }}</label>
@@ -88,16 +84,16 @@ const loading = ref(true)
 const creating = ref(false)
 const createDialog = ref(null)
 
-const form = ref({ id: '', name: '', venue: '', datum: '', template: '' })
+const form = ref({ id: '', name: '', datum: '', template: '' })
 
 const groupedShows = computed(() => {
   const map = new Map()
   for (const show of shows.value) {
-    const venue = show.venue || ''
-    if (!map.has(venue)) map.set(venue, [])
-    map.get(venue).push(show)
+    const tpl = show.template || ''
+    if (!map.has(tpl)) map.set(tpl, [])
+    map.get(tpl).push(show)
   }
-  return [...map.entries()].map(([venue, s]) => ({ venue, shows: s }))
+  return [...map.entries()].map(([template, s]) => ({ template, shows: s }))
 })
 
 onMounted(async () => {
@@ -134,8 +130,8 @@ async function archive(id) {
   shows.value = shows.value.filter(s => s.id !== id)
 }
 
-function buildInitialContent({ id, name, venue, datum, template }) {
+function buildInitialContent({ id, name, datum, template }) {
   const tplLine = template ? `template: ${template}\n` : ''
-  return `---\nname: ${name || id}\nvenue: ${venue || ''}\ndatum: ${datum || new Date().toISOString().slice(0, 10)}\n${tplLine}---\n\n`
+  return `---\nname: ${name || id}\ndatum: ${datum || new Date().toISOString().slice(0, 10)}\n${tplLine}---\n\n`
 }
 </script>

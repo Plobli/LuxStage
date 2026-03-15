@@ -21,3 +21,7 @@ ios-app/.build/
 
 # Local dev scripts
 start.sh
+
+# Server-Backups
+data/**/*.bak*
+data/**/*.tmp

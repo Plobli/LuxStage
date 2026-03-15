@@ -147,14 +147,7 @@ input[type=search]:focus { outline: none; border-color: var(--accent); }
 .inline-input:focus { outline: none; }
 .inline-input-color { width: 80px; }
 .inline-input-wide { width: 100%; min-width: 180px; }
-/* Inline ColorPicker: single row, no height jump */
-.inline-color-picker { display: block; }
-.inline-color-picker .color-picker { margin: 0; }
-.inline-color-picker .color-input-row { flex-direction: row; gap: 4px; align-items: center; flex-wrap: nowrap; }
-.inline-color-picker .color-select { font-size: 12px; padding: 3px 4px; background: var(--surface); border: 1px solid var(--accent); color: var(--text); border-radius: 4px; width: 70px; flex-shrink: 0; }
-.inline-color-picker .color-text { font-size: 12px; padding: 3px 6px; background: var(--surface); border: 1px solid var(--accent); color: var(--text); border-radius: 4px; width: 72px; min-width: 0; }
-.add-row-trigger td { padding: 4px 10px; color: var(--text-dim); font-size: 12px; cursor: pointer; border-bottom: none; }
-.add-row-trigger:hover td { color: var(--accent); background: var(--surface2); }
+.add-row-trigger td { padding: 4px 10px; border-bottom: none; }
 .add-row-form td { vertical-align: middle; }
 .add-row-actions { display: flex; align-items: center; gap: 4px; }
 .col-check { width: 36px; text-align: center; }
@@ -181,11 +174,30 @@ input[type=search]:focus { outline: none; border-color: var(--accent); }
   border-radius: var(--radius); padding: 8px 10px; min-height: 3.5em; cursor: text;
 }
 .aufbau-tiptap:focus-within { border-color: var(--accent); }
-.aufbau-editor-content { font-size: 13px; line-height: 1.6; outline: none; }
-.aufbau-editor-content p { margin-bottom: 4px; }
-.aufbau-editor-content ul, .aufbau-editor-content ol { padding-left: 18px; margin-bottom: 4px; }
-.aufbau-editor-content h2 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
-.aufbau-editor-content p.is-editor-empty:first-child::before {
+/* Markdown Editor */
+.md-editor { border: 1px solid var(--border); border-radius: var(--radius); }
+.md-editor:focus-within { border-color: var(--accent); }
+.md-toolbar {
+  display: flex; align-items: center; gap: 2px; flex-wrap: wrap;
+  padding: 4px 6px; border-bottom: 1px solid var(--border);
+  background: var(--surface2); border-radius: var(--radius) var(--radius) 0 0;
+  position: sticky; top: 52px; z-index: 10;
+}
+.md-toolbar button {
+  padding: 2px 8px; border: none; background: none; cursor: pointer;
+  color: var(--text-secondary); border-radius: 4px; font-size: 12px; line-height: 1.6;
+}
+.md-toolbar button:hover { background: var(--surface3); color: var(--text); }
+.md-toolbar button.active { background: var(--accent); color: #000; }
+.md-toolbar-sep { width: 1px; height: 16px; background: var(--border); margin: 0 4px; }
+.md-content { padding: 10px 12px; min-height: 120px; cursor: text; }
+.md-editor-inner { outline: none; font-size: 13px; line-height: 1.6; }
+.md-editor-inner p { margin-bottom: 4px; }
+.md-editor-inner ul, .md-editor-inner ol { padding-left: 18px; margin-bottom: 4px; }
+.md-editor-inner h2 { font-size: 14px; font-weight: 700; margin: 8px 0 4px; }
+.md-editor-inner h3 { font-size: 13px; font-weight: 600; margin: 6px 0 4px; }
+.md-editor-inner hr { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
+.md-editor-inner p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   color: var(--text-dim); pointer-events: none; float: left; height: 0;
 }
@@ -280,10 +292,6 @@ dialog form { padding: 20px; }
 .login-card button { width: 100%; margin-top: 4px; }
 .error-msg { color: var(--danger); font-size: 13px; margin-bottom: 8px; }
 
-/* ─── Color picker ───────────────────────────────────────────────────── */
-.color-input-row { display: flex; gap: 8px; }
-.color-select { flex: 1; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: var(--radius); padding: 8px; font-size: 13px; }
-.color-text { flex: 1; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: var(--radius); padding: 8px; font-size: 13px; }
 
 /* ─── Print / PDF ────────────────────────────────────────────────────── */
 @media print {

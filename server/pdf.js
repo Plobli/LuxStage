@@ -152,9 +152,9 @@ function parseSetupSection(content) {
     // Leerzeile
     if (!line.trim()) { i++; continue }
     // Überschrift
-    const headingMatch = line.match(/^#{1,6}\s+(.+)/)
+    const headingMatch = line.match(/^(#{1,6})\s+(.+)/)
     if (headingMatch) {
-      blocks.push({ type: 'heading', text: headingMatch[1] })
+      blocks.push({ type: 'heading', level: headingMatch[1].length, text: headingMatch[2] })
       i++; continue
     }
     // Tabelle: sammle alle aufeinanderfolgenden Tabellenzeilen
@@ -195,7 +195,8 @@ function renderSetupBlocks(doc, blocks, margin, usableW) {
   for (const block of blocks) {
     if (block.type === 'heading') {
       doc.moveDown(0.3)
-      doc.font(FONT_BOLD).fontSize(9).text(block.text, margin, doc.y)
+      const hSize = block.level <= 2 ? 11 : 8.5
+      doc.font(FONT_BOLD).fontSize(hSize).text(block.text, margin, doc.y)
       doc.moveDown(0.2)
     } else if (block.type === 'text') {
       doc.font(FONT_NORMAL).fontSize(8.5).text(block.text, margin, doc.y, { width: usableW })

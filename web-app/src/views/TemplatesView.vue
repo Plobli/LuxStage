@@ -104,8 +104,8 @@
               <th class="col-channel">{{ t('field.channel') }}</th>
               <th class="col-address">{{ t('field.address') }}</th>
               <th class="col-device">{{ t('field.device') }}</th>
-              <th class="col-color">{{ t('field.color') }}</th>
-              <th class="col-notes">{{ t('field.notes') }}</th>
+              <th class="col-position">{{ t('field.position') }}</th>
+              <th class="col-actions"></th>
             </tr>
           </thead>
           <tbody v-for="group in groupedChannels" :key="group.position">
@@ -115,18 +115,54 @@
                 <span class="category-count">{{ group.channels.length }}</span>
               </td>
             </tr>
-            <tr v-for="ch in group.channels" :key="ch.channel">
-              <td class="col-channel">{{ ch.channel }}</td>
-              <td class="col-address">{{ ch.address }}</td>
-              <td class="col-device">{{ ch.device }}</td>
-              <td class="col-color">{{ ch.color }}</td>
-              <td class="col-notes">{{ ch.notes }}</td>
+            <tr v-for="ch in group.channels" :key="ch.channel" @click="startEdit(ch)">
+              <td class="col-channel">
+                <input v-if="editingChannel === ch.channel" class="inline-input" v-model="editForm.channel" @click.stop />
+                <template v-else>{{ ch.channel }}</template>
+              </td>
+              <td class="col-address">
+                <input v-if="editingChannel === ch.channel" class="inline-input" v-model="editForm.address" @click.stop />
+                <template v-else>{{ ch.address }}</template>
+              </td>
+              <td class="col-device">
+                <input v-if="editingChannel === ch.channel" class="inline-input inline-input-wide" v-model="editForm.device" @click.stop />
+                <template v-else>{{ ch.device }}</template>
+              </td>
+              <td class="col-position">
+                <input v-if="editingChannel === ch.channel" class="inline-input" v-model="editForm.position" @click.stop />
+                <template v-else>{{ ch.position }}</template>
+              </td>
+              <td class="col-actions" @click.stop>
+                <template v-if="editingChannel === ch.channel">
+                  <button class="btn-ghost-sm" @click="saveEdit(ch)">✓</button>
+                  <button class="btn-ghost-sm" @click="cancelEdit">✕</button>
+                </template>
+                <button v-else class="btn-ghost-sm danger" @click.stop="deleteChannel(ch)">✕</button>
+              </td>
+            </tr>
+            <tr class="add-row-trigger">
+              <td colspan="5">
+                <button type="button" class="btn-ghost-sm" @click.stop="startAdd(group.position)">+ {{ t('channel.add') }}</button>
+              </td>
+            </tr>
+            <tr v-if="addingToPosition === group.position" class="add-row-form">
+              <td><input class="inline-input" v-model="addForm.channel" placeholder="Nr." @click.stop /></td>
+              <td><input class="inline-input" v-model="addForm.address" placeholder="1/001" @click.stop /></td>
+              <td><input class="inline-input inline-input-wide" v-model="addForm.device" @click.stop /></td>
+              <td><input class="inline-input" v-model="addForm.position" @click.stop /></td>
+              <td @click.stop>
+                <div class="add-row-actions">
+                  <button class="btn-ghost-sm" @click="confirmAdd">✓</button>
+                  <button class="btn-ghost-sm" @click="cancelAdd">✕</button>
+                </div>
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
 
       <div class="modal-footer">
+        <span v-if="detailSaving" class="saving-hint">…</span>
         <button class="btn-ghost" @click="detailDialog.close()">{{ t('action.close') }}</button>
       </div>
     </dialog>
@@ -136,7 +172,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useLocale } from '../composables/useLocale.js'
-import { fetchTemplates, fetchTemplateChannels, uploadTemplate, deleteTemplate } from '../api/templates.js'
+import { fetchTemplates, fetchTemplateChannels, saveTemplate, uploadTemplate, deleteTemplate } from '../api/templates.js'
 import { parseCsv } from '../api/channels.js'
 
 const { t } = useLocale()
@@ -157,6 +193,12 @@ const detailDialog = ref(null)
 const detailName = ref('')
 const detailChannels = ref([])
 const detailLoading = ref(false)
+const detailSaving = ref(false)
+
+const editingChannel = ref(null)
+const editForm = ref({})
+const addingToPosition = ref(null)
+const addForm = ref({})
 
 const groupedChannels = computed(() => {
   const sorted = [...detailChannels.value].sort((a, b) => Number(a.channel) - Number(b.channel))
@@ -173,6 +215,8 @@ onMounted(async () => {
   templates.value = await fetchTemplates()
   loading.value = false
 })
+
+// ── Upload ─────────────────────────────────────────────────────────────────
 
 function openUpload() {
   step.value = 'select'
@@ -225,12 +269,60 @@ async function handleImport() {
   }
 }
 
+// ── Detail / Edit ──────────────────────────────────────────────────────────
+
 async function showDetail(name) {
   detailName.value = name
   detailLoading.value = true
+  editingChannel.value = null
+  addingToPosition.value = null
   detailDialog.value.showModal()
   detailChannels.value = await fetchTemplateChannels(name)
   detailLoading.value = false
+}
+
+async function persist() {
+  detailSaving.value = true
+  await saveTemplate(detailName.value, detailChannels.value)
+  detailSaving.value = false
+}
+
+function startEdit(ch) {
+  editingChannel.value = ch.channel
+  editForm.value = { ...ch }
+  addingToPosition.value = null
+}
+
+function cancelEdit() {
+  editingChannel.value = null
+}
+
+async function saveEdit(ch) {
+  Object.assign(ch, editForm.value)
+  editingChannel.value = null
+  await persist()
+}
+
+async function deleteChannel(ch) {
+  detailChannels.value = detailChannels.value.filter(c => c.channel !== ch.channel)
+  await persist()
+}
+
+function startAdd(position) {
+  addingToPosition.value = position
+  addForm.value = { channel: '', address: '', device: '', position, color: '', notes: '' }
+  editingChannel.value = null
+}
+
+function cancelAdd() {
+  addingToPosition.value = null
+}
+
+async function confirmAdd() {
+  if (!addForm.value.channel.trim()) return
+  detailChannels.value.push({ ...addForm.value })
+  addingToPosition.value = null
+  await persist()
 }
 
 async function handleDelete(name) {

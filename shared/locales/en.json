@@ -35,8 +35,8 @@
   "mode.preparation": "Setup",
   "mode.lighting": "Focus",
 
-  "field.channel": "Channel",
-  "field.channel_number": "Channel",
+  "field.channel": "Chan",
+  "field.channel_number": "Chan",
   "field.address": "Address",
   "field.device": "Device",
   "field.color": "Color",

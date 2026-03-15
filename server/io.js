@@ -31,15 +31,6 @@ export async function writeAtomic(filePath, content) {
   await fs.rename(tmp, filePath)
 }
 
-/** Versionierung: .bak1 … .bakN rotieren, dann aktuelle Datei als .bak1 */
-export async function rotateBackup(filePath) {
-  for (let i = config.versionCount - 1; i >= 1; i--) {
-    const older = `${filePath}.bak${i + 1}`
-    const newer = `${filePath}.bak${i}`
-    try { await fs.rename(newer, older) } catch { /* existiert nicht */ }
-  }
-  try { await fs.copyFile(filePath, `${filePath}.bak1`) } catch { /* neue Datei */ }
-}
 
 // ── Locking ────────────────────────────────────────────────────────────────
 
@@ -102,7 +93,6 @@ export async function readShow(id) {
 }
 
 export async function writeShow(id, content) {
-  await rotateBackup(paths.showMd(id))
   await writeAtomic(paths.showMd(id), content)
 }
 
@@ -112,7 +102,6 @@ export async function readChannels(id) {
 }
 
 export async function writeChannels(id, content) {
-  await rotateBackup(paths.showCsv(id))
   await writeAtomic(paths.showCsv(id), content)
 }
 

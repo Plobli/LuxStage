@@ -15,5 +15,4 @@ export const config = {
   lockTimeout: 10 * 60 * 1000, // 10 Minuten in ms
   photoMaxWidth: 1600,
   photoQuality: 82,
-  versionCount: 5, // letzte N Versionen behalten
 }

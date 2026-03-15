@@ -265,8 +265,12 @@ export async function router(req, res) {
     if (method === 'GET' && pathname.match(/^\/api\/shows\/([^/]+)\/pdf$/)) {
       const user = requireAuth(req, res); if (!user) return
       const id = pathname.split('/')[3]
-      const [content, csv] = await Promise.all([io.readShow(id), io.readChannels(id)])
-      generatePDF(content, csv, res)
+      const [content, csv, sectionsRaw] = await Promise.all([
+        io.readShow(id), io.readChannels(id), io.readShowSections(id),
+      ])
+      const fm = parseFrontmatterSimple(content)
+      const templateSections = fm.template ? await io.readTemplateSections(fm.template) : []
+      generatePDF(content, csv, sectionsRaw, templateSections, res)
       return
     }
 
@@ -351,4 +355,16 @@ function parseFrontmatter(content) {
 
 function defaultShowContent(id) {
   return `---\nname: ${id}\nvenue: \ndatum: ${new Date().toISOString().slice(0, 10)}\n---\n\n## Setup\n\n## Hängerei\n`
+}
+
+function parseFrontmatterSimple(content) {
+  const match = content?.match(/^---\n([\s\S]*?)\n---/)
+  if (!match) return {}
+  const result = {}
+  for (const line of match[1].split('\n')) {
+    const idx = line.indexOf(':')
+    if (idx === -1) continue
+    result[line.slice(0, idx).trim()] = line.slice(idx + 1).trim().replace(/^"|"$/g, '')
+  }
+  return result
 }

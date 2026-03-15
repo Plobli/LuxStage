@@ -37,10 +37,6 @@
       </div>
       <form @submit.prevent="handleCreate">
         <div class="field">
-          <label>{{ t('show.id.label') }}</label>
-          <input v-model="form.id" type="text" required pattern="[a-zA-Z0-9_-]+" :placeholder="t('show.id.placeholder')" />
-        </div>
-        <div class="field">
           <label>{{ t('show.name') }}</label>
           <input v-model="form.name" type="text" required />
         </div>
@@ -49,9 +45,9 @@
           <input v-model="form.datum" type="date" />
         </div>
         <div class="field">
-          <label>{{ t('show.template.optional') }}</label>
-          <select v-model="form.template">
-            <option value="">{{ t('show.template.none') }}</option>
+          <label>{{ t('show.template') }}</label>
+          <select v-model="form.template" required>
+            <option value="" disabled>{{ t('show.template.none') }}</option>
             <option v-for="tpl in templates" :key="tpl" :value="tpl">{{ tpl }}</option>
           </select>
         </div>
@@ -84,7 +80,15 @@ const loading = ref(true)
 const creating = ref(false)
 const createDialog = ref(null)
 
-const form = ref({ id: '', name: '', datum: '', template: '' })
+const form = ref({ name: '', datum: new Date().toISOString().slice(0, 10), template: '' })
+
+function generateId(name, datum) {
+  const slug = name.toLowerCase()
+    .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+  const year = datum ? datum.slice(0, 4) : new Date().getFullYear()
+  return slug ? `${slug}-${year}` : ''
+}
 
 const groupedShows = computed(() => {
   const map = new Map()
@@ -105,21 +109,21 @@ onMounted(async () => {
 
 async function handleCreate() {
   creating.value = true
+  const id = generateId(form.value.name, form.value.datum)
   try {
-    const content = buildInitialContent(form.value)
-    await createShow({ id: form.value.id, content, template: form.value.template || undefined })
+    const content = buildInitialContent({ ...form.value, id })
+    await createShow({ id, content, template: form.value.template || undefined })
 
-    // Template-Kanäle kopieren falls gewählt
     if (form.value.template) {
       const channels = await fetchTemplateChannels(form.value.template)
-      if (channels.length) await saveChannels(form.value.id, channels)
+      if (channels.length) await saveChannels(id, channels)
 
       const secs = await fetchTemplateSections(form.value.template)
-      if (secs.length) await saveShowSectionDefs(form.value.id, secs)
+      if (secs.length) await saveShowSectionDefs(id, secs)
     }
 
     createDialog.value.close()
-    router.push(`/shows/${form.value.id}`)
+    router.push(`/shows/${id}`)
   } finally {
     creating.value = false
   }
@@ -132,6 +136,6 @@ async function archive(id) {
 
 function buildInitialContent({ id, name, datum, template }) {
   const tplLine = template ? `template: ${template}\n` : ''
-  return `---\nname: ${name || id}\ndatum: ${datum || new Date().toISOString().slice(0, 10)}\n${tplLine}---\n\n`
+  return `---\nid: ${id}\nname: ${name || id}\ndatum: ${datum || new Date().toISOString().slice(0, 10)}\n${tplLine}---\n\n`
 }
 </script>

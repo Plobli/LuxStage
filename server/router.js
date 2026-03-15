@@ -7,6 +7,7 @@ import { streamBackup } from './backup.js'
 import { generatePDF } from './pdf.js'
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { config } from './config.js'
 
 export async function router(req, res) {
@@ -255,7 +256,7 @@ export async function router(req, res) {
 
     // ── Static (Web-App) ───────────────────────────────────────────────────
     if (method === 'GET') {
-      const distPath = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'web-app', 'dist')
+      const distPath = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'web-app', 'dist')
       let filePath = path.join(distPath, pathname === '/' ? 'index.html' : pathname)
       // Sicherheitscheck: kein Pfad-Traversal
       if (!filePath.startsWith(distPath)) return notFound(res)

@@ -9,11 +9,11 @@ import PDFDocument from 'pdfkit'
 const mm = (v) => v * 2.835
 const PAGE_MARGIN = mm(15)
 const COL = {
-  channel:  mm(14),
-  device:   mm(44),
-  color:    mm(28),
-  address:  mm(22),
-  category: mm(26),
+  channel:  mm(12),
+  device:   mm(38),
+  color:    mm(24),
+  address:  mm(18),
+  category: mm(22),
   notes:    0, // Rest
 }
 const ROW_H = mm(6)
@@ -23,13 +23,14 @@ const FONT_BOLD   = 'Helvetica-Bold'
 
 export function generatePDF(showContent, channelsCsv, res) {
   const fm = parseFrontmatter(showContent)
+  const setupBlocks = parseSetupSection(showContent)
   const channels = parseCsv(channelsCsv)
   const grouped = groupByPosition(channels)
 
-  const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: PAGE_MARGIN })
+  const doc = new PDFDocument({ size: 'A4', layout: 'portrait', margin: PAGE_MARGIN })
   res.writeHead(200, {
     'Content-Type': 'application/pdf',
-    'Content-Disposition': `attachment; filename="einleuchtplan-${fm.name || 'show'}.pdf"`,
+    'Content-Disposition': `inline; filename="einleuchtplan-${fm.name || 'show'}.pdf"`,
   })
   doc.pipe(res)
 
@@ -37,12 +38,20 @@ export function generatePDF(showContent, channelsCsv, res) {
   const usableW = pageW - PAGE_MARGIN * 2
   COL.notes = usableW - Object.values(COL).reduce((a, b) => a + b, 0)
 
-  // ── Titelseite / Header ──────────────────────────────────────────────────
+  // ── Titel ────────────────────────────────────────────────────────────────
   doc.font(FONT_BOLD).fontSize(16)
     .text(`Einleuchtplan — ${fm.name || ''}`, PAGE_MARGIN, PAGE_MARGIN)
   doc.font(FONT_NORMAL).fontSize(10)
     .text(`${fm.venue || ''}   |   ${fmt(fm.datum)}`, PAGE_MARGIN, PAGE_MARGIN + mm(8))
   doc.moveDown(1.5)
+
+  // ── Aufbau-Notizen ───────────────────────────────────────────────────────
+  if (setupBlocks.length) {
+    doc.font(FONT_BOLD).fontSize(11).text('Aufbau', PAGE_MARGIN, doc.y)
+    doc.moveDown(0.5)
+    renderSetupBlocks(doc, setupBlocks, PAGE_MARGIN, usableW)
+    doc.moveDown(1.5)
+  }
 
   // ── Pro Gruppe: Überschrift + Tabelle ────────────────────────────────────
   let y = doc.y
@@ -128,6 +137,105 @@ function drawRow(doc, y, usableW, cols, isHeader) {
     x += col.w
   }
   return y + ROW_H
+}
+
+// Gibt strukturierte Blöcke zurück: { type: 'heading'|'table'|'list'|'text', ... }
+function parseSetupSection(content) {
+  if (!content) return []
+  const withoutFm = content.replace(/^---\n[\s\S]*?\n---\n/, '').trim()
+  const lines = withoutFm.split('\n')
+  const blocks = []
+  let i = 0
+  while (i < lines.length) {
+    const raw = lines[i]
+    const line = raw.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1')
+    // Leerzeile
+    if (!line.trim()) { i++; continue }
+    // Überschrift
+    const headingMatch = line.match(/^#{1,6}\s+(.+)/)
+    if (headingMatch) {
+      blocks.push({ type: 'heading', text: headingMatch[1] })
+      i++; continue
+    }
+    // Tabelle: sammle alle aufeinanderfolgenden Tabellenzeilen
+    if (/^\|.*\|$/.test(line.trim())) {
+      const rows = []
+      while (i < lines.length && /^\|.*\|$/.test(lines[i].trim())) {
+        const l = lines[i].replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1')
+        if (!/^\|[\s\-:|]+\|$/.test(l.trim())) {
+          const cells = l.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim())
+          rows.push(cells)
+        }
+        i++
+      }
+      if (rows.length) blocks.push({ type: 'table', rows })
+      continue
+    }
+    // Liste
+    const listMatch = line.match(/^[\s]*[-*]\s+(.+)/)
+    if (listMatch) {
+      const items = []
+      while (i < lines.length) {
+        const l = lines[i].replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1')
+        const m = l.match(/^[\s]*[-*]\s+(.+)/)
+        if (!m) break
+        items.push(m[1])
+        i++
+      }
+      blocks.push({ type: 'list', items })
+      continue
+    }
+    blocks.push({ type: 'text', text: line.trim() })
+    i++
+  }
+  return blocks
+}
+
+function renderSetupBlocks(doc, blocks, margin, usableW) {
+  for (const block of blocks) {
+    if (block.type === 'heading') {
+      doc.moveDown(0.3)
+      doc.font(FONT_BOLD).fontSize(9).text(block.text, margin, doc.y)
+      doc.moveDown(0.2)
+    } else if (block.type === 'text') {
+      doc.font(FONT_NORMAL).fontSize(8.5).text(block.text, margin, doc.y, { width: usableW })
+    } else if (block.type === 'list') {
+      for (const item of block.items) {
+        doc.font(FONT_NORMAL).fontSize(8.5)
+          .text('•  ' + item, margin + mm(3), doc.y, { width: usableW - mm(3), lineGap: 1 })
+      }
+    } else if (block.type === 'table') {
+      const rows = block.rows
+      if (!rows.length) continue
+      const colCount = Math.max(...rows.map(r => r.length))
+      // Erste Spalte breiter (Label), Rest gleich verteilt
+      const col0W = mm(40)
+      const colRest = (usableW - col0W) / Math.max(colCount - 1, 1)
+      const rowH = mm(5.5)
+      let y = doc.y
+      for (let ri = 0; ri < rows.length; ri++) {
+        const isHeader = ri === 0
+        if (isHeader) {
+          doc.rect(margin, y, usableW, rowH).fill('#e8e8e8')
+          doc.fill('black')
+        }
+        doc.rect(margin, y, usableW, rowH).stroke('#cccccc')
+        let x = margin
+        for (let ci = 0; ci < rows[ri].length; ci++) {
+          const w = ci === 0 ? col0W : colRest
+          doc.font(isHeader ? FONT_BOLD : FONT_NORMAL).fontSize(8)
+            .fill('black')
+            .text(rows[ri][ci] || '', x + mm(1.5), y + mm(1.2), {
+              width: w - mm(3), height: rowH - mm(1), lineBreak: false, ellipsis: true,
+            })
+          x += w
+        }
+        y += rowH
+      }
+      doc.y = y
+      doc.moveDown(0.3)
+    }
+  }
 }
 
 function parseFrontmatter(content) {

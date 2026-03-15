@@ -4,14 +4,69 @@
       <button class="btn-ghost" @click="router.push('/')">← {{ t('action.back') }}</button>
       <h2>{{ meta.name }}</h2>
       <span class="show-date">{{ meta.datum }}</span>
-      <a class="btn-ghost-sm" :href="pdfUrl" target="_blank">⎙ PDF</a>
+      <button class="btn-ghost-sm" :class="{ active: editingSections }" @click="editingSections = !editingSections">{{ t('sections.btn') }}</button>
+      <a class="btn-ghost-sm" :href="pdfUrl" target="_blank">{{ t('show.pdf') }}</a>
     </div>
 
     <div v-if="loading" class="loading">…</div>
 
     <template v-else>
-      <!-- Aufbau — Toast UI WYSIWYG -->
-      <section class="aufbau-section">
+      <!-- Sections editor -->
+      <div class="section-defs-editor" v-if="editingSections">
+        <div v-for="(sec, idx) in sectionDefs" :key="sec.id" class="section-card">
+          <div class="section-card-header">
+            <div class="section-reorder">
+              <button class="btn-ghost-sm" :disabled="idx === 0" @click="moveSectionDef(idx, -1)">↑</button>
+              <button class="btn-ghost-sm" :disabled="idx === sectionDefs.length - 1" @click="moveSectionDef(idx, 1)">↓</button>
+            </div>
+            <input :value="sec.title" :placeholder="t('sections.title.placeholder')" @input="sec.title = $event.target.value" @change="persistSectionDefs" />
+            <select class="section-type-select" :value="sec.type" @change="onSectionTypeChange(sec, $event.target.value)">
+              <option value="markdown">{{ t('sections.type.markdown') }}</option>
+              <option value="fields" :disabled="hasFieldsType() && sec.type !== 'fields'">{{ t('sections.type.fields') }}</option>
+            </select>
+            <button class="btn-ghost-sm danger" @click="deleteSectionDef(idx)">✕</button>
+          </div>
+          <div v-if="sec.type === 'fields'" class="fields-editor">
+            <div v-for="(field, fidx) in sec.fields" :key="field.key" class="fields-editor-row">
+              <input :value="field.label" :placeholder="t('sections.field.label')" @input="field.label = $event.target.value" @change="persistSectionDefs" />
+              <input :value="field.unit" :placeholder="t('sections.field.unit')" style="max-width:80px" @input="field.unit = $event.target.value" @change="persistSectionDefs" />
+              <button class="btn-ghost-sm danger" @click="deleteFieldDef(sec, fidx)">✕</button>
+            </div>
+            <button class="btn-ghost-sm" @click="addFieldDef(sec)">{{ t('sections.field.add') }}</button>
+          </div>
+        </div>
+        <button class="btn-ghost-sm" @click="addSection">{{ t('sections.add') }}</button>
+      </div>
+
+      <!-- Sections from show's own section defs -->
+      <template v-if="sortedSections.length > 0">
+        <section v-for="sec in sortedSections" :key="sec.id" class="aufbau-section">
+          <div class="aufbau-header">
+            <span class="aufbau-label">{{ sec.title }}</span>
+            <span v-if="sectionsSaving" class="saving-hint">…</span>
+          </div>
+          <!-- fields type -->
+          <div v-if="sec.type === 'fields'" class="fields-grid">
+            <div v-for="field in sec.fields" :key="field.key" class="fields-grid-row">
+              <label class="fields-grid-label">{{ field.label }}<span v-if="field.unit" class="field-unit"> ({{ field.unit }})</span></label>
+              <input class="inline-input"
+                :value="parseFieldValue(sec.id, field.key)"
+                @change="onFieldChange(sec.id, field.key, $event.target.value)"
+                @click.stop
+              />
+            </div>
+          </div>
+          <!-- markdown type -->
+          <MarkdownEditor v-else
+            :modelValue="sectionContents.get(sec.id) ?? ''"
+            class="aufbau-editor"
+            @update:modelValue="onSectionChange(sec.id, $event)"
+          />
+        </section>
+      </template>
+
+      <!-- Fallback: single aufbau section if no section defs defined -->
+      <section v-else class="aufbau-section">
         <div class="aufbau-header">
           <span class="aufbau-label">{{ t('show.setup') }}</span>
           <span v-if="setupSaving" class="saving-hint">…</span>
@@ -39,7 +94,7 @@
           <div class="photos-grid">
             <div v-for="filename in photos" :key="filename" class="photo-item">
               <img :src="getPhotoUrl(props.id, filename)" :alt="filename" @click="openLightbox(filename)" />
-              <button class="btn-icon-danger" @click="onDeletePhoto(filename)" title="Löschen">🗑</button>
+              <button class="btn-icon-danger" @click="onDeletePhoto(filename)" :title="t('action.delete')">🗑</button>
             </div>
           </div>
         </div>
@@ -105,15 +160,15 @@
                 <td class="col-notes">
                   <div v-if="editingChannel === ch.channel" class="add-row-actions">
                     <input ref="notesInput" class="inline-input inline-input-wide" v-model="editForm.notes" @click.stop />
-                    <button class="btn-danger-sm" @click.stop="deleteChannel(ch)" title="Löschen">🗑</button>
+                    <button class="btn-danger-sm" @click.stop="deleteChannel(ch)" :title="t('action.delete')">🗑</button>
                   </div>
                   <template v-else>{{ ch.notes }}</template>
                 </td>
               </tr>
               <!-- Kanal hinzufügen -->
               <tr v-if="addingPosition === group.position" class="channel-row editing" @keydown.escape="addingPosition = null">
-                <td><input class="inline-input" v-model="addForm.channel" placeholder="Nr." @click.stop /></td>
-                <td><input class="inline-input" v-model="addForm.address" placeholder="1/001" @click.stop /></td>
+                <td><input class="inline-input" v-model="addForm.channel" :placeholder="t('show.channel.nr')" @click.stop /></td>
+                <td><input class="inline-input" v-model="addForm.address" :placeholder="t('show.channel.address.example')" @click.stop /></td>
                 <td><input class="inline-input" v-model="addForm.device" @click.stop /></td>
                 <td><ColorPicker v-model="addForm.color" @click.stop /></td>
                 <td>
@@ -147,6 +202,7 @@ import { fetchPhotos, uploadPhoto, deletePhoto, getPhotoUrl } from '../api/photo
 import { subscribeChannels } from '../api/client.js'
 import { api } from '../api/client.js'
 import ColorPicker from '../components/ColorPicker.vue'
+import { fetchShowSections, saveShowSections, parseSectionsMd, serializeSectionsMd, fetchShowSectionDefs, saveShowSectionDefs } from '../api/sections.js'
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
@@ -162,6 +218,16 @@ const photos = ref([])
 const search = ref('')
 const setupSaving = ref(false)
 const channelsSaving = ref(false)
+
+const sectionDefs = ref([])
+const sectionContents = ref(new Map())
+const sectionsSaving = ref(false)
+const editingSections = ref(false)
+let saveSectionsTimer = null
+
+const sortedSections = computed(() =>
+  [...sectionDefs.value].sort((a, b) => a.order - b.order)
+)
 
 // ── Editor ─────────────────────────────────────────────────────────────────
 let saveSetupTimer = null
@@ -249,7 +315,7 @@ function commitEdit() {
 }
 
 async function deleteChannel(ch) {
-  if (!window.confirm(`Kanal ${ch.channel} wirklich löschen?`)) return
+  if (!window.confirm(t('show.channel.delete.confirm', { channel: ch.channel }))) return
   channels.value = channels.value.filter(c => c.channel !== ch.channel)
   editingChannel.value = null
   persistChannels()
@@ -302,7 +368,7 @@ function onDrop(e) {
 }
 
 async function onDeletePhoto(filename) {
-  if (!window.confirm('Foto wirklich löschen?')) return
+  if (!window.confirm(t('show.photo.delete.confirm'))) return
   await deletePhoto(props.id, filename)
   photos.value = photos.value.filter(f => f !== filename)
 }
@@ -312,21 +378,115 @@ function openLightbox(filename) {
   lightboxDialog.value.showModal()
 }
 
+// ── Sections ───────────────────────────────────────────────────────────────
+
+function onSectionChange(id, value) {
+  sectionContents.value = new Map(sectionContents.value)
+  sectionContents.value.set(id, value)
+  clearTimeout(saveSectionsTimer)
+  saveSectionsTimer = setTimeout(() => persistSections(), 800)
+}
+
+async function persistSections() {
+  sectionsSaving.value = true
+  try {
+    const raw = serializeSectionsMd(sectionContents.value)
+    await saveShowSections(props.id, raw)
+  } finally {
+    sectionsSaving.value = false
+  }
+}
+
+function parseFieldValue(sectionId, key) {
+  const raw = sectionContents.value.get(sectionId) ?? ''
+  const match = raw.match(new RegExp(`^${key}:\\s*(.*)$`, 'm'))
+  return match ? match[1].trim() : ''
+}
+
+function onFieldChange(sectionId, key, value) {
+  let raw = sectionContents.value.get(sectionId) ?? ''
+  const re = new RegExp(`^${key}:.*$`, 'm')
+  if (re.test(raw)) {
+    raw = raw.replace(re, `${key}: ${value}`)
+  } else {
+    raw = raw ? raw + `\n${key}: ${value}` : `${key}: ${value}`
+  }
+  onSectionChange(sectionId, raw)
+}
+
+// ── Section Defs verwalten ─────────────────────────────────────────────────
+
+async function persistSectionDefs() {
+  await saveShowSectionDefs(props.id, sectionDefs.value)
+}
+
+function addSection() {
+  sectionDefs.value.push({
+    id: crypto.randomUUID(),
+    title: '',
+    type: 'markdown',
+    order: sectionDefs.value.length,
+    fields: []
+  })
+  persistSectionDefs()
+}
+
+function deleteSectionDef(idx) {
+  sectionDefs.value.splice(idx, 1)
+  sectionDefs.value.forEach((s, i) => s.order = i)
+  persistSectionDefs()
+}
+
+function moveSectionDef(idx, dir) {
+  const arr = sectionDefs.value
+  const swap = idx + dir
+  if (swap < 0 || swap >= arr.length) return
+  ;[arr[idx], arr[swap]] = [arr[swap], arr[idx]]
+  arr.forEach((s, i) => s.order = i)
+  persistSectionDefs()
+}
+
+function addFieldDef(section) {
+  section.fields.push({ key: crypto.randomUUID().slice(0, 8), label: '', unit: '' })
+  persistSectionDefs()
+}
+
+function deleteFieldDef(section, idx) {
+  section.fields.splice(idx, 1)
+  persistSectionDefs()
+}
+
+function hasFieldsType() {
+  return sectionDefs.value.some(s => s.type === 'fields')
+}
+
+function onSectionTypeChange(section, newType) {
+  if (newType === 'fields' && hasFieldsType() && section.type !== 'fields') return
+  section.type = newType
+  if (newType === 'fields' && !section.fields) section.fields = []
+  persistSectionDefs()
+}
+
 // ── Laden ──────────────────────────────────────────────────────────────────
 let unsubscribeSSE = null
 
 onMounted(async () => {
   try {
-    const [showData, chs, photoList] = await Promise.all([
+    const [showData, chs, photoList, sectionsData, defs] = await Promise.all([
       fetchShow(props.id),
       fetchChannels(props.id),
       fetchPhotos(props.id),
+      fetchShowSections(props.id),
+      fetchShowSectionDefs(props.id),
     ])
 
     meta.value = parseFrontmatter(showData.content)
     setupMarkdown.value = parseSetupSection(showData.content)
     channels.value = chs
     photos.value = photoList
+
+    sectionContents.value = parseSectionsMd(sectionsData?.raw)
+    sectionDefs.value = Array.isArray(defs) ? defs : []
   } catch (e) {
     console.error('Ladefehler:', e)
   } finally {
@@ -343,6 +503,7 @@ onBeforeUnmount(() => {
   unsubscribeSSE?.()
   clearTimeout(saveSetupTimer)
   clearTimeout(channelsSaveTimer)
+  clearTimeout(saveSectionsTimer)
 })
 
 // ── Hilfsfunktionen ────────────────────────────────────────────────────────

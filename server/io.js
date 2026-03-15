@@ -8,14 +8,17 @@ import { config } from './config.js'
 // ── Pfade ──────────────────────────────────────────────────────────────────
 
 export const paths = {
-  shows:     () => path.join(config.dataPath, 'shows'),
-  archiv:    () => path.join(config.dataPath, 'shows', 'archiv'),
-  templates: () => path.join(config.dataPath, 'templates'),
-  showDir:   (id) => path.join(config.dataPath, 'shows', id),
-  showMd:    (id) => path.join(config.dataPath, 'shows', id, 'show.md'),
-  showCsv:   (id) => path.join(config.dataPath, 'shows', id, 'channels.csv'),
-  showLock:  (id) => path.join(config.dataPath, 'shows', id, 'show.lock'),
-  showPhotos:(id) => path.join(config.dataPath, 'shows', id),
+  shows:       () => path.join(config.dataPath, 'shows'),
+  archiv:      () => path.join(config.dataPath, 'shows', 'archiv'),
+  templates:   () => path.join(config.dataPath, 'templates'),
+  showDir:     (id) => path.join(config.dataPath, 'shows', id),
+  showMd:      (id) => path.join(config.dataPath, 'shows', id, 'show.md'),
+  showCsv:     (id) => path.join(config.dataPath, 'shows', id, 'channels.csv'),
+  showLock:    (id) => path.join(config.dataPath, 'shows', id, 'show.lock'),
+  showPhotos:  (id) => path.join(config.dataPath, 'shows', id),
+  sectionsTpl:      (name) => path.join(config.dataPath, 'templates', name + '.sections.json'),
+  sectionsMd:       (id)   => path.join(config.dataPath, 'shows', id, 'sections.md'),
+  showSectionDefs:  (id)   => path.join(config.dataPath, 'shows', id, 'sections.json'),
 }
 
 // ── Hilfsfunktionen ────────────────────────────────────────────────────────
@@ -128,4 +131,68 @@ export async function writeTemplate(name, content) {
 
 export async function deleteTemplate(name) {
   await fs.unlink(path.join(paths.templates(), name))
+}
+
+// ── Template Sections ──────────────────────────────────────────────────────
+
+export async function readTemplateSections(name) {
+  try {
+    const raw = await fs.readFile(paths.sectionsTpl(name), 'utf8')
+    return JSON.parse(raw)
+  } catch { return [] }
+}
+
+export async function writeTemplateSections(name, sections) {
+  await writeAtomic(paths.sectionsTpl(name), JSON.stringify(sections, null, 2))
+}
+
+export async function deleteTemplateSections(name) {
+  try { await fs.unlink(paths.sectionsTpl(name)) } catch { /* ignorieren */ }
+}
+
+// ── Show Section Defs ──────────────────────────────────────────────────────
+
+export async function readShowSectionDefs(id) {
+  try {
+    const raw = await fs.readFile(paths.showSectionDefs(id), 'utf8')
+    return JSON.parse(raw)
+  } catch { return [] }
+}
+
+export async function writeShowSectionDefs(id, sections) {
+  await writeAtomic(paths.showSectionDefs(id), JSON.stringify(sections, null, 2))
+}
+
+// ── Show Sections ──────────────────────────────────────────────────────────
+
+export async function readShowSections(id) {
+  try { return await fs.readFile(paths.sectionsMd(id), 'utf8') }
+  catch { return '' }
+}
+
+export async function writeShowSections(id, raw) {
+  await writeAtomic(paths.sectionsMd(id), raw)
+}
+
+// ── Sections Format (pure) ─────────────────────────────────────────────────
+
+/** Parst sections.md in eine Map<sectionId, string> */
+export function parseSectionsMd(raw) {
+  const map = new Map()
+  const parts = raw.split(/^---section: [^\s]+---$/m)
+  const ids = [...raw.matchAll(/^---section: ([^\s]+)---$/mg)].map(m => m[1])
+  // Erster Teil (vor dem ersten Delimiter) ist Preamble — ignorieren
+  for (let i = 0; i < ids.length; i++) {
+    map.set(ids[i], (parts[i + 1] ?? '').trim())
+  }
+  return map
+}
+
+/** Serialisiert eine Map<sectionId, string> zu sections.md */
+export function serializeSectionsMd(map) {
+  const parts = []
+  for (const [id, content] of map) {
+    parts.push(`---section: ${id}---\n${content}`)
+  }
+  return parts.join('\n')
 }

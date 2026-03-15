@@ -122,5 +122,43 @@
   "csv.error.missing_header": "Pflicht-Spalte fehlt: {column}",
   "csv.error.invalid_address": "Ungültiges Adress-Format in Zeile {line}: \"{value}\"",
   "csv.preview.channels": "{count} Kanäle",
-  "csv.preview.custom_fields": "{count} Show-Felder"
+  "csv.preview.custom_fields": "{count} Show-Felder",
+
+  "sections.btn": "Abschnitte",
+  "sections.add": "+ Abschnitt",
+  "sections.title.placeholder": "Titel",
+  "sections.type.markdown": "Markdown",
+  "sections.type.fields": "Felder",
+  "sections.field.label": "Label",
+  "sections.field.unit": "Einheit",
+  "sections.field.add": "+ Feld",
+
+  "show.id.label": "ID (Dateiname, keine Leerzeichen)",
+  "show.id.placeholder": "norden-2026",
+  "show.venue": "Bühne",
+  "show.template.optional": "Template (optional)",
+  "show.pdf": "⎙ PDF",
+  "show.channel.nr": "Nr.",
+  "show.channel.address.example": "1/001",
+  "show.channel.delete.confirm": "Kanal {channel} wirklich löschen?",
+  "show.photo.delete.confirm": "Foto wirklich löschen?",
+
+  "template.csv.choose": "CSV wählen",
+  "template.more_channels": "… {count} weitere Kanäle",
+  "template.delete.confirm": "Vorlage \u201e{name}\u201c löschen?",
+
+  "settings.backup": "Backup",
+  "settings.backup.download": "↓ ZIP-Backup herunterladen",
+  "settings.update": "Update",
+  "settings.update.run": "Server aktualisieren (git pull)",
+  "settings.update.success": "✓ Update gestartet — Server wird neu gestartet",
+  "settings.update.error": "✗ {message}",
+  "settings.server_url.label": "Server-URL",
+
+  "editor.bold": "B",
+  "editor.italic": "I",
+  "editor.h2": "H2",
+  "editor.h3": "H3",
+  "editor.list.bullet": "• Liste",
+  "editor.list.ordered": "1. Liste"
 }

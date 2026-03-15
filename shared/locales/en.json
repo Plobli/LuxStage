@@ -122,5 +122,43 @@
   "csv.error.missing_header": "Required column missing: {column}",
   "csv.error.invalid_address": "Invalid address format on line {line}: \"{value}\"",
   "csv.preview.channels": "{count} channels",
-  "csv.preview.custom_fields": "{count} show fields"
+  "csv.preview.custom_fields": "{count} show fields",
+
+  "sections.btn": "Sections",
+  "sections.add": "+ Section",
+  "sections.title.placeholder": "Title",
+  "sections.type.markdown": "Markdown",
+  "sections.type.fields": "Fields",
+  "sections.field.label": "Label",
+  "sections.field.unit": "Unit",
+  "sections.field.add": "+ Field",
+
+  "show.id.label": "ID (filename, no spaces)",
+  "show.id.placeholder": "northern-2026",
+  "show.venue": "Venue",
+  "show.template.optional": "Template (optional)",
+  "show.pdf": "⎙ PDF",
+  "show.channel.nr": "No.",
+  "show.channel.address.example": "1/001",
+  "show.channel.delete.confirm": "Delete channel {channel}?",
+  "show.photo.delete.confirm": "Delete photo?",
+
+  "template.csv.choose": "Choose CSV",
+  "template.more_channels": "… {count} more channels",
+  "template.delete.confirm": "Delete template \u201c{name}\u201d?",
+
+  "settings.backup": "Backup",
+  "settings.backup.download": "↓ Download ZIP backup",
+  "settings.update": "Update",
+  "settings.update.run": "Update server (git pull)",
+  "settings.update.success": "✓ Update started — server is restarting",
+  "settings.update.error": "✗ {message}",
+  "settings.server_url.label": "Server URL",
+
+  "editor.bold": "B",
+  "editor.italic": "I",
+  "editor.h2": "H2",
+  "editor.h3": "H3",
+  "editor.list.bullet": "• List",
+  "editor.list.ordered": "1. List"
 }

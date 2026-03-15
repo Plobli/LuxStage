@@ -4,6 +4,7 @@
  * Kanäle nach Position gruppiert, mit Abschnitts-Überschriften
  */
 import PDFDocument from 'pdfkit'
+import { parseSectionsMd } from './io.js'
 
 // Spaltenbreiten (mm → pt: 1mm ≈ 2.835pt)
 const mm = (v) => v * 2.835
@@ -21,11 +22,17 @@ const HEADER_H = mm(8)
 const FONT_NORMAL = 'Helvetica'
 const FONT_BOLD   = 'Helvetica-Bold'
 
-export function generatePDF(showContent, channelsCsv, res) {
+export function generatePDF(showContent, channelsCsv, sectionsRaw, templateSections, res) {
   const fm = parseFrontmatter(showContent)
-  const setupBlocks = parseSetupSection(showContent)
   const channels = parseCsv(channelsCsv)
   const grouped = groupByPosition(channels)
+
+  // Sections: entweder aus sections.md + Template, oder Fallback auf alte show.md
+  const hasSections = Array.isArray(templateSections) && templateSections.length > 0
+  const sectionContents = hasSections ? parseSectionsMd(sectionsRaw) : null
+  const sortedSections = hasSections
+    ? [...templateSections].sort((a, b) => a.order - b.order)
+    : null
 
   const doc = new PDFDocument({ size: 'A4', layout: 'portrait', margin: PAGE_MARGIN })
   res.writeHead(200, {
@@ -45,17 +52,37 @@ export function generatePDF(showContent, channelsCsv, res) {
     .text(`${fm.venue || ''}   |   ${fmt(fm.datum)}`, PAGE_MARGIN, PAGE_MARGIN + mm(8))
   doc.moveDown(1.5)
 
-  // ── Aufbau-Notizen ───────────────────────────────────────────────────────
-  if (setupBlocks.length) {
-    doc.font(FONT_BOLD).fontSize(11).text('Aufbau', PAGE_MARGIN, doc.y)
-    doc.moveDown(0.5)
-    renderSetupBlocks(doc, setupBlocks, PAGE_MARGIN, usableW)
-    doc.moveDown(1.5)
+  // ── Sections ─────────────────────────────────────────────────────────────
+  if (hasSections) {
+    for (const sec of sortedSections) {
+      const content = sectionContents.get(sec.id) ?? ''
+      if (!content.trim()) continue
+      doc.font(FONT_BOLD).fontSize(11).text(sec.title, PAGE_MARGIN, doc.y)
+      doc.moveDown(0.4)
+      if (sec.type === 'fields') {
+        renderFieldsSection(doc, sec.fields, content, PAGE_MARGIN, usableW)
+      } else {
+        const blocks = parseSetupSection(content)
+        if (blocks.length) renderSetupBlocks(doc, blocks, PAGE_MARGIN, usableW)
+      }
+      doc.moveDown(1)
+    }
+  } else {
+    // Fallback: alter Aufbau-Block aus show.md
+    const setupBlocks = parseSetupSection(showContent.replace(/^---\n[\s\S]*?\n---\n/, ''))
+    if (setupBlocks.length) {
+      doc.font(FONT_BOLD).fontSize(11).text('Aufbau', PAGE_MARGIN, doc.y)
+      doc.moveDown(0.5)
+      renderSetupBlocks(doc, setupBlocks, PAGE_MARGIN, usableW)
+      doc.moveDown(1.5)
+    }
   }
 
   // ── Pro Gruppe: Überschrift + Tabelle ────────────────────────────────────
   let y = doc.y
   for (const [position, rows] of grouped) {
+    const filteredRows = rows.filter(r => r.notes?.trim())
+    if (!filteredRows.length) continue
     // Prüfen ob noch Platz für Überschrift + mind. 2 Zeilen
     const needed = HEADER_H + ROW_H * 3
     if (y + needed > doc.page.height - PAGE_MARGIN) {
@@ -80,8 +107,8 @@ export function generatePDF(showContent, channelsCsv, res) {
       { text: 'Notizen', w: COL.notes },
     ], true)
 
-    // Datenzeilen
-    for (const row of rows) {
+    // Datenzeilen — nur Kanäle mit Notizen
+    for (const row of filteredRows) {
       if (y + ROW_H > doc.page.height - PAGE_MARGIN) {
         doc.addPage()
         y = PAGE_MARGIN
@@ -139,11 +166,35 @@ function drawRow(doc, y, usableW, cols, isHeader) {
   return y + ROW_H
 }
 
+function renderFieldsSection(doc, fields, raw, margin, usableW) {
+  const colLabelW = mm(45)
+  const colValueW = usableW - colLabelW
+  const rowH = mm(5.5)
+  let y = doc.y
+  for (const field of fields) {
+    const re = new RegExp(`^${field.key}:\\s*(.*)$`, 'm')
+    const match = raw.match(re)
+    const value = match ? match[1].trim() : ''
+    if (!value) continue
+    doc.rect(margin, y, usableW, rowH).stroke('#cccccc')
+    doc.font(FONT_BOLD).fontSize(8)
+      .text(field.label + (field.unit ? ` (${field.unit})` : ''), margin + mm(1.5), y + mm(1.2), {
+        width: colLabelW - mm(3), height: rowH - mm(1), lineBreak: false, ellipsis: true,
+      })
+    doc.font(FONT_NORMAL).fontSize(8)
+      .text(value, margin + colLabelW + mm(1.5), y + mm(1.2), {
+        width: colValueW - mm(3), height: rowH - mm(1), lineBreak: false, ellipsis: true,
+      })
+    y += rowH
+  }
+  doc.y = y
+  doc.moveDown(0.3)
+}
+
 // Gibt strukturierte Blöcke zurück: { type: 'heading'|'table'|'list'|'text', ... }
 function parseSetupSection(content) {
   if (!content) return []
-  const withoutFm = content.replace(/^---\n[\s\S]*?\n---\n/, '').trim()
-  const lines = withoutFm.split('\n')
+  const lines = content.trim().split('\n')
   const blocks = []
   let i = 0
   while (i < lines.length) {
@@ -194,10 +245,16 @@ function parseSetupSection(content) {
 function renderSetupBlocks(doc, blocks, margin, usableW) {
   for (const block of blocks) {
     if (block.type === 'heading') {
-      doc.moveDown(0.3)
-      const hSize = block.level <= 2 ? 11 : 8.5
-      doc.font(FONT_BOLD).fontSize(hSize).text(block.text, margin, doc.y)
-      doc.moveDown(0.2)
+      if (block.level <= 2) {
+        doc.moveDown(0.5)
+        doc.font(FONT_BOLD).fontSize(11).text(block.text, margin, doc.y)
+        doc.moveTo(margin, doc.y + 1).lineTo(margin + usableW, doc.y + 1).stroke('#cccccc')
+        doc.moveDown(0.3)
+      } else {
+        doc.moveDown(0.3)
+        doc.font(FONT_BOLD).fontSize(9).text(block.text, margin, doc.y)
+        doc.moveDown(0.1)
+      }
     } else if (block.type === 'text') {
       doc.font(FONT_NORMAL).fontSize(8.5).text(block.text, margin, doc.y, { width: usableW })
     } else if (block.type === 'list') {

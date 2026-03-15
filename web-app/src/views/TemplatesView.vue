@@ -31,7 +31,7 @@
       <div v-if="step === 'select'" class="upload-drop-zone" @dragover.prevent @drop.prevent="onDrop">
         <input ref="fileInput" type="file" accept=".csv,.txt" hidden @change="onFileChange" />
         <p>{{ t('template.upload.hint') }}</p>
-        <button class="btn-primary" @click="fileInput.click()">CSV wählen</button>
+        <button class="btn-primary" @click="fileInput.click()">{{ t('template.csv.choose') }}</button>
       </div>
 
       <div v-else-if="step === 'preview'">
@@ -67,7 +67,7 @@
                 <td>{{ ch.notes }}</td>
               </tr>
               <tr v-if="previewChannels.length > 20">
-                <td colspan="6" class="muted">… {{ previewChannels.length - 20 }} weitere Kanäle</td>
+                <td colspan="6" class="muted">{{ t('template.more_channels', { count: previewChannels.length - 20 }) }}</td>
               </tr>
             </tbody>
           </table>
@@ -97,7 +97,13 @@
 
       <div v-if="detailLoading" class="loading">{{ t('error.loading') }}</div>
 
-      <div v-else class="channel-table-wrapper">
+      <template v-else>
+        <div class="tab-bar">
+          <button :class="['tab-btn', { active: activeTab === 'channels' }]" @click="activeTab = 'channels'">{{ t('show.channels') }}</button>
+          <button :class="['tab-btn', { active: activeTab === 'sections' }]" @click="activeTab = 'sections'">{{ t('sections.btn') }}</button>
+        </div>
+
+        <div v-show="activeTab === 'channels'" class="channel-table-wrapper">
         <table class="channel-table">
           <thead>
             <tr>
@@ -146,8 +152,8 @@
               </td>
             </tr>
             <tr v-if="addingToPosition === group.position" class="add-row-form">
-              <td><input class="inline-input" v-model="addForm.channel" placeholder="Nr." @click.stop /></td>
-              <td><input class="inline-input" v-model="addForm.address" placeholder="1/001" @click.stop /></td>
+              <td><input class="inline-input" v-model="addForm.channel" :placeholder="t('show.channel.nr')" @click.stop /></td>
+              <td><input class="inline-input" v-model="addForm.address" :placeholder="t('show.channel.address.example')" @click.stop /></td>
               <td><input class="inline-input inline-input-wide" v-model="addForm.device" @click.stop /></td>
               <td><input class="inline-input" v-model="addForm.position" @click.stop /></td>
               <td @click.stop>
@@ -159,10 +165,41 @@
             </tr>
           </tbody>
         </table>
-      </div>
+        </div>
+
+        <!-- Sections editor -->
+        <div v-show="activeTab === 'sections'" class="sections-editor">
+          <div v-for="(sec, idx) in templateSections" :key="sec.id" class="section-card">
+            <div class="section-card-header">
+              <div class="section-reorder">
+                <button class="btn-ghost-sm" :disabled="idx === 0" @click="moveSection(idx, -1)">↑</button>
+                <button class="btn-ghost-sm" :disabled="idx === templateSections.length - 1" @click="moveSection(idx, 1)">↓</button>
+              </div>
+              <input :value="sec.title" :placeholder="t('sections.title.placeholder')" @input="sec.title = $event.target.value" @change="persistSections" />
+              <select class="section-type-select"
+                :value="sec.type"
+                @change="onTypeChange(sec, $event.target.value)"
+              >
+                <option value="markdown">{{ t('sections.type.markdown') }}</option>
+                <option value="fields" :disabled="hasFieldsType() && sec.type !== 'fields'">{{ t('sections.type.fields') }}</option>
+              </select>
+              <button class="btn-ghost-sm danger" @click="deleteSection(idx)">✕</button>
+            </div>
+            <div v-if="sec.type === 'fields'" class="fields-editor">
+              <div v-for="(field, fidx) in sec.fields" :key="field.key" class="fields-editor-row">
+                <input :value="field.label" :placeholder="t('sections.field.label')" @input="field.label = $event.target.value" @change="persistSections" />
+                <input :value="field.unit" :placeholder="t('sections.field.unit')" style="max-width:100px" @input="field.unit = $event.target.value" @change="persistSections" />
+                <button class="btn-ghost-sm danger" @click="deleteField(sec, fidx)">✕</button>
+              </div>
+              <button class="btn-ghost-sm" @click="addField(sec)">{{ t('sections.field.add') }}</button>
+            </div>
+          </div>
+          <button class="btn-ghost-sm" @click="addSection">{{ t('sections.add') }}</button>
+        </div>
+      </template>
 
       <div class="modal-footer">
-        <span v-if="detailSaving" class="saving-hint">…</span>
+        <span v-if="detailSaving || sectionsSaving" class="saving-hint">…</span>
         <button class="btn-ghost" @click="detailDialog.close()">{{ t('action.close') }}</button>
       </div>
     </dialog>
@@ -174,6 +211,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useLocale } from '../composables/useLocale.js'
 import { fetchTemplates, fetchTemplateChannels, saveTemplate, uploadTemplate, deleteTemplate } from '../api/templates.js'
 import { parseCsv } from '../api/channels.js'
+import { fetchTemplateSections, saveTemplateSections } from '../api/sections.js'
 
 const { t } = useLocale()
 
@@ -194,6 +232,10 @@ const detailName = ref('')
 const detailChannels = ref([])
 const detailLoading = ref(false)
 const detailSaving = ref(false)
+
+const activeTab = ref('channels')
+const templateSections = ref([])
+const sectionsSaving = ref(false)
 
 const editingChannel = ref(null)
 const editForm = ref({})
@@ -263,7 +305,7 @@ async function handleImport() {
     templates.value = await fetchTemplates()
     step.value = 'done'
   } catch (e) {
-    importError.value = e?.message || 'Fehler beim Import'
+    importError.value = e?.message || t('template.upload.error')
   } finally {
     importing.value = false
   }
@@ -274,10 +316,16 @@ async function handleImport() {
 async function showDetail(name) {
   detailName.value = name
   detailLoading.value = true
+  activeTab.value = 'channels'
   editingChannel.value = null
   addingToPosition.value = null
   detailDialog.value.showModal()
-  detailChannels.value = await fetchTemplateChannels(name)
+  const [channels, sections] = await Promise.all([
+    fetchTemplateChannels(name),
+    fetchTemplateSections(name),
+  ])
+  detailChannels.value = channels
+  templateSections.value = Array.isArray(sections) ? sections : (sections?.sections ?? [])
   detailLoading.value = false
 }
 
@@ -285,6 +333,59 @@ async function persist() {
   detailSaving.value = true
   await saveTemplate(detailName.value, detailChannels.value)
   detailSaving.value = false
+}
+
+async function persistSections() {
+  sectionsSaving.value = true
+  await saveTemplateSections(detailName.value, templateSections.value)
+  sectionsSaving.value = false
+}
+
+function addSection() {
+  templateSections.value.push({
+    id: crypto.randomUUID(),
+    title: '',
+    type: 'markdown',
+    order: templateSections.value.length,
+    fields: []
+  })
+  persistSections()
+}
+
+function deleteSection(idx) {
+  templateSections.value.splice(idx, 1)
+  templateSections.value.forEach((s, i) => s.order = i)
+  persistSections()
+}
+
+function moveSection(idx, dir) {
+  const arr = templateSections.value
+  const swap = idx + dir
+  if (swap < 0 || swap >= arr.length) return
+  ;[arr[idx], arr[swap]] = [arr[swap], arr[idx]]
+  arr.forEach((s, i) => s.order = i)
+  persistSections()
+}
+
+function addField(section) {
+  section.fields.push({ key: crypto.randomUUID().slice(0, 8), label: '', unit: '' })
+  persistSections()
+}
+
+function deleteField(section, idx) {
+  section.fields.splice(idx, 1)
+  persistSections()
+}
+
+function hasFieldsType() {
+  return templateSections.value.some(s => s.type === 'fields')
+}
+
+function onTypeChange(section, newType) {
+  if (newType === 'fields' && hasFieldsType() && section.type !== 'fields') return
+  section.type = newType
+  if (newType === 'fields' && !section.fields) section.fields = []
+  persistSections()
 }
 
 function startEdit(ch) {
@@ -326,7 +427,7 @@ async function confirmAdd() {
 }
 
 async function handleDelete(name) {
-  if (!window.confirm(`Vorlage „${name}" löschen?`)) return
+  if (!window.confirm(t('template.delete.confirm', { name }))) return
   await deleteTemplate(name)
   templates.value = templates.value.filter(n => n !== name)
 }

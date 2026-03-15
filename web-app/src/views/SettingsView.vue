@@ -21,8 +21,8 @@
     <section class="settings-section">
       <h3>{{ t('settings.server') }}</h3>
       <div class="field">
-        <label>Server-URL</label>
-        <input v-model="serverUrl" type="url" placeholder="http://192.168.1.100:3000" @change="applyServer" />
+        <label>{{ t('settings.server_url.label') }}</label>
+        <input v-model="serverUrl" type="url" :placeholder="t('settings.server_url.placeholder')" @change="applyServer" />
       </div>
     </section>
 
@@ -37,14 +37,14 @@
     </section>
 
     <section class="settings-section">
-      <h3>Backup</h3>
-      <button class="btn-ghost" @click="downloadBackup">↓ ZIP-Backup herunterladen</button>
+      <h3>{{ t('settings.backup') }}</h3>
+      <button class="btn-ghost" @click="downloadBackup">{{ t('settings.backup.download') }}</button>
     </section>
 
     <section v-if="isAdmin" class="settings-section">
-      <h3>Update</h3>
+      <h3>{{ t('settings.update') }}</h3>
       <button class="btn-ghost" :disabled="updating" @click="doUpdate">
-        {{ updating ? '…' : 'Server aktualisieren (git pull)' }}
+        {{ updating ? '…' : t('settings.update.run') }}
       </button>
       <p v-if="updateMsg" class="update-msg">{{ updateMsg }}</p>
     </section>
@@ -101,9 +101,9 @@ async function doUpdate() {
   updateMsg.value = ''
   try {
     const res = await api.post('/api/update', {})
-    updateMsg.value = '✓ Update gestartet — Server wird neu gestartet'
+    updateMsg.value = t('settings.update.success')
   } catch (e) {
-    updateMsg.value = '✗ ' + e.message
+    updateMsg.value = t('settings.update.error', { message: e.message })
   } finally {
     updating.value = false
   }

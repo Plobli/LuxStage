@@ -12,7 +12,7 @@
     <div v-else class="template-list">
       <div v-for="name in templates" :key="name" class="template-card">
         <div class="template-card-header">
-          <span class="template-name">{{ name }}</span>
+          <span class="template-name">{{ templateDisplayName(name) }}</span>
         </div>
         <div class="template-card-meta">
           <button class="btn-ghost-sm" @click="showDetail(name)">{{ t('action.edit') }}</button>
@@ -212,6 +212,7 @@ import { useLocale } from '../composables/useLocale.js'
 import { fetchTemplates, fetchTemplateChannels, saveTemplate, uploadTemplate, deleteTemplate } from '../api/templates.js'
 import { parseCsv } from '../api/channels.js'
 import { fetchTemplateSections, saveTemplateSections } from '../api/sections.js'
+import { templateDisplayName } from '../utils/templateName.js'
 
 const { t } = useLocale()
 

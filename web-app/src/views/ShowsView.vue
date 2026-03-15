@@ -11,7 +11,7 @@
 
     <div v-else class="show-list">
       <div v-for="group in groupedShows" :key="group.template" class="show-group">
-        <h3 class="show-group-title">{{ group.template || '—' }}</h3>
+        <h3 class="show-group-title">{{ templateDisplayName(group.template) || '—' }}</h3>
         <div
           v-for="show in group.shows"
           :key="show.id"
@@ -48,7 +48,7 @@
           <label>{{ t('show.template') }}</label>
           <select v-model="form.template">
             <option value="">{{ t('show.template.none') }}</option>
-            <option v-for="tpl in templates" :key="tpl" :value="tpl">{{ tpl }}</option>
+            <option v-for="tpl in templates" :key="tpl" :value="tpl">{{ templateDisplayName(tpl) }}</option>
           </select>
         </div>
         <div class="modal-footer">
@@ -70,6 +70,7 @@ import { fetchShows, createShow, archiveShow } from '../api/shows.js'
 import { fetchTemplates, fetchTemplateChannels } from '../api/templates.js'
 import { saveChannels } from '../api/channels.js'
 import { fetchTemplateSections, saveShowSectionDefs } from '../api/sections.js'
+import { templateDisplayName } from '../utils/templateName.js'
 
 const router = useRouter()
 const { t } = useLocale()

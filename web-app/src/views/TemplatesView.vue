@@ -49,12 +49,11 @@
           <table class="channel-table preview-table">
             <thead>
               <tr>
-                <th>{{ t('field.channel_number') }}</th>
+                <th>{{ t('field.channel') }}</th>
                 <th>{{ t('field.address') }}</th>
                 <th>{{ t('field.device') }}</th>
-                <th>{{ t('field.color') }}</th>
-                <th>{{ t('field.category') }}</th>
                 <th>{{ t('field.position') }}</th>
+                <th>{{ t('field.color') }}</th>
                 <th>{{ t('field.notes') }}</th>
               </tr>
             </thead>
@@ -63,13 +62,12 @@
                 <td>{{ ch.channel }}</td>
                 <td>{{ ch.address }}</td>
                 <td>{{ ch.device }}</td>
-                <td>{{ ch.color }}</td>
-                <td>{{ ch.category }}</td>
                 <td>{{ ch.position }}</td>
+                <td>{{ ch.color }}</td>
                 <td>{{ ch.notes }}</td>
               </tr>
               <tr v-if="previewChannels.length > 20">
-                <td colspan="7" class="muted">… {{ previewChannels.length - 20 }} weitere Kanäle</td>
+                <td colspan="6" class="muted">… {{ previewChannels.length - 20 }} weitere Kanäle</td>
               </tr>
             </tbody>
           </table>
@@ -103,19 +101,17 @@
         <table class="channel-table">
           <thead>
             <tr>
-              <th class="col-channel">{{ t('field.channel_number') }}</th>
+              <th class="col-channel">{{ t('field.channel') }}</th>
               <th class="col-address">{{ t('field.address') }}</th>
               <th class="col-device">{{ t('field.device') }}</th>
               <th class="col-color">{{ t('field.color') }}</th>
-              <th class="col-category">{{ t('field.category') }}</th>
-              <th class="col-position">{{ t('field.position') }}</th>
               <th class="col-notes">{{ t('field.notes') }}</th>
             </tr>
           </thead>
-          <tbody v-for="group in groupedChannels" :key="group.category">
+          <tbody v-for="group in groupedChannels" :key="group.position">
             <tr class="category-header-row">
-              <td colspan="7">
-                <span class="category-name">{{ group.category || t('channel.no_category') }}</span>
+              <td colspan="5">
+                <span class="category-name">{{ group.position || t('channel.no_category') }}</span>
                 <span class="category-count">{{ group.channels.length }}</span>
               </td>
             </tr>
@@ -124,8 +120,6 @@
               <td class="col-address">{{ ch.address }}</td>
               <td class="col-device">{{ ch.device }}</td>
               <td class="col-color">{{ ch.color }}</td>
-              <td class="col-category">{{ ch.category }}</td>
-              <td class="col-position">{{ ch.position }}</td>
               <td class="col-notes">{{ ch.notes }}</td>
             </tr>
           </tbody>
@@ -168,11 +162,11 @@ const groupedChannels = computed(() => {
   const sorted = [...detailChannels.value].sort((a, b) => Number(a.channel) - Number(b.channel))
   const groups = {}
   for (const ch of sorted) {
-    const cat = ch.category || ''
-    if (!groups[cat]) groups[cat] = []
-    groups[cat].push(ch)
+    const pos = ch.position || ''
+    if (!groups[pos]) groups[pos] = []
+    groups[pos].push(ch)
   }
-  return Object.entries(groups).map(([category, channels]) => ({ category, channels }))
+  return Object.entries(groups).map(([position, channels]) => ({ position, channels }))
 })
 
 onMounted(async () => {

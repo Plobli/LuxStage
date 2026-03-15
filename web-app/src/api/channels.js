@@ -5,15 +5,17 @@
  */
 import { api } from './client.js'
 
-const HEADERS = ['channel', 'device', 'color', 'address', 'category', 'position', 'notes']
+const HEADERS = ['channel', 'address', 'device', 'position', 'color', 'notes']
 
 // ── CSV ←→ Array ──────────────────────────────────────────────────────────
 
 export function parseCsv(csv) {
+  // Metadaten-Kopfzeilen von Templates überspringen (alles vor der Header-Zeile)
   const lines = csv.trim().split('\n').filter(Boolean)
-  if (lines.length < 2) return []
-  const headers = lines[0].split(';').map(h => h.trim())
-  return lines.slice(1).map(line => {
+  const headerIdx = lines.findIndex(l => l.startsWith('channel'))
+  if (headerIdx === -1 || headerIdx === lines.length - 1) return []
+  const headers = lines[headerIdx].split(';').map(h => h.trim())
+  return lines.slice(headerIdx + 1).map(line => {
     const vals = line.split(';')
     return Object.fromEntries(headers.map((h, i) => [h, (vals[i] ?? '').trim()]))
   })

@@ -98,7 +98,7 @@ export async function writeShow(id, content) {
 
 export async function readChannels(id) {
   try { return await fs.readFile(paths.showCsv(id), 'utf8') }
-  catch { return 'channel;device;color;address;category;position;notes\n' }
+  catch { return 'channel;address;device;position;color;notes\n' }
 }
 
 export async function writeChannels(id, content) {

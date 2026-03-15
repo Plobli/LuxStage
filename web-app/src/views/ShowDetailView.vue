@@ -261,7 +261,7 @@ const addForm = ref({})
 
 function startAdd(position) {
   addingPosition.value = position
-  addForm.value = { channel: '', device: '', color: '', address: '', category: '', position, notes: '' }
+  addForm.value = { channel: '', address: '', device: '', position, color: '', notes: '' }
 }
 
 function saveAdd() {

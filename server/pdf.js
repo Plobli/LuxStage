@@ -13,7 +13,7 @@ const COL = {
   device:   mm(38),
   color:    mm(24),
   address:  mm(18),
-  category: mm(22),
+  position: mm(22),
   notes:    0, // Rest
 }
 const ROW_H = mm(6)
@@ -76,7 +76,7 @@ export function generatePDF(showContent, channelsCsv, res) {
       { text: 'Gerät', w: COL.device },
       { text: 'Filter', w: COL.color },
       { text: 'Adresse', w: COL.address },
-      { text: 'Kategorie', w: COL.category },
+      { text: 'Position', w: COL.position },
       { text: 'Notizen', w: COL.notes },
     ], true)
 
@@ -96,7 +96,7 @@ export function generatePDF(showContent, channelsCsv, res) {
           { text: 'Gerät', w: COL.device },
           { text: 'Filter', w: COL.color },
           { text: 'Adresse', w: COL.address },
-          { text: 'Kategorie', w: COL.category },
+          { text: 'Position', w: COL.position },
           { text: 'Notizen', w: COL.notes },
         ], true)
       }
@@ -105,7 +105,7 @@ export function generatePDF(showContent, channelsCsv, res) {
         { text: row.device,  w: COL.device },
         { text: row.color,   w: COL.color },
         { text: row.address, w: COL.address },
-        { text: row.category,w: COL.category },
+        { text: row.position, w: COL.position },
         { text: row.notes,   w: COL.notes },
       ], false)
     }

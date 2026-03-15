@@ -49,6 +49,7 @@
   "field.venue": "Venue",
 
   "channel.no_category": "No Category",
+  "channel.list.empty": "No channels yet.",
   "channel.add": "Add channel",
   "channel.edit": "Edit channel",
   "channel.search": "Search …",

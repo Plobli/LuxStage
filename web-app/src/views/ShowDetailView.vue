@@ -184,7 +184,25 @@
               </tr>
             </tbody>
           </table>
-          <p v-if="groupedChannels.length === 0" class="empty">{{ t('show.list.empty') }}</p>
+          <tbody v-if="groupedChannels.length === 0">
+            <tr v-if="addingPosition === ''" class="channel-row editing" @keydown.escape="addingPosition = null">
+              <td><input class="inline-input" v-model="addForm.channel" :placeholder="t('show.channel.nr')" @click.stop /></td>
+              <td><input class="inline-input" v-model="addForm.address" :placeholder="t('show.channel.address.example')" @click.stop /></td>
+              <td><input class="inline-input" v-model="addForm.device" @click.stop /></td>
+              <td><ColorPicker v-model="addForm.color" @click.stop /></td>
+              <td>
+                <input class="inline-input inline-input-wide" v-model="addForm.notes" @click.stop />
+                <button class="btn-ghost-sm" @click.stop="saveAdd">✓</button>
+                <button class="btn-ghost-sm" @click.stop="addingPosition = null">✕</button>
+              </td>
+            </tr>
+            <tr v-else class="add-row-trigger">
+              <td colspan="5">
+                <span class="empty-inline">{{ t('channel.list.empty') }}</span>
+                <button type="button" class="btn-ghost-sm" style="margin-left:8px" @click.stop="startAdd('')">+ {{ t('channel.add') }}</button>
+              </td>
+            </tr>
+          </tbody>
         </div>
       </section>
     </template>

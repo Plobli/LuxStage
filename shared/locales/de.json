@@ -49,6 +49,7 @@
   "field.venue": "Spielstätte",
 
   "channel.no_category": "Ohne Kategorie",
+  "channel.list.empty": "Noch keine Kanäle vorhanden.",
   "channel.add": "Kanal hinzufügen",
   "channel.edit": "Kanal bearbeiten",
   "channel.search": "Suchen …",

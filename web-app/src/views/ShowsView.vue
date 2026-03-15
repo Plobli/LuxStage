@@ -46,8 +46,8 @@
         </div>
         <div class="field">
           <label>{{ t('show.template') }}</label>
-          <select v-model="form.template" required>
-            <option value="" disabled>{{ t('show.template.none') }}</option>
+          <select v-model="form.template">
+            <option value="">{{ t('show.template.none') }}</option>
             <option v-for="tpl in templates" :key="tpl" :value="tpl">{{ tpl }}</option>
           </select>
         </div>

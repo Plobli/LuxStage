@@ -184,13 +184,13 @@ export async function router(req, res) {
 
     // ── Templates ──────────────────────────────────────────────────────────
     if (method === 'GET' && pathname === '/api/templates') {
-      const user = requireAdmin(req, res); if (!user) return
+      const user = requireAuth(req, res); if (!user) return
       const list = await io.listTemplates()
       return json(res, 200, list)
     }
 
     if (method === 'GET' && pathname.match(/^\/api\/templates\/(.+)$/)) {
-      const user = requireAdmin(req, res); if (!user) return
+      const user = requireAuth(req, res); if (!user) return
       const name = pathname.slice('/api/templates/'.length)
       const csv = await io.readTemplate(name)
       return json(res, 200, { csv })

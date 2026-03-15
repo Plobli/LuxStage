@@ -189,6 +189,22 @@ export async function router(req, res) {
       return json(res, 200, list)
     }
 
+    if (method === 'GET' && pathname.match(/^\/api\/templates\/([^/]+)\/sections$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const name = pathname.split('/')[3]
+      const sections = await io.readTemplateSections(name)
+      return json(res, 200, sections)
+    }
+
+    if (method === 'PUT' && pathname.match(/^\/api\/templates\/([^/]+)\/sections$/)) {
+      const user = requireAdmin(req, res); if (!user) return
+      const name = pathname.split('/')[3]
+      const body = await readBody(req)
+      const { sections } = JSON.parse(body)
+      await io.writeTemplateSections(name, sections)
+      return json(res, 200, { ok: true })
+    }
+
     if (method === 'GET' && pathname.match(/^\/api\/templates\/(.+)$/)) {
       const user = requireAuth(req, res); if (!user) return
       const name = pathname.slice('/api/templates/'.length)
@@ -209,6 +225,39 @@ export async function router(req, res) {
       const user = requireAdmin(req, res); if (!user) return
       const name = pathname.slice('/api/templates/'.length)
       await io.deleteTemplate(name)
+      await io.deleteTemplateSections(name)
+      return json(res, 200, { ok: true })
+    }
+
+    // ── Show Sections ──────────────────────────────────────────────────────
+    if (method === 'GET' && pathname.match(/^\/api\/shows\/([^/]+)\/sections$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const id = pathname.split('/')[3]
+      const raw = await io.readShowSections(id)
+      return json(res, 200, { raw })
+    }
+
+    if (method === 'PUT' && pathname.match(/^\/api\/shows\/([^/]+)\/sections$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const id = pathname.split('/')[3]
+      const body = await readBody(req)
+      const { raw } = JSON.parse(body)
+      await io.writeShowSections(id, raw)
+      return json(res, 200, { ok: true })
+    }
+
+    if (method === 'POST' && pathname.match(/^\/api\/shows\/([^/]+)\/migrate-sections$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const id = pathname.split('/')[3]
+      // Nicht überschreiben, wenn sections.md schon existiert
+      const existing = await io.readShowSections(id)
+      if (existing !== '') return json(res, 200, { ok: true, skipped: true })
+      const content = await io.readShow(id)
+      // Alles nach dem YAML-Frontmatter extrahieren
+      const fmMatch = content.match(/^---\n[\s\S]*?\n---\n([\s\S]*)$/)
+      const body = fmMatch ? fmMatch[1] : content
+      const raw = `---section: aufbau---\n${body.trim()}`
+      await io.writeShowSections(id, raw)
       return json(res, 200, { ok: true })
     }
 

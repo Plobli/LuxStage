@@ -10,8 +10,35 @@
     <div v-if="loading" class="loading">…</div>
 
     <template v-else>
-      <!-- Aufbau — Toast UI WYSIWYG -->
-      <section class="aufbau-section">
+      <!-- Sections from template -->
+      <template v-if="sortedSections.length > 0">
+        <section v-for="sec in sortedSections" :key="sec.id" class="aufbau-section">
+          <div class="aufbau-header">
+            <span class="aufbau-label">{{ sec.title }}</span>
+            <span v-if="sectionsSaving" class="saving-hint">…</span>
+          </div>
+          <!-- fields type -->
+          <div v-if="sec.type === 'fields'" class="fields-grid">
+            <div v-for="field in sec.fields" :key="field.key" class="fields-grid-row">
+              <label class="fields-grid-label">{{ field.label }}<span v-if="field.unit" class="field-unit"> ({{ field.unit }})</span></label>
+              <input class="inline-input"
+                :value="parseFieldValue(sec.id, field.key)"
+                @change="onFieldChange(sec.id, field.key, $event.target.value)"
+                @click.stop
+              />
+            </div>
+          </div>
+          <!-- markdown type -->
+          <MarkdownEditor v-else
+            :modelValue="sectionContents.get(sec.id) ?? ''"
+            class="aufbau-editor"
+            @update:modelValue="onSectionChange(sec.id, $event)"
+          />
+        </section>
+      </template>
+
+      <!-- Fallback: old single aufbau section if no template sections defined -->
+      <section v-else class="aufbau-section">
         <div class="aufbau-header">
           <span class="aufbau-label">{{ t('show.setup') }}</span>
           <span v-if="setupSaving" class="saving-hint">…</span>
@@ -147,6 +174,7 @@ import { fetchPhotos, uploadPhoto, deletePhoto, getPhotoUrl } from '../api/photo
 import { subscribeChannels } from '../api/client.js'
 import { api } from '../api/client.js'
 import ColorPicker from '../components/ColorPicker.vue'
+import { fetchShowSections, saveShowSections, parseSectionsMd, serializeSectionsMd, fetchTemplateSections } from '../api/sections.js'
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
@@ -162,6 +190,15 @@ const photos = ref([])
 const search = ref('')
 const setupSaving = ref(false)
 const channelsSaving = ref(false)
+
+const sectionDefs = ref([])
+const sectionContents = ref(new Map())
+const sectionsSaving = ref(false)
+let saveSectionsTimer = null
+
+const sortedSections = computed(() =>
+  [...sectionDefs.value].sort((a, b) => a.order - b.order)
+)
 
 // ── Editor ─────────────────────────────────────────────────────────────────
 let saveSetupTimer = null
@@ -312,21 +349,65 @@ function openLightbox(filename) {
   lightboxDialog.value.showModal()
 }
 
+// ── Sections ───────────────────────────────────────────────────────────────
+
+function onSectionChange(id, value) {
+  sectionContents.value = new Map(sectionContents.value)
+  sectionContents.value.set(id, value)
+  clearTimeout(saveSectionsTimer)
+  saveSectionsTimer = setTimeout(() => persistSections(), 800)
+}
+
+async function persistSections() {
+  sectionsSaving.value = true
+  try {
+    const raw = serializeSectionsMd(sectionContents.value)
+    await saveShowSections(props.id, raw)
+  } finally {
+    sectionsSaving.value = false
+  }
+}
+
+function parseFieldValue(sectionId, key) {
+  const raw = sectionContents.value.get(sectionId) ?? ''
+  const match = raw.match(new RegExp(`^${key}:\\s*(.*)$`, 'm'))
+  return match ? match[1].trim() : ''
+}
+
+function onFieldChange(sectionId, key, value) {
+  let raw = sectionContents.value.get(sectionId) ?? ''
+  const re = new RegExp(`^${key}:.*$`, 'm')
+  if (re.test(raw)) {
+    raw = raw.replace(re, `${key}: ${value}`)
+  } else {
+    raw = raw ? raw + `\n${key}: ${value}` : `${key}: ${value}`
+  }
+  onSectionChange(sectionId, raw)
+}
+
 // ── Laden ──────────────────────────────────────────────────────────────────
 let unsubscribeSSE = null
 
 onMounted(async () => {
   try {
-    const [showData, chs, photoList] = await Promise.all([
+    const [showData, chs, photoList, sectionsData] = await Promise.all([
       fetchShow(props.id),
       fetchChannels(props.id),
       fetchPhotos(props.id),
+      fetchShowSections(props.id),
     ])
 
     meta.value = parseFrontmatter(showData.content)
     setupMarkdown.value = parseSetupSection(showData.content)
     channels.value = chs
     photos.value = photoList
+
+    sectionContents.value = parseSectionsMd(sectionsData?.raw)
+
+    if (meta.value.template) {
+      const defs = await fetchTemplateSections(meta.value.template)
+      sectionDefs.value = Array.isArray(defs) ? defs : (defs?.sections ?? [])
+    }
   } catch (e) {
     console.error('Ladefehler:', e)
   } finally {
@@ -343,6 +424,7 @@ onBeforeUnmount(() => {
   unsubscribeSSE?.()
   clearTimeout(saveSetupTimer)
   clearTimeout(channelsSaveTimer)
+  clearTimeout(saveSectionsTimer)
 })
 
 // ── Hilfsfunktionen ────────────────────────────────────────────────────────

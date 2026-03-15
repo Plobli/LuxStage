@@ -16,7 +16,7 @@
           <span class="aufbau-label">{{ t('show.setup') }}</span>
           <span v-if="setupSaving" class="saving-hint">…</span>
         </div>
-        <div ref="editorContainer" class="aufbau-editor"></div>
+        <MarkdownEditor v-model="setupMarkdown" class="aufbau-editor" @update:modelValue="onSetupChange" />
       </section>
 
       <!-- Foto-Galerie -->
@@ -66,13 +66,12 @@
                 <th class="col-address">{{ t('field.address') }}</th>
                 <th class="col-device">{{ t('field.device') }}</th>
                 <th class="col-color">{{ t('field.color') }}</th>
-                <th class="col-position">{{ t('field.position') }}</th>
                 <th class="col-notes">{{ t('field.notes') }}</th>
               </tr>
             </thead>
             <tbody v-for="group in groupedChannels" :key="group.position">
               <tr class="category-header-row">
-                <td colspan="6">
+                <td colspan="5">
                   <span class="category-name">{{ group.position || t('channel.no_category') }}</span>
                   <span class="category-count">{{ group.channels.length }}</span>
                 </td>
@@ -103,10 +102,6 @@
                     <span v-else class="muted">—</span>
                   </template>
                 </td>
-                <td class="col-position">
-                  <input v-if="editingChannel === ch.channel" class="inline-input" v-model="editForm.position" @click.stop />
-                  <template v-else>{{ ch.position }}</template>
-                </td>
                 <td class="col-notes">
                   <div v-if="editingChannel === ch.channel" class="add-row-actions">
                     <input ref="notesInput" class="inline-input inline-input-wide" v-model="editForm.notes" @click.stop />
@@ -121,7 +116,6 @@
                 <td><input class="inline-input" v-model="addForm.address" placeholder="1/001" @click.stop /></td>
                 <td><input class="inline-input" v-model="addForm.device" @click.stop /></td>
                 <td><ColorPicker v-model="addForm.color" @click.stop /></td>
-                <td><input class="inline-input" v-model="addForm.position" @click.stop /></td>
                 <td>
                   <div class="add-row-actions">
                     <input class="inline-input inline-input-wide" v-model="addForm.notes" @click.stop />
@@ -130,8 +124,8 @@
                   </div>
                 </td>
               </tr>
-              <tr v-else class="add-row-trigger" @click.stop="startAdd(group.position)">
-                <td colspan="6">+ {{ t('channel.add') }}</td>
+              <tr v-else class="add-row-trigger">
+                <td colspan="5"><button type="button" class="btn-ghost-sm" @click.stop="startAdd(group.position)">+ {{ t('channel.add') }}</button></td>
               </tr>
             </tbody>
           </table>
@@ -143,10 +137,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLocale } from '../composables/useLocale.js'
-import { useMarkdownEditor } from '../composables/useMarkdownEditor.js'
+import MarkdownEditor from '../components/MarkdownEditor.vue'
 import { fetchShow, updateContent } from '../api/shows.js'
 import { fetchChannels, saveChannels } from '../api/channels.js'
 import { fetchPhotos, uploadPhoto, deletePhoto, getPhotoUrl } from '../api/photos.js'
@@ -170,16 +164,12 @@ const setupSaving = ref(false)
 const channelsSaving = ref(false)
 
 // ── Editor ─────────────────────────────────────────────────────────────────
-const editorContainer = ref(null)
 let saveSetupTimer = null
 
-const { getMarkdown, setMarkdown } = useMarkdownEditor(editorContainer, {
-  height: '300px',
-  onChange(md) {
-    clearTimeout(saveSetupTimer)
-    saveSetupTimer = setTimeout(() => persistSetup(md), 800)
-  },
-})
+function onSetupChange(md) {
+  clearTimeout(saveSetupTimer)
+  saveSetupTimer = setTimeout(() => persistSetup(md), 800)
+}
 
 async function persistSetup(md) {
   setupSaving.value = true
@@ -326,20 +316,22 @@ function openLightbox(filename) {
 let unsubscribeSSE = null
 
 onMounted(async () => {
-  const [showData, chs, photoList] = await Promise.all([
-    fetchShow(props.id),
-    fetchChannels(props.id),
-    fetchPhotos(props.id),
-  ])
+  try {
+    const [showData, chs, photoList] = await Promise.all([
+      fetchShow(props.id),
+      fetchChannels(props.id),
+      fetchPhotos(props.id),
+    ])
 
-  meta.value = parseFrontmatter(showData.content)
-  setupMarkdown.value = parseSetupSection(showData.content)
-  channels.value = chs
-  photos.value = photoList
-  loading.value = false
-
-  await nextTick()
-  setMarkdown(setupMarkdown.value)
+    meta.value = parseFrontmatter(showData.content)
+    setupMarkdown.value = parseSetupSection(showData.content)
+    channels.value = chs
+    photos.value = photoList
+  } catch (e) {
+    console.error('Ladefehler:', e)
+  } finally {
+    loading.value = false
+  }
 
   // SSE für Realtime-Updates von anderen Nutzern
   unsubscribeSSE = subscribeChannels(props.id, async () => {

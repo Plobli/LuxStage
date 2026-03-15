@@ -10,19 +10,14 @@ const messages = { de, en }
 const locale = ref(localStorage.getItem('locale') || 'de')
 
 export function useLocale() {
-  function t(key) {
-    const keys = key.split('.')
-    let val = messages[locale.value]
-    for (const k of keys) {
-      val = val?.[k]
-      if (val === undefined) break
+  function t(key, params) {
+    let val = messages[locale.value]?.[key] ?? messages['de']?.[key] ?? key
+    if (params) {
+      for (const [k, v] of Object.entries(params)) {
+        val = val.replaceAll(`{${k}}`, v)
+      }
     }
-    // Fallback auf Deutsch
-    if (val === undefined) {
-      val = messages['de']
-      for (const k of keys) val = val?.[k]
-    }
-    return val ?? key
+    return val
   }
 
   function setLocale(lang) {

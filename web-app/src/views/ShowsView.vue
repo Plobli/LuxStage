@@ -37,25 +37,25 @@
       </div>
       <form @submit.prevent="handleCreate">
         <div class="field">
-          <label>ID (Dateiname, keine Leerzeichen)</label>
-          <input v-model="form.id" type="text" required pattern="[a-zA-Z0-9_-]+" placeholder="norden-2026" />
+          <label>{{ t('show.id.label') }}</label>
+          <input v-model="form.id" type="text" required pattern="[a-zA-Z0-9_-]+" :placeholder="t('show.id.placeholder')" />
         </div>
         <div class="field">
           <label>{{ t('show.name') }}</label>
           <input v-model="form.name" type="text" required />
         </div>
         <div class="field">
-          <label>Bühne</label>
+          <label>{{ t('show.venue') }}</label>
           <input v-model="form.venue" type="text" />
         </div>
         <div class="field">
-          <label>Datum</label>
+          <label>{{ t('show.date') }}</label>
           <input v-model="form.datum" type="date" />
         </div>
         <div class="field">
-          <label>Template (optional)</label>
+          <label>{{ t('show.template.optional') }}</label>
           <select v-model="form.template">
-            <option value="">Kein Template</option>
+            <option value="">{{ t('show.template.none') }}</option>
             <option v-for="tpl in templates" :key="tpl" :value="tpl">{{ tpl }}</option>
           </select>
         </div>

@@ -2,19 +2,19 @@
   <div class="md-editor">
     <div v-if="editor" class="md-toolbar">
       <button type="button" :class="{ active: editor.isActive('bold') }"
-        @mousedown.prevent="editor.chain().focus().toggleBold().run()"><b>B</b></button>
+        @mousedown.prevent="editor.chain().focus().toggleBold().run()"><b>{{ t('editor.bold') }}</b></button>
       <button type="button" :class="{ active: editor.isActive('italic') }"
-        @mousedown.prevent="editor.chain().focus().toggleItalic().run()"><i>I</i></button>
+        @mousedown.prevent="editor.chain().focus().toggleItalic().run()"><i>{{ t('editor.italic') }}</i></button>
       <span class="md-toolbar-sep"></span>
       <button type="button" :class="{ active: editor.isActive('heading', { level: 2 }) }"
-        @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 2 }).run()">H2</button>
+        @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 2 }).run()">{{ t('editor.h2') }}</button>
       <button type="button" :class="{ active: editor.isActive('heading', { level: 3 }) }"
-        @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 3 }).run()">H3</button>
+        @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 3 }).run()">{{ t('editor.h3') }}</button>
       <span class="md-toolbar-sep"></span>
       <button type="button" :class="{ active: editor.isActive('bulletList') }"
-        @mousedown.prevent="editor.chain().focus().toggleBulletList().run()">• Liste</button>
+        @mousedown.prevent="editor.chain().focus().toggleBulletList().run()">{{ t('editor.list.bullet') }}</button>
       <button type="button" :class="{ active: editor.isActive('orderedList') }"
-        @mousedown.prevent="editor.chain().focus().toggleOrderedList().run()">1. Liste</button>
+        @mousedown.prevent="editor.chain().focus().toggleOrderedList().run()">{{ t('editor.list.ordered') }}</button>
     </div>
     <EditorContent :editor="editor" class="md-content" />
   </div>
@@ -23,9 +23,11 @@
 <script setup>
 import { watch, onBeforeUnmount } from 'vue'
 import { useEditor, EditorContent } from '@tiptap/vue-3'
+import { useLocale } from '../composables/useLocale.js'
 import StarterKit from '@tiptap/starter-kit'
 import { Markdown } from 'tiptap-markdown'
 
+const { t } = useLocale()
 const props = defineProps({ modelValue: { type: String, default: '' } })
 const emit = defineEmits(['update:modelValue'])
 

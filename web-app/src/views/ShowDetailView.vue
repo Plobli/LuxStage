@@ -4,8 +4,8 @@
       <button class="btn-ghost" @click="router.push('/')">← {{ t('action.back') }}</button>
       <h2>{{ meta.name }}</h2>
       <span class="show-date">{{ meta.datum }}</span>
-      <button class="btn-ghost-sm" :class="{ active: editingSections }" @click="editingSections = !editingSections">Abschnitte</button>
-      <a class="btn-ghost-sm" :href="pdfUrl" target="_blank">⎙ PDF</a>
+      <button class="btn-ghost-sm" :class="{ active: editingSections }" @click="editingSections = !editingSections">{{ t('sections.btn') }}</button>
+      <a class="btn-ghost-sm" :href="pdfUrl" target="_blank">{{ t('show.pdf') }}</a>
     </div>
 
     <div v-if="loading" class="loading">…</div>
@@ -19,23 +19,23 @@
               <button class="btn-ghost-sm" :disabled="idx === 0" @click="moveSectionDef(idx, -1)">↑</button>
               <button class="btn-ghost-sm" :disabled="idx === sectionDefs.length - 1" @click="moveSectionDef(idx, 1)">↓</button>
             </div>
-            <input :value="sec.title" placeholder="Titel" @input="sec.title = $event.target.value" @change="persistSectionDefs" />
+            <input :value="sec.title" :placeholder="t('sections.title.placeholder')" @input="sec.title = $event.target.value" @change="persistSectionDefs" />
             <select class="section-type-select" :value="sec.type" @change="onSectionTypeChange(sec, $event.target.value)">
-              <option value="markdown">Markdown</option>
-              <option value="fields" :disabled="hasFieldsType() && sec.type !== 'fields'">Felder</option>
+              <option value="markdown">{{ t('sections.type.markdown') }}</option>
+              <option value="fields" :disabled="hasFieldsType() && sec.type !== 'fields'">{{ t('sections.type.fields') }}</option>
             </select>
             <button class="btn-ghost-sm danger" @click="deleteSectionDef(idx)">✕</button>
           </div>
           <div v-if="sec.type === 'fields'" class="fields-editor">
             <div v-for="(field, fidx) in sec.fields" :key="field.key" class="fields-editor-row">
-              <input :value="field.label" placeholder="Label" @input="field.label = $event.target.value" @change="persistSectionDefs" />
-              <input :value="field.unit" placeholder="Einheit" style="max-width:80px" @input="field.unit = $event.target.value" @change="persistSectionDefs" />
+              <input :value="field.label" :placeholder="t('sections.field.label')" @input="field.label = $event.target.value" @change="persistSectionDefs" />
+              <input :value="field.unit" :placeholder="t('sections.field.unit')" style="max-width:80px" @input="field.unit = $event.target.value" @change="persistSectionDefs" />
               <button class="btn-ghost-sm danger" @click="deleteFieldDef(sec, fidx)">✕</button>
             </div>
-            <button class="btn-ghost-sm" @click="addFieldDef(sec)">+ Feld</button>
+            <button class="btn-ghost-sm" @click="addFieldDef(sec)">{{ t('sections.field.add') }}</button>
           </div>
         </div>
-        <button class="btn-ghost-sm" @click="addSection">+ Abschnitt</button>
+        <button class="btn-ghost-sm" @click="addSection">{{ t('sections.add') }}</button>
       </div>
 
       <!-- Sections from show's own section defs -->
@@ -94,7 +94,7 @@
           <div class="photos-grid">
             <div v-for="filename in photos" :key="filename" class="photo-item">
               <img :src="getPhotoUrl(props.id, filename)" :alt="filename" @click="openLightbox(filename)" />
-              <button class="btn-icon-danger" @click="onDeletePhoto(filename)" title="Löschen">🗑</button>
+              <button class="btn-icon-danger" @click="onDeletePhoto(filename)" :title="t('action.delete')">🗑</button>
             </div>
           </div>
         </div>
@@ -160,15 +160,15 @@
                 <td class="col-notes">
                   <div v-if="editingChannel === ch.channel" class="add-row-actions">
                     <input ref="notesInput" class="inline-input inline-input-wide" v-model="editForm.notes" @click.stop />
-                    <button class="btn-danger-sm" @click.stop="deleteChannel(ch)" title="Löschen">🗑</button>
+                    <button class="btn-danger-sm" @click.stop="deleteChannel(ch)" :title="t('action.delete')">🗑</button>
                   </div>
                   <template v-else>{{ ch.notes }}</template>
                 </td>
               </tr>
               <!-- Kanal hinzufügen -->
               <tr v-if="addingPosition === group.position" class="channel-row editing" @keydown.escape="addingPosition = null">
-                <td><input class="inline-input" v-model="addForm.channel" placeholder="Nr." @click.stop /></td>
-                <td><input class="inline-input" v-model="addForm.address" placeholder="1/001" @click.stop /></td>
+                <td><input class="inline-input" v-model="addForm.channel" :placeholder="t('show.channel.nr')" @click.stop /></td>
+                <td><input class="inline-input" v-model="addForm.address" :placeholder="t('show.channel.address.example')" @click.stop /></td>
                 <td><input class="inline-input" v-model="addForm.device" @click.stop /></td>
                 <td><ColorPicker v-model="addForm.color" @click.stop /></td>
                 <td>
@@ -315,7 +315,7 @@ function commitEdit() {
 }
 
 async function deleteChannel(ch) {
-  if (!window.confirm(`Kanal ${ch.channel} wirklich löschen?`)) return
+  if (!window.confirm(t('show.channel.delete.confirm', { channel: ch.channel }))) return
   channels.value = channels.value.filter(c => c.channel !== ch.channel)
   editingChannel.value = null
   persistChannels()
@@ -368,7 +368,7 @@ function onDrop(e) {
 }
 
 async function onDeletePhoto(filename) {
-  if (!window.confirm('Foto wirklich löschen?')) return
+  if (!window.confirm(t('show.photo.delete.confirm'))) return
   await deletePhoto(props.id, filename)
   photos.value = photos.value.filter(f => f !== filename)
 }

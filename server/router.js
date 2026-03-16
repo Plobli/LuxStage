@@ -193,6 +193,13 @@ export async function router(req, res) {
       return json(res, 200, list)
     }
 
+    if (method === 'GET' && pathname.match(/^\/api\/templates\/([^/]+)\/channels$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const name = pathname.split('/')[3]
+      const csv = await io.readTemplate(name)
+      return json(res, 200, { csv })
+    }
+
     if (method === 'GET' && pathname.match(/^\/api\/templates\/([^/]+)\/sections$/)) {
       const user = requireAuth(req, res); if (!user) return
       const name = pathname.split('/')[3]

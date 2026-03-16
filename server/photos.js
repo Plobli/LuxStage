@@ -16,6 +16,7 @@ export async function savePhoto(showId, filename, buffer) {
   const outPath = path.join(dir, outName)
 
   await sharp(buffer)
+    .rotate()  // EXIF-Orientierung einbrennen
     .resize({ width: config.photoMaxWidth, withoutEnlargement: true })
     .jpeg({ quality: config.photoQuality })
     .toFile(outPath)

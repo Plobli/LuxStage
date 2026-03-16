@@ -100,9 +100,9 @@
         </div>
       </section>
 
-      <dialog ref="lightboxDialog" class="lightbox-dialog" @click="lightboxDialog.close()">
-        <img v-if="lightboxPhoto" :src="getPhotoUrl(props.id, lightboxPhoto)" class="lightbox-img" />
-      </dialog>
+      <div v-if="lightboxPhoto" class="lightbox-overlay" @click="lightboxPhoto = null">
+        <img :src="getPhotoUrl(props.id, lightboxPhoto)" class="lightbox-img" @click.stop />
+      </div>
 
       <!-- Kanäle -->
       <section class="channel-section">
@@ -370,7 +370,6 @@ function persistChannels() {
 
 // ── Fotos ──────────────────────────────────────────────────────────────────
 const dragging = ref(false)
-const lightboxDialog = ref(null)
 const lightboxPhoto = ref(null)
 
 async function uploadFiles(files) {
@@ -395,7 +394,6 @@ async function onDeletePhoto(filename) {
 
 function openLightbox(filename) {
   lightboxPhoto.value = filename
-  lightboxDialog.value.showModal()
 }
 
 // ── Sections ───────────────────────────────────────────────────────────────
@@ -517,6 +515,17 @@ onMounted(async () => {
   unsubscribeSSE = subscribeChannels(props.id, async () => {
     channels.value = await fetchChannels(props.id)
   })
+
+  // Scroll-Position wiederherstellen
+  const scrollKey = `scroll_${props.id}`
+  const saved = sessionStorage.getItem(scrollKey)
+  if (saved) {
+    await nextTick()
+    window.scrollTo({ top: parseInt(saved), behavior: 'instant' })
+  }
+  window.addEventListener('scroll', () => {
+    sessionStorage.setItem(scrollKey, window.scrollY)
+  }, { passive: true })
 })
 
 onBeforeUnmount(() => {

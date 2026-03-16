@@ -265,8 +265,8 @@ dialog form { padding: 20px; }
 .photo-caption-input:focus { outline: none; border-color: var(--accent); }
 .btn-icon-danger { background: none; border: none; color: var(--text-dim); padding: 2px 4px; cursor: pointer; font-size: 13px; flex-shrink: 0; }
 .btn-icon-danger:hover { color: var(--danger); }
-.lightbox-dialog { background: rgba(0,0,0,.9); border: none; border-radius: 8px; width: auto; max-width: 95vw; max-height: 95vh; padding: 8px; cursor: pointer; }
-.lightbox-img { max-width: 90vw; max-height: 90vh; display: block; border-radius: 4px; }
+.lightbox-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,.92); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.lightbox-img { max-width: 100vw; max-height: 100vh; object-fit: contain; display: block; cursor: default; }
 
 /* ─── Aufbau Header & Toolbar ────────────────────────────────────────── */
 .aufbau-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
@@ -299,7 +299,7 @@ dialog form { padding: 20px; }
   .add-row-form, .photos-upload-btn, .photo-caption-row button,
   .btn-ghost, .btn-ghost-sm, .btn-primary, .btn-danger, .btn-danger-sm,
   .custom-fields-section .add-field-form, .field-delete-btn,
-  .lightbox-dialog, dialog { display: none !important; }
+  .lightbox-overlay { display: none !important; }
 
   body { background: #fff; color: #000; font-size: 12px; }
   :root { --bg: #fff; --surface: #fff; --surface2: #f4f4f4; --border: #ccc; --text: #000; --text-dim: #555; --accent: #000; }

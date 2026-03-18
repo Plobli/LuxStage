@@ -115,6 +115,7 @@
   "error.generic": "An error occurred.",
   "error.loading": "Loading …",
   "error.network": "Cannot reach the server.",
+  "offline.banner": "No connection – read-only mode",
   "error.not_found": "Not found.",
   "error.unauthorized": "Not logged in.",
 

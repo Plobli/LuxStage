@@ -321,9 +321,18 @@ dialog form { padding: 20px; }
   .channel-row:not(.has-description) { display: none !important; }
   tbody:not(:has(.channel-row.has-description)) { display: none !important; }
   .channel-table-wrapper { overflow: visible; }
-  .channel-table { width: 100%; font-size: 11px; }
+  .channel-table { width: 100%; font-size: 11px; table-layout: fixed; }
   .channel-row { break-inside: avoid; }
   .channel-row:hover { background: none; }
+
+  /* Spaltenbreiten im Druck: prozentual, damit sie zusammen 100% ergeben */
+  .col-channel     { width: 5%; }
+  .col-device      { width: 16%; }
+  .col-color       { width: 7%; }
+  .col-address     { width: 7%; }
+  .col-category    { width: 13%; }
+  .col-description { width: 52%; }
+  .channel-table td { height: auto; padding: 3px 6px; overflow: visible; }
 
   /* Fotos: 2×3 pro A4-Seite */
   .photos-grid {

@@ -12,10 +12,9 @@ const PAGE_MARGIN = mm(15)
 const COL = {
   channel:  mm(12),
   device:   mm(38),
-  color:    mm(24),
-  address:  mm(18),
-  position: mm(22),
-  notes:    0, // Rest
+  color:    mm(20),
+  address:  mm(16),
+  notes:    0, // Rest (gesamte verbleibende Breite)
 }
 const ROW_H = mm(6)
 const HEADER_H = mm(8)
@@ -98,18 +97,26 @@ export function generatePDF(showContent, channelsCsv, sectionsRaw, templateSecti
     y += HEADER_H
 
     // Spalten-Header
-    y = drawRow(doc, y, usableW, [
+    const headerCols = [
       { text: 'Ch', w: COL.channel },
       { text: 'Gerät', w: COL.device },
       { text: 'Filter', w: COL.color },
       { text: 'Adresse', w: COL.address },
-      { text: 'Position', w: COL.position },
       { text: 'Notizen', w: COL.notes },
-    ], true)
+    ]
+    y = drawRow(doc, y, usableW, headerCols, true)
 
     // Datenzeilen — nur Kanäle mit Notizen
     for (const row of filteredRows) {
-      if (y + ROW_H > doc.page.height - PAGE_MARGIN) {
+      const rowCols = [
+        { text: row.channel, w: COL.channel },
+        { text: row.device,  w: COL.device },
+        { text: row.color,   w: COL.color },
+        { text: row.address, w: COL.address },
+        { text: row.notes,   w: COL.notes, wrap: true },
+      ]
+      const rowH = calcRowHeight(doc, rowCols)
+      if (y + rowH > doc.page.height - PAGE_MARGIN) {
         doc.addPage()
         y = PAGE_MARGIN
         // Gruppen-Header wiederholen
@@ -118,23 +125,9 @@ export function generatePDF(showContent, channelsCsv, sectionsRaw, templateSecti
           .text(`${position} (Forts.)`, PAGE_MARGIN + mm(2), y + mm(2))
         doc.fill('black')
         y += HEADER_H
-        y = drawRow(doc, y, usableW, [
-          { text: 'Ch', w: COL.channel },
-          { text: 'Gerät', w: COL.device },
-          { text: 'Filter', w: COL.color },
-          { text: 'Adresse', w: COL.address },
-          { text: 'Position', w: COL.position },
-          { text: 'Notizen', w: COL.notes },
-        ], true)
+        y = drawRow(doc, y, usableW, headerCols, true)
       }
-      y = drawRow(doc, y, usableW, [
-        { text: row.channel, w: COL.channel },
-        { text: row.device,  w: COL.device },
-        { text: row.color,   w: COL.color },
-        { text: row.address, w: COL.address },
-        { text: row.position, w: COL.position },
-        { text: row.notes,   w: COL.notes },
-      ], false)
+      y = drawRow(doc, y, usableW, rowCols, false)
     }
     y += mm(3) // Abstand nach Gruppe
   }
@@ -144,26 +137,36 @@ export function generatePDF(showContent, channelsCsv, sectionsRaw, templateSecti
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
+function calcRowHeight(doc, cols) {
+  doc.font(FONT_NORMAL).fontSize(8)
+  let maxH = ROW_H
+  for (const col of cols) {
+    if (!col.wrap || !col.text) continue
+    const h = doc.heightOfString(col.text, { width: col.w - mm(2) }) + mm(2.6)
+    if (h > maxH) maxH = h
+  }
+  return maxH
+}
+
 function drawRow(doc, y, usableW, cols, isHeader) {
+  const rowH = isHeader ? ROW_H : calcRowHeight(doc, cols)
   if (isHeader) {
-    doc.rect(PAGE_MARGIN, y, usableW, ROW_H).fill('#e8e8e8')
+    doc.rect(PAGE_MARGIN, y, usableW, rowH).fill('#e8e8e8')
     doc.fill('black')
   }
-  // Horizontale Linie
-  doc.rect(PAGE_MARGIN, y, usableW, ROW_H).stroke('#cccccc')
+  doc.rect(PAGE_MARGIN, y, usableW, rowH).stroke('#cccccc')
 
   let x = PAGE_MARGIN
   for (const col of cols) {
     doc.font(isHeader ? FONT_BOLD : FONT_NORMAL).fontSize(isHeader ? 7.5 : 8)
       .text(col.text || '', x + mm(1), y + mm(1.3), {
         width: col.w - mm(2),
-        height: ROW_H - mm(1),
-        lineBreak: false,
-        ellipsis: true,
+        lineBreak: col.wrap === true,
+        ellipsis: !col.wrap,
       })
     x += col.w
   }
-  return y + ROW_H
+  return y + rowH
 }
 
 function renderFieldsSection(doc, fields, raw, margin, usableW) {

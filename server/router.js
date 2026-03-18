@@ -15,6 +15,11 @@ export async function router(req, res) {
   const { pathname, params } = parseUrl(req.url)
 
   try {
+    // ── Health ─────────────────────────────────────────────────────────────
+    if (method === 'GET' && pathname === '/api/health') {
+      return json(res, { ok: true })
+    }
+
     // ── Auth ───────────────────────────────────────────────────────────────
     if (method === 'POST' && pathname === '/api/auth/login') {
       const body = await readBody(req)
@@ -62,7 +67,14 @@ export async function router(req, res) {
       await io.writeAtomic(io.paths.showCsv(id), channels || 'channel;address;device;position;color;notes\n')
       if (template) {
         const templateSecs = await io.readTemplateSections(template)
-        if (templateSecs.length) await io.writeShowSectionDefs(id, templateSecs)
+        if (templateSecs.length) {
+          await io.writeShowSectionDefs(id, templateSecs)
+          const emptyMd = templateSecs
+            .sort((a, b) => a.order - b.order)
+            .map(s => `---section: ${s.id}---\n`)
+            .join('')
+          await io.writeShowSections(id, emptyMd)
+        }
       }
       return json(res, 201, { id })
     }
@@ -229,6 +241,13 @@ export async function router(req, res) {
       const body = await readBody(req)
       const { csv } = JSON.parse(body)
       await io.writeTemplate(name, csv)
+      const existing = await io.readTemplateSections(name)
+      if (!existing.length) {
+        await io.writeTemplateSections(name, [
+          { id: crypto.randomUUID(), title: 'Aufbau', type: 'markdown', order: 0, fields: [] },
+          { id: crypto.randomUUID(), title: 'Besonderheiten', type: 'markdown', order: 1, fields: [] },
+        ])
+      }
       return json(res, 200, { ok: true })
     }
 

@@ -115,6 +115,7 @@
   "error.generic": "Ein Fehler ist aufgetreten.",
   "error.loading": "Wird geladen …",
   "error.network": "Keine Verbindung zum Server.",
+  "offline.banner": "Kein Netz – Nur-Lese-Modus",
   "error.not_found": "Nicht gefunden.",
   "error.unauthorized": "Nicht angemeldet.",
 

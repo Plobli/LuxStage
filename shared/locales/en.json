@@ -159,8 +159,7 @@
 
   "editor.bold": "B",
   "editor.italic": "I",
-  "editor.h2": "H2",
-  "editor.h3": "H3",
+  "editor.heading": "Heading",
   "editor.list.bullet": "• List",
   "editor.list.ordered": "1. List"
 }

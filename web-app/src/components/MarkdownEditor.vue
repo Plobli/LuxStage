@@ -6,10 +6,8 @@
       <button type="button" :class="{ active: editor.isActive('italic') }"
         @mousedown.prevent="editor.chain().focus().toggleItalic().run()"><i>{{ t('editor.italic') }}</i></button>
       <span class="md-toolbar-sep"></span>
-      <button type="button" :class="{ active: editor.isActive('heading', { level: 2 }) }"
-        @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 2 }).run()">{{ t('editor.h2') }}</button>
       <button type="button" :class="{ active: editor.isActive('heading', { level: 3 }) }"
-        @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 3 }).run()">{{ t('editor.h3') }}</button>
+        @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 3 }).run()">{{ t('editor.heading') }}</button>
       <span class="md-toolbar-sep"></span>
       <button type="button" :class="{ active: editor.isActive('bulletList') }"
         @mousedown.prevent="editor.chain().focus().toggleBulletList().run()">{{ t('editor.list.bullet') }}</button>

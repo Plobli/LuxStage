@@ -1,57 +1,120 @@
 <template>
-  <div class="page">
-    <div class="page-header">
-      <h2>{{ t('nav.settings') }}</h2>
+  <div>
+    <div class="mb-8">
+      <h1 class="text-base font-semibold text-white">{{ t('nav.settings') }}</h1>
     </div>
 
-    <section class="settings-section">
-      <h3>{{ t('settings.language') }}</h3>
-      <div class="radio-group">
-        <label>
-          <input type="radio" :checked="locale === 'de'" value="de" @change="setLocale('de')" />
-          {{ t('settings.language.de') }}
-        </label>
-        <label>
-          <input type="radio" :checked="locale === 'en'" value="en" @change="setLocale('en')" />
-          {{ t('settings.language.en') }}
-        </label>
+    <div class="space-y-10 divide-y divide-white/10">
+
+      <!-- Sprache -->
+      <div class="grid grid-cols-1 gap-x-8 gap-y-8 pt-10 md:grid-cols-3 first:pt-0">
+        <div>
+          <h2 class="text-base/7 font-semibold text-white">{{ t('settings.language') }}</h2>
+        </div>
+        <div class="bg-gray-800/50 ring-1 ring-white/10 rounded-xl md:col-span-2">
+          <div class="px-4 py-6 sm:p-8 flex gap-6">
+            <label class="flex items-center gap-2 text-sm text-white cursor-pointer">
+              <input type="radio" :checked="locale === 'de'" value="de" @change="setLocale('de')" class="accent-accent" />
+              {{ t('settings.language.de') }}
+            </label>
+            <label class="flex items-center gap-2 text-sm text-white cursor-pointer">
+              <input type="radio" :checked="locale === 'en'" value="en" @change="setLocale('en')" class="accent-accent" />
+              {{ t('settings.language.en') }}
+            </label>
+          </div>
+        </div>
       </div>
-    </section>
 
-    <section class="settings-section">
-      <h3>{{ t('settings.server') }}</h3>
-      <div class="field">
-        <label>{{ t('settings.server_url.label') }}</label>
-        <input v-model="serverUrl" type="url" :placeholder="t('settings.server_url.placeholder')" @change="applyServer" />
+      <!-- Server-URL -->
+      <div class="grid grid-cols-1 gap-x-8 gap-y-8 pt-10 md:grid-cols-3">
+        <div>
+          <h2 class="text-base/7 font-semibold text-white">{{ t('settings.server') }}</h2>
+        </div>
+        <div class="bg-gray-800/50 ring-1 ring-white/10 rounded-xl md:col-span-2">
+          <div class="px-4 py-6 sm:p-8 space-y-4">
+            <div>
+              <label class="block text-sm/6 font-medium text-white">{{ t('settings.server_url.label') }}</label>
+              <div class="mt-2">
+                <input
+                  v-model="serverUrl"
+                  type="url"
+                  :placeholder="t('settings.server_url.placeholder')"
+                  @change="applyServer"
+                  class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent"
+                />
+              </div>
+            </div>
+            <div v-if="status" class="divide-y divide-white/10 text-sm">
+              <div class="flex justify-between py-2">
+                <span class="text-gray-400">{{ t('settings.status.version') }}</span>
+                <span class="text-white">{{ status.version }}</span>
+              </div>
+              <div class="flex justify-between py-2">
+                <span class="text-gray-400">{{ t('settings.status.disk') }}</span>
+                <span class="text-white">{{ status.diskFree }}</span>
+              </div>
+            </div>
+            <p v-else-if="statusError" class="text-sm text-red-400">{{ statusError }}</p>
+            <p v-else class="text-sm text-gray-500">{{ t('error.loading') }}</p>
+          </div>
+        </div>
       </div>
-    </section>
 
-    <section class="settings-section">
-      <h3>{{ t('settings.server') }}</h3>
-      <div v-if="status" class="status-list">
-        <div class="status-row"><span>{{ t('settings.status.version') }}</span><span>{{ status.version }}</span></div>
-        <div class="status-row"><span>{{ t('settings.status.disk') }}</span><span class="status-disk">{{ status.diskFree }}</span></div>
+      <!-- Backup -->
+      <div class="grid grid-cols-1 gap-x-8 gap-y-8 pt-10 md:grid-cols-3">
+        <div>
+          <h2 class="text-base/7 font-semibold text-white">{{ t('settings.backup') }}</h2>
+        </div>
+        <div class="bg-gray-800/50 ring-1 ring-white/10 rounded-xl md:col-span-2">
+          <div class="px-4 py-6 sm:p-8">
+            <button
+              type="button"
+              @click="downloadBackup"
+              class="rounded-md px-3 py-2 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20"
+            >
+              {{ t('settings.backup.download') }}
+            </button>
+          </div>
+        </div>
       </div>
-      <div v-else-if="statusError" class="status-error">{{ statusError }}</div>
-      <div v-else class="status-loading">{{ t('error.loading') }}</div>
-    </section>
 
-    <section class="settings-section">
-      <h3>{{ t('settings.backup') }}</h3>
-      <button class="btn-ghost" @click="downloadBackup">{{ t('settings.backup.download') }}</button>
-    </section>
+      <!-- Update (nur Admin) -->
+      <div v-if="isAdmin" class="grid grid-cols-1 gap-x-8 gap-y-8 pt-10 md:grid-cols-3">
+        <div>
+          <h2 class="text-base/7 font-semibold text-white">{{ t('settings.update') }}</h2>
+        </div>
+        <div class="bg-gray-800/50 ring-1 ring-white/10 rounded-xl md:col-span-2">
+          <div class="px-4 py-6 sm:p-8 space-y-3">
+            <button
+              type="button"
+              :disabled="updating"
+              @click="doUpdate"
+              class="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-50"
+            >
+              {{ updating ? '…' : t('settings.update.run') }}
+            </button>
+            <p v-if="updateMsg" class="text-sm text-gray-400">{{ updateMsg }}</p>
+          </div>
+        </div>
+      </div>
 
-    <section v-if="isAdmin" class="settings-section">
-      <h3>{{ t('settings.update') }}</h3>
-      <button class="btn-ghost" :disabled="updating" @click="doUpdate">
-        {{ updating ? '…' : t('settings.update.run') }}
-      </button>
-      <p v-if="updateMsg" class="update-msg">{{ updateMsg }}</p>
-    </section>
+      <!-- Logout -->
+      <div class="grid grid-cols-1 gap-x-8 gap-y-8 pt-10 md:grid-cols-3">
+        <div></div>
+        <div class="md:col-span-2">
+          <div class="px-4 py-6 sm:p-8">
+            <button
+              type="button"
+              @click="handleLogout"
+              class="rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-500"
+            >
+              {{ t('settings.logout') }}
+            </button>
+          </div>
+        </div>
+      </div>
 
-    <section class="settings-section">
-      <button class="btn-danger" @click="handleLogout">{{ t('settings.logout') }}</button>
-    </section>
+    </div>
   </div>
 </template>
 

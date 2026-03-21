@@ -218,6 +218,7 @@ onMounted(async () => {
 async function handleCreate() {
   creating.value = true
   const id = generateId(form.value.name, form.value.datum)
+  let created = false
   try {
     const content = `---\nid: ${id}\nname: ${form.value.name || id}\ndatum: ${form.value.datum || new Date().toISOString().slice(0, 10)}\n${form.value.template ? `template: ${form.value.template}\n` : ''}---\n\n`
     await createShow({ id, content, template: form.value.template || undefined })
@@ -227,15 +228,26 @@ async function handleCreate() {
       const secs = await fetchTemplateSections(form.value.template)
       if (secs.length) await saveShowSectionDefs(id, secs)
     }
-    drawerOpen.value = false
-    router.push(`/shows/${id}`)
+    created = true
+  } catch (e) {
+    console.error('Failed to create show:', e)
   } finally {
     creating.value = false
   }
+  if (created) {
+    drawerOpen.value = false
+    router.push(`/shows/${id}`)
+  }
 }
 
-async function archive(id) {
-  await archiveShow(id)
-  shows.value = shows.value.filter(s => s.id !== id)
+async function archive(showId) {
+  const idx = shows.value.findIndex(s => s.id === showId)
+  const removed = shows.value.splice(idx, 1)[0]
+  try {
+    await archiveShow(showId)
+  } catch (e) {
+    console.error('Failed to archive show:', e)
+    shows.value.splice(idx, 0, removed)
+  }
 }
 </script>

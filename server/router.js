@@ -17,7 +17,7 @@ export async function router(req, res) {
   try {
     // ── Health ─────────────────────────────────────────────────────────────
     if (method === 'GET' && pathname === '/api/health') {
-      return json(res, { ok: true })
+      return json(res, 200, { ok: true })
     }
 
     // ── Auth ───────────────────────────────────────────────────────────────

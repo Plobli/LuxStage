@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "dev": "node --watch index.js"
+    "dev": "node --watch-path=index.js --watch-path=router.js --watch-path=auth.js --watch-path=config.js --watch-path=helpers.js --watch-path=io.js --watch-path=pdf.js --watch-path=photos.js --watch-path=backup.js --watch-path=sse.js --watch index.js"
   },
   "dependencies": {
     "archiver": "^7.0.1",

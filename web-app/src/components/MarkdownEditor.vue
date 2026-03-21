@@ -47,9 +47,9 @@ watch(() => props.modelValue, (val) => {
   const current = editor.value.storage.markdown.getMarkdown()
   if (val !== current) {
     externalValue = val
-    editor.value.commands.setContent(val)
+    editor.value.commands.setContent(val, false, { preserveWhitespace: 'full' })
   }
-})
+}, { flush: 'post' })
 
 onBeforeUnmount(() => editor.value?.destroy())
 </script>

@@ -49,9 +49,7 @@
                             <RouterLink
                               :to="item.to"
                               class="group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold"
-                              :class="route.name === item.routeName
-                                ? 'bg-white/5 text-white'
-                                : 'text-gray-400 hover:bg-white/5 hover:text-white'"
+                              :class="isActiveRoute(item) ? 'bg-white/5 text-white' : 'text-gray-400 hover:bg-white/5 hover:text-white'"
                             >
                               <component :is="item.icon" class="size-6 shrink-0" aria-hidden="true" />
                               {{ item.name }}
@@ -61,6 +59,15 @@
                       </li>
                     </ul>
                   </nav>
+                  <div class="-mx-6 pb-4 mt-auto">
+                    <button
+                      @click="handleLogout"
+                      class="flex w-full items-center gap-x-4 px-6 py-3 text-sm/6 font-semibold text-gray-400 hover:bg-white/5 hover:text-white"
+                    >
+                      <ArrowLeftStartOnRectangleIcon class="size-5 shrink-0" aria-hidden="true" />
+                      {{ t('nav.logout') }}
+                    </button>
+                  </div>
                 </div>
               </DialogPanel>
             </TransitionChild>
@@ -82,9 +89,7 @@
                     <RouterLink
                       :to="item.to"
                       class="group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold"
-                      :class="route.name === item.routeName
-                        ? 'bg-white/5 text-white'
-                        : 'text-gray-400 hover:bg-white/5 hover:text-white'"
+                      :class="isActiveRoute(item) ? 'bg-white/5 text-white' : 'text-gray-400 hover:bg-white/5 hover:text-white'"
                     >
                       <component :is="item.icon" class="size-6 shrink-0" aria-hidden="true" />
                       {{ item.name }}
@@ -126,7 +131,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { RouterView, RouterLink, useRoute, useRouter } from 'vue-router'
 import { Dialog, DialogPanel, TransitionChild, TransitionRoot } from '@headlessui/vue'
 import {
@@ -144,6 +149,15 @@ const { t } = useLocale()
 const route = useRoute()
 const router = useRouter()
 const sidebarOpen = ref(false)
+
+watch(route, () => { sidebarOpen.value = false })
+
+function isActiveRoute(item) {
+  if (item.to === '/') {
+    return route.path === '/' || route.path.startsWith('/shows')
+  }
+  return route.path.startsWith(item.to)
+}
 
 const navigation = [
   { name: t('nav.shows'), to: '/', routeName: 'shows', icon: RectangleStackIcon },

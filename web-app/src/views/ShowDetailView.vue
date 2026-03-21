@@ -1,212 +1,295 @@
 <template>
-  <div class="page">
-    <div class="page-header">
-      <button class="btn-ghost" @click="router.push('/')">← {{ t('action.back') }}</button>
-      <h2>{{ meta.name }}</h2>
-      <span class="show-date">{{ meta.datum }}</span>
-      <button class="btn-ghost-sm" :class="{ active: editingSections }" @click="editingSections = !editingSections">{{ t('sections.btn') }}</button>
-      <a class="btn-ghost-sm" :href="pdfUrl" target="_blank">{{ t('show.pdf') }}</a>
+  <div>
+    <!-- Page Header -->
+    <div class="md:flex md:items-center md:justify-between mb-8">
+      <div class="min-w-0 flex-1">
+        <div class="mb-1">
+          <button
+            type="button"
+            class="text-sm text-gray-400 hover:text-white"
+            @click="router.push('/')"
+          >
+            ← {{ t('action.back') }}
+          </button>
+        </div>
+        <h2 class="text-2xl/7 font-bold text-white sm:truncate sm:text-3xl sm:tracking-tight">
+          {{ meta.name }}
+        </h2>
+        <p class="mt-1 text-sm text-gray-400">{{ meta.datum }}</p>
+      </div>
+      <div class="mt-4 flex gap-x-3 md:mt-0 md:ml-4">
+        <button
+          type="button"
+          :class="editingSections ? 'bg-white/10 text-white' : 'text-gray-400 ring-1 ring-white/10 hover:ring-white/20'"
+          class="rounded-md px-3 py-2 text-sm font-semibold"
+          @click="editingSections = !editingSections"
+        >
+          {{ t('sections.btn') }}
+        </button>
+        <a
+          :href="pdfUrl"
+          target="_blank"
+          class="rounded-md px-3 py-2 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20"
+        >
+          {{ t('show.pdf') }}
+        </a>
+      </div>
     </div>
 
-    <div v-if="loading" class="loading">…</div>
+    <div v-if="loading" class="text-sm text-gray-400">…</div>
 
     <template v-else>
-      <!-- Sections editor -->
-      <div class="section-defs-editor" v-if="editingSections">
-        <div v-for="(sec, idx) in sectionDefs" :key="sec.id" class="section-card">
-          <div class="section-card-header">
-            <div class="section-reorder">
-              <button class="btn-ghost-sm" :disabled="idx === 0" @click="moveSectionDef(idx, -1)">↑</button>
-              <button class="btn-ghost-sm" :disabled="idx === sectionDefs.length - 1" @click="moveSectionDef(idx, 1)">↓</button>
+      <!-- Sections-Editor -->
+      <div v-if="editingSections" class="mb-8 space-y-3">
+        <div
+          v-for="(sec, idx) in sectionDefs"
+          :key="sec.id"
+          class="rounded-lg bg-gray-800/50 ring-1 ring-white/10 p-4"
+        >
+          <div class="flex items-center gap-3 mb-2">
+            <div class="flex gap-1">
+              <button class="text-gray-400 hover:text-white text-xs px-1" :disabled="idx === 0" @click="moveSectionDef(idx, -1)">↑</button>
+              <button class="text-gray-400 hover:text-white text-xs px-1" :disabled="idx === sectionDefs.length - 1" @click="moveSectionDef(idx, 1)">↓</button>
             </div>
-            <input :value="sec.title" :placeholder="t('sections.title.placeholder')" @input="sec.title = $event.target.value" @change="persistSectionDefs" />
-            <select class="section-type-select" :value="sec.type" @change="onSectionTypeChange(sec, $event.target.value)">
-              <option value="markdown">{{ t('sections.type.markdown') }}</option>
-              <option value="fields" :disabled="hasFieldsType() && sec.type !== 'fields'">{{ t('sections.type.fields') }}</option>
+            <input
+              :value="sec.title"
+              :placeholder="t('sections.title.placeholder')"
+              @input="sec.title = $event.target.value"
+              @change="persistSectionDefs"
+              class="flex-1 rounded-md bg-white/5 px-3 py-1 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent"
+            />
+            <select
+              :value="sec.type"
+              @change="onSectionTypeChange(sec, $event.target.value)"
+              class="rounded-md bg-white/5 px-2 py-1 text-sm text-white outline-1 -outline-offset-1 outline-white/10"
+            >
+              <option value="markdown" class="bg-gray-800">{{ t('sections.type.markdown') }}</option>
+              <option value="fields" :disabled="hasFieldsType() && sec.type !== 'fields'" class="bg-gray-800">{{ t('sections.type.fields') }}</option>
             </select>
-            <button class="btn-ghost-sm danger" @click="deleteSectionDef(idx)">✕</button>
+            <button class="text-red-400 hover:text-red-300 text-sm" @click="deleteSectionDef(idx)">✕</button>
           </div>
-          <div v-if="sec.type === 'fields'" class="fields-editor">
-            <div v-for="(field, fidx) in sec.fields" :key="field.key" class="fields-editor-row">
-              <input :value="field.label" :placeholder="t('sections.field.label')" @input="field.label = $event.target.value" @change="persistSectionDefs" />
-              <button class="btn-ghost-sm danger" @click="deleteFieldDef(sec, fidx)">✕</button>
+          <div v-if="sec.type === 'fields'" class="space-y-2 mt-2">
+            <div v-for="(field, fidx) in sec.fields" :key="field.key" class="flex gap-2">
+              <input
+                :value="field.label"
+                :placeholder="t('sections.field.label')"
+                @input="field.label = $event.target.value"
+                @change="persistSectionDefs"
+                class="flex-1 rounded-md bg-white/5 px-3 py-1 text-sm text-white outline-1 -outline-offset-1 outline-white/10"
+              />
+              <button class="text-red-400 hover:text-red-300 text-sm" @click="deleteFieldDef(sec, fidx)">✕</button>
             </div>
-            <button class="btn-ghost-sm" @click="addFieldDef(sec)">{{ t('sections.field.add') }}</button>
+            <button class="text-sm text-gray-400 hover:text-white" @click="addFieldDef(sec)">{{ t('sections.field.add') }}</button>
           </div>
         </div>
-        <button class="btn-ghost-sm" @click="addSection">{{ t('sections.add') }}</button>
+        <button class="text-sm text-gray-400 hover:text-white" @click="addSection">{{ t('sections.add') }}</button>
       </div>
 
-      <!-- Sections from show's own section defs -->
-      <div v-if="sortedSections.length > 0" class="sections-grid">
-        <section v-for="sec in sortedSections" :key="sec.id" class="aufbau-section">
-          <div class="aufbau-header">
-            <span class="aufbau-label">{{ sec.title }}</span>
-            <span v-if="sectionsSaving" class="saving-hint">…</span>
-          </div>
-          <!-- fields type -->
-          <div v-if="sec.type === 'fields'" class="fields-grid">
-            <div v-for="field in sec.fields" :key="field.key" class="fields-grid-row">
-              <label class="fields-grid-label">{{ field.label }}</label>
-              <input class="inline-input"
-                :value="parseFieldValue(sec.id, field.key)"
-                @change="onFieldChange(sec.id, field.key, $event.target.value)"
-                @click.stop
+      <!-- Content Grid -->
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+
+        <!-- Sections -->
+        <template v-if="sortedSections.length > 0">
+          <section
+            v-for="sec in sortedSections"
+            :key="sec.id"
+            class="rounded-lg bg-gray-800/50 ring-1 ring-white/10 overflow-hidden"
+          >
+            <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
+              <h3 class="text-sm font-semibold text-white">{{ sec.title }}</h3>
+              <span v-if="sectionsSaving" class="text-xs text-gray-500">…</span>
+            </div>
+            <div class="p-4">
+              <div v-if="sec.type === 'fields'" class="space-y-3">
+                <div v-for="field in sec.fields" :key="field.key" class="flex items-center gap-3">
+                  <label class="w-32 text-sm text-gray-400 shrink-0">{{ field.label }}</label>
+                  <input
+                    :value="parseFieldValue(sec.id, field.key)"
+                    @change="onFieldChange(sec.id, field.key, $event.target.value)"
+                    @click.stop
+                    class="flex-1 rounded-md bg-white/5 px-3 py-1 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent"
+                  />
+                </div>
+              </div>
+              <MarkdownEditor
+                v-else
+                :modelValue="sectionContents.get(sec.id) ?? ''"
+                @update:modelValue="onSectionChange(sec.id, $event)"
               />
             </div>
+          </section>
+        </template>
+
+        <!-- Fallback: single setup editor if no sections defined -->
+        <section v-else class="rounded-lg bg-gray-800/50 ring-1 ring-white/10 overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
+            <h3 class="text-sm font-semibold text-white">{{ t('show.setup') }}</h3>
+            <span v-if="setupSaving" class="text-xs text-gray-500">…</span>
           </div>
-          <!-- markdown type -->
-          <MarkdownEditor v-else
-            :modelValue="sectionContents.get(sec.id) ?? ''"
-            class="aufbau-editor"
-            @update:modelValue="onSectionChange(sec.id, $event)"
-          />
+          <div class="p-4">
+            <MarkdownEditor v-model="setupMarkdown" @update:modelValue="onSetupChange" />
+          </div>
         </section>
-      </div>
 
-      <!-- Fallback: single aufbau section if no section defs defined -->
-      <section v-else class="aufbau-section">
-        <div class="aufbau-header">
-          <span class="aufbau-label">{{ t('show.setup') }}</span>
-          <span v-if="setupSaving" class="saving-hint">…</span>
-        </div>
-        <MarkdownEditor v-model="setupMarkdown" class="aufbau-editor" @update:modelValue="onSetupChange" />
-      </section>
-
-      <!-- Foto-Galerie -->
-      <section class="photos-section">
-        <div class="photos-header">
-          <span class="photos-label">{{ t('show.photos') }}</span>
-          <label class="btn-ghost-sm">
-            + {{ t('photo.add') }}
-            <input type="file" accept="image/*" multiple @change="onFileInput" hidden />
-          </label>
-        </div>
-        <div
-          class="photos-dropzone"
-          :class="{ 'drag-over': dragging }"
-          @dragover.prevent="dragging = true"
-          @dragleave="dragging = false"
-          @drop.prevent="onDrop"
-        >
-          <div v-if="photos.length === 0 && !dragging" class="photos-empty">{{ t('photo.empty') }}</div>
-          <div class="photos-grid">
-            <div v-for="filename in photos" :key="filename" class="photo-item">
-              <img :src="getPhotoUrl(props.id, filename)" :alt="filename" @click="openLightbox(filename)" />
-              <button class="btn-icon-danger" @click="onDeletePhoto(filename)" :title="t('action.delete')">🗑</button>
-            </div>
+        <!-- Foto-Galerie -->
+        <section class="rounded-lg bg-gray-800/50 ring-1 ring-white/10 overflow-hidden">
+          <div class="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-white">{{ t('show.photos') }}</h3>
+            <label class="cursor-pointer rounded-md px-3 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20">
+              {{ t('photo.add') }}
+              <input type="file" accept="image/*" multiple class="sr-only" @change="onFileInput" />
+            </label>
           </div>
-        </div>
-      </section>
-
-      <div v-if="lightboxPhoto" class="lightbox-overlay" @click="lightboxPhoto = null">
-        <img :src="getPhotoUrl(props.id, lightboxPhoto)" class="lightbox-img" @click.stop />
-      </div>
-
-      <!-- Kanäle -->
-      <section class="channel-section">
-        <div class="channel-toolbar">
-          <input v-model="search" type="search" :placeholder="t('channel.search')" class="search-input" />
-          <span class="channel-count">{{ totalVisible }} / {{ channels.length }}</span>
-          <span v-if="channelsSaving" class="saving-hint">…</span>
-          <span v-if="dupWarning" class="dup-warning">⚠ {{ t('channel.dup_address') }}</span>
-        </div>
-
-        <div class="channel-table-wrapper">
-          <table class="channel-table">
-            <thead>
-              <tr>
-                <th class="col-channel">{{ t('field.channel') }}</th>
-                <th class="col-address">{{ t('field.address') }}</th>
-                <th class="col-device">{{ t('field.device') }}</th>
-                <th class="col-color">{{ t('field.color') }}</th>
-                <th class="col-notes">{{ t('field.notes') }}</th>
-              </tr>
-            </thead>
-            <tbody v-for="group in groupedChannels" :key="group.position">
-              <tr class="category-header-row">
-                <td colspan="5">
-                  <span class="category-name">{{ group.position || t('channel.no_category') }}</span>
-                  <span class="category-count">{{ group.channels.length }}</span>
-                </td>
-              </tr>
-              <tr
-                v-for="ch in group.channels"
-                :key="ch.channel"
-                class="channel-row"
-                :class="{ editing: editingChannel === ch.channel }"
-                @click="startEdit(ch)"
-                @keydown.enter.prevent="saveEdit"
-                @keydown.escape="cancelEdit"
-                @focusout="onRowFocusOut($event, ch)"
-              >
-                <td class="col-channel">{{ ch.channel }}</td>
-                <td class="col-address">
-                  <input v-if="editingChannel === ch.channel" class="inline-input" v-model="editForm.address" @click.stop />
-                  <template v-else>{{ ch.address }}</template>
-                </td>
-                <td class="col-device">
-                  <input v-if="editingChannel === ch.channel" class="inline-input" v-model="editForm.device" @click.stop />
-                  <template v-else>{{ ch.device || '—' }}</template>
-                </td>
-                <td class="col-color">
-                  <ColorPicker v-if="editingChannel === ch.channel" v-model="editForm.color" @click.stop />
-                  <template v-else>
-                    <span v-if="ch.color" class="color-badge">{{ ch.color }}</span>
-                    <span v-else class="muted">—</span>
-                  </template>
-                </td>
-                <td class="col-notes">
-                  <div v-if="editingChannel === ch.channel" class="add-row-actions">
-                    <input ref="notesInput" class="inline-input inline-input-wide" v-model="editForm.notes" @click.stop />
-                    <button class="btn-danger-sm" @mousedown.prevent @click.stop="deleteChannel(ch)" :title="t('action.delete')">🗑</button>
-                  </div>
-                  <template v-else>{{ ch.notes }}</template>
-                </td>
-              </tr>
-              <!-- Kanal hinzufügen -->
-              <tr v-if="addingPosition === group.position" class="channel-row editing" @keydown.escape="addingPosition = null">
-                <td><input class="inline-input" v-model="addForm.channel" :placeholder="t('show.channel.nr')" @click.stop /></td>
-                <td><input class="inline-input" v-model="addForm.address" :placeholder="t('show.channel.address.example')" @click.stop /></td>
-                <td><input class="inline-input" v-model="addForm.device" @click.stop /></td>
-                <td><ColorPicker v-model="addForm.color" @click.stop /></td>
-                <td>
-                  <div class="add-row-actions">
-                    <input class="inline-input inline-input-wide" v-model="addForm.notes" @click.stop />
-                    <button class="btn-ghost-sm" @click.stop="saveAdd">✓</button>
-                    <button class="btn-ghost-sm" @click.stop="addingPosition = null">✕</button>
-                  </div>
-                </td>
-              </tr>
-              <tr v-else class="add-row-trigger">
-                <td colspan="5"><button type="button" class="btn-ghost-sm" @click.stop="startAdd(group.position)">+ {{ t('channel.add') }}</button></td>
-              </tr>
-            </tbody>
-          <tbody v-if="groupedChannels.length === 0">
-            <tr v-if="addingPosition === ''" class="channel-row editing" @keydown.escape="addingPosition = null">
-              <td><input class="inline-input" v-model="addForm.channel" :placeholder="t('show.channel.nr')" @click.stop /></td>
-              <td><input class="inline-input" v-model="addForm.address" :placeholder="t('show.channel.address.example')" @click.stop /></td>
-              <td><input class="inline-input" v-model="addForm.device" @click.stop /></td>
-              <td><ColorPicker v-model="addForm.color" @click.stop /></td>
-              <td>
-                <div class="add-row-actions">
-                  <input class="inline-input inline-input-wide" v-model="addForm.notes" @click.stop />
-                  <button class="btn-ghost-sm" @click.stop="saveAdd">✓</button>
-                  <button class="btn-ghost-sm" @click.stop="addingPosition = null">✕</button>
+          <div
+            class="p-4"
+            :class="{ 'ring-2 ring-accent ring-inset': dragging }"
+            @dragover.prevent="dragging = true"
+            @dragleave="dragging = false"
+            @drop.prevent="onDrop"
+          >
+            <p v-if="photos.length === 0 && !dragging" class="text-sm text-gray-500">{{ t('photo.empty') }}</p>
+            <ul role="list" class="grid grid-cols-3 gap-3 sm:grid-cols-4">
+              <li v-for="filename in photos" :key="filename" class="relative">
+                <div class="group aspect-square block w-full overflow-hidden rounded-lg bg-gray-700">
+                  <img
+                    :src="getPhotoUrl(props.id, filename)"
+                    :alt="filename"
+                    class="pointer-events-none object-cover group-hover:opacity-75 w-full h-full"
+                    @click="openLightbox(filename)"
+                  />
                 </div>
-              </td>
-            </tr>
-            <tr v-else class="add-row-trigger">
-              <td colspan="5">
-                <span class="empty-inline">{{ t('channel.list.empty') }}</span>
-                <button type="button" class="btn-ghost-sm" style="margin-left:8px" @click.stop="startAdd('')">+ {{ t('channel.add') }}</button>
-              </td>
-            </tr>
-          </tbody>
-          </table>
-        </div>
-      </section>
+                <button
+                  type="button"
+                  class="absolute top-1 right-1 rounded bg-black/60 px-1 py-0.5 text-xs text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                  @click="onDeletePhoto(filename)"
+                  :title="t('action.delete')"
+                >✕</button>
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- Kanäle-Tabelle -->
+        <section class="rounded-lg bg-gray-800/50 ring-1 ring-white/10 overflow-hidden lg:col-span-2">
+          <div class="px-4 py-3 border-b border-white/10 flex flex-wrap items-center gap-3">
+            <h3 class="text-sm font-semibold text-white mr-auto">{{ t('show.channels') }}</h3>
+            <input
+              v-model="search"
+              type="search"
+              :placeholder="t('channel.search')"
+              class="rounded-md bg-white/5 px-3 py-1 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent w-48"
+            />
+            <span class="text-xs text-gray-500">{{ totalVisible }} / {{ channels.length }}</span>
+            <span v-if="channelsSaving" class="text-xs text-gray-500">…</span>
+            <span v-if="dupWarning" class="text-xs text-yellow-400">⚠ {{ t('channel.dup_address') }}</span>
+          </div>
+          <div class="flow-root overflow-x-auto">
+            <table class="min-w-full">
+              <thead class="bg-gray-900/50">
+                <tr>
+                  <th scope="col" class="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-white">{{ t('field.channel') }}</th>
+                  <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">{{ t('field.address') }}</th>
+                  <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">{{ t('field.device') }}</th>
+                  <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">{{ t('field.color') }}</th>
+                  <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">{{ t('field.notes') }}</th>
+                </tr>
+              </thead>
+              <tbody v-for="group in groupedChannels" :key="group.position">
+                <tr class="border-t border-white/10">
+                  <th colspan="5" scope="colgroup" class="bg-gray-800/50 py-2 pr-3 pl-4 text-left text-sm font-semibold text-white">
+                    {{ group.position || t('channel.no_category') }}
+                    <span class="ml-2 text-xs font-normal text-gray-500">{{ group.channels.length }}</span>
+                  </th>
+                </tr>
+                <tr
+                  v-for="ch in group.channels"
+                  :key="ch.channel"
+                  class="border-t border-white/10 cursor-pointer hover:bg-white/5 transition-colors"
+                  :class="{ 'bg-white/5': editingChannel === ch.channel }"
+                  @click="startEdit(ch)"
+                  @keydown.enter.prevent="saveEdit"
+                  @keydown.escape="cancelEdit"
+                  @focusout="onRowFocusOut($event, ch)"
+                >
+                  <td class="py-3 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-white">{{ ch.channel }}</td>
+                  <td class="px-3 py-3 text-sm whitespace-nowrap text-gray-400">
+                    <input v-if="editingChannel === ch.channel" class="rounded-md bg-white/5 px-2 py-0.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 w-full" v-model="editForm.address" @click.stop />
+                    <template v-else>{{ ch.address }}</template>
+                  </td>
+                  <td class="px-3 py-3 text-sm whitespace-nowrap text-gray-400">
+                    <input v-if="editingChannel === ch.channel" class="rounded-md bg-white/5 px-2 py-0.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 w-full" v-model="editForm.device" @click.stop />
+                    <template v-else>{{ ch.device || '—' }}</template>
+                  </td>
+                  <td class="px-3 py-3 text-sm whitespace-nowrap text-gray-400">
+                    <ColorPicker v-if="editingChannel === ch.channel" v-model="editForm.color" @click.stop />
+                    <template v-else>
+                      <span v-if="ch.color" class="inline-flex items-center gap-1.5">
+                        <span class="inline-block size-3 rounded-sm" :style="{ background: ch.color }"></span>
+                        <span class="text-xs">{{ ch.color }}</span>
+                      </span>
+                      <span v-else class="text-gray-600">—</span>
+                    </template>
+                  </td>
+                  <td class="px-3 py-3 text-sm whitespace-nowrap text-gray-400">
+                    <div v-if="editingChannel === ch.channel" class="flex items-center gap-2">
+                      <input ref="notesInput" class="rounded-md bg-white/5 px-2 py-0.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 flex-1" v-model="editForm.notes" @click.stop />
+                      <button class="text-red-400 hover:text-red-300 text-xs px-1" @mousedown.prevent @click.stop="deleteChannel(ch)" :title="t('action.delete')">🗑</button>
+                    </div>
+                    <template v-else>{{ ch.notes }}</template>
+                  </td>
+                </tr>
+                <!-- Kanal hinzufügen -->
+                <tr v-if="addingPosition === group.position" class="border-t border-white/10 bg-white/5" @keydown.escape="addingPosition = null">
+                  <td class="py-2 pr-3 pl-4"><input class="rounded-md bg-white/5 px-2 py-0.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 w-full" v-model="addForm.channel" :placeholder="t('show.channel.nr')" @click.stop /></td>
+                  <td class="px-3 py-2"><input class="rounded-md bg-white/5 px-2 py-0.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 w-full" v-model="addForm.address" :placeholder="t('show.channel.address.example')" @click.stop /></td>
+                  <td class="px-3 py-2"><input class="rounded-md bg-white/5 px-2 py-0.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 w-full" v-model="addForm.device" @click.stop /></td>
+                  <td class="px-3 py-2"><ColorPicker v-model="addForm.color" @click.stop /></td>
+                  <td class="px-3 py-2">
+                    <div class="flex items-center gap-2">
+                      <input class="rounded-md bg-white/5 px-2 py-0.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 flex-1" v-model="addForm.notes" @click.stop />
+                      <button class="text-green-400 hover:text-green-300 text-sm" @click.stop="saveAdd">✓</button>
+                      <button class="text-gray-400 hover:text-white text-sm" @click.stop="addingPosition = null">✕</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr v-else class="border-t border-white/5">
+                  <td colspan="5" class="py-2 pl-4">
+                    <button type="button" class="text-sm text-gray-500 hover:text-gray-300" @click.stop="startAdd(group.position)">+ {{ t('channel.add') }}</button>
+                  </td>
+                </tr>
+              </tbody>
+              <tbody v-if="groupedChannels.length === 0">
+                <tr v-if="addingPosition === ''" class="border-t border-white/10 bg-white/5" @keydown.escape="addingPosition = null">
+                  <td class="py-2 pr-3 pl-4"><input class="rounded-md bg-white/5 px-2 py-0.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 w-full" v-model="addForm.channel" :placeholder="t('show.channel.nr')" @click.stop /></td>
+                  <td class="px-3 py-2"><input class="rounded-md bg-white/5 px-2 py-0.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 w-full" v-model="addForm.address" :placeholder="t('show.channel.address.example')" @click.stop /></td>
+                  <td class="px-3 py-2"><input class="rounded-md bg-white/5 px-2 py-0.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 w-full" v-model="addForm.device" @click.stop /></td>
+                  <td class="px-3 py-2"><ColorPicker v-model="addForm.color" @click.stop /></td>
+                  <td class="px-3 py-2">
+                    <div class="flex items-center gap-2">
+                      <input class="rounded-md bg-white/5 px-2 py-0.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 flex-1" v-model="addForm.notes" @click.stop />
+                      <button class="text-green-400 hover:text-green-300 text-sm" @click.stop="saveAdd">✓</button>
+                      <button class="text-gray-400 hover:text-white text-sm" @click.stop="addingPosition = null">✕</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr v-else class="border-t border-white/10">
+                  <td colspan="5" class="py-4 pl-4">
+                    <span class="text-sm text-gray-500">{{ t('channel.list.empty') }}</span>
+                    <button type="button" class="ml-3 text-sm text-gray-400 hover:text-white" @click.stop="startAdd('')">+ {{ t('channel.add') }}</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
     </template>
+
+    <!-- Lightbox -->
+    <div v-if="lightboxPhoto" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80" @click="lightboxPhoto = null">
+      <img :src="getPhotoUrl(props.id, lightboxPhoto)" class="max-h-screen max-w-screen-lg object-contain" @click.stop />
+    </div>
   </div>
 </template>
 

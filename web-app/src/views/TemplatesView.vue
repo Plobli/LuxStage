@@ -1,25 +1,51 @@
 <template>
-  <div class="page">
-    <div class="page-header">
-      <h2>{{ t('nav.templates') }}</h2>
-      <button class="btn-primary" @click="openUpload">{{ t('template.upload') }}</button>
-    </div>
-
-    <div v-if="loading" class="loading">{{ t('error.loading') }}</div>
-
-    <div v-else-if="templates.length === 0" class="empty">{{ t('template.list.empty') }}</div>
-
-    <div v-else class="template-list">
-      <div v-for="name in templates" :key="name" class="template-card">
-        <div class="template-card-header">
-          <span class="template-name">{{ templateDisplayName(name) }}</span>
-        </div>
-        <div class="template-card-meta">
-          <button class="btn-ghost-sm" @click="showDetail(name)">{{ t('action.edit') }}</button>
-          <button class="btn-ghost-sm danger" @click="handleDelete(name)">{{ t('action.delete') }}</button>
-        </div>
+  <div>
+    <!-- Page header -->
+    <div class="sm:flex sm:items-center mb-8">
+      <div class="sm:flex-auto">
+        <h1 class="text-base font-semibold text-white">{{ t('nav.templates') }}</h1>
+      </div>
+      <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+        <button
+          type="button"
+          class="rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+          @click="openUpload"
+        >
+          {{ t('template.upload') }}
+        </button>
       </div>
     </div>
+
+    <div v-if="loading" class="text-sm text-gray-400">…</div>
+    <div v-else-if="templates.length === 0" class="text-sm text-gray-400">{{ t('template.list.empty') }}</div>
+
+    <ul v-else role="list" class="divide-y divide-white/10">
+      <li
+        v-for="name in templates"
+        :key="name"
+        class="flex items-center justify-between gap-x-6 py-5"
+      >
+        <div class="min-w-0">
+          <p class="text-sm/6 font-semibold text-white">{{ templateDisplayName(name) || name }}</p>
+        </div>
+        <div class="flex flex-none items-center gap-x-4">
+          <button
+            type="button"
+            class="rounded-md px-2.5 py-1.5 text-sm font-semibold text-white ring-1 ring-white/10 hover:ring-white/20"
+            @click="showDetail(name)"
+          >
+            {{ t('action.edit') }}
+          </button>
+          <button
+            type="button"
+            class="rounded-md px-2.5 py-1.5 text-sm font-semibold text-red-400 ring-1 ring-white/10 hover:ring-red-400/50"
+            @click="handleDelete(name)"
+          >
+            {{ t('action.delete') }}
+          </button>
+        </div>
+      </li>
+    </ul>
 
     <!-- Upload dialog -->
     <dialog ref="uploadDialog" class="modal modal-wide">
@@ -104,67 +130,67 @@
         </div>
 
         <div v-show="activeTab === 'channels'" class="channel-table-wrapper">
-        <table class="channel-table">
-          <thead>
-            <tr>
-              <th class="col-channel">{{ t('field.channel') }}</th>
-              <th class="col-address">{{ t('field.address') }}</th>
-              <th class="col-device">{{ t('field.device') }}</th>
-              <th class="col-position">{{ t('field.position') }}</th>
-              <th class="col-actions"></th>
-            </tr>
-          </thead>
-          <tbody v-for="group in groupedChannels" :key="group.position">
-            <tr class="category-header-row">
-              <td colspan="5">
-                <span class="category-name">{{ group.position || t('channel.no_category') }}</span>
-                <span class="category-count">{{ group.channels.length }}</span>
-              </td>
-            </tr>
-            <tr v-for="ch in group.channels" :key="ch.channel" @click="startEdit(ch)">
-              <td class="col-channel">
-                <input v-if="editingChannel === ch.channel" class="inline-input" v-model="editForm.channel" @click.stop />
-                <template v-else>{{ ch.channel }}</template>
-              </td>
-              <td class="col-address">
-                <input v-if="editingChannel === ch.channel" class="inline-input" v-model="editForm.address" @click.stop />
-                <template v-else>{{ ch.address }}</template>
-              </td>
-              <td class="col-device">
-                <input v-if="editingChannel === ch.channel" class="inline-input inline-input-wide" v-model="editForm.device" @click.stop />
-                <template v-else>{{ ch.device }}</template>
-              </td>
-              <td class="col-position">
-                <input v-if="editingChannel === ch.channel" class="inline-input" v-model="editForm.position" @click.stop />
-                <template v-else>{{ ch.position }}</template>
-              </td>
-              <td class="col-actions" @click.stop>
-                <template v-if="editingChannel === ch.channel">
-                  <button class="btn-ghost-sm" @click="saveEdit(ch)">✓</button>
-                  <button class="btn-ghost-sm" @click="cancelEdit">✕</button>
-                </template>
-                <button v-else class="btn-ghost-sm danger" @click.stop="deleteChannel(ch)">✕</button>
-              </td>
-            </tr>
-            <tr class="add-row-trigger">
-              <td colspan="5">
-                <button type="button" class="btn-ghost-sm" @click.stop="startAdd(group.position)">+ {{ t('channel.add') }}</button>
-              </td>
-            </tr>
-            <tr v-if="addingToPosition === group.position" class="add-row-form">
-              <td><input class="inline-input" v-model="addForm.channel" :placeholder="t('show.channel.nr')" @click.stop /></td>
-              <td><input class="inline-input" v-model="addForm.address" :placeholder="t('show.channel.address.example')" @click.stop /></td>
-              <td><input class="inline-input inline-input-wide" v-model="addForm.device" @click.stop /></td>
-              <td><input class="inline-input" v-model="addForm.position" @click.stop /></td>
-              <td @click.stop>
-                <div class="add-row-actions">
-                  <button class="btn-ghost-sm" @click="confirmAdd">✓</button>
-                  <button class="btn-ghost-sm" @click="cancelAdd">✕</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+          <table class="channel-table">
+            <thead>
+              <tr>
+                <th class="col-channel">{{ t('field.channel') }}</th>
+                <th class="col-address">{{ t('field.address') }}</th>
+                <th class="col-device">{{ t('field.device') }}</th>
+                <th class="col-position">{{ t('field.position') }}</th>
+                <th class="col-actions"></th>
+              </tr>
+            </thead>
+            <tbody v-for="group in groupedChannels" :key="group.position">
+              <tr class="category-header-row">
+                <td colspan="5">
+                  <span class="category-name">{{ group.position || t('channel.no_category') }}</span>
+                  <span class="category-count">{{ group.channels.length }}</span>
+                </td>
+              </tr>
+              <tr v-for="ch in group.channels" :key="ch.channel" @click="startEdit(ch)">
+                <td class="col-channel">
+                  <input v-if="editingChannel === ch.channel" class="inline-input" v-model="editForm.channel" @click.stop />
+                  <template v-else>{{ ch.channel }}</template>
+                </td>
+                <td class="col-address">
+                  <input v-if="editingChannel === ch.channel" class="inline-input" v-model="editForm.address" @click.stop />
+                  <template v-else>{{ ch.address }}</template>
+                </td>
+                <td class="col-device">
+                  <input v-if="editingChannel === ch.channel" class="inline-input inline-input-wide" v-model="editForm.device" @click.stop />
+                  <template v-else>{{ ch.device }}</template>
+                </td>
+                <td class="col-position">
+                  <input v-if="editingChannel === ch.channel" class="inline-input" v-model="editForm.position" @click.stop />
+                  <template v-else>{{ ch.position }}</template>
+                </td>
+                <td class="col-actions" @click.stop>
+                  <template v-if="editingChannel === ch.channel">
+                    <button class="btn-ghost-sm" @click="saveEdit(ch)">✓</button>
+                    <button class="btn-ghost-sm" @click="cancelEdit">✕</button>
+                  </template>
+                  <button v-else class="btn-ghost-sm danger" @click.stop="deleteChannel(ch)">✕</button>
+                </td>
+              </tr>
+              <tr class="add-row-trigger">
+                <td colspan="5">
+                  <button type="button" class="btn-ghost-sm" @click.stop="startAdd(group.position)">+ {{ t('channel.add') }}</button>
+                </td>
+              </tr>
+              <tr v-if="addingToPosition === group.position" class="add-row-form">
+                <td><input class="inline-input" v-model="addForm.channel" :placeholder="t('show.channel.nr')" @click.stop /></td>
+                <td><input class="inline-input" v-model="addForm.address" :placeholder="t('show.channel.address.example')" @click.stop /></td>
+                <td><input class="inline-input inline-input-wide" v-model="addForm.device" @click.stop /></td>
+                <td><input class="inline-input" v-model="addForm.position" @click.stop /></td>
+                <td @click.stop>
+                  <div class="add-row-actions">
+                    <button class="btn-ghost-sm" @click="confirmAdd">✓</button>
+                    <button class="btn-ghost-sm" @click="cancelAdd">✕</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
         <!-- Sections editor -->
@@ -176,10 +202,7 @@
                 <button class="btn-ghost-sm" :disabled="idx === templateSections.length - 1" @click="moveSection(idx, 1)">↓</button>
               </div>
               <input :value="sec.title" :placeholder="t('sections.title.placeholder')" @input="sec.title = $event.target.value" @change="persistSections" />
-              <select class="section-type-select"
-                :value="sec.type"
-                @change="onTypeChange(sec, $event.target.value)"
-              >
+              <select class="section-type-select" :value="sec.type" @change="onTypeChange(sec, $event.target.value)">
                 <option value="markdown">{{ t('sections.type.markdown') }}</option>
                 <option value="fields" :disabled="hasFieldsType() && sec.type !== 'fields'">{{ t('sections.type.fields') }}</option>
               </select>

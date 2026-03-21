@@ -1,10 +1,10 @@
 <template>
-  <div class="h-full">
+  <div class="h-full bg-gray-900">
     <!-- Login-Route: kein Sidebar-Layout -->
     <RouterView v-if="route.meta.public" />
 
     <!-- App-Layout mit Sidebar -->
-    <div v-else class="h-full">
+    <div v-else class="h-full bg-gray-900">
       <!-- Mobile Sidebar (Headless UI Dialog) -->
       <TransitionRoot as="template" :show="sidebarOpen">
         <Dialog class="relative z-50 lg:hidden" @close="sidebarOpen = false">
@@ -121,7 +121,7 @@
       </div>
 
       <!-- Main Content -->
-      <main class="py-10 lg:pl-72">
+      <main class="py-10 lg:pl-72 bg-gray-900 min-h-screen">
         <div class="px-4 sm:px-6 lg:px-8">
           <RouterView />
         </div>

@@ -150,12 +150,11 @@
             <p v-if="photos.length === 0 && !dragging" class="text-sm text-gray-500">{{ t('photo.empty') }}</p>
             <ul role="list" class="grid grid-cols-3 gap-3 sm:grid-cols-4">
               <li v-for="filename in photos" :key="filename" class="relative">
-                <div class="group aspect-square block w-full overflow-hidden rounded-lg bg-gray-700">
+                <div class="group aspect-square block w-full overflow-hidden rounded-lg bg-gray-700 cursor-pointer" @click="openLightbox(filename)">
                   <img
                     :src="getPhotoUrl(props.id, filename)"
                     :alt="filename"
                     class="pointer-events-none object-cover group-hover:opacity-75 w-full h-full"
-                    @click="openLightbox(filename)"
                   />
                 </div>
                 <button

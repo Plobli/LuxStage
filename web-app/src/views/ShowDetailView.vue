@@ -29,7 +29,6 @@
           <div v-if="sec.type === 'fields'" class="fields-editor">
             <div v-for="(field, fidx) in sec.fields" :key="field.key" class="fields-editor-row">
               <input :value="field.label" :placeholder="t('sections.field.label')" @input="field.label = $event.target.value" @change="persistSectionDefs" />
-              <input :value="field.unit" :placeholder="t('sections.field.unit')" style="max-width:80px" @input="field.unit = $event.target.value" @change="persistSectionDefs" />
               <button class="btn-ghost-sm danger" @click="deleteFieldDef(sec, fidx)">✕</button>
             </div>
             <button class="btn-ghost-sm" @click="addFieldDef(sec)">{{ t('sections.field.add') }}</button>
@@ -39,7 +38,7 @@
       </div>
 
       <!-- Sections from show's own section defs -->
-      <template v-if="sortedSections.length > 0">
+      <div v-if="sortedSections.length > 0" class="sections-grid">
         <section v-for="sec in sortedSections" :key="sec.id" class="aufbau-section">
           <div class="aufbau-header">
             <span class="aufbau-label">{{ sec.title }}</span>
@@ -48,7 +47,7 @@
           <!-- fields type -->
           <div v-if="sec.type === 'fields'" class="fields-grid">
             <div v-for="field in sec.fields" :key="field.key" class="fields-grid-row">
-              <label class="fields-grid-label">{{ field.label }}<span v-if="field.unit" class="field-unit"> ({{ field.unit }})</span></label>
+              <label class="fields-grid-label">{{ field.label }}</label>
               <input class="inline-input"
                 :value="parseFieldValue(sec.id, field.key)"
                 @change="onFieldChange(sec.id, field.key, $event.target.value)"
@@ -63,7 +62,7 @@
             @update:modelValue="onSectionChange(sec.id, $event)"
           />
         </section>
-      </template>
+      </div>
 
       <!-- Fallback: single aufbau section if no section defs defined -->
       <section v-else class="aufbau-section">
@@ -223,6 +222,7 @@ import { subscribeChannels } from '../api/client.js'
 import { api } from '../api/client.js'
 import ColorPicker from '../components/ColorPicker.vue'
 import { fetchShowSections, saveShowSections, parseSectionsMd, serializeSectionsMd, fetchShowSectionDefs, saveShowSectionDefs } from '../api/sections.js'
+import { uuid } from '../utils/uuid.js'
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
@@ -251,10 +251,12 @@ const sortedSections = computed(() =>
 
 // ── Editor ─────────────────────────────────────────────────────────────────
 let saveSetupTimer = null
+let pendingSetupMd = null
 
 function onSetupChange(md) {
+  pendingSetupMd = md
   clearTimeout(saveSetupTimer)
-  saveSetupTimer = setTimeout(() => persistSetup(md), 800)
+  saveSetupTimer = setTimeout(() => { persistSetup(md); saveSetupTimer = null }, 800)
 }
 
 async function persistSetup(md) {
@@ -363,6 +365,7 @@ function persistChannels() {
   channelsSaving.value = true
   clearTimeout(channelsSaveTimer)
   channelsSaveTimer = setTimeout(async () => {
+    channelsSaveTimer = null
     try { await saveChannels(props.id, channels.value) }
     finally { channelsSaving.value = false }
   }, 400)
@@ -402,7 +405,7 @@ function onSectionChange(id, value) {
   sectionContents.value = new Map(sectionContents.value)
   sectionContents.value.set(id, value)
   clearTimeout(saveSectionsTimer)
-  saveSectionsTimer = setTimeout(() => persistSections(), 800)
+  saveSectionsTimer = setTimeout(() => { persistSections(); saveSectionsTimer = null }, 800)
 }
 
 async function persistSections() {
@@ -440,7 +443,7 @@ async function persistSectionDefs() {
 
 function addSection() {
   sectionDefs.value.push({
-    id: crypto.randomUUID(),
+    id: uuid(),
     title: '',
     type: 'markdown',
     order: sectionDefs.value.length,
@@ -465,7 +468,7 @@ function moveSectionDef(idx, dir) {
 }
 
 function addFieldDef(section) {
-  section.fields.push({ key: crypto.randomUUID().slice(0, 8), label: '', unit: '' })
+  section.fields.push({ key: uuid().slice(0, 8), label: '' })
   persistSectionDefs()
 }
 
@@ -530,9 +533,9 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   unsubscribeSSE?.()
-  clearTimeout(saveSetupTimer)
-  clearTimeout(channelsSaveTimer)
-  clearTimeout(saveSectionsTimer)
+  if (saveSetupTimer) { clearTimeout(saveSetupTimer); persistSetup(pendingSetupMd) }
+  if (channelsSaveTimer) { clearTimeout(channelsSaveTimer); persistChannels() }
+  if (saveSectionsTimer) { clearTimeout(saveSectionsTimer); persistSections() }
 })
 
 // ── Hilfsfunktionen ────────────────────────────────────────────────────────

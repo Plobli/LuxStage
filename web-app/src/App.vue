@@ -12,6 +12,7 @@
     <main>
       <RouterView />
     </main>
+    <footer v-if="loggedIn" class="app-footer">v{{ version }}</footer>
   </div>
 </template>
 
@@ -20,6 +21,7 @@ import { ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { isLoggedIn, logout } from './api/client.js'
 import { useLocale } from './composables/useLocale.js'
+const version = __APP_VERSION__
 
 const router = useRouter()
 const { t } = useLocale()

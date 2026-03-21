@@ -188,7 +188,6 @@
             <div v-if="sec.type === 'fields'" class="fields-editor">
               <div v-for="(field, fidx) in sec.fields" :key="field.key" class="fields-editor-row">
                 <input :value="field.label" :placeholder="t('sections.field.label')" @input="field.label = $event.target.value" @change="persistSections" />
-                <input :value="field.unit" :placeholder="t('sections.field.unit')" style="max-width:100px" @input="field.unit = $event.target.value" @change="persistSections" />
                 <button class="btn-ghost-sm danger" @click="deleteField(sec, fidx)">✕</button>
               </div>
               <button class="btn-ghost-sm" @click="addField(sec)">{{ t('sections.field.add') }}</button>
@@ -213,6 +212,7 @@ import { fetchTemplates, fetchTemplateChannels, saveTemplate, uploadTemplate, de
 import { parseCsv } from '../api/channels.js'
 import { fetchTemplateSections, saveTemplateSections } from '../api/sections.js'
 import { templateDisplayName } from '../utils/templateName.js'
+import { uuid } from '../utils/uuid.js'
 
 const { t } = useLocale()
 
@@ -344,7 +344,7 @@ async function persistSections() {
 
 function addSection() {
   templateSections.value.push({
-    id: crypto.randomUUID(),
+    id: uuid(),
     title: '',
     type: 'markdown',
     order: templateSections.value.length,
@@ -369,7 +369,7 @@ function moveSection(idx, dir) {
 }
 
 function addField(section) {
-  section.fields.push({ key: crypto.randomUUID().slice(0, 8), label: '', unit: '' })
+  section.fields.push({ key: uuid().slice(0, 8), label: '' })
   persistSections()
 }
 

@@ -78,7 +78,7 @@
             <span class="text-xs text-gray-500 shrink-0">{{ totalVisible }} / {{ channels.length }}</span>
           </div>
           <div>
-            <table class="min-w-full overflow-x-auto" @dragover.prevent="onTableDragOver" @drop.prevent="onTableDrop">
+            <table class="min-w-full overflow-x-auto">
               <colgroup>
                 <col class="w-4" />            <!-- Handle -->
                 <col class="w-16" />           <!-- Kanal + Adresse -->
@@ -97,130 +97,126 @@
                   <th scope="col" class="w-6"></th>
                 </tr>
               </thead>
-              <tbody v-for="group in groupedChannels" :key="group.position">
-                <tr class="border-t border-white/5">
-                  <th colspan="6" scope="colgroup" class="py-2 pr-3 pl-0 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                    <template v-if="editingPosition === group.position">
-                      <input
-                        v-model="editingPositionValue"
-                        autofocus
-                        @blur="savePosition"
-                        @keydown.enter="savePosition"
-                        @keydown.escape="editingPosition = null"
-                        class="bg-transparent border-b border-accent focus:outline-none text-xs font-semibold text-white uppercase tracking-wide w-40"
+              <tbody ref="sortableTbody">
+                <template v-for="group in groupedChannels" :key="group.position">
+                  <!-- Gruppen-Header (nicht sortierbar) -->
+                  <tr class="border-t border-white/5" data-no-drag :data-pos="group.position">
+                    <th colspan="6" scope="colgroup" class="py-2 pr-3 pl-0 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                      <template v-if="editingPosition === group.position">
+                        <input
+                          v-model="editingPositionValue"
+                          autofocus
+                          @blur="savePosition"
+                          @keydown.enter="savePosition"
+                          @keydown.escape="editingPosition = null"
+                          class="bg-transparent border-b border-accent focus:outline-none text-xs font-semibold text-white uppercase tracking-wide w-40"
+                        />
+                      </template>
+                      <template v-else>
+                        <button
+                          type="button"
+                          class="hover:text-white transition-colors"
+                          :title="t('channel.position.edit')"
+                          @click="startEditPosition(group.position)"
+                        >
+                          {{ group.position || t('channel.no_category') }}
+                        </button>
+                        <span class="ml-2 font-normal normal-case text-gray-600">{{ group.channels.length }}</span>
+                      </template>
+                    </th>
+                  </tr>
+                  <!-- Kanal-Zeilen -->
+                  <tr
+                    v-for="ch in group.channels"
+                    :key="ch.channel"
+                    :data-ch-key="ch.channel + '|' + ch.address"
+                    :data-ch-pos="group.position"
+                    :data-nav-row="rowIndexOf(ch)"
+                    class="border-t border-white/5 group/row hover:bg-white/[0.03] transition-colors align-middle"
+                  >
+                    <td class="py-2 pr-0 pl-0 align-middle w-4">
+                      <div class="drag-handle no-print cursor-grab active:cursor-grabbing opacity-0 group-hover/row:opacity-30 hover:!opacity-60 transition-opacity px-1">
+                        <Bars2Icon class="size-3 text-gray-400" />
+                      </div>
+                    </td>
+                    <td class="py-2 pr-3 pl-0 align-middle">
+                      <div class="flex flex-col items-center gap-1">
+                        <input
+                          :value="ch.channel"
+                          @change="ch.channel = $event.target.value; persistChannels()"
+                          :data-nav-row="rowIndexOf(ch)"
+                          data-nav-col="0"
+                          @keydown="onKeydown($event, rowIndexOf(ch), 0, 4, () => startAdd(ch.position))"
+                          :class="dupChannelNrs.has(ch.channel) ? 'ring-1 ring-yellow-400/60 rounded' : ''"
+                          class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[3ch] text-center"
+                        />
+                        <input
+                          :value="ch.address"
+                          @change="ch.address = $event.target.value; persistChannels()"
+                          class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-xs text-gray-500 px-0 border-0 w-[5ch] text-center"
+                        />
+                      </div>
+                    </td>
+                    <td class="px-3 py-2 align-middle">
+                      <ColorAutocomplete
+                        :modelValue="ch.color"
+                        @update:modelValue="ch.color = $event"
+                        @change="persistChannels()"
+                        :placeholder="t('field.color')"
                       />
-                    </template>
-                    <template v-else>
-                      <button
-                        type="button"
-                        class="hover:text-white transition-colors"
-                        :title="t('channel.position.edit')"
-                        @click="startEditPosition(group.position)"
-                      >
-                        {{ group.position || t('channel.no_category') }}
-                      </button>
-                      <span class="ml-2 font-normal normal-case text-gray-600">{{ group.channels.length }}</span>
-                    </template>
-                  </th>
-                </tr>
-                <tr
-                  v-for="ch in group.channels"
-                  :key="ch.channel"
-                  :data-nav-row="rowIndexOf(ch)"
-                  :data-ch-idx="channels.indexOf(ch)"
-                  @dragend="onRowDragEnd"
-                  :class="[
-                    'border-t border-white/5 group/row hover:bg-white/[0.03] transition-colors align-middle',
-                    dragOverIndex === channels.indexOf(ch) && dragSrcIndex !== channels.indexOf(ch) ? 'border-t-2 border-t-accent' : ''
-                  ]"
-                >
-                  <td class="py-2 pr-0 pl-0 align-middle w-4">
-                    <div
-                      draggable="true"
-                      @dragstart="onRowDragStart($event, ch)"
-                      class="no-print cursor-grab active:cursor-grabbing opacity-0 group-hover/row:opacity-30 hover:!opacity-60 transition-opacity px-1"
-                    >
-                      <Bars2Icon class="size-3 text-gray-400" />
-                    </div>
-                  </td>
-                  <td class="py-2 pr-3 pl-0 align-middle">
-                    <div class="flex flex-col items-center gap-1">
-                      <input
-                        :value="ch.channel"
-                        @change="ch.channel = $event.target.value; persistChannels()"
+                    </td>
+                    <td class="px-3 py-0 align-middle">
+                      <textarea
+                        :value="ch.device"
+                        @change="ch.device = $event.target.value; persistChannels()"
                         :data-nav-row="rowIndexOf(ch)"
-                        data-nav-col="0"
-                        @keydown="onKeydown($event, rowIndexOf(ch), 0, 4, () => startAdd(ch.position))"
-                        :class="dupChannelNrs.has(ch.channel) ? 'ring-1 ring-yellow-400/60 rounded' : ''"
-                        class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[3ch] text-center"
+                        data-nav-col="2"
+                        @keydown="onKeydown($event, rowIndexOf(ch), 2, 4, null)"
+                        class="bg-white/[0.04] focus:bg-white/[0.07] focus:outline-none focus:ring-0 text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle rounded"
                       />
-                      <input
-                        :value="ch.address"
-                        @change="ch.address = $event.target.value; persistChannels()"
-                        class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-xs text-gray-500 px-0 border-0 w-[5ch] text-center"
+                    </td>
+                    <td class="px-3 py-0 align-middle">
+                      <textarea
+                        :value="ch.notes"
+                        @change="ch.notes = $event.target.value; persistChannels()"
+                        :data-nav-row="rowIndexOf(ch)"
+                        data-nav-col="3"
+                        @keydown="onKeydown($event, rowIndexOf(ch), 3, 4, () => startAdd(ch.position))"
+                        class="bg-white/[0.04] focus:bg-white/[0.07] focus:outline-none focus:ring-0 text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle rounded"
                       />
-                    </div>
-                  </td>
-                  <td class="px-3 py-2 align-middle">
-                    <ColorAutocomplete
-                      :modelValue="ch.color"
-                      @update:modelValue="ch.color = $event"
-                      @change="persistChannels()"
-                      :placeholder="t('field.color')"
-                    />
-                  </td>
-                  <td class="px-3 py-0 align-middle">
-                    <textarea
-                      :value="ch.device"
-                      @change="ch.device = $event.target.value; persistChannels()"
-                      :data-nav-row="rowIndexOf(ch)"
-                      data-nav-col="2"
-                      @keydown="onKeydown($event, rowIndexOf(ch), 2, 4, null)"
-                      class="bg-white/[0.04] focus:bg-white/[0.07] focus:outline-none focus:ring-0 text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle rounded"
-                    />
-                  </td>
-                  <td class="px-3 py-0 align-middle">
-                    <textarea
-                      :value="ch.notes"
-                      @change="ch.notes = $event.target.value; persistChannels()"
-                      :data-nav-row="rowIndexOf(ch)"
-                      data-nav-col="3"
-                      @keydown="onKeydown($event, rowIndexOf(ch), 3, 4, () => startAdd(ch.position))"
-                      class="bg-white/[0.04] focus:bg-white/[0.07] focus:outline-none focus:ring-0 text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle rounded"
-                    />
-                  </td>
-                  <td class="pl-2 pr-1" style="vertical-align: middle; text-align: center;">
-                    <button class="no-print text-gray-600 hover:text-red-400 opacity-0 group-hover/row:opacity-100 transition-opacity" @click="deleteChannel(ch)" :title="t('action.delete')">
-                      <TrashIcon class="block size-4" />
-                    </button>
-                  </td>
-                </tr>
-                <tr class="no-print border-t border-white/5">
-                  <td colspan="6" class="py-2 pl-0">
-                    <button type="button" class="text-sm text-gray-600 hover:text-gray-300" @click="startAdd(group.position)">+ {{ t('channel.add') }}</button>
-                  </td>
-                </tr>
-                <tr v-if="addingPosition === group.position" class="border-t border-white/5 bg-white/5" @keydown.escape="addingPosition = null" @keydown.enter.prevent="saveAdd">
-                  <td class="py-2 pr-3 pl-0 align-middle">
-                    <div class="flex flex-col items-center gap-1">
-                      <input autofocus class="bg-transparent focus:outline-none text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[3ch] text-center" v-model="addForm.channel" :placeholder="t('show.channel.nr')" />
-                      <input class="bg-transparent focus:outline-none text-xs text-gray-500 px-0 border-0 w-[5ch] text-center" v-model="addForm.address" :placeholder="t('show.channel.address.example')" />
-                    </div>
-                  </td>
-                  <td class="px-3 py-2 align-middle">
-                    <ColorAutocomplete
-                      v-model="addForm.color"
-                      @change="() => {}"
-                      :placeholder="t('field.color')"
-                    />
-                  </td>
-                  <td class="px-3 py-0 align-middle"><textarea class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle" v-model="addForm.device" /></td>
-                  <td class="px-3 py-0 align-middle"><textarea class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle" v-model="addForm.notes" /></td>
-                  <td class="py-2 pl-2 pr-0 align-middle"><button class="text-green-400 hover:text-green-300 text-sm" @click="saveAdd">✓</button></td>
-                </tr>
+                    </td>
+                    <td class="pl-2 pr-1" style="vertical-align: middle; text-align: center;">
+                      <button class="no-print text-gray-600 hover:text-red-400 opacity-0 group-hover/row:opacity-100 transition-opacity" @click="deleteChannel(ch)" :title="t('action.delete')">
+                        <TrashIcon class="block size-4" />
+                      </button>
+                    </td>
+                  </tr>
+                  <!-- Zeile hinzufügen -->
+                  <tr class="no-print border-t border-white/5" data-no-drag>
+                    <td colspan="6" class="py-2 pl-0">
+                      <button type="button" class="text-sm text-gray-600 hover:text-gray-300" @click="startAdd(group.position)">+ {{ t('channel.add') }}</button>
+                    </td>
+                  </tr>
+                  <tr v-if="addingPosition === group.position" class="border-t border-white/5 bg-white/5" data-no-drag @keydown.escape="addingPosition = null" @keydown.enter.prevent="saveAdd">
+                    <td class="w-4"></td>
+                    <td class="py-2 pr-3 pl-0 align-middle">
+                      <div class="flex flex-col items-center gap-1">
+                        <input autofocus class="bg-transparent focus:outline-none text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[3ch] text-center" v-model="addForm.channel" :placeholder="t('show.channel.nr')" />
+                        <input class="bg-transparent focus:outline-none text-xs text-gray-500 px-0 border-0 w-[5ch] text-center" v-model="addForm.address" :placeholder="t('show.channel.address.example')" />
+                      </div>
+                    </td>
+                    <td class="px-3 py-2 align-middle">
+                      <ColorAutocomplete v-model="addForm.color" @change="() => {}" :placeholder="t('field.color')" />
+                    </td>
+                    <td class="px-3 py-0 align-middle"><textarea class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle" v-model="addForm.device" /></td>
+                    <td class="px-3 py-0 align-middle"><textarea class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle" v-model="addForm.notes" /></td>
+                    <td class="py-2 pl-2 pr-0 align-middle"><button class="text-green-400 hover:text-green-300 text-sm" @click="saveAdd">✓</button></td>
+                  </tr>
+                </template>
               </tbody>
               <tbody v-if="groupedChannels.length === 0">
                 <tr v-if="addingPosition === ''" class="border-t border-white/5 bg-white/5" @keydown.escape="addingPosition = null" @keydown.enter.prevent="saveAdd">
+                  <td class="w-4"></td>
                   <td class="py-2 pr-3 pl-0 align-middle">
                     <div class="flex flex-col items-center gap-1">
                       <input autofocus class="bg-transparent focus:outline-none text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[3ch] text-center" v-model="addForm.channel" :placeholder="t('show.channel.nr')" />
@@ -381,7 +377,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLocale } from '../composables/useLocale.js'
 import { useConfirm } from '../composables/useConfirm.js'
@@ -389,7 +385,8 @@ import { useKeyboardNav } from '../composables/useKeyboardNav.js'
 import MarkdownEditor from '../components/MarkdownEditor.vue'
 import SectionHeading from '../components/SectionHeading.vue'
 import { MagnifyingGlassIcon } from '@heroicons/vue/20/solid'
-import { TrashIcon, Bars2Icon } from '@heroicons/vue/24/outline'
+import { TrashIcon, Bars2Icon, ArrowUturnLeftIcon, ArrowUturnRightIcon } from '@heroicons/vue/24/outline'
+import { useUndoRedo } from '../composables/useUndoRedo.js'
 import { fetchShow, updateContent } from '../api/shows.js'
 import { fetchChannels, saveChannels, downloadChannelsCsv } from '../api/channels.js'
 import { fetchPhotos, uploadPhoto, deletePhoto, getPhotoUrl } from '../api/photos.js'
@@ -398,6 +395,7 @@ import { api } from '../api/client.js'
 import { fetchShowSections, saveShowSections, parseSectionsMd, serializeSectionsMd, fetchShowSectionDefs, saveShowSectionDefs } from '../api/sections.js'
 import { uuid } from '../utils/uuid.js'
 import ColorAutocomplete from '../components/ColorAutocomplete.vue'
+import Sortable from 'sortablejs'
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
@@ -412,6 +410,7 @@ const setupMarkdown = ref('') // Aufbau-Abschnitt aus .md-Datei
 const channels = ref([])
 const photos = ref([])
 
+const sortableTbody = ref(null)
 const search = ref('')
 const setupSaving = ref(false)
 const channelsSaving = ref(false)
@@ -423,6 +422,39 @@ const sectionContents = ref(new Map())
 const sectionsSaving = ref(false)
 const editingSections = ref(false)
 let saveSectionsTimer = null
+
+// ── Undo/Redo ──────────────────────────────────────────────────────────────
+const { pushSnapshot, pushSnapshotDebounced, cancelDebounce, undo, redo, canUndo, canRedo } =
+  useUndoRedo(
+    // getState
+    () => ({
+      channels: channels.value,
+      sectionContents: [...sectionContents.value.entries()],
+      sectionDefs: sectionDefs.value,
+      meta: meta.value,
+      setupMarkdown: setupMarkdown.value,
+    }),
+    // applyState
+    (snap) => {
+      channels.value = snap.channels
+      sectionContents.value = new Map(snap.sectionContents)
+      sectionDefs.value = snap.sectionDefs
+      meta.value = snap.meta
+      setupMarkdown.value = snap.setupMarkdown
+    },
+    // cancelPendingSaves
+    () => {
+      clearTimeout(channelsSaveTimer); channelsSaveTimer = null
+      clearTimeout(saveSetupTimer);    saveSetupTimer = null
+      clearTimeout(saveSectionsTimer); saveSectionsTimer = null
+    },
+    // saveNow
+    () => {
+      persistChannels()
+      persistSetup(setupMarkdown.value)
+      persistSections()
+    }
+  )
 
 // ── Position-Bearbeitung ───────────────────────────────────────────────────────
 const editingPosition = ref(null)
@@ -515,38 +547,50 @@ const groupedChannels = computed(() => {
   return [...map.entries()].map(([position, channels]) => ({ position, channels }))
 })
 
-// ── Drag & Drop zum Umsortieren ────────────────────────────────────────────
-const dragSrcIndex = ref(null) // Index in channels.value
-const dragOverIndex = ref(null)
+// ── Drag & Drop zum Umsortieren (SortableJS direkt) ────────────────────────
+let sortableInstance = null
 
-function onRowDragStart(e, ch) {
-  dragSrcIndex.value = channels.value.indexOf(ch)
-  e.dataTransfer.effectAllowed = 'move'
+function initSortable() {
+  sortableInstance?.destroy()
+  sortableInstance = null
+  if (!sortableTbody.value) return
+  sortableInstance = Sortable.create(sortableTbody.value, {
+    handle: '.drag-handle',
+    filter: '[data-no-drag]',
+    preventOnFilter: false,
+    animation: 150,
+    onStart() {
+      // Vue-Rendering während Drag pausieren um DOM-Konflikte zu vermeiden
+      sortableInstance.option('disabled', false)
+    },
+    onEnd() {
+      // DOM-Reihenfolge auslesen → channels neu aufbauen
+      const keyToChannel = new Map(channels.value.map(c => [c.channel + '|' + c.address, c]))
+      const reordered = []
+      let currentPos = ''
+      for (const tr of sortableTbody.value.rows) {
+        if (tr.hasAttribute('data-no-drag') && 'pos' in tr.dataset) {
+          currentPos = tr.dataset.pos
+        }
+        const key = tr.dataset.chKey
+        if (key && keyToChannel.has(key)) {
+          const ch = keyToChannel.get(key)
+          ch.position = currentPos
+          reordered.push(ch)
+        }
+      }
+      if (reordered.length === channels.value.length) {
+        channels.value.splice(0, channels.value.length, ...reordered)
+      }
+      persistChannels()
+      // Nach Vue-Render Sortable neu binden (DOM wurde durch Vue gepatcht)
+      nextTick(initSortable)
+    }
+  })
 }
 
-function onTableDragOver(e) {
-  const tr = e.target.closest('tr[data-ch-idx]')
-  dragOverIndex.value = tr ? parseInt(tr.dataset.chIdx) : null
-}
-
-function onTableDrop(e) {
-  const tr = e.target.closest('tr[data-ch-idx]')
-  const to = tr ? parseInt(tr.dataset.chIdx) : null
-  const from = dragSrcIndex.value
-  if (from === null || to === null || from === to) { dragOverIndex.value = null; return }
-  const arr = [...channels.value]
-  const [item] = arr.splice(from, 1)
-  arr.splice(to, 0, item)
-  channels.value = arr
-  persistChannels()
-  dragSrcIndex.value = null
-  dragOverIndex.value = null
-}
-
-function onRowDragEnd() {
-  dragSrcIndex.value = null
-  dragOverIndex.value = null
-}
+// Sortable nach externen channels-Updates neu binden (z.B. SSE-Reload)
+watch(() => channels.value.length, () => nextTick(initSortable))
 
 const totalVisible = computed(() => groupedChannels.value.reduce((s, g) => s + g.channels.length, 0))
 
@@ -782,6 +826,10 @@ onMounted(async () => {
       }
     }
   })
+
+  // Drag & Drop initialisieren
+  await nextTick()
+  initSortable()
 
   // Scroll-Position wiederherstellen
   const scrollKey = `scroll_${props.id}`

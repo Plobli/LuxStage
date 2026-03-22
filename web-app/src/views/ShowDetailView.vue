@@ -581,9 +581,9 @@ function initSortable() {
         }
       }
       if (reordered.length === channels.value.length) {
+        pushSnapshot()
         channels.value.splice(0, channels.value.length, ...reordered)
       }
-      pushSnapshot()
       persistChannels()
       // Nach Vue-Render Sortable neu binden (DOM wurde durch Vue gepatcht)
       nextTick(initSortable)

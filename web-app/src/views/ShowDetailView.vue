@@ -27,7 +27,7 @@
         </div>
       </div>
       <div class="h-6 w-px bg-white/10 shrink-0" aria-hidden="true"></div>
-      <div class="flex items-center gap-x-3 shrink-0">
+      <div class="no-print flex items-center gap-x-3 shrink-0">
         <button
           type="button"
           :class="editingSections ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'"
@@ -38,7 +38,7 @@
         </button>
         <button
           type="button"
-          class="no-print rounded-md px-3 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20"
+          class="rounded-md px-3 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20"
           @click="downloadChannelsCsv(props.id, channels)"
         >
           {{ t('channel.export') }}
@@ -161,10 +161,10 @@
                     />
                   </td>
                   <td class="py-2 pl-2 pr-0 align-middle">
-                    <button class="text-gray-600 hover:text-red-400 text-xs opacity-0 group-hover/row:opacity-100 transition-opacity" @click="deleteChannel(ch)" :title="t('action.delete')">✕</button>
+                    <button class="no-print text-gray-600 hover:text-red-400 text-xs opacity-0 group-hover/row:opacity-100 transition-opacity" @click="deleteChannel(ch)" :title="t('action.delete')">✕</button>
                   </td>
                 </tr>
-                <tr class="border-t border-white/5">
+                <tr class="no-print border-t border-white/5">
                   <td colspan="5" class="py-2 pl-0">
                     <button type="button" class="text-sm text-gray-600 hover:text-gray-300" @click="startAdd(group.position)">+ {{ t('channel.add') }}</button>
                   </td>

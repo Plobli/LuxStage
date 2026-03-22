@@ -10,3 +10,40 @@
 :root {
   color-scheme: dark;
 }
+
+@media print {
+  /* Sidebar, Navbar, Aside, Buttons ausblenden */
+  nav, aside, header, .no-print { display: none !important; }
+
+  /* Hauptinhalt volle Breite */
+  main { padding: 0 !important; margin: 0 !important; }
+  .xl\:pl-\[28rem\] { padding-left: 0 !important; }
+
+  /* Tabellenkopf auf jeder Seite wiederholen */
+  thead { display: table-header-group; }
+
+  /* Seitenumbruch nicht mitten in einer Zeile */
+  tr { break-inside: avoid; }
+
+  /* Gruppenheader nicht als letztes Element auf einer Seite */
+  tbody tr:first-child { break-after: avoid; }
+
+  /* Farbige Badges sichtbar machen */
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* Inputs/Textareas als normaler Text */
+  input, textarea {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    resize: none !important;
+  }
+
+  /* Buttons ausblenden */
+  button { display: none !important; }
+
+  /* Schrift schwarz auf weiß */
+  body { background: white !important; color: black !important; }
+  table { color: black !important; }
+  th, td { color: black !important; border-color: #ccc !important; }
+}

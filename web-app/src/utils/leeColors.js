@@ -38,7 +38,11 @@ function contrastColor(hex) {
   return l > 0.5 ? '#000000' : '#ffffff'
 }
 
-/** Vollständige Liste aller Lee-Filter mit Code, Name und Hex für Autocomplete */
-export const LEE_FILTERS = filters
-  .filter(f => f.brand === 'Lee')
-  .map(f => ({ code: f.code, name: f.name, hex: f.hex || null }))
+/** Vollständige Liste aller Lee-Filter mit Code, Name und Hex für Autocomplete (dedupliziert) */
+export const LEE_FILTERS = Array.from(
+  new Map(
+    filters
+      .filter(f => f.brand === 'Lee')
+      .map(f => [f.code, { code: f.code, name: f.name, hex: f.hex || null }])
+  ).values()
+)

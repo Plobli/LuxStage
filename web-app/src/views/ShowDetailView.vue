@@ -80,6 +80,7 @@
           <div>
             <table class="min-w-full overflow-x-auto">
               <colgroup>
+                <col class="w-4" />            <!-- Handle -->
                 <col class="w-16" />           <!-- Kanal + Adresse -->
                 <col class="w-20" />           <!-- Farbe -->
                 <col class="w-[30ch]" />       <!-- Gerät -->
@@ -88,6 +89,7 @@
               </colgroup>
               <thead class="sticky top-16 z-10 bg-gray-950">
                 <tr class="border-b border-white/10">
+                  <th class="w-4"></th>
                   <th scope="col" class="py-3 pr-3 pl-0 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ t('field.channel') }}</th>
                   <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ t('field.color') }}</th>
                   <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ t('field.device') }}</th>

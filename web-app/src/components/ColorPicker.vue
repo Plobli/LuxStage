@@ -3,7 +3,7 @@
     v-model="value"
     type="text"
     placeholder="z.B. 201 / R02"
-    class="inline-input inline-input-color"
+    class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-gray-300 w-full h-[45px] px-2 border-0"
     @click.stop
   />
 </template>

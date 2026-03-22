@@ -15,6 +15,7 @@
       <!-- Suchfeld rechtsbündig -->
       <div class="flex items-center gap-x-3 shrink-0">
         <span v-if="dupWarning" class="text-xs text-yellow-400">⚠ {{ t('channel.dup_address') }}</span>
+        <span v-if="dupChannelWarning" class="text-xs text-yellow-400">⚠ {{ t('channel.dup_channel') }}</span>
         <div class="grid grid-cols-1">
           <input
             v-model="search"
@@ -98,6 +99,7 @@
                       <input
                         :value="ch.channel"
                         @change="ch.channel = $event.target.value; persistChannels()"
+                        :class="dupChannelNrs.has(ch.channel) ? 'ring-1 ring-yellow-400/60 rounded' : ''"
                         class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[3ch] text-center"
                       />
                       <input
@@ -368,6 +370,18 @@ const dupWarning = computed(() => {
   const addresses = channels.value.map(c => c.address).filter(Boolean)
   return addresses.length !== new Set(addresses).size
 })
+
+const dupChannelNrs = computed(() => {
+  const seen = new Set()
+  const dups = new Set()
+  for (const ch of channels.value) {
+    if (ch.channel && seen.has(ch.channel)) dups.add(ch.channel)
+    seen.add(ch.channel)
+  }
+  return dups
+})
+
+const dupChannelWarning = computed(() => dupChannelNrs.value.size > 0)
 
 // ── Kanäle gruppiert ───────────────────────────────────────────────────────
 const groupedChannels = computed(() => {

@@ -1,7 +1,11 @@
 {
   "app.name": "LuxStage",
 
+  "action.undo": "Rückgängig (⌘Z)",
+  "action.redo": "Wiederherstellen (⌘⇧Z)",
+
   "nav.shows": "Shows",
+  "nav.archive": "Archiv",
   "nav.templates": "Vorlagen",
   "nav.settings": "Einstellungen",
   "nav.logout": "Abmelden",
@@ -19,8 +23,9 @@
   "show.date": "Datum",
   "show.template": "Spielort",
   "show.template.none": "Kein Spielort",
-  "show.archived": "Archiviert",
+  "show.archived": "Archivierte Shows",
   "show.archive": "Archivieren",
+  "show.restore": "Wiederherstellen",
   "show.unarchive": "Wiederherstellen",
   "show.delete": "Löschen",
   "show.channels": "Kanäle",
@@ -29,6 +34,7 @@
   "show.edit": "Show bearbeiten",
   "show.list.empty": "Noch keine Shows vorhanden.",
   "show.list.archived_empty": "Keine archivierten Shows.",
+  "show.archive.empty": "Keine archivierten Shows",
   "show.setup": "Aufbau",
   "show.setup.placeholder": "Aufbaunotizen, Besonderheiten, Hinweise …",
 
@@ -54,6 +60,9 @@
   "channel.edit": "Kanal bearbeiten",
   "channel.search": "Suchen …",
   "channel.dup_address": "Doppelte DMX-Adresse!",
+  "channel.dup_channel": "Doppelte Kanalnummer!",
+  "channel.export": "CSV exportieren",
+  "channel.position.edit": "Position umbenennen",
 
   "template.new": "Neue Vorlage",
   "template.upload": "CSV hochladen",
@@ -164,5 +173,8 @@
   "editor.italic": "I",
   "editor.heading": "Überschrift",
   "editor.list.bullet": "• Liste",
-  "editor.list.ordered": "1. Liste"
+  "editor.list.ordered": "1. Liste",
+
+  "tab.channels": "Kanäle",
+  "tab.info": "Info & Fotos"
 }

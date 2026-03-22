@@ -1,23 +1,5 @@
 [
   {
-    "brand": "Lee",
-    "code": "L200",
-    "name": "Double CT Blue",
-    "hex": "#92affb"
-  },
-  {
-    "brand": "Lee",
-    "code": "L201",
-    "name": "Full CT Blue",
-    "hex": "#a0d0f0"
-  },
-  {
-    "brand": "Lee",
-    "code": "L202",
-    "name": "1/2 CT Blue",
-    "hex": "#a9daf9"
-  },
-  {
     "brand": "Rosco",
     "code": "R00",
     "name": "Clear"
@@ -1176,7 +1158,7 @@
     "brand": "Lee",
     "code": "L200",
     "name": "Double CT Blue",
-    "hex": "#c0e0f8"
+    "hex": "#7d95d1"
   },
   {
     "brand": "Lee",

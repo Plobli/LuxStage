@@ -75,13 +75,11 @@
                   </div>
                 </td>
                 <td class="px-3 py-2 align-middle">
-                  <input
-                    :value="ch.color"
-                    @change="ch.color = $event.target.value; persist()"
+                  <ColorAutocomplete
+                    :modelValue="ch.color"
+                    @update:modelValue="ch.color = $event"
+                    @change="persist()"
                     :placeholder="t('field.color')"
-                    :style="filterBadgeStyle(ch.color) || {}"
-                    :class="filterBadgeStyle(ch.color) ? 'font-semibold' : 'bg-white/10 text-gray-400 placeholder:text-gray-600'"
-                    class="focus:outline-none text-xs rounded-full px-2 py-0.5 border-0 w-16 text-center"
                   />
                 </td>
                 <td class="px-3 py-0 align-middle">
@@ -114,7 +112,11 @@
                   </div>
                 </td>
                 <td class="px-3 py-2 align-middle">
-                  <input class="bg-white/10 focus:outline-none text-xs text-gray-400 rounded-full px-2 py-0.5 border-0 w-16 text-center placeholder:text-gray-600" v-model="addForm.color" :placeholder="t('field.color')" />
+                  <ColorAutocomplete
+                    v-model="addForm.color"
+                    @change="() => {}"
+                    :placeholder="t('field.color')"
+                  />
                 </td>
                 <td class="px-3 py-0 align-middle"><textarea class="bg-white/[0.04] focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle rounded" v-model="addForm.device" /></td>
                 <td class="px-3 py-0 align-middle"><input class="bg-white/[0.04] focus:outline-none text-sm text-gray-300 w-full px-2 border-0 rounded h-14" v-model="addForm.position" /></td>
@@ -130,7 +132,13 @@
                     <input class="bg-transparent focus:outline-none text-xs text-gray-500 px-0 border-0 w-[5ch] text-center" v-model="addForm.address" />
                   </div>
                 </td>
-                <td class="px-3 py-2 align-middle"><input class="bg-white/10 focus:outline-none text-xs text-gray-400 rounded-full px-2 py-0.5 border-0 w-16 text-center placeholder:text-gray-600" v-model="addForm.color" :placeholder="t('field.color')" /></td>
+                <td class="px-3 py-2 align-middle">
+                  <ColorAutocomplete
+                    v-model="addForm.color"
+                    @change="() => {}"
+                    :placeholder="t('field.color')"
+                  />
+                </td>
                 <td class="px-3 py-0 align-middle"><textarea class="bg-white/[0.04] focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle rounded" v-model="addForm.device" /></td>
                 <td class="px-3 py-0 align-middle"><input class="bg-white/[0.04] focus:outline-none text-sm text-gray-300 w-full px-2 border-0 rounded h-14" v-model="addForm.position" /></td>
                 <td class="px-3 py-0 align-middle"><textarea class="bg-white/[0.04] focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle rounded" v-model="addForm.notes" /></td>
@@ -300,7 +308,7 @@ import { fetchTemplates, fetchTemplateChannels, saveTemplate, uploadTemplate, de
 import { parseCsv } from '../api/channels.js'
 import { fetchTemplateSections, saveTemplateSections } from '../api/sections.js'
 import { templateDisplayName } from '../utils/templateName.js'
-import { filterBadgeStyle } from '../utils/leeColors.js'
+import ColorAutocomplete from '../components/ColorAutocomplete.vue'
 import { uuid } from '../utils/uuid.js'
 
 const { t } = useLocale()

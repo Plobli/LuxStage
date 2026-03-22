@@ -1,7 +1,11 @@
 {
   "app.name": "LuxStage",
 
+  "action.undo": "Undo (⌘Z)",
+  "action.redo": "Redo (⌘⇧Z)",
+
   "nav.shows": "Shows",
+  "nav.archive": "Archive",
   "nav.templates": "Templates",
   "nav.settings": "Settings",
   "nav.logout": "Log out",
@@ -19,8 +23,9 @@
   "show.date": "Date",
   "show.template": "Venue",
   "show.template.none": "No venue",
-  "show.archived": "Archived",
+  "show.archived": "Archived Shows",
   "show.archive": "Archive",
+  "show.restore": "Restore",
   "show.unarchive": "Restore",
   "show.delete": "Delete",
   "show.channels": "Channels",
@@ -29,6 +34,7 @@
   "show.edit": "Edit show",
   "show.list.empty": "No shows yet.",
   "show.list.archived_empty": "No archived shows.",
+  "show.archive.empty": "No archived shows",
   "show.setup": "Setup",
   "show.setup.placeholder": "Setup notes, special conditions, remarks …",
 
@@ -54,6 +60,9 @@
   "channel.edit": "Edit channel",
   "channel.search": "Search …",
   "channel.dup_address": "Duplicate DMX address!",
+  "channel.dup_channel": "Duplicate channel number!",
+  "channel.export": "Export CSV",
+  "channel.position.edit": "Rename position",
 
   "template.new": "New template",
   "template.upload": "Upload CSV",
@@ -164,5 +173,8 @@
   "editor.italic": "I",
   "editor.heading": "Heading",
   "editor.list.bullet": "• List",
-  "editor.list.ordered": "1. List"
+  "editor.list.ordered": "1. List",
+
+  "tab.channels": "Channels",
+  "tab.info": "Info & Photos"
 }

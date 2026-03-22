@@ -116,6 +116,28 @@ export async function router(req, res) {
       return // res bleibt offen
     }
 
+    // ── Shows — Archiv-Liste ───────────────────────────────────────────────
+    if (method === 'GET' && pathname === '/api/shows/archived') {
+      const user = requireAuth(req, res); if (!user) return
+      const ids = await io.listArchivedShows()
+      const shows = await Promise.all(ids.map(async id => {
+        try {
+          const content = await io.readArchivedShow(id)
+          const fm = parseFrontmatter(content)
+          return { id, ...fm }
+        } catch { return { id } }
+      }))
+      return json(res, 200, shows)
+    }
+
+    // ── Shows — Wiederherstellen ───────────────────────────────────────────
+    if (method === 'POST' && pathname.match(/^\/api\/shows\/([^/]+)\/restore$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const id = pathname.split('/')[3]
+      await io.restoreShow(id)
+      return json(res, 200, { ok: true })
+    }
+
     // ── Shows — Archivieren ────────────────────────────────────────────────
     if (method === 'DELETE' && pathname.match(/^\/api\/shows\/([^/]+)$/)) {
       const user = requireAuth(req, res); if (!user) return

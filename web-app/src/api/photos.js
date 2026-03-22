@@ -10,16 +10,25 @@ export async function fetchPhotos(showId) {
   return api.get(`/api/shows/${showId}/photos`)
 }
 
-export async function uploadPhoto(showId, file) {
-  const formData = new FormData()
-  formData.append('photo', file, file.name)
-  const res = await fetch(`${BASE()}/api/shows/${showId}/photos`, {
-    method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + getToken() },
-    body: formData,
+export function uploadPhoto(showId, file, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', `${BASE()}/api/shows/${showId}/photos`)
+    xhr.setRequestHeader('Authorization', 'Bearer ' + getToken())
+    if (onProgress) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress(Math.round(e.loaded / e.total * 100))
+      }
+    }
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve(JSON.parse(xhr.responseText))
+      else reject(new Error(`Upload fehlgeschlagen: ${xhr.status}`))
+    }
+    xhr.onerror = () => reject(new Error('Netzwerkfehler'))
+    const formData = new FormData()
+    formData.append('photo', file, file.name)
+    xhr.send(formData)
   })
-  if (!res.ok) throw new Error(`Upload fehlgeschlagen: ${res.status}`)
-  return res.json()
 }
 
 export async function deletePhoto(showId, filename) {

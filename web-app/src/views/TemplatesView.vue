@@ -1,53 +1,233 @@
 <template>
   <div class="px-4 py-10 sm:px-6 lg:px-8">
-    <!-- Page header -->
-    <div class="sm:flex sm:items-center mb-8">
-      <div class="sm:flex-auto">
-        <h1 class="text-base font-semibold text-white">{{ t('nav.templates') }}</h1>
-      </div>
-      <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-        <button
-          type="button"
-          class="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-          @click="openUpload"
-        >
-          {{ t('template.upload') }}
+
+    <!-- Detail-Ansicht (wenn eine Vorlage ausgewählt) -->
+    <template v-if="editingName">
+      <!-- Header -->
+      <div class="flex items-center gap-x-4 mb-8">
+        <button type="button" class="text-gray-400 hover:text-white" @click="editingName = null">
+          <svg class="size-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M17 10a.75.75 0 0 1-.75.75H5.612l4.158 3.96a.75.75 0 1 1-1.04 1.08l-5.5-5.25a.75.75 0 0 1 0-1.08l5.5-5.25a.75.75 0 1 1 1.04 1.08L5.612 9.25H16.25A.75.75 0 0 1 17 10Z" clip-rule="evenodd" /></svg>
         </button>
+        <h1 class="text-base font-semibold text-white">{{ templateDisplayName(editingName) || editingName }}</h1>
+        <span v-if="detailSaving || sectionsSaving" class="text-xs text-gray-500">…</span>
+
+        <!-- Tab-Switcher -->
+        <div class="ml-auto flex gap-1 border-b border-white/10 -mb-10 pb-0">
+          <button
+            :class="['px-4 py-2 text-sm font-medium border-b-2 -mb-px', activeTab === 'channels' ? 'border-accent text-white' : 'border-transparent text-gray-400 hover:text-white']"
+            @click="activeTab = 'channels'"
+          >{{ t('show.channels') }}</button>
+          <button
+            :class="['px-4 py-2 text-sm font-medium border-b-2 -mb-px', activeTab === 'sections' ? 'border-accent text-white' : 'border-transparent text-gray-400 hover:text-white']"
+            @click="activeTab = 'sections'"
+          >{{ t('sections.btn') }}</button>
+        </div>
       </div>
-    </div>
 
-    <div v-if="loading" class="text-sm text-gray-400">…</div>
-    <div v-else-if="templates.length === 0" class="text-sm text-gray-400">{{ t('template.list.empty') }}</div>
+      <div v-if="detailLoading" class="text-sm text-gray-400">…</div>
 
-    <ul v-else role="list" class="divide-y divide-white/10">
-      <li
-        v-for="name in templates"
-        :key="name"
-        class="flex items-center justify-between gap-x-6 py-5"
-      >
-        <div class="min-w-0">
-          <p class="text-sm/6 font-semibold text-white">{{ templateDisplayName(name) || name }}</p>
+      <template v-else>
+        <!-- Kanaltabelle -->
+        <div v-show="activeTab === 'channels'">
+          <table class="min-w-full">
+            <colgroup>
+              <col class="w-16" />
+              <col class="w-20" />
+              <col class="w-[30ch]" />
+              <col class="w-[30ch]" />
+              <col />
+              <col class="w-6" />
+            </colgroup>
+            <thead class="sticky top-0 z-10 bg-gray-950">
+              <tr class="border-b border-white/10">
+                <th scope="col" class="py-3 pr-3 pl-0 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ t('field.channel') }}</th>
+                <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ t('field.color') }}</th>
+                <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ t('field.device') }}</th>
+                <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ t('field.position') }}</th>
+                <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ t('field.notes') }}</th>
+                <th scope="col" class="w-6"></th>
+              </tr>
+            </thead>
+            <tbody v-for="group in groupedChannels" :key="group.position">
+              <tr class="border-t border-white/5">
+                <th colspan="6" scope="colgroup" class="py-2 pr-3 pl-0 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                  {{ group.position || t('channel.no_category') }}
+                  <span class="ml-2 font-normal normal-case text-gray-600">{{ group.channels.length }}</span>
+                </th>
+              </tr>
+              <tr
+                v-for="ch in group.channels"
+                :key="ch.channel"
+                class="border-t border-white/5 group/row hover:bg-white/[0.03] transition-colors align-middle"
+              >
+                <td class="py-2 pr-3 pl-0 align-middle">
+                  <div class="flex flex-col items-center gap-1">
+                    <input
+                      :value="ch.channel"
+                      @change="ch.channel = $event.target.value; persist()"
+                      class="bg-transparent focus:bg-white/5 focus:outline-none text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[3ch] text-center"
+                    />
+                    <input
+                      :value="ch.address"
+                      @change="ch.address = $event.target.value; persist()"
+                      class="bg-transparent focus:bg-white/5 focus:outline-none text-xs text-gray-500 px-0 border-0 w-[5ch] text-center"
+                    />
+                  </div>
+                </td>
+                <td class="px-3 py-2 align-middle">
+                  <input
+                    :value="ch.color"
+                    @change="ch.color = $event.target.value; persist()"
+                    :placeholder="t('field.color')"
+                    :style="filterBadgeStyle(ch.color) || {}"
+                    :class="filterBadgeStyle(ch.color) ? 'font-semibold' : 'bg-white/10 text-gray-400 placeholder:text-gray-600'"
+                    class="focus:outline-none text-xs rounded-full px-2 py-0.5 border-0 w-16 text-center"
+                  />
+                </td>
+                <td class="px-3 py-0 align-middle">
+                  <textarea :value="ch.device" @change="ch.device = $event.target.value; persist()" class="bg-white/[0.04] focus:bg-white/[0.07] focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle rounded" />
+                </td>
+                <td class="px-3 py-0 align-middle">
+                  <input
+                    :value="ch.position"
+                    @change="ch.position = $event.target.value; persist()"
+                    class="bg-white/[0.04] focus:bg-white/[0.07] focus:outline-none text-sm text-gray-300 w-full px-2 border-0 rounded h-14"
+                  />
+                </td>
+                <td class="px-3 py-0 align-middle">
+                  <textarea :value="ch.notes" @change="ch.notes = $event.target.value; persist()" class="bg-white/[0.04] focus:bg-white/[0.07] focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle rounded" />
+                </td>
+                <td class="py-2 pl-2 pr-0 align-middle">
+                  <button class="text-gray-600 hover:text-red-400 text-xs opacity-0 group-hover/row:opacity-100 transition-opacity" @click="deleteChannel(ch)" :title="t('action.delete')">✕</button>
+                </td>
+              </tr>
+              <tr class="border-t border-white/5">
+                <td colspan="6" class="py-2 pl-0">
+                  <button type="button" class="text-sm text-gray-600 hover:text-gray-300" @click="startAdd(group.position)">+ {{ t('channel.add') }}</button>
+                </td>
+              </tr>
+              <tr v-if="addingToPosition === group.position" class="border-t border-white/5 bg-white/5" @keydown.escape="addingToPosition = null" @keydown.enter.prevent="confirmAdd">
+                <td class="py-2 pr-3 pl-0 align-middle">
+                  <div class="flex flex-col items-center gap-1">
+                    <input autofocus class="bg-transparent focus:outline-none text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[3ch] text-center" v-model="addForm.channel" :placeholder="t('show.channel.nr')" />
+                    <input class="bg-transparent focus:outline-none text-xs text-gray-500 px-0 border-0 w-[5ch] text-center" v-model="addForm.address" />
+                  </div>
+                </td>
+                <td class="px-3 py-2 align-middle">
+                  <input class="bg-white/10 focus:outline-none text-xs text-gray-400 rounded-full px-2 py-0.5 border-0 w-16 text-center placeholder:text-gray-600" v-model="addForm.color" :placeholder="t('field.color')" />
+                </td>
+                <td class="px-3 py-0 align-middle"><textarea class="bg-white/[0.04] focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle rounded" v-model="addForm.device" /></td>
+                <td class="px-3 py-0 align-middle"><input class="bg-white/[0.04] focus:outline-none text-sm text-gray-300 w-full px-2 border-0 rounded h-14" v-model="addForm.position" /></td>
+                <td class="px-3 py-0 align-middle"><textarea class="bg-white/[0.04] focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle rounded" v-model="addForm.notes" /></td>
+                <td class="py-2 pl-2 pr-0 align-middle"><button class="text-green-400 hover:text-green-300 text-sm" @click="confirmAdd">✓</button></td>
+              </tr>
+            </tbody>
+            <tbody v-if="groupedChannels.length === 0">
+              <tr v-if="addingToPosition === ''" class="border-t border-white/5 bg-white/5" @keydown.escape="addingToPosition = null" @keydown.enter.prevent="confirmAdd">
+                <td class="py-2 pr-3 pl-0 align-middle">
+                  <div class="flex flex-col items-center gap-1">
+                    <input autofocus class="bg-transparent focus:outline-none text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[3ch] text-center" v-model="addForm.channel" :placeholder="t('show.channel.nr')" />
+                    <input class="bg-transparent focus:outline-none text-xs text-gray-500 px-0 border-0 w-[5ch] text-center" v-model="addForm.address" />
+                  </div>
+                </td>
+                <td class="px-3 py-2 align-middle"><input class="bg-white/10 focus:outline-none text-xs text-gray-400 rounded-full px-2 py-0.5 border-0 w-16 text-center placeholder:text-gray-600" v-model="addForm.color" :placeholder="t('field.color')" /></td>
+                <td class="px-3 py-0 align-middle"><textarea class="bg-white/[0.04] focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle rounded" v-model="addForm.device" /></td>
+                <td class="px-3 py-0 align-middle"><input class="bg-white/[0.04] focus:outline-none text-sm text-gray-300 w-full px-2 border-0 rounded h-14" v-model="addForm.position" /></td>
+                <td class="px-3 py-0 align-middle"><textarea class="bg-white/[0.04] focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle rounded" v-model="addForm.notes" /></td>
+                <td class="py-2 pl-2 pr-0 align-middle"><button class="text-green-400 hover:text-green-300 text-sm" @click="confirmAdd">✓</button></td>
+              </tr>
+              <tr v-else class="border-t border-white/5">
+                <td colspan="6" class="py-4 pl-0">
+                  <span class="text-sm text-gray-500">{{ t('channel.list.empty') }}</span>
+                  <button type="button" class="ml-3 text-sm text-gray-400 hover:text-white" @click="startAdd('')">+ {{ t('channel.add') }}</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-        <div class="flex flex-none items-center gap-x-4">
+
+        <!-- Sections-Editor -->
+        <div v-show="activeTab === 'sections'" class="space-y-4 max-w-2xl">
+          <div v-for="(sec, idx) in templateSections" :key="sec.id" class="border border-white/10 rounded-lg p-4 space-y-3">
+            <div class="flex items-center gap-2">
+              <div class="flex flex-col gap-0.5">
+                <button class="text-gray-500 hover:text-white text-[10px] leading-none px-0.5 disabled:opacity-30" :disabled="idx === 0" @click="moveSection(idx, -1)">▲</button>
+                <button class="text-gray-500 hover:text-white text-[10px] leading-none px-0.5 disabled:opacity-30" :disabled="idx === templateSections.length - 1" @click="moveSection(idx, 1)">▼</button>
+              </div>
+              <input
+                :value="sec.title"
+                :placeholder="t('sections.title.placeholder')"
+                @input="sec.title = $event.target.value"
+                @change="persistSections"
+                class="flex-1 bg-white/5 rounded-md px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent"
+              />
+              <select
+                :value="sec.type"
+                @change="onTypeChange(sec, $event.target.value)"
+                class="bg-white/5 rounded-md px-2 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10"
+              >
+                <option value="markdown" class="bg-gray-900">{{ t('sections.type.markdown') }}</option>
+                <option value="fields" :disabled="hasFieldsType() && sec.type !== 'fields'" class="bg-gray-900">{{ t('sections.type.fields') }}</option>
+              </select>
+              <button class="text-gray-500 hover:text-red-400 text-sm shrink-0" @click="deleteSection(idx)">✕</button>
+            </div>
+            <div v-if="sec.type === 'fields'" class="space-y-2 pl-6">
+              <div v-for="(field, fidx) in sec.fields" :key="field.key" class="flex items-center gap-2">
+                <input
+                  :value="field.label"
+                  :placeholder="t('sections.field.label')"
+                  @input="field.label = $event.target.value"
+                  @change="persistSections"
+                  class="flex-1 bg-white/5 rounded-md px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-accent"
+                />
+                <button class="text-gray-500 hover:text-red-400 text-sm shrink-0" @click="deleteField(sec, fidx)">✕</button>
+              </div>
+              <button class="text-sm text-gray-400 hover:text-white" @click="addField(sec)">+ {{ t('sections.field.add') }}</button>
+            </div>
+          </div>
+          <button class="text-sm text-gray-400 hover:text-white" @click="addSection">+ {{ t('sections.add') }}</button>
+        </div>
+      </template>
+    </template>
+
+    <!-- Vorlagen-Liste -->
+    <template v-else>
+      <div class="sm:flex sm:items-center mb-8">
+        <div class="sm:flex-auto">
+          <h1 class="text-base font-semibold text-white">{{ t('nav.templates') }}</h1>
+        </div>
+        <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
           <button
             type="button"
-            class="rounded-md px-2.5 py-1.5 text-sm font-semibold text-white ring-1 ring-white/10 hover:ring-white/20"
-            @click="showDetail(name)"
+            class="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-accent-hover"
+            @click="openUpload"
           >
-            {{ t('action.edit') }}
-          </button>
-          <button
-            type="button"
-            class="rounded-md px-2.5 py-1.5 text-sm font-semibold text-red-400 ring-1 ring-white/10 hover:ring-red-400/50"
-            @click="handleDelete(name)"
-          >
-            {{ t('action.delete') }}
+            {{ t('template.upload') }}
           </button>
         </div>
-      </li>
-    </ul>
+      </div>
 
-    <!-- Upload dialog -->
+      <div v-if="loading" class="text-sm text-gray-400">…</div>
+      <div v-else-if="templates.length === 0" class="text-sm text-gray-400">{{ t('template.list.empty') }}</div>
+
+      <ul v-else role="list" class="divide-y divide-white/10">
+        <li v-for="name in templates" :key="name" class="flex items-center justify-between gap-x-6 py-5">
+          <button type="button" class="min-w-0 text-left hover:text-accent transition-colors" @click="openDetail(name)">
+            <p class="text-sm/6 font-semibold text-white">{{ templateDisplayName(name) || name }}</p>
+          </button>
+          <div class="flex flex-none items-center gap-x-4">
+            <button type="button" class="rounded-md px-2.5 py-1.5 text-sm font-semibold text-white ring-1 ring-white/10 hover:ring-white/20" @click="openDetail(name)">
+              {{ t('action.edit') }}
+            </button>
+            <button type="button" class="rounded-md px-2.5 py-1.5 text-sm font-semibold text-red-400 ring-1 ring-white/10 hover:ring-red-400/50" @click="handleDelete(name)">
+              {{ t('action.delete') }}
+            </button>
+          </div>
+        </li>
+      </ul>
+    </template>
+
+    <!-- Upload-Dialog (bleibt als Modal, da Datei-Upload) -->
     <dialog ref="uploadDialog" class="m-auto w-full max-w-3xl rounded-xl bg-gray-950 ring-1 ring-white/10 shadow-2xl p-0 backdrop:bg-black/50">
       <div class="flex items-center justify-between px-6 py-4 border-b border-white/10">
         <h3 class="text-base font-semibold text-white">{{ t('template.upload') }}</h3>
@@ -57,20 +237,17 @@
       <div v-if="step === 'select'" class="border-2 border-dashed border-white/20 rounded-lg p-8 text-center m-6" @dragover.prevent @drop.prevent="onDrop">
         <input ref="fileInput" type="file" accept=".csv,.txt" hidden @change="onFileChange" />
         <p class="text-sm text-gray-400 mb-4">{{ t('template.upload.hint') }}</p>
-        <button class="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-50" @click="fileInput?.click()">{{ t('template.csv.choose') }}</button>
+        <button class="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-hover" @click="fileInput?.click()">{{ t('template.csv.choose') }}</button>
       </div>
 
       <div v-else-if="step === 'preview'" class="px-6 pt-4">
         <div class="text-sm text-gray-400 mb-4">
-          <div class="field mb-2">
+          <div class="mb-2">
             <label class="block text-xs text-gray-400 mb-1">{{ t('template.name') }}</label>
             <input v-model="importName" type="text" required class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent" />
           </div>
-          <div class="preview-stats">
-            <span>{{ t('csv.preview.channels', { count: previewChannels.length }) }}</span>
-          </div>
+          <span>{{ t('csv.preview.channels', { count: previewChannels.length }) }}</span>
         </div>
-
         <div class="overflow-x-auto">
           <table class="min-w-full text-sm">
             <thead>
@@ -93,13 +270,12 @@
                 <td class="px-3 py-2 text-white border-b border-white/10">{{ ch.notes }}</td>
               </tr>
               <tr v-if="previewChannels.length > 20">
-                <td colspan="6" class="px-3 py-2 text-gray-400 border-b border-white/10">{{ t('template.more_channels', { count: previewChannels.length - 20 }) }}</td>
+                <td colspan="6" class="px-3 py-2 text-gray-400">{{ t('template.more_channels', { count: previewChannels.length - 20 }) }}</td>
               </tr>
             </tbody>
           </table>
         </div>
-
-        <div class="flex justify-end gap-3 px-0 py-4 border-t border-white/10 mt-4">
+        <div class="flex justify-end gap-3 py-4 border-t border-white/10 mt-4">
           <span v-if="importError" class="text-sm text-red-400 flex-1">{{ importError }}</span>
           <button class="rounded-md px-3 py-2 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @click="step = 'select'">{{ t('action.back') }}</button>
           <button class="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-50" :disabled="importing || !importName.trim()" @click="handleImport">
@@ -110,125 +286,7 @@
 
       <div v-else-if="step === 'done'" class="px-6 py-8 text-center">
         <p class="text-white mb-4">✓ {{ t('template.upload.success') }}</p>
-        <button class="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-50" @click="closeUpload">{{ t('action.close') }}</button>
-      </div>
-    </dialog>
-
-    <!-- Detail dialog -->
-    <dialog ref="detailDialog" class="m-auto w-full max-w-3xl rounded-xl bg-gray-950 ring-1 ring-white/10 shadow-2xl p-0 backdrop:bg-black/50">
-      <div class="flex items-center justify-between px-6 py-4 border-b border-white/10">
-        <h3 class="text-base font-semibold text-white">{{ detailName }}</h3>
-        <button class="rounded-md px-3 py-2 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @click="detailDialog.close()">✕</button>
-      </div>
-
-      <div v-if="detailLoading" class="px-6 py-4 text-sm text-gray-400">{{ t('error.loading') }}</div>
-
-      <template v-else>
-        <div class="flex gap-1 px-6 pt-4 mb-4 border-b border-white/10">
-          <button
-            :class="['px-4 py-2 text-sm font-medium border-b-2 -mb-px', activeTab === 'channels' ? 'border-accent text-white' : 'border-transparent text-gray-400 hover:text-white']"
-            @click="activeTab = 'channels'"
-          >{{ t('show.channels') }}</button>
-          <button
-            :class="['px-4 py-2 text-sm font-medium border-b-2 -mb-px', activeTab === 'sections' ? 'border-accent text-white' : 'border-transparent text-gray-400 hover:text-white']"
-            @click="activeTab = 'sections'"
-          >{{ t('sections.btn') }}</button>
-        </div>
-
-        <div v-show="activeTab === 'channels'" class="overflow-x-auto px-6">
-          <table class="min-w-full text-sm">
-            <thead>
-              <tr>
-                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-400 border-b border-white/10 col-channel">{{ t('field.channel') }}</th>
-                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-400 border-b border-white/10 col-address">{{ t('field.address') }}</th>
-                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-400 border-b border-white/10 col-device">{{ t('field.device') }}</th>
-                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-400 border-b border-white/10 col-position">{{ t('field.position') }}</th>
-                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-400 border-b border-white/10 col-actions"></th>
-              </tr>
-            </thead>
-            <tbody v-for="group in groupedChannels" :key="group.position">
-              <tr class="category-header-row">
-                <td colspan="5" class="px-3 py-2 border-b border-white/10">
-                  <span class="category-name">{{ group.position || t('channel.no_category') }}</span>
-                  <span class="category-count">{{ group.channels.length }}</span>
-                </td>
-              </tr>
-              <tr v-for="ch in group.channels" :key="ch.channel" @click="startEdit(ch)">
-                <td class="px-3 py-2 text-white border-b border-white/10 col-channel">
-                  <input v-if="editingChannel === ch.channel" class="inline-input" v-model="editForm.channel" @click.stop />
-                  <template v-else>{{ ch.channel }}</template>
-                </td>
-                <td class="px-3 py-2 text-white border-b border-white/10 col-address">
-                  <input v-if="editingChannel === ch.channel" class="inline-input" v-model="editForm.address" @click.stop />
-                  <template v-else>{{ ch.address }}</template>
-                </td>
-                <td class="px-3 py-2 text-white border-b border-white/10 col-device">
-                  <input v-if="editingChannel === ch.channel" class="inline-input inline-input-wide" v-model="editForm.device" @click.stop />
-                  <template v-else>{{ ch.device }}</template>
-                </td>
-                <td class="px-3 py-2 text-white border-b border-white/10 col-position">
-                  <input v-if="editingChannel === ch.channel" class="inline-input" v-model="editForm.position" @click.stop />
-                  <template v-else>{{ ch.position }}</template>
-                </td>
-                <td class="px-3 py-2 text-white border-b border-white/10 col-actions" @click.stop>
-                  <template v-if="editingChannel === ch.channel">
-                    <button class="rounded px-2 py-1 text-xs text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @click="saveEdit(ch)">✓</button>
-                    <button class="rounded px-2 py-1 text-xs text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @click="cancelEdit">✕</button>
-                  </template>
-                  <button v-else class="rounded px-2 py-1 text-xs text-red-400 ring-1 ring-red-400/20 hover:ring-red-400/40" @click.stop="deleteChannel(ch)">✕</button>
-                </td>
-              </tr>
-              <tr class="add-row-trigger">
-                <td colspan="5" class="px-3 py-1 border-b border-white/10">
-                  <button type="button" class="rounded px-2 py-1 text-xs text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @click.stop="startAdd(group.position)">+ {{ t('channel.add') }}</button>
-                </td>
-              </tr>
-              <tr v-if="addingToPosition === group.position" class="add-row-form">
-                <td class="px-3 py-1 border-b border-white/10"><input class="inline-input" v-model="addForm.channel" :placeholder="t('show.channel.nr')" @click.stop /></td>
-                <td class="px-3 py-1 border-b border-white/10"><input class="inline-input" v-model="addForm.address" :placeholder="t('show.channel.address.example')" @click.stop /></td>
-                <td class="px-3 py-1 border-b border-white/10"><input class="inline-input inline-input-wide" v-model="addForm.device" @click.stop /></td>
-                <td class="px-3 py-1 border-b border-white/10"><input class="inline-input" v-model="addForm.position" @click.stop /></td>
-                <td class="px-3 py-1 border-b border-white/10" @click.stop>
-                  <div class="add-row-actions flex gap-1">
-                    <button class="rounded px-2 py-1 text-xs text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @click="confirmAdd">✓</button>
-                    <button class="rounded px-2 py-1 text-xs text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @click="cancelAdd">✕</button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Sections editor -->
-        <div v-show="activeTab === 'sections'" class="px-6 py-4">
-          <div v-for="(sec, idx) in templateSections" :key="sec.id" class="rounded-lg bg-gray-800/50 ring-1 ring-white/10 p-4 mb-3">
-            <div class="section-card-header flex items-center gap-2 mb-2">
-              <div class="section-reorder flex gap-1">
-                <button class="rounded px-2 py-1 text-xs text-gray-400 ring-1 ring-white/10 hover:ring-white/20" :disabled="idx === 0" @click="moveSection(idx, -1)">↑</button>
-                <button class="rounded px-2 py-1 text-xs text-gray-400 ring-1 ring-white/10 hover:ring-white/20" :disabled="idx === templateSections.length - 1" @click="moveSection(idx, 1)">↓</button>
-              </div>
-              <input :value="sec.title" :placeholder="t('sections.title.placeholder')" @input="sec.title = $event.target.value" @change="persistSections" class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent" />
-              <select class="section-type-select rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10" :value="sec.type" @change="onTypeChange(sec, $event.target.value)">
-                <option value="markdown">{{ t('sections.type.markdown') }}</option>
-                <option value="fields" :disabled="hasFieldsType() && sec.type !== 'fields'">{{ t('sections.type.fields') }}</option>
-              </select>
-              <button class="rounded px-2 py-1 text-xs text-red-400 ring-1 ring-red-400/20 hover:ring-red-400/40" @click="deleteSection(idx)">✕</button>
-            </div>
-            <div v-if="sec.type === 'fields'" class="space-y-2">
-              <div v-for="(field, fidx) in sec.fields" :key="field.key" class="fields-editor-row flex items-center gap-2">
-                <input :value="field.label" :placeholder="t('sections.field.label')" @input="field.label = $event.target.value" @change="persistSections" class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent" />
-                <button class="rounded px-2 py-1 text-xs text-red-400 ring-1 ring-red-400/20 hover:ring-red-400/40" @click="deleteField(sec, fidx)">✕</button>
-              </div>
-              <button class="rounded px-2 py-1 text-xs text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @click="addField(sec)">{{ t('sections.field.add') }}</button>
-            </div>
-          </div>
-          <button class="rounded px-2 py-1 text-xs text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @click="addSection">{{ t('sections.add') }}</button>
-        </div>
-      </template>
-
-      <div class="flex justify-end gap-3 px-6 py-4 border-t border-white/10">
-        <span v-if="detailSaving || sectionsSaving" class="text-sm text-gray-400">…</span>
-        <button class="rounded-md px-3 py-2 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @click="detailDialog.close()">{{ t('action.close') }}</button>
+        <button class="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-hover" @click="closeUpload">{{ t('action.close') }}</button>
       </div>
     </dialog>
   </div>
@@ -237,17 +295,21 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useLocale } from '../composables/useLocale.js'
+import { useConfirm } from '../composables/useConfirm.js'
 import { fetchTemplates, fetchTemplateChannels, saveTemplate, uploadTemplate, deleteTemplate } from '../api/templates.js'
 import { parseCsv } from '../api/channels.js'
 import { fetchTemplateSections, saveTemplateSections } from '../api/sections.js'
 import { templateDisplayName } from '../utils/templateName.js'
+import { filterBadgeStyle } from '../utils/leeColors.js'
 import { uuid } from '../utils/uuid.js'
 
 const { t } = useLocale()
+const { confirm } = useConfirm()
 
 const templates = ref([])
 const loading = ref(true)
 
+// Upload
 const uploadDialog = ref(null)
 const fileInput = ref(null)
 const step = ref('select')
@@ -257,30 +319,26 @@ const previewChannels = ref([])
 const importing = ref(false)
 const importError = ref('')
 
-const detailDialog = ref(null)
-const detailName = ref('')
+// Detail (inline)
+const editingName = ref(null)
 const detailChannels = ref([])
 const detailLoading = ref(false)
 const detailSaving = ref(false)
-
 const activeTab = ref('channels')
 const templateSections = ref([])
 const sectionsSaving = ref(false)
-
-const editingChannel = ref(null)
-const editForm = ref({})
 const addingToPosition = ref(null)
 const addForm = ref({})
 
 const groupedChannels = computed(() => {
   const sorted = [...detailChannels.value].sort((a, b) => Number(a.channel) - Number(b.channel))
-  const groups = {}
+  const map = new Map()
   for (const ch of sorted) {
     const pos = ch.position || ''
-    if (!groups[pos]) groups[pos] = []
-    groups[pos].push(ch)
+    if (!map.has(pos)) map.set(pos, [])
+    map.get(pos).push(ch)
   }
-  return Object.entries(groups).map(([position, channels]) => ({ position, channels }))
+  return [...map.entries()].map(([position, channels]) => ({ position, channels }))
 })
 
 onMounted(async () => {
@@ -288,7 +346,7 @@ onMounted(async () => {
   loading.value = false
 })
 
-// ── Upload ─────────────────────────────────────────────────────────────────
+// ── Upload ──────────────────────────────────────────────────────────────────
 
 function openUpload() {
   step.value = 'select'
@@ -341,15 +399,13 @@ async function handleImport() {
   }
 }
 
-// ── Detail / Edit ──────────────────────────────────────────────────────────
+// ── Detail ──────────────────────────────────────────────────────────────────
 
-async function showDetail(name) {
-  detailName.value = name
+async function openDetail(name) {
+  editingName.value = name
   detailLoading.value = true
   activeTab.value = 'channels'
-  editingChannel.value = null
   addingToPosition.value = null
-  detailDialog.value.showModal()
   const [channels, sections] = await Promise.all([
     fetchTemplateChannels(name),
     fetchTemplateSections(name),
@@ -361,24 +417,37 @@ async function showDetail(name) {
 
 async function persist() {
   detailSaving.value = true
-  await saveTemplate(detailName.value, detailChannels.value)
+  await saveTemplate(editingName.value, detailChannels.value)
   detailSaving.value = false
 }
 
 async function persistSections() {
   sectionsSaving.value = true
-  await saveTemplateSections(detailName.value, templateSections.value)
+  await saveTemplateSections(editingName.value, templateSections.value)
   sectionsSaving.value = false
 }
 
+async function deleteChannel(ch) {
+  detailChannels.value = detailChannels.value.filter(c => c.channel !== ch.channel)
+  await persist()
+}
+
+function startAdd(position) {
+  addingToPosition.value = position
+  addForm.value = { channel: '', address: '', device: '', position, color: '', notes: '' }
+}
+
+async function confirmAdd() {
+  if (!addForm.value.channel.trim()) return
+  detailChannels.value.push({ ...addForm.value })
+  addingToPosition.value = null
+  await persist()
+}
+
+// ── Sections ────────────────────────────────────────────────────────────────
+
 function addSection() {
-  templateSections.value.push({
-    id: uuid(),
-    title: '',
-    type: 'markdown',
-    order: templateSections.value.length,
-    fields: []
-  })
+  templateSections.value.push({ id: uuid(), title: '', type: 'markdown', order: templateSections.value.length, fields: [] })
   persistSections()
 }
 
@@ -418,46 +487,11 @@ function onTypeChange(section, newType) {
   persistSections()
 }
 
-function startEdit(ch) {
-  editingChannel.value = ch.channel
-  editForm.value = { ...ch }
-  addingToPosition.value = null
-}
-
-function cancelEdit() {
-  editingChannel.value = null
-}
-
-async function saveEdit(ch) {
-  Object.assign(ch, editForm.value)
-  editingChannel.value = null
-  await persist()
-}
-
-async function deleteChannel(ch) {
-  detailChannels.value = detailChannels.value.filter(c => c.channel !== ch.channel)
-  await persist()
-}
-
-function startAdd(position) {
-  addingToPosition.value = position
-  addForm.value = { channel: '', address: '', device: '', position, color: '', notes: '' }
-  editingChannel.value = null
-}
-
-function cancelAdd() {
-  addingToPosition.value = null
-}
-
-async function confirmAdd() {
-  if (!addForm.value.channel.trim()) return
-  detailChannels.value.push({ ...addForm.value })
-  addingToPosition.value = null
-  await persist()
-}
+// ── Löschen ─────────────────────────────────────────────────────────────────
 
 async function handleDelete(name) {
-  if (!window.confirm(t('template.delete.confirm', { name }))) return
+  const ok = await confirm({ t, titleKey: 'template.delete.confirm', messageParams: { name }, confirmKey: 'action.delete', cancelKey: 'action.cancel' })
+  if (!ok) return
   await deleteTemplate(name)
   templates.value = templates.value.filter(n => n !== name)
 }

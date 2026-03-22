@@ -48,52 +48,6 @@
     <div v-if="loading" class="flex items-center justify-center h-64 text-sm text-gray-400">…</div>
 
     <template v-else>
-      <!-- Sections-Editor (overlay panel) -->
-      <div v-if="editingSections" class="border-b border-white/10 bg-gray-950/80 px-4 py-4 sm:px-6 lg:px-8 space-y-3">
-        <div
-          v-for="(sec, idx) in sectionDefs"
-          :key="sec.id"
-          class="rounded-lg bg-gray-800/50 ring-1 ring-white/10 p-4"
-        >
-          <div class="flex items-center gap-3 mb-2">
-            <div class="flex gap-1">
-              <button class="text-gray-400 hover:text-white text-xs px-1" :disabled="idx === 0" @click="moveSectionDef(idx, -1)">↑</button>
-              <button class="text-gray-400 hover:text-white text-xs px-1" :disabled="idx === sectionDefs.length - 1" @click="moveSectionDef(idx, 1)">↓</button>
-            </div>
-            <input
-              :value="sec.title"
-              :placeholder="t('sections.title.placeholder')"
-              @input="sec.title = $event.target.value"
-              @change="persistSectionDefs"
-              class="flex-1 rounded-md bg-white/5 px-3 py-1 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent"
-            />
-            <select
-              :value="sec.type"
-              @change="onSectionTypeChange(sec, $event.target.value)"
-              class="rounded-md bg-white/5 px-2 py-1 text-sm text-white outline-1 -outline-offset-1 outline-white/10"
-            >
-              <option value="markdown" class="bg-gray-800">{{ t('sections.type.markdown') }}</option>
-              <option value="fields" :disabled="hasFieldsType() && sec.type !== 'fields'" class="bg-gray-800">{{ t('sections.type.fields') }}</option>
-            </select>
-            <button class="text-red-400 hover:text-red-300 text-sm" @click="deleteSectionDef(idx)">✕</button>
-          </div>
-          <div v-if="sec.type === 'fields'" class="space-y-2 mt-2">
-            <div v-for="(field, fidx) in sec.fields" :key="field.key" class="flex gap-2">
-              <input
-                :value="field.label"
-                :placeholder="t('sections.field.label')"
-                @input="field.label = $event.target.value"
-                @change="persistSectionDefs"
-                class="flex-1 rounded-md bg-white/5 px-3 py-1 text-sm text-white outline-1 -outline-offset-1 outline-white/10"
-              />
-              <button class="text-red-400 hover:text-red-300 text-sm" @click="deleteFieldDef(sec, fidx)">✕</button>
-            </div>
-            <button class="text-sm text-gray-400 hover:text-white" @click="addFieldDef(sec)">{{ t('sections.field.add') }}</button>
-          </div>
-        </div>
-        <button class="text-sm text-gray-400 hover:text-white" @click="addSection">{{ t('sections.add') }}</button>
-      </div>
-
       <!-- Two-column layout: aside + main -->
       <div class="xl:pl-[28rem] xl:ml-0">
         <!-- Main: Kanaltabelle -->
@@ -102,17 +56,19 @@
             <SectionHeading :text="t('show.channels')" class="flex-1 min-w-0" />
             <span class="text-xs text-gray-500 shrink-0">{{ totalVisible }} / {{ channels.length }}</span>
           </div>
-          <div class="overflow-x-auto">
-            <table class="min-w-full">
+          <div>
+            <table class="min-w-full overflow-x-auto">
               <colgroup>
-                <col class="w-28" />          <!-- Kanal + Adresse + Farb-Badge -->
-                <col class="w-[30ch]" />      <!-- Gerät -->
-                <col />                       <!-- Notizen (rest) -->
-                <col class="w-6" />           <!-- Löschen -->
+                <col class="w-16" />           <!-- Kanal + Adresse -->
+                <col class="w-20" />           <!-- Farbe -->
+                <col class="w-[30ch]" />       <!-- Gerät -->
+                <col />                        <!-- Notizen (rest) -->
+                <col class="w-6" />            <!-- Löschen -->
               </colgroup>
-              <thead>
+              <thead class="sticky top-16 z-10 bg-gray-950">
                 <tr class="border-b border-white/10">
                   <th scope="col" class="py-3 pr-3 pl-0 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ t('field.channel') }}</th>
+                  <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ t('field.color') }}</th>
                   <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ t('field.device') }}</th>
                   <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ t('field.notes') }}</th>
                   <th scope="col" class="w-6"></th>
@@ -120,7 +76,7 @@
               </thead>
               <tbody v-for="group in groupedChannels" :key="group.position">
                 <tr class="border-t border-white/5">
-                  <th colspan="4" scope="colgroup" class="py-2 pr-3 pl-0 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                  <th colspan="5" scope="colgroup" class="py-2 pr-3 pl-0 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">
                     {{ group.position || t('channel.no_category') }}
                     <span class="ml-2 font-normal normal-case text-gray-600">{{ group.channels.length }}</span>
                   </th>
@@ -138,31 +94,30 @@
                         class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[3ch] text-center"
                       />
                       <input
-                        :value="ch.color"
-                        @change="ch.color = $event.target.value; persistChannels()"
-                        :placeholder="t('field.color')"
-                        :style="filterBadgeStyle(ch.color) || {}"
-                        :class="filterBadgeStyle(ch.color) ? 'font-semibold' : 'bg-white/10 text-gray-400 placeholder:text-gray-600'"
-                        class="focus:outline-none text-xs rounded-full px-2 py-0.5 border-0 w-16 text-center"
+                        :value="ch.address"
+                        @change="ch.address = $event.target.value; persistChannels()"
+                        class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-xs text-gray-500 px-0 border-0 w-[5ch] text-center"
                       />
-                      <div class="flex items-center">
-                        <span class="text-xs text-gray-600">#</span>
-                        <input
-                          :value="ch.address"
-                          @change="ch.address = $event.target.value; persistChannels()"
-                          class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-xs text-gray-500 px-0 border-0 w-[5ch]"
-                        />
-                      </div>
                     </div>
                   </td>
+                  <td class="px-3 py-2 align-middle">
+                    <input
+                      :value="ch.color"
+                      @change="ch.color = $event.target.value; persistChannels()"
+                      :placeholder="t('field.color')"
+                      :style="filterBadgeStyle(ch.color) || {}"
+                      :class="filterBadgeStyle(ch.color) ? 'font-semibold' : 'bg-white/10 text-gray-400 placeholder:text-gray-600'"
+                      class="focus:outline-none text-xs rounded-full px-2 py-0.5 border-0 w-16 text-center"
+                    />
+                  </td>
                   <td class="px-3 py-0 align-middle">
-                    <input :value="ch.device" @change="ch.device = $event.target.value; persistChannels()" class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-gray-300 w-full px-2 border-0 h-14" />
+                    <textarea :value="ch.device" @change="ch.device = $event.target.value; persistChannels()" class="bg-white/[0.04] focus:bg-white/[0.07] focus:outline-none focus:ring-0 text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle rounded" />
                   </td>
                   <td class="px-3 py-0 align-middle">
                     <textarea
                       :value="ch.notes"
                       @change="ch.notes = $event.target.value; persistChannels()"
-                      class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle"
+                      class="bg-white/[0.04] focus:bg-white/[0.07] focus:outline-none focus:ring-0 text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle rounded"
                     />
                   </td>
                   <td class="py-2 pl-2 pr-0 align-middle">
@@ -170,34 +125,42 @@
                   </td>
                 </tr>
                 <tr class="border-t border-white/5">
-                  <td colspan="4" class="py-2 pl-0">
+                  <td colspan="5" class="py-2 pl-0">
                     <button type="button" class="text-sm text-gray-600 hover:text-gray-300" @click="startAdd(group.position)">+ {{ t('channel.add') }}</button>
                   </td>
                 </tr>
                 <tr v-if="addingPosition === group.position" class="border-t border-white/5 bg-white/5" @keydown.escape="addingPosition = null" @keydown.enter.prevent="saveAdd">
-                  <td class="py-2 pr-3 pl-0">
-                    <div class="flex flex-col gap-1.5">
-                      <input autofocus class="bg-transparent focus:outline-none text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[4ch]" v-model="addForm.channel" :placeholder="t('show.channel.nr')" />
-                      <input class="bg-transparent focus:outline-none text-xs text-gray-500 px-0 border-0 w-[6ch]" v-model="addForm.address" :placeholder="t('show.channel.address.example')" />
-                      <input class="bg-white/10 focus:outline-none text-xs text-gray-400 rounded-full px-2 py-0.5 border-0 w-20 text-center placeholder:text-gray-600" v-model="addForm.color" :placeholder="t('field.color')" />
+                  <td class="py-2 pr-3 pl-0 align-middle">
+                    <div class="flex flex-col items-center gap-1">
+                      <input autofocus class="bg-transparent focus:outline-none text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[3ch] text-center" v-model="addForm.channel" :placeholder="t('show.channel.nr')" />
+                      <input class="bg-transparent focus:outline-none text-xs text-gray-500 px-0 border-0 w-[5ch] text-center" v-model="addForm.address" :placeholder="t('show.channel.address.example')" />
                     </div>
                   </td>
-                  <td class="px-3 py-2"><input class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2" v-model="addForm.device" /></td>
-                  <td class="px-3 py-2"><textarea class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 resize-none [field-sizing:content] min-h-[36px]" v-model="addForm.notes" /></td>
-                  <td class="py-2 pl-2 pr-0"><button class="text-green-400 hover:text-green-300 text-sm" @click="saveAdd">✓</button></td>
+                  <td class="px-3 py-2 align-middle">
+                    <input class="bg-white/10 focus:outline-none text-xs text-gray-400 rounded-full px-2 py-0.5 border-0 w-16 text-center placeholder:text-gray-600" v-model="addForm.color" :placeholder="t('field.color')" />
+                  </td>
+                  <td class="px-3 py-0 align-middle"><textarea class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle" v-model="addForm.device" /></td>
+                  <td class="px-3 py-0 align-middle"><textarea class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle" v-model="addForm.notes" /></td>
+                  <td class="py-2 pl-2 pr-0 align-middle"><button class="text-green-400 hover:text-green-300 text-sm" @click="saveAdd">✓</button></td>
                 </tr>
               </tbody>
               <tbody v-if="groupedChannels.length === 0">
                 <tr v-if="addingPosition === ''" class="border-t border-white/5 bg-white/5" @keydown.escape="addingPosition = null" @keydown.enter.prevent="saveAdd">
-                  <td class="py-2 pr-3 pl-0"><input autofocus class="bg-transparent focus:outline-none text-sm text-white w-full px-0" v-model="addForm.channel" :placeholder="t('show.channel.nr')" /></td>
-                  <td class="px-3 py-2"><input class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2" v-model="addForm.address" :placeholder="t('show.channel.address.example')" /></td>
-                  <td class="px-3 py-2"><input class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2" v-model="addForm.device" /></td>
-                  <td class="px-3 py-2"><ColorPicker v-model="addForm.color" /></td>
-                  <td class="px-3 py-2"><textarea class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 resize-none [field-sizing:content] min-h-[36px]" v-model="addForm.notes" /></td>
-                  <td class="py-2 pl-2 pr-0"><button class="text-green-400 hover:text-green-300 text-sm" @click="saveAdd">✓</button></td>
+                  <td class="py-2 pr-3 pl-0 align-middle">
+                    <div class="flex flex-col items-center gap-1">
+                      <input autofocus class="bg-transparent focus:outline-none text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[3ch] text-center" v-model="addForm.channel" :placeholder="t('show.channel.nr')" />
+                      <input class="bg-transparent focus:outline-none text-xs text-gray-500 px-0 border-0 w-[5ch] text-center" v-model="addForm.address" :placeholder="t('show.channel.address.example')" />
+                    </div>
+                  </td>
+                  <td class="px-3 py-2 align-middle">
+                    <input class="bg-white/10 focus:outline-none text-xs text-gray-400 rounded-full px-2 py-0.5 border-0 w-16 text-center placeholder:text-gray-600" v-model="addForm.color" :placeholder="t('field.color')" />
+                  </td>
+                  <td class="px-3 py-0 align-middle"><textarea class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle" v-model="addForm.device" /></td>
+                  <td class="px-3 py-0 align-middle"><textarea class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle" v-model="addForm.notes" /></td>
+                  <td class="py-2 pl-2 pr-0 align-middle"><button class="text-green-400 hover:text-green-300 text-sm" @click="saveAdd">✓</button></td>
                 </tr>
                 <tr v-else class="border-t border-white/5">
-                  <td colspan="4" class="py-4 pl-0">
+                  <td colspan="5" class="py-4 pl-0">
                     <span class="text-sm text-gray-500">{{ t('channel.list.empty') }}</span>
                     <button type="button" class="ml-3 text-sm text-gray-400 hover:text-white" @click="startAdd('')">+ {{ t('channel.add') }}</button>
                   </td>
@@ -210,8 +173,55 @@
 
       <!-- Aside: Sections + Fotos (fixed, left of main) -->
       <aside class="xl:fixed xl:top-16 xl:bottom-0 xl:left-20 xl:w-[28rem] xl:overflow-y-auto xl:border-r xl:border-white/10 px-4 py-6 sm:px-6 border-b border-white/10 xl:border-b-0">
-        <!-- Custom Sections -->
-        <template v-if="sortedSections.length > 0">
+
+        <!-- Sections-Editor -->
+        <template v-if="editingSections">
+          <div class="space-y-4 mb-6">
+            <div v-for="(sec, idx) in sectionDefs" :key="sec.id" class="border border-white/10 rounded-lg p-4 space-y-3">
+              <!-- Row: reorder + title + type + delete -->
+              <div class="flex items-center gap-2">
+                <div class="flex flex-col gap-0.5">
+                  <button class="text-gray-500 hover:text-white text-[10px] leading-none px-0.5 disabled:opacity-30" :disabled="idx === 0" @click="moveSectionDef(idx, -1)">▲</button>
+                  <button class="text-gray-500 hover:text-white text-[10px] leading-none px-0.5 disabled:opacity-30" :disabled="idx === sectionDefs.length - 1" @click="moveSectionDef(idx, 1)">▼</button>
+                </div>
+                <input
+                  :value="sec.title"
+                  :placeholder="t('sections.title.placeholder')"
+                  @input="sec.title = $event.target.value"
+                  @change="persistSectionDefs"
+                  class="flex-1 bg-white/5 rounded-md px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent"
+                />
+                <select
+                  :value="sec.type"
+                  @change="onSectionTypeChange(sec, $event.target.value)"
+                  class="bg-white/5 rounded-md px-2 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-accent"
+                >
+                  <option value="markdown" class="bg-gray-900">{{ t('sections.type.markdown') }}</option>
+                  <option value="fields" :disabled="hasFieldsType() && sec.type !== 'fields'" class="bg-gray-900">{{ t('sections.type.fields') }}</option>
+                </select>
+                <button class="text-gray-500 hover:text-red-400 text-sm shrink-0" @click="deleteSectionDef(idx)">✕</button>
+              </div>
+              <!-- Fields sub-editor -->
+              <div v-if="sec.type === 'fields'" class="space-y-2 pl-6">
+                <div v-for="(field, fidx) in sec.fields" :key="field.key" class="flex items-center gap-2">
+                  <input
+                    :value="field.label"
+                    :placeholder="t('sections.field.label')"
+                    @input="field.label = $event.target.value"
+                    @change="persistSectionDefs"
+                    class="flex-1 bg-white/5 rounded-md px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-accent"
+                  />
+                  <button class="text-gray-500 hover:text-red-400 text-sm shrink-0" @click="deleteFieldDef(sec, fidx)">✕</button>
+                </div>
+                <button class="text-sm text-gray-400 hover:text-white" @click="addFieldDef(sec)">+ {{ t('sections.field.add') }}</button>
+              </div>
+            </div>
+            <button class="text-sm text-gray-400 hover:text-white" @click="addSection">+ {{ t('sections.add') }}</button>
+          </div>
+        </template>
+
+        <!-- Custom Sections (view mode) -->
+        <template v-else-if="sortedSections.length > 0">
           <section v-for="sec in sortedSections" :key="sec.id" class="mb-8">
             <SectionHeading :text="sec.title" class="mb-4" />
             <div v-if="sec.type === 'fields'" class="divide-y divide-white/5">
@@ -283,6 +293,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLocale } from '../composables/useLocale.js'
+import { useConfirm } from '../composables/useConfirm.js'
 import MarkdownEditor from '../components/MarkdownEditor.vue'
 import SectionHeading from '../components/SectionHeading.vue'
 import { MagnifyingGlassIcon } from '@heroicons/vue/20/solid'
@@ -291,7 +302,6 @@ import { fetchChannels, saveChannels } from '../api/channels.js'
 import { fetchPhotos, uploadPhoto, deletePhoto, getPhotoUrl } from '../api/photos.js'
 import { subscribeChannels } from '../api/client.js'
 import { api } from '../api/client.js'
-import ColorPicker from '../components/ColorPicker.vue'
 import { fetchShowSections, saveShowSections, parseSectionsMd, serializeSectionsMd, fetchShowSectionDefs, saveShowSectionDefs } from '../api/sections.js'
 import { uuid } from '../utils/uuid.js'
 import { filterBadgeStyle } from '../utils/leeColors.js'
@@ -299,6 +309,7 @@ import { filterBadgeStyle } from '../utils/leeColors.js'
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
 const { t } = useLocale()
+const { confirm } = useConfirm()
 
 // ── State ──────────────────────────────────────────────────────────────────
 const loading = ref(true)
@@ -376,7 +387,8 @@ const totalVisible = computed(() => groupedChannels.value.reduce((s, g) => s + g
 
 // ── Kanal löschen ──────────────────────────────────────────────────────────
 async function deleteChannel(ch) {
-  if (!window.confirm(t('show.channel.delete.confirm', { channel: ch.channel }))) return
+  const ok = await confirm({ t, titleKey: 'show.channel.delete.confirm', messageParams: { channel: ch.channel }, confirmKey: 'action.delete', cancelKey: 'action.cancel' })
+  if (!ok) return
   channels.value = channels.value.filter(c => c.channel !== ch.channel)
   persistChannels()
 }
@@ -428,7 +440,8 @@ function onDrop(e) {
 }
 
 async function onDeletePhoto(filename) {
-  if (!window.confirm(t('show.photo.delete.confirm'))) return
+  const ok = await confirm({ t, titleKey: 'show.photo.delete.confirm', confirmKey: 'action.delete', cancelKey: 'action.cancel' })
+  if (!ok) return
   await deletePhoto(props.id, filename)
   photos.value = photos.value.filter(f => f !== filename)
 }

@@ -1,90 +1,105 @@
 <template>
-  <div class="px-4 py-10 sm:px-6 lg:px-8">
-    <div class="mb-8">
-      <h1 class="text-base font-semibold text-white">{{ t('nav.settings') }}</h1>
-    </div>
+  <div class="mx-auto max-w-7xl lg:flex lg:gap-x-16 lg:px-8">
 
-    <div class="space-y-10 divide-y divide-white/10">
+    <!-- Seitennavigation -->
+    <aside class="flex overflow-x-auto border-b border-white/10 py-4 lg:block lg:w-64 lg:flex-none lg:border-0 lg:py-12">
+      <nav class="flex-none px-4 sm:px-6 lg:px-0">
+        <ul role="list" class="flex gap-x-3 gap-y-1 whitespace-nowrap lg:flex-col">
+          <li v-for="item in secondaryNav" :key="item.key">
+            <button
+              @click="activeSection = item.key"
+              :class="[
+                activeSection === item.key
+                  ? 'bg-white/5 text-white'
+                  : 'text-gray-400 hover:bg-white/5 hover:text-white',
+                'group flex w-full gap-x-3 rounded-md py-2 pr-3 pl-2 text-sm/6 font-semibold'
+              ]"
+            >
+              <component :is="item.icon" :class="[activeSection === item.key ? 'text-white' : 'text-gray-500 group-hover:text-white', 'size-6 shrink-0']" aria-hidden="true" />
+              {{ item.name }}
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </aside>
 
-      <!-- Sprache -->
-      <div class="grid grid-cols-1 gap-x-8 gap-y-8 pt-10 md:grid-cols-3 first:pt-0">
-        <div>
-          <SectionHeading :text="t('settings.language')" />
-        </div>
-        <div class="bg-gray-800/50 ring-1 ring-white/10 rounded-xl md:col-span-2">
-          <div class="px-4 py-6 sm:p-8 flex gap-6">
-            <label class="flex items-center gap-2 text-sm text-white cursor-pointer">
-              <input type="radio" :checked="locale === 'de'" value="de" @change="setLocale('de')" class="accent-accent" />
-              {{ t('settings.language.de') }}
-            </label>
-            <label class="flex items-center gap-2 text-sm text-white cursor-pointer">
-              <input type="radio" :checked="locale === 'en'" value="en" @change="setLocale('en')" class="accent-accent" />
-              {{ t('settings.language.en') }}
-            </label>
-          </div>
-        </div>
-      </div>
+    <!-- Hauptinhalt -->
+    <main class="px-4 py-10 sm:px-6 lg:flex-auto lg:px-0 lg:py-12">
+      <div class="mx-auto max-w-2xl space-y-16 lg:mx-0 lg:max-w-none">
 
-      <!-- Server-URL -->
-      <div class="grid grid-cols-1 gap-x-8 gap-y-8 pt-10 md:grid-cols-3">
-        <div>
-          <SectionHeading :text="t('settings.server')" />
-        </div>
-        <div class="bg-gray-800/50 ring-1 ring-white/10 rounded-xl md:col-span-2">
-          <div class="px-4 py-6 sm:p-8 space-y-4">
-            <div>
-              <label class="block text-sm/6 font-medium text-white">{{ t('settings.server_url.label') }}</label>
-              <div class="mt-2">
-                <input
-                  v-model="serverUrl"
-                  type="url"
-                  :placeholder="t('settings.server_url.placeholder')"
-                  @change="applyServer"
-                  class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent"
-                />
-              </div>
+        <!-- Sprache -->
+        <section v-show="activeSection === 'general'">
+          <h2 class="text-base/7 font-semibold text-white">{{ t('settings.language') }}</h2>
+          <p class="mt-1 text-sm/6 text-gray-400">{{ t('settings.language.hint') }}</p>
+          <dl class="mt-6 divide-y divide-white/5 border-t border-white/5 text-sm/6">
+            <div class="py-6 sm:flex sm:items-center">
+              <dt class="font-medium text-white sm:w-64 sm:flex-none sm:pr-6">{{ t('settings.language') }}</dt>
+              <dd class="mt-1 sm:mt-0 sm:flex-auto">
+                <div class="flex gap-6">
+                  <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                    <input type="radio" :checked="locale === 'de'" value="de" @change="setLocale('de')" class="accent-accent" />
+                    {{ t('settings.language.de') }}
+                  </label>
+                  <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                    <input type="radio" :checked="locale === 'en'" value="en" @change="setLocale('en')" class="accent-accent" />
+                    {{ t('settings.language.en') }}
+                  </label>
+                </div>
+              </dd>
             </div>
-            <div v-if="status" class="divide-y divide-white/10 text-sm">
-              <div class="flex justify-between py-2">
-                <span class="text-gray-400">{{ t('settings.status.version') }}</span>
-                <span class="text-white">{{ status.version }}</span>
-              </div>
-              <div class="flex justify-between py-2">
-                <span class="text-gray-400">{{ t('settings.status.disk') }}</span>
-                <span class="text-white">{{ status.diskFree }}</span>
-              </div>
-            </div>
-            <p v-else-if="statusError" class="text-sm text-red-400">{{ statusError }}</p>
-            <p v-else class="text-sm text-gray-500">{{ t('error.loading') }}</p>
-          </div>
-        </div>
-      </div>
+          </dl>
+        </section>
 
-      <!-- Backup -->
-      <div class="grid grid-cols-1 gap-x-8 gap-y-8 pt-10 md:grid-cols-3">
-        <div>
-          <SectionHeading :text="t('settings.backup')" />
-        </div>
-        <div class="bg-gray-800/50 ring-1 ring-white/10 rounded-xl md:col-span-2">
-          <div class="px-4 py-6 sm:p-8">
+        <!-- Server -->
+        <section v-show="activeSection === 'server'">
+          <h2 class="text-base/7 font-semibold text-white">{{ t('settings.server') }}</h2>
+          <p class="mt-1 text-sm/6 text-gray-400">{{ t('settings.server_url.label') }}</p>
+          <dl class="mt-6 divide-y divide-white/5 border-t border-white/5 text-sm/6">
+            <div class="py-6">
+              <input
+                v-model="serverUrl"
+                type="url"
+                :placeholder="t('settings.server_url.placeholder')"
+                @change="applyServer"
+                class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent"
+              />
+            </div>
+            <template v-if="status">
+              <div class="py-4 sm:flex">
+                <dt class="font-medium text-white sm:w-64 sm:flex-none sm:pr-6">{{ t('settings.status.version') }}</dt>
+                <dd class="mt-1 text-gray-300 sm:mt-0 sm:flex-auto">{{ status.version }}</dd>
+              </div>
+              <div class="py-4 sm:flex">
+                <dt class="font-medium text-white sm:w-64 sm:flex-none sm:pr-6">{{ t('settings.status.disk') }}</dt>
+                <dd class="mt-1 text-gray-300 sm:mt-0 sm:flex-auto">{{ status.diskFree }}</dd>
+              </div>
+            </template>
+            <div v-else-if="statusError" class="py-4">
+              <p class="text-sm text-red-400">{{ statusError }}</p>
+            </div>
+          </dl>
+        </section>
+
+        <!-- Backup -->
+        <section v-show="activeSection === 'backup'">
+          <h2 class="text-base/7 font-semibold text-white">{{ t('settings.backup') }}</h2>
+          <p class="mt-1 text-sm/6 text-gray-400">{{ t('settings.backup.hint') }}</p>
+          <div class="mt-6 border-t border-white/5 pt-6">
             <button
               type="button"
               @click="downloadBackup"
-              class="rounded-md px-3 py-2 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20"
+              class="rounded-md px-3 py-2 text-sm font-semibold text-gray-300 ring-1 ring-white/10 hover:ring-white/20"
             >
               {{ t('settings.backup.download') }}
             </button>
           </div>
-        </div>
-      </div>
+        </section>
 
-      <!-- Update (nur Admin) -->
-      <div v-if="isAdmin" class="grid grid-cols-1 gap-x-8 gap-y-8 pt-10 md:grid-cols-3">
-        <div>
-          <SectionHeading :text="t('settings.update')" />
-        </div>
-        <div class="bg-gray-800/50 ring-1 ring-white/10 rounded-xl md:col-span-2">
-          <div class="px-4 py-6 sm:p-8 space-y-3">
+        <!-- Update (nur Admin) -->
+        <section v-if="isAdmin" v-show="activeSection === 'update'">
+          <h2 class="text-base/7 font-semibold text-white">{{ t('settings.update') }}</h2>
+          <p class="mt-1 text-sm/6 text-gray-400">{{ t('settings.update.hint') }}</p>
+          <div class="mt-6 border-t border-white/5 pt-6 space-y-3">
             <button
               type="button"
               :disabled="updating"
@@ -95,14 +110,12 @@
             </button>
             <p v-if="updateMsg" class="text-sm text-gray-400">{{ updateMsg }}</p>
           </div>
-        </div>
-      </div>
+        </section>
 
-      <!-- Logout -->
-      <div class="grid grid-cols-1 gap-x-8 gap-y-8 pt-10 md:grid-cols-3">
-        <div></div>
-        <div class="md:col-span-2">
-          <div class="px-4 py-6 sm:p-8">
+        <!-- Konto -->
+        <section v-show="activeSection === 'account'">
+          <h2 class="text-base/7 font-semibold text-white">{{ t('settings.logout') }}</h2>
+          <div class="mt-6 border-t border-white/5 pt-6">
             <button
               type="button"
               @click="handleLogout"
@@ -111,21 +124,27 @@
               {{ t('settings.logout') }}
             </button>
           </div>
-        </div>
-      </div>
+        </section>
 
-    </div>
+      </div>
+    </main>
   </div>
 </template>
 
 <script setup>
-import SectionHeading from '../components/SectionHeading.vue'
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLocale } from '../composables/useLocale.js'
 import { logout, setServerUrl, api } from '../api/client.js'
 import { downloadBackup } from '../api/backup.js'
 import { jwtDecode } from '../api/jwtDecode.js'
+import {
+  LanguageIcon,
+  ServerIcon,
+  ArchiveBoxArrowDownIcon,
+  ArrowPathIcon,
+  ArrowLeftStartOnRectangleIcon,
+} from '@heroicons/vue/24/outline'
 
 const { t, locale, setLocale } = useLocale()
 const router = useRouter()
@@ -135,6 +154,21 @@ const updating = ref(false)
 const updateMsg = ref('')
 const status = ref(null)
 const statusError = ref('')
+const activeSection = ref('general')
+
+const isAdmin = ref(false)
+try {
+  const token = localStorage.getItem('luxstage_token')
+  if (token) isAdmin.value = jwtDecode(token)?.role === 'admin'
+} catch { /* ignorieren */ }
+
+const secondaryNav = computed(() => [
+  { key: 'general', name: t('settings.language'), icon: LanguageIcon },
+  { key: 'server', name: t('settings.server'), icon: ServerIcon },
+  { key: 'backup', name: t('settings.backup'), icon: ArchiveBoxArrowDownIcon },
+  ...(isAdmin.value ? [{ key: 'update', name: t('settings.update'), icon: ArrowPathIcon }] : []),
+  { key: 'account', name: t('nav.logout'), icon: ArrowLeftStartOnRectangleIcon },
+])
 
 onMounted(async () => {
   try {
@@ -143,13 +177,6 @@ onMounted(async () => {
     statusError.value = t('error.network')
   }
 })
-
-// Rolle aus JWT lesen (kein extra API-Call nötig)
-const isAdmin = ref(false)
-try {
-  const token = localStorage.getItem('luxstage_token')
-  if (token) isAdmin.value = jwtDecode(token)?.role === 'admin'
-} catch { /* ignorieren */ }
 
 function applyServer() {
   setServerUrl(serverUrl.value)
@@ -164,7 +191,7 @@ async function doUpdate() {
   updating.value = true
   updateMsg.value = ''
   try {
-    const res = await api.post('/api/update', {})
+    await api.post('/api/update', {})
     updateMsg.value = t('settings.update.success')
   } catch (e) {
     updateMsg.value = t('settings.update.error', { message: e.message })

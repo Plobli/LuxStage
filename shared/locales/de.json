@@ -156,6 +156,9 @@
   "settings.update.success": "✓ Update gestartet — Server wird neu gestartet",
   "settings.update.error": "✗ {message}",
   "settings.server_url.label": "Server-URL",
+  "settings.language.hint": "Wähle die Anzeigesprache der App.",
+  "settings.backup.hint": "Lade alle Show-Daten als ZIP-Archiv herunter.",
+  "settings.update.hint": "Aktualisiert den Server per git pull und startet ihn neu.",
 
   "editor.bold": "B",
   "editor.italic": "I",

@@ -156,6 +156,9 @@
   "settings.update.success": "✓ Update started — server is restarting",
   "settings.update.error": "✗ {message}",
   "settings.server_url.label": "Server URL",
+  "settings.language.hint": "Choose the display language of the app.",
+  "settings.backup.hint": "Download all show data as a ZIP archive.",
+  "settings.update.hint": "Updates the server via git pull and restarts it.",
 
   "editor.bold": "B",
   "editor.italic": "I",

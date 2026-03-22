@@ -39,7 +39,8 @@
                 </div>
                 <div class="flex grow flex-col gap-y-5 overflow-y-auto bg-gray-950 px-6 pb-2 ring-1 ring-white/10">
                   <div class="flex h-16 shrink-0 items-center">
-                    <span class="text-lg font-bold text-accent">LuxStage</span>
+                    <img src="/favicon.png" alt="LuxStage" class="h-8 w-8 rounded-lg" />
+                    <span class="ml-3 text-lg font-bold text-white">LuxStage</span>
                   </div>
                   <nav class="flex flex-1 flex-col">
                     <ul role="list" class="flex flex-1 flex-col gap-y-7">
@@ -78,7 +79,7 @@
       <!-- Desktop Sidebar (statisch, schmal – nur Icons) -->
       <div class="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:block lg:w-20 lg:overflow-y-auto lg:bg-gray-950 lg:pb-4 border-r border-white/10">
         <div class="flex h-16 shrink-0 items-center justify-center">
-          <span class="text-sm font-bold text-accent">LS</span>
+          <img src="/favicon.png" alt="LuxStage" class="h-9 w-9 rounded-xl" />
         </div>
         <nav class="mt-8">
           <ul role="list" class="flex flex-col items-center space-y-1">
@@ -113,7 +114,10 @@
           <span class="sr-only">Sidebar öffnen</span>
           <Bars3Icon class="size-6" aria-hidden="true" />
         </button>
-        <div class="flex-1 text-sm/6 font-semibold text-white">LuxStage</div>
+        <div class="flex items-center gap-2 flex-1">
+          <img src="/favicon.png" alt="LuxStage" class="h-7 w-7 rounded-lg" />
+          <span class="text-sm/6 font-semibold text-white">LuxStage</span>
+        </div>
       </div>
 
       <!-- Main Content -->
@@ -122,6 +126,16 @@
 
       </main>
     </div>
+    <!-- Global Confirm Dialog -->
+    <ConfirmDialog
+      :open="confirmState.open.value"
+      :title="confirmState.title.value"
+      :message="confirmState.message.value"
+      :confirmLabel="confirmState.confirmLabel.value"
+      :cancelLabel="confirmState.cancelLabel.value"
+      @confirm="resolveConfirm(true)"
+      @cancel="resolveConfirm(false)"
+    />
   </div>
 </template>
 
@@ -139,6 +153,10 @@ import {
 } from '@heroicons/vue/24/outline'
 import { useLocale } from './composables/useLocale.js'
 import { logout } from './api/client.js'
+import ConfirmDialog from './components/ConfirmDialog.vue'
+import { useConfirmDialog, resolveConfirm } from './composables/useConfirm.js'
+
+const confirmState = useConfirmDialog()
 
 const { t } = useLocale()
 const route = useRoute()

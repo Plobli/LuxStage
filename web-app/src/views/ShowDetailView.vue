@@ -164,7 +164,7 @@
                     <textarea
                       :value="ch.notes"
                       @change="ch.notes = $event.target.value; persistChannels()"
-                      class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4"
+                      class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle"
                     />
                   </td>
                   <td class="py-2 pl-2 pr-0 align-middle">

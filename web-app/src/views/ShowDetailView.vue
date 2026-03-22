@@ -420,19 +420,28 @@ async function persistSections() {
 
 function parseFieldValue(sectionId, key) {
   const raw = sectionContents.value.get(sectionId) ?? ''
-  const match = raw.match(new RegExp(`^${key}:\\s*(.*)$`, 'm'))
-  return match ? match[1].trim() : ''
+  for (const line of raw.split('\n')) {
+    const colonIdx = line.indexOf(':')
+    if (colonIdx !== -1 && line.slice(0, colonIdx).trim() === key) {
+      return line.slice(colonIdx + 1).trim()
+    }
+  }
+  return ''
 }
 
 function onFieldChange(sectionId, key, value) {
-  let raw = sectionContents.value.get(sectionId) ?? ''
-  const re = new RegExp(`^${key}:.*$`, 'm')
-  if (re.test(raw)) {
-    raw = raw.replace(re, `${key}: ${value}`)
+  const raw = sectionContents.value.get(sectionId) ?? ''
+  const lines = raw ? raw.split('\n') : []
+  const idx = lines.findIndex(l => {
+    const colonIdx = l.indexOf(':')
+    return colonIdx !== -1 && l.slice(0, colonIdx).trim() === key
+  })
+  if (idx !== -1) {
+    lines[idx] = `${key}: ${value}`
   } else {
-    raw = raw ? raw + `\n${key}: ${value}` : `${key}: ${value}`
+    lines.push(`${key}: ${value}`)
   }
-  onSectionChange(sectionId, raw)
+  onSectionChange(sectionId, lines.join('\n'))
 }
 
 // ── Section Defs verwalten ─────────────────────────────────────────────────

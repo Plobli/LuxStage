@@ -875,6 +875,13 @@ onMounted(async () => {
 
   // SSE für Realtime-Updates von anderen Nutzern
   unsubscribeSSE = subscribeChannels(props.id, async () => {
+    const focused = document.activeElement
+    const isEditing = focused && (
+      focused.tagName === 'INPUT' ||
+      focused.tagName === 'TEXTAREA' ||
+      focused.isContentEditable
+    )
+    if (isEditing) return
     channels.value = await fetchChannels(props.id)
   })
 

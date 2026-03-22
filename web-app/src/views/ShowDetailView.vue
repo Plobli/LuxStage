@@ -474,7 +474,9 @@ const { pushSnapshot, pushSnapshotDebounced, cancelDebounce, undo, redo, canUndo
       persistChannels()
       persistSetup(setupMarkdown.value)
       persistSections()
-    }
+    },
+    // storageKey
+    `undoredo-${props.id}`
   )
 
 function onUndoRedoKeydown(e) {

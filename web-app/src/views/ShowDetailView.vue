@@ -7,12 +7,26 @@
         <svg class="size-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M17 10a.75.75 0 0 1-.75.75H5.612l4.158 3.96a.75.75 0 1 1-1.04 1.08l-5.5-5.25a.75.75 0 0 1 0-1.08l5.5-5.25a.75.75 0 1 1 1.04 1.08L5.612 9.25H16.25A.75.75 0 0 1 17 10Z" clip-rule="evenodd" /></svg>
       </button>
       <div class="h-6 w-px bg-white/10" aria-hidden="true"></div>
-      <div class="flex flex-1 items-center gap-x-3 min-w-0">
+      <div class="flex min-w-0 flex-1 items-center gap-x-3">
         <h1 class="text-sm font-semibold text-white truncate">{{ meta.name }}</h1>
-        <span class="hidden sm:block text-xs text-gray-500">{{ meta.datum }}</span>
-        <span v-if="channelsSaving || sectionsSaving || setupSaving" class="text-xs text-gray-500">…</span>
+        <span class="hidden sm:block text-xs text-gray-500 shrink-0">{{ meta.datum }}</span>
+        <span v-if="channelsSaving || sectionsSaving || setupSaving" class="text-xs text-gray-500 shrink-0">…</span>
       </div>
-      <div class="flex items-center gap-x-3">
+      <!-- Suchfeld rechtsbündig -->
+      <div class="flex items-center gap-x-3 shrink-0">
+        <span v-if="dupWarning" class="text-xs text-yellow-400">⚠ {{ t('channel.dup_address') }}</span>
+        <div class="grid grid-cols-1">
+          <input
+            v-model="search"
+            type="search"
+            :placeholder="t('channel.search')"
+            class="col-start-1 row-start-1 block w-48 bg-white/5 py-1.5 pr-3 pl-9 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent rounded-md placeholder:text-gray-500"
+          />
+          <MagnifyingGlassIcon class="pointer-events-none col-start-1 row-start-1 ml-3 size-4 self-center text-gray-400" aria-hidden="true" />
+        </div>
+      </div>
+      <div class="h-6 w-px bg-white/10 shrink-0" aria-hidden="true"></div>
+      <div class="flex items-center gap-x-3 shrink-0">
         <button
           type="button"
           :class="editingSections ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'"
@@ -84,16 +98,9 @@
       <div class="xl:pl-96">
         <!-- Main: Kanaltabelle -->
         <main class="px-4 py-6 sm:px-6 lg:px-8">
-          <div class="flex flex-wrap items-center gap-3 mb-4">
+          <div class="flex items-center gap-3 mb-4">
             <SectionHeading :text="t('show.channels')" class="flex-1 min-w-0" />
-            <input
-              v-model="search"
-              type="search"
-              :placeholder="t('channel.search')"
-              class="rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent w-48"
-            />
-            <span class="text-xs text-gray-500">{{ totalVisible }} / {{ channels.length }}</span>
-            <span v-if="dupWarning" class="text-xs text-yellow-400">⚠ {{ t('channel.dup_address') }}</span>
+            <span class="text-xs text-gray-500 shrink-0">{{ totalVisible }} / {{ channels.length }}</span>
           </div>
           <div class="overflow-x-auto">
             <table class="min-w-full">
@@ -262,6 +269,7 @@ import { useRouter } from 'vue-router'
 import { useLocale } from '../composables/useLocale.js'
 import MarkdownEditor from '../components/MarkdownEditor.vue'
 import SectionHeading from '../components/SectionHeading.vue'
+import { MagnifyingGlassIcon } from '@heroicons/vue/20/solid'
 import { fetchShow, updateContent } from '../api/shows.js'
 import { fetchChannels, saveChannels } from '../api/channels.js'
 import { fetchPhotos, uploadPhoto, deletePhoto, getPhotoUrl } from '../api/photos.js'

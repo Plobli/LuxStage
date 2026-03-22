@@ -182,11 +182,12 @@
                   <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ t('field.device') }}</th>
                   <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ t('field.color') }}</th>
                   <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ t('field.notes') }}</th>
+                  <th scope="col" class="w-8"></th>
                 </tr>
               </thead>
               <tbody v-for="group in groupedChannels" :key="group.position">
                 <tr class="border-t border-white/5">
-                  <th colspan="5" scope="colgroup" class="py-2 pr-3 pl-0 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                  <th colspan="6" scope="colgroup" class="py-2 pr-3 pl-0 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">
                     {{ group.position || t('channel.no_category') }}
                     <span class="ml-2 font-normal normal-case text-gray-600">{{ group.channels.length }}</span>
                   </th>
@@ -194,82 +195,78 @@
                 <tr
                   v-for="ch in group.channels"
                   :key="ch.channel"
-                  class="border-t border-white/5 cursor-pointer hover:bg-white/5 transition-colors"
-                  :class="{ 'bg-white/5': editingChannel === ch.channel }"
-                  @click="startEdit(ch)"
-                  @keydown.enter.prevent="saveEdit"
-                  @keydown.escape="cancelEdit"
-                  @focusout="onRowFocusOut($event, ch)"
+                  class="border-t border-white/5 group/row hover:bg-white/[0.03] transition-colors"
                 >
-                  <td class="py-0 pr-3 pl-0 text-sm font-medium whitespace-nowrap text-white h-[45px]">
-                    <span class="flex items-center h-full">{{ ch.channel }}</span>
+                  <td class="py-0 pr-3 pl-0 text-sm font-medium whitespace-nowrap text-white w-16">
+                    <input
+                      :value="ch.channel"
+                      @change="ch.channel = $event.target.value; persistChannels()"
+                      class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-white w-full h-[45px] px-0 border-0 font-medium"
+                    />
                   </td>
-                  <td class="px-3 py-0 text-sm whitespace-nowrap text-gray-400 h-[45px]">
-                    <input v-if="editingChannel === ch.channel" class="bg-transparent border-b border-white/20 focus:border-accent focus:outline-none text-sm text-white w-full min-w-[80px] h-full" v-model="editForm.address" @click.stop />
-                    <span v-else class="flex items-center h-full">{{ ch.address }}</span>
+                  <td class="px-3 py-0 text-sm whitespace-nowrap text-gray-300">
+                    <input
+                      :value="ch.address"
+                      @change="ch.address = $event.target.value; persistChannels()"
+                      class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-gray-300 w-full h-[45px] px-2 border-0 min-w-[70px]"
+                    />
                   </td>
-                  <td class="px-3 py-0 text-sm whitespace-nowrap text-gray-400 h-[45px]">
-                    <input v-if="editingChannel === ch.channel" class="bg-transparent border-b border-white/20 focus:border-accent focus:outline-none text-sm text-white w-full min-w-[120px] h-full" v-model="editForm.device" @click.stop />
-                    <span v-else class="flex items-center h-full">{{ ch.device || '—' }}</span>
+                  <td class="px-3 py-0 text-sm whitespace-nowrap text-gray-300">
+                    <input
+                      :value="ch.device"
+                      @change="ch.device = $event.target.value; persistChannels()"
+                      class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-gray-300 w-full h-[45px] px-2 border-0 min-w-[120px]"
+                    />
                   </td>
-                  <td class="px-3 py-0 text-sm whitespace-nowrap text-gray-400 h-[45px]">
-                    <div class="flex items-center h-full">
-                      <ColorPicker v-if="editingChannel === ch.channel" v-model="editForm.color" @click.stop />
-                      <template v-else>
-                        <span v-if="ch.color" class="inline-flex items-center gap-1.5">
-                          <span class="inline-block size-3 rounded-sm" :style="{ background: ch.color }"></span>
-                          <span class="text-xs">{{ ch.color }}</span>
-                        </span>
-                        <span v-else class="text-gray-600">—</span>
-                      </template>
-                    </div>
+                  <td class="px-3 py-0 text-sm whitespace-nowrap text-gray-300 w-32">
+                    <ColorPicker v-model="ch.color" @update:modelValue="persistChannels()" />
                   </td>
-                  <td class="px-3 py-0 text-sm whitespace-nowrap text-gray-400 h-[45px]">
-                    <div class="flex items-center gap-2 h-full">
-                      <input v-if="editingChannel === ch.channel" ref="notesInput" class="bg-transparent border-b border-white/20 focus:border-accent focus:outline-none text-sm text-white flex-1 min-w-[120px] h-full" v-model="editForm.notes" @click.stop />
-                      <span v-else class="flex items-center h-full flex-1">{{ ch.notes }}</span>
-                      <button v-if="editingChannel === ch.channel" class="text-red-400 hover:text-red-300 text-xs px-1 shrink-0" @mousedown.prevent @click.stop="deleteChannel(ch)" :title="t('action.delete')">🗑</button>
-                    </div>
+                  <td class="px-3 py-0 text-sm whitespace-nowrap text-gray-300">
+                    <input
+                      :value="ch.notes"
+                      @change="ch.notes = $event.target.value; persistChannels()"
+                      class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-gray-300 w-full h-[45px] px-2 border-0 min-w-[120px]"
+                    />
                   </td>
-                </tr>
-                <!-- Kanal hinzufügen -->
-                <tr v-if="addingPosition === group.position" class="border-t border-white/5 bg-white/5" @keydown.escape="addingPosition = null">
-                  <td class="py-2 pr-3 pl-0"><input class="rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 w-full" v-model="addForm.channel" :placeholder="t('show.channel.nr')" @click.stop /></td>
-                  <td class="px-3 py-2"><input class="rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 w-full" v-model="addForm.address" :placeholder="t('show.channel.address.example')" @click.stop /></td>
-                  <td class="px-3 py-2"><input class="rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 w-full" v-model="addForm.device" @click.stop /></td>
-                  <td class="px-3 py-2"><ColorPicker v-model="addForm.color" @click.stop /></td>
-                  <td class="px-3 py-2">
-                    <div class="flex items-center gap-2">
-                      <input class="rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 flex-1" v-model="addForm.notes" @click.stop />
-                      <button class="text-green-400 hover:text-green-300 text-sm shrink-0" @click.stop="saveAdd">✓</button>
-                      <button class="text-gray-400 hover:text-white text-sm shrink-0" @click.stop="addingPosition = null">✕</button>
-                    </div>
+                  <td class="py-0 pl-3 pr-0 w-8">
+                    <button
+                      class="text-gray-600 hover:text-red-400 text-xs opacity-0 group-hover/row:opacity-100 transition-opacity"
+                      @click="deleteChannel(ch)"
+                      :title="t('action.delete')"
+                    >🗑</button>
                   </td>
                 </tr>
-                <tr v-else class="border-t border-white/5">
-                  <td colspan="5" class="py-2 pl-0">
-                    <button type="button" class="text-sm text-gray-500 hover:text-gray-300" @click.stop="startAdd(group.position)">+ {{ t('channel.add') }}</button>
+                <tr class="border-t border-white/5">
+                  <td colspan="6" class="py-2 pl-0">
+                    <button type="button" class="text-sm text-gray-600 hover:text-gray-300" @click="startAdd(group.position)">+ {{ t('channel.add') }}</button>
+                  </td>
+                </tr>
+                <tr v-if="addingPosition === group.position" class="border-t border-white/5 bg-white/5" @keydown.escape="addingPosition = null" @keydown.enter.prevent="saveAdd">
+                  <td class="py-2 pr-3 pl-0"><input autofocus class="bg-transparent focus:outline-none text-sm text-white w-full px-0 min-w-[40px]" v-model="addForm.channel" :placeholder="t('show.channel.nr')" /></td>
+                  <td class="px-3 py-2"><input class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 min-w-[70px]" v-model="addForm.address" :placeholder="t('show.channel.address.example')" /></td>
+                  <td class="px-3 py-2"><input class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 min-w-[120px]" v-model="addForm.device" /></td>
+                  <td class="px-3 py-2"><ColorPicker v-model="addForm.color" /></td>
+                  <td class="px-3 py-2"><input class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 min-w-[120px]" v-model="addForm.notes" /></td>
+                  <td class="py-2 pl-3 pr-0">
+                    <button class="text-green-400 hover:text-green-300 text-sm" @click="saveAdd">✓</button>
                   </td>
                 </tr>
               </tbody>
               <tbody v-if="groupedChannels.length === 0">
-                <tr v-if="addingPosition === ''" class="border-t border-white/5 bg-white/5" @keydown.escape="addingPosition = null">
-                  <td class="py-2 pr-3 pl-0"><input class="rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 w-full" v-model="addForm.channel" :placeholder="t('show.channel.nr')" @click.stop /></td>
-                  <td class="px-3 py-2"><input class="rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 w-full" v-model="addForm.address" :placeholder="t('show.channel.address.example')" @click.stop /></td>
-                  <td class="px-3 py-2"><input class="rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 w-full" v-model="addForm.device" @click.stop /></td>
-                  <td class="px-3 py-2"><ColorPicker v-model="addForm.color" @click.stop /></td>
-                  <td class="px-3 py-2">
-                    <div class="flex items-center gap-2">
-                      <input class="rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 flex-1" v-model="addForm.notes" @click.stop />
-                      <button class="text-green-400 hover:text-green-300 text-sm shrink-0" @click.stop="saveAdd">✓</button>
-                      <button class="text-gray-400 hover:text-white text-sm shrink-0" @click.stop="addingPosition = null">✕</button>
-                    </div>
+                <tr v-if="addingPosition === ''" class="border-t border-white/5 bg-white/5" @keydown.escape="addingPosition = null" @keydown.enter.prevent="saveAdd">
+                  <td class="py-2 pr-3 pl-0"><input autofocus class="bg-transparent focus:outline-none text-sm text-white w-full px-0 min-w-[40px]" v-model="addForm.channel" :placeholder="t('show.channel.nr')" /></td>
+                  <td class="px-3 py-2"><input class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 min-w-[70px]" v-model="addForm.address" :placeholder="t('show.channel.address.example')" /></td>
+                  <td class="px-3 py-2"><input class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 min-w-[120px]" v-model="addForm.device" /></td>
+                  <td class="px-3 py-2"><ColorPicker v-model="addForm.color" /></td>
+                  <td class="px-3 py-2"><input class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 min-w-[120px]" v-model="addForm.notes" /></td>
+                  <td class="py-2 pl-3 pr-0">
+                    <button class="text-green-400 hover:text-green-300 text-sm" @click="saveAdd">✓</button>
                   </td>
                 </tr>
                 <tr v-else class="border-t border-white/5">
-                  <td colspan="5" class="py-4 pl-0">
+                  <td colspan="6" class="py-4 pl-0">
                     <span class="text-sm text-gray-500">{{ t('channel.list.empty') }}</span>
-                    <button type="button" class="ml-3 text-sm text-gray-400 hover:text-white" @click.stop="startAdd('')">+ {{ t('channel.add') }}</button>
+                    <button type="button" class="ml-3 text-sm text-gray-400 hover:text-white" @click="startAdd('')">+ {{ t('channel.add') }}</button>
                   </td>
                 </tr>
               </tbody>
@@ -288,7 +285,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLocale } from '../composables/useLocale.js'
 import MarkdownEditor from '../components/MarkdownEditor.vue'
@@ -379,44 +376,10 @@ const groupedChannels = computed(() => {
 
 const totalVisible = computed(() => groupedChannels.value.reduce((s, g) => s + g.channels.length, 0))
 
-// ── Inline-Edit ────────────────────────────────────────────────────────────
-const editingChannel = ref(null)
-const editForm = ref({})
-const notesInput = ref(null)
-
-function startEdit(ch) {
-  if (editingChannel.value === ch.channel) return
-  if (editingChannel.value !== null) commitEdit()
-  editingChannel.value = ch.channel
-  editForm.value = { ...ch }
-  nextTick(() => {
-    const el = Array.isArray(notesInput.value) ? notesInput.value[0] : notesInput.value
-    el?.focus()
-  })
-}
-
-function cancelEdit() { editingChannel.value = null; editForm.value = {} }
-
-function onRowFocusOut(event, ch) {
-  if (editingChannel.value !== ch.channel) return
-  if (!event.currentTarget.contains(event.relatedTarget)) commitEdit()
-}
-
-function saveEdit() { commitEdit() }
-
-function commitEdit() {
-  if (!editingChannel.value) return
-  const idx = channels.value.findIndex(c => c.channel === editingChannel.value)
-  if (idx !== -1) channels.value[idx] = { ...editForm.value }
-  editingChannel.value = null
-  editForm.value = {}
-  persistChannels()
-}
-
+// ── Kanal löschen ──────────────────────────────────────────────────────────
 async function deleteChannel(ch) {
   if (!window.confirm(t('show.channel.delete.confirm', { channel: ch.channel }))) return
   channels.value = channels.value.filter(c => c.channel !== ch.channel)
-  editingChannel.value = null
   persistChannels()
 }
 

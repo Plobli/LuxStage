@@ -469,6 +469,7 @@ function savePosition() {
   const oldPos = editingPosition.value
   const newPos = editingPositionValue.value.trim()
   if (newPos && newPos !== oldPos) {
+    pushSnapshot()
     for (const ch of channels.value) {
       if (ch.position === oldPos) ch.position = newPos
     }
@@ -582,6 +583,7 @@ function initSortable() {
       if (reordered.length === channels.value.length) {
         channels.value.splice(0, channels.value.length, ...reordered)
       }
+      pushSnapshot()
       persistChannels()
       // Nach Vue-Render Sortable neu binden (DOM wurde durch Vue gepatcht)
       nextTick(initSortable)
@@ -607,6 +609,7 @@ function rowIndexOf(ch) {
 async function deleteChannel(ch) {
   const ok = await confirm({ t, titleKey: 'show.channel.delete.confirm', messageParams: { channel: ch.channel }, confirmKey: 'action.delete', cancelKey: 'action.cancel' })
   if (!ok) return
+  pushSnapshot()
   channels.value = channels.value.filter(c => c.channel !== ch.channel)
   persistChannels()
 }
@@ -622,6 +625,7 @@ function startAdd(position) {
 
 function saveAdd() {
   if (!addForm.value.channel) return
+  pushSnapshot()
   const newCh = { ...addForm.value }
   const newNr = parseInt(newCh.channel)
   // Numerisch an die richtige Position einfügen
@@ -735,6 +739,7 @@ async function persistSectionDefs() {
 }
 
 function addSection() {
+  pushSnapshot()
   sectionDefs.value.push({
     id: uuid(),
     title: '',
@@ -746,12 +751,14 @@ function addSection() {
 }
 
 function deleteSectionDef(idx) {
+  pushSnapshot()
   sectionDefs.value.splice(idx, 1)
   sectionDefs.value.forEach((s, i) => s.order = i)
   persistSectionDefs()
 }
 
 function moveSectionDef(idx, dir) {
+  pushSnapshot()
   const arr = sectionDefs.value
   const swap = idx + dir
   if (swap < 0 || swap >= arr.length) return
@@ -761,11 +768,13 @@ function moveSectionDef(idx, dir) {
 }
 
 function addFieldDef(section) {
+  pushSnapshot()
   section.fields.push({ key: uuid().slice(0, 8), label: '' })
   persistSectionDefs()
 }
 
 function deleteFieldDef(section, idx) {
+  pushSnapshot()
   section.fields.splice(idx, 1)
   persistSectionDefs()
 }
@@ -775,6 +784,7 @@ function hasFieldsType() {
 }
 
 function onSectionTypeChange(section, newType) {
+  pushSnapshot()
   if (newType === 'fields' && hasFieldsType() && section.type !== 'fields') return
   section.type = newType
   if (newType === 'fields' && !section.fields) section.fields = []

@@ -78,7 +78,7 @@
             <span class="text-xs text-gray-500 shrink-0">{{ totalVisible }} / {{ channels.length }}</span>
           </div>
           <div>
-            <table class="min-w-full overflow-x-auto">
+            <table class="min-w-full overflow-x-auto" @dragover.prevent="onTableDragOver" @drop.prevent="onTableDrop">
               <colgroup>
                 <col class="w-4" />            <!-- Handle -->
                 <col class="w-16" />           <!-- Kanal + Adresse -->
@@ -127,8 +127,7 @@
                   v-for="ch in group.channels"
                   :key="ch.channel"
                   :data-nav-row="rowIndexOf(ch)"
-                  @dragover="onRowDragOver($event, ch)"
-                  @drop="onRowDrop($event, ch)"
+                  :data-ch-idx="channels.indexOf(ch)"
                   @dragend="onRowDragEnd"
                   :class="[
                     'border-t border-white/5 group/row hover:bg-white/[0.03] transition-colors align-middle',
@@ -525,18 +524,16 @@ function onRowDragStart(e, ch) {
   e.dataTransfer.effectAllowed = 'move'
 }
 
-function onRowDragOver(e, ch) {
-  e.preventDefault()
-  e.dataTransfer.dropEffect = 'move'
-  dragOverIndex.value = channels.value.indexOf(ch)
+function onTableDragOver(e) {
+  const tr = e.target.closest('tr[data-ch-idx]')
+  dragOverIndex.value = tr ? parseInt(tr.dataset.chIdx) : null
 }
 
-
-function onRowDrop(e, ch) {
-  e.preventDefault()
+function onTableDrop(e) {
+  const tr = e.target.closest('tr[data-ch-idx]')
+  const to = tr ? parseInt(tr.dataset.chIdx) : null
   const from = dragSrcIndex.value
-  const to = channels.value.indexOf(ch)
-  if (from === null || from === to) { dragOverIndex.value = null; return }
+  if (from === null || to === null || from === to) { dragOverIndex.value = null; return }
   const arr = [...channels.value]
   const [item] = arr.splice(from, 1)
   arr.splice(to, 0, item)

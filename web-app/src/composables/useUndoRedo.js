@@ -4,17 +4,19 @@ import { ref, computed } from 'vue'
 const MAX_HISTORY = 50
 
 /**
- * @param {() => object} getState   – gibt aktuellen Zustand zurück
+ * @param {() => object} getState          – gibt aktuellen Zustand zurück
  * @param {(snapshot: object) => void} applyState – stellt Zustand wieder her
- * @param {() => void} cancelPendingSaves – bricht laufende debounced Saves ab
+ * @param {() => void} cancelPendingSaves  – bricht laufende debounced Saves ab
+ * @param {() => void} saveNow             – speichert sofort nach undo/redo
  */
-export function useUndoRedo(getState, applyState, cancelPendingSaves) {
+export function useUndoRedo(getState, applyState, cancelPendingSaves, saveNow = () => {}) {
   const past = ref([])    // älteste zuerst
   const future = ref([])  // neueste zuerst (future[0] = nächster Redo-Schritt)
 
   let debounceTimer = null
 
-  /** Sofortiger Snapshot — für destruktive Aktionen */
+  /** Sofortiger Snapshot — für destruktive Aktionen.
+   *  Verwirft ausstehenden Debounce (kein Flush — aktueller Stand wird via getState() gesichert). */
   function pushSnapshot() {
     cancelDebounce()
     _push(getState())
@@ -43,7 +45,7 @@ export function useUndoRedo(getState, applyState, cancelPendingSaves) {
     }
   }
 
-  function undo(saveNow) {
+  function undo() {
     if (!past.value.length) return
     const current = structuredClone(getState())
     future.value.unshift(current)
@@ -53,7 +55,7 @@ export function useUndoRedo(getState, applyState, cancelPendingSaves) {
     saveNow()
   }
 
-  function redo(saveNow) {
+  function redo() {
     if (!future.value.length) return
     const current = structuredClone(getState())
     past.value.push(current)

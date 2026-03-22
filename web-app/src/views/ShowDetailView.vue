@@ -183,8 +183,8 @@
                     />
                   </td>
                   <td class="py-2 pl-2 pr-1 align-middle">
-                    <button class="no-print size-6 flex items-center justify-center rounded text-gray-600 hover:text-white hover:bg-red-500/80 opacity-0 group-hover/row:opacity-100 transition-all" @click="deleteChannel(ch)" :title="t('action.delete')">
-                      <svg class="size-3.5" viewBox="0 0 16 16" fill="currentColor"><path d="M6 2a1 1 0 0 0-1 1v.5H3.5a.5.5 0 0 0 0 1H4v8a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-8h.5a.5.5 0 0 0 0-1H11V3a1 1 0 0 0-1-1H6Zm1 3.5a.5.5 0 0 1 1 0v5a.5.5 0 0 1-1 0v-5Zm3 0a.5.5 0 0 1 1 0v5a.5.5 0 0 1-1 0v-5Z"/></svg>
+                    <button class="no-print text-gray-600 hover:text-red-400 opacity-0 group-hover/row:opacity-100 transition-opacity" @click="deleteChannel(ch)" :title="t('action.delete')">
+                      <TrashIcon class="size-4" />
                     </button>
                   </td>
                 </tr>
@@ -382,6 +382,7 @@ import { useKeyboardNav } from '../composables/useKeyboardNav.js'
 import MarkdownEditor from '../components/MarkdownEditor.vue'
 import SectionHeading from '../components/SectionHeading.vue'
 import { MagnifyingGlassIcon } from '@heroicons/vue/20/solid'
+import { TrashIcon } from '@heroicons/vue/24/outline'
 import { fetchShow, updateContent } from '../api/shows.js'
 import { fetchChannels, saveChannels, downloadChannelsCsv } from '../api/channels.js'
 import { fetchPhotos, uploadPhoto, deletePhoto, getPhotoUrl } from '../api/photos.js'

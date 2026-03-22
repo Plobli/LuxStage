@@ -20,6 +20,11 @@ const routes = [
     props: true,
   },
   {
+    path: '/archive',
+    name: 'archive',
+    component: () => import('../views/ArchiveView.vue'),
+  },
+  {
     path: '/templates',
     name: 'templates',
     component: () => import('../views/TemplatesView.vue'),

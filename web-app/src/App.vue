@@ -148,6 +148,7 @@ import {
   XMarkIcon,
   ArrowLeftStartOnRectangleIcon,
   RectangleStackIcon,
+  ArchiveBoxIcon,
   DocumentDuplicateIcon,
   Cog6ToothIcon,
 } from '@heroicons/vue/24/outline'
@@ -174,6 +175,7 @@ function isActiveRoute(item) {
 
 const navigation = [
   { name: t('nav.shows'), to: '/', routeName: 'shows', icon: RectangleStackIcon },
+  { name: t('nav.archive'), to: '/archive', routeName: 'archive', icon: ArchiveBoxIcon },
   { name: t('nav.templates'), to: '/templates', routeName: 'templates', icon: DocumentDuplicateIcon },
   { name: t('nav.settings'), to: '/settings', routeName: 'settings', icon: Cog6ToothIcon },
 ]

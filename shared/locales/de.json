@@ -2,6 +2,7 @@
   "app.name": "LuxStage",
 
   "nav.shows": "Shows",
+  "nav.archive": "Archiv",
   "nav.templates": "Vorlagen",
   "nav.settings": "Einstellungen",
   "nav.logout": "Abmelden",
@@ -30,6 +31,7 @@
   "show.edit": "Show bearbeiten",
   "show.list.empty": "Noch keine Shows vorhanden.",
   "show.list.archived_empty": "Keine archivierten Shows.",
+  "show.archive.empty": "Keine archivierten Shows",
   "show.setup": "Aufbau",
   "show.setup.placeholder": "Aufbaunotizen, Besonderheiten, Hinweise …",
 

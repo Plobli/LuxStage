@@ -59,44 +59,6 @@
       </div>
     </template>
 
-    <!-- Archivierte Shows -->
-    <div class="mt-10">
-      <button
-        type="button"
-        class="text-sm text-gray-500 hover:text-gray-300"
-        @click="showArchived = !showArchived"
-      >
-        {{ showArchived ? '▾' : '▸' }} {{ t('show.archived') }} ({{ archivedShows.length }})
-      </button>
-      <ul v-if="showArchived" role="list" class="mt-3 grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
-        <li
-          v-for="show in archivedShows"
-          :key="show.id"
-          class="col-span-1 flex rounded-md shadow-xs opacity-50"
-        >
-          <div class="flex w-16 shrink-0 items-center justify-center rounded-l-md bg-gray-800 text-sm font-medium text-white">
-            {{ initials(show.name || show.id) }}
-          </div>
-          <div class="flex flex-1 items-center justify-between truncate rounded-r-md border-t border-r border-b border-white/10 bg-gray-800/50">
-            <div class="flex-1 truncate px-4 py-2 text-sm">
-              <span class="font-medium text-white">{{ show.name || show.id }}</span>
-              <p class="text-gray-400">{{ show.datum }}</p>
-            </div>
-            <div class="shrink-0 pr-2">
-              <button
-                type="button"
-                class="inline-flex size-8 items-center justify-center rounded-full text-gray-400 hover:text-white focus:outline-none"
-                @click="restore(show.id)"
-                :title="t('show.restore')"
-              >
-                <ArrowUturnLeftIcon class="size-4" aria-hidden="true" />
-              </button>
-            </div>
-          </div>
-        </li>
-      </ul>
-    </div>
-
     <!-- Neue Show: Drawer -->
     <TransitionRoot as="template" :show="drawerOpen">
       <Dialog class="relative z-50" @close="drawerOpen = false">
@@ -206,9 +168,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue'
-import { XMarkIcon, ArchiveBoxIcon, ArrowUturnLeftIcon } from '@heroicons/vue/24/outline'
+import { XMarkIcon, ArchiveBoxIcon } from '@heroicons/vue/24/outline'
 import { useLocale } from '../composables/useLocale.js'
-import { fetchShows, createShow, archiveShow, fetchArchivedShows, restoreShow } from '../api/shows.js'
+import { fetchShows, createShow, archiveShow } from '../api/shows.js'
 import { fetchTemplates, fetchTemplateChannels } from '../api/templates.js'
 import { saveChannels } from '../api/channels.js'
 import { fetchTemplateSections, saveShowSectionDefs } from '../api/sections.js'
@@ -219,11 +181,9 @@ const { t } = useLocale()
 
 const shows = ref([])
 const templates = ref([])
-const archivedShows = ref([])
 const loading = ref(true)
 const creating = ref(false)
 const drawerOpen = ref(false)
-const showArchived = ref(false)
 const form = ref({ name: '', datum: new Date().toISOString().slice(0, 10), template: '' })
 
 function initials(name) {
@@ -249,10 +209,9 @@ const groupedShows = computed(() => {
 })
 
 onMounted(async () => {
-  const [s, tpls, archived] = await Promise.all([fetchShows(), fetchTemplates(), fetchArchivedShows()])
+  const [s, tpls] = await Promise.all([fetchShows(), fetchTemplates()])
   shows.value = s
   templates.value = tpls
-  archivedShows.value = archived
   loading.value = false
 })
 
@@ -279,12 +238,6 @@ async function handleCreate() {
     drawerOpen.value = false
     router.push(`/shows/${id}`)
   }
-}
-
-async function restore(showId) {
-  await restoreShow(showId)
-  archivedShows.value = archivedShows.value.filter(s => s.id !== showId)
-  shows.value = await fetchShows()
 }
 
 async function archive(showId) {

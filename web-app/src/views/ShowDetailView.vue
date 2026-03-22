@@ -125,7 +125,16 @@
                   v-for="ch in group.channels"
                   :key="ch.channel"
                   :data-nav-row="rowIndexOf(ch)"
-                  class="border-t border-white/5 group/row hover:bg-white/[0.03] transition-colors align-middle"
+                  draggable="true"
+                  @dragstart="onDragStart($event, ch)"
+                  @dragover="onDragOver($event, ch)"
+                  @dragleave="onDragLeave"
+                  @drop="onDrop($event, ch)"
+                  @dragend="onDragEnd"
+                  :class="[
+                    'border-t border-white/5 group/row hover:bg-white/[0.03] transition-colors align-middle cursor-grab active:cursor-grabbing',
+                    dragOverIndex === channels.indexOf(ch) && dragSrcIndex !== channels.indexOf(ch) ? 'outline outline-2 outline-accent/50 outline-offset-[-2px]' : ''
+                  ]"
                 >
                   <td class="py-2 pr-3 pl-0 align-middle">
                     <div class="flex flex-col items-center gap-1">
@@ -173,8 +182,10 @@
                       class="bg-white/[0.04] focus:bg-white/[0.07] focus:outline-none focus:ring-0 text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle rounded"
                     />
                   </td>
-                  <td class="py-2 pl-2 pr-0 align-middle">
-                    <button class="no-print text-gray-600 hover:text-red-400 text-xs opacity-0 group-hover/row:opacity-100 transition-opacity" @click="deleteChannel(ch)" :title="t('action.delete')">✕</button>
+                  <td class="py-2 pl-2 pr-1 align-middle">
+                    <button class="no-print size-6 flex items-center justify-center rounded text-gray-600 hover:text-white hover:bg-red-500/80 opacity-0 group-hover/row:opacity-100 transition-all" @click="deleteChannel(ch)" :title="t('action.delete')">
+                      <svg class="size-3.5" viewBox="0 0 16 16" fill="currentColor"><path d="M6 2a1 1 0 0 0-1 1v.5H3.5a.5.5 0 0 0 0 1H4v8a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-8h.5a.5.5 0 0 0 0-1H11V3a1 1 0 0 0-1-1H6Zm1 3.5a.5.5 0 0 1 1 0v5a.5.5 0 0 1-1 0v-5Zm3 0a.5.5 0 0 1 1 0v5a.5.5 0 0 1-1 0v-5Z"/></svg>
+                    </button>
                   </td>
                 </tr>
                 <tr class="no-print border-t border-white/5">
@@ -475,7 +486,10 @@ const dupChannelWarning = computed(() => dupChannelNrs.value.size > 0)
 // ── Kanäle gruppiert ───────────────────────────────────────────────────────
 const groupedChannels = computed(() => {
   const q = search.value.toLowerCase()
-  let chs = [...channels.value].sort((a, b) => parseInt(a.channel) - parseInt(b.channel))
+  // Bei aktivem Suchfilter numerisch sortieren, sonst Reihenfolge aus channels.value beibehalten
+  let chs = q
+    ? [...channels.value].sort((a, b) => parseInt(a.channel) - parseInt(b.channel))
+    : [...channels.value]
   if (q) {
     chs = chs.filter(ch =>
       ch.channel?.includes(q) ||
@@ -492,6 +506,44 @@ const groupedChannels = computed(() => {
   }
   return [...map.entries()].map(([position, channels]) => ({ position, channels }))
 })
+
+// ── Drag & Drop zum Umsortieren ────────────────────────────────────────────
+const dragSrcIndex = ref(null) // Index in channels.value
+const dragOverIndex = ref(null)
+
+function onDragStart(e, ch) {
+  dragSrcIndex.value = channels.value.indexOf(ch)
+  e.dataTransfer.effectAllowed = 'move'
+}
+
+function onDragOver(e, ch) {
+  e.preventDefault()
+  e.dataTransfer.dropEffect = 'move'
+  dragOverIndex.value = channels.value.indexOf(ch)
+}
+
+function onDragLeave() {
+  dragOverIndex.value = null
+}
+
+function onDrop(e, ch) {
+  e.preventDefault()
+  const from = dragSrcIndex.value
+  const to = channels.value.indexOf(ch)
+  if (from === null || from === to) { dragOverIndex.value = null; return }
+  const arr = [...channels.value]
+  const [item] = arr.splice(from, 1)
+  arr.splice(to, 0, item)
+  channels.value = arr
+  persistChannels()
+  dragSrcIndex.value = null
+  dragOverIndex.value = null
+}
+
+function onDragEnd() {
+  dragSrcIndex.value = null
+  dragOverIndex.value = null
+}
 
 const totalVisible = computed(() => groupedChannels.value.reduce((s, g) => s + g.channels.length, 0))
 

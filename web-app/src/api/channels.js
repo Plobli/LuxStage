@@ -48,3 +48,14 @@ export async function saveChannels(showId, channels) {
   const csv = serializeCsv(channels)
   return api.put(`/api/shows/${showId}/channels`, { csv })
 }
+
+export function downloadChannelsCsv(showId, channels) {
+  const csv = serializeCsv(channels)
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${showId}-kanäle.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}

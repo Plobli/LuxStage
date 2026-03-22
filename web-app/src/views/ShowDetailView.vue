@@ -143,7 +143,7 @@
                       <div class="flex flex-col items-center gap-1">
                         <input
                           :value="ch.channel"
-                          @change="ch.channel = $event.target.value; persistChannels()"
+                          @change="ch.channel = $event.target.value; pushSnapshotDebounced(); persistChannels()"
                           :data-nav-row="rowIndexOf(ch)"
                           data-nav-col="0"
                           @keydown="onKeydown($event, rowIndexOf(ch), 0, 4, () => startAdd(ch.position))"
@@ -152,7 +152,7 @@
                         />
                         <input
                           :value="ch.address"
-                          @change="ch.address = $event.target.value; persistChannels()"
+                          @change="ch.address = $event.target.value; pushSnapshotDebounced(); persistChannels()"
                           class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-xs text-gray-500 px-0 border-0 w-[5ch] text-center"
                         />
                       </div>
@@ -161,14 +161,14 @@
                       <ColorAutocomplete
                         :modelValue="ch.color"
                         @update:modelValue="ch.color = $event"
-                        @change="persistChannels()"
+                        @change="pushSnapshotDebounced(); persistChannels()"
                         :placeholder="t('field.color')"
                       />
                     </td>
                     <td class="px-3 py-0 align-middle">
                       <textarea
                         :value="ch.device"
-                        @change="ch.device = $event.target.value; persistChannels()"
+                        @change="ch.device = $event.target.value; pushSnapshotDebounced(); persistChannels()"
                         :data-nav-row="rowIndexOf(ch)"
                         data-nav-col="2"
                         @keydown="onKeydown($event, rowIndexOf(ch), 2, 4, null)"
@@ -178,7 +178,7 @@
                     <td class="px-3 py-0 align-middle">
                       <textarea
                         :value="ch.notes"
-                        @change="ch.notes = $event.target.value; persistChannels()"
+                        @change="ch.notes = $event.target.value; pushSnapshotDebounced(); persistChannels()"
                         :data-nav-row="rowIndexOf(ch)"
                         data-nav-col="3"
                         @keydown="onKeydown($event, rowIndexOf(ch), 3, 4, () => startAdd(ch.position))"
@@ -487,6 +487,7 @@ let saveSetupTimer = null
 let pendingSetupMd = null
 
 function onSetupChange(md) {
+  pushSnapshotDebounced()
   pendingSetupMd = md
   clearTimeout(saveSetupTimer)
   saveSetupTimer = setTimeout(() => { persistSetup(md); saveSetupTimer = null }, 800)
@@ -692,6 +693,7 @@ function openLightbox(filename) {
 function onSectionChange(id, value) {
   sectionContents.value = new Map(sectionContents.value)
   sectionContents.value.set(id, value)
+  pushSnapshotDebounced()
   clearTimeout(saveSectionsTimer)
   saveSectionsTimer = setTimeout(() => { persistSections(); saveSectionsTimer = null }, 800)
 }

@@ -576,7 +576,12 @@ function startAdd(position) {
 
 function saveAdd() {
   if (!addForm.value.channel) return
-  channels.value.push({ ...addForm.value })
+  const newCh = { ...addForm.value }
+  const newNr = parseInt(newCh.channel)
+  // Numerisch an die richtige Position einfügen
+  const idx = channels.value.findIndex(c => parseInt(c.channel) > newNr)
+  if (idx === -1) channels.value.push(newCh)
+  else channels.value.splice(idx, 0, newCh)
   addingPosition.value = null
   persistChannels()
 }

@@ -95,7 +95,7 @@
       </div>
 
       <!-- Two-column layout: aside + main -->
-      <div class="xl:pl-[28rem]">
+      <div class="xl:pl-[28rem] xl:ml-0">
         <!-- Main: Kanaltabelle -->
         <main class="px-4 py-6 sm:px-6 lg:px-8">
           <div class="flex items-center gap-3 mb-4">
@@ -131,25 +131,27 @@
                   class="border-t border-white/5 group/row hover:bg-white/[0.03] transition-colors align-top"
                 >
                   <td class="py-2 pr-3 pl-0">
-                    <div class="flex flex-col items-start gap-1.5">
+                    <div class="flex items-center gap-2">
                       <input
                         :value="ch.channel"
                         @change="ch.channel = $event.target.value; persistChannels()"
-                        class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[4ch]"
+                        class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[3ch] shrink-0"
                       />
-                      <input
-                        :value="ch.address"
-                        @change="ch.address = $event.target.value; persistChannels()"
-                        class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-xs text-gray-500 px-0 border-0 w-[6ch]"
-                      />
-                      <input
-                        :value="ch.color"
-                        @change="ch.color = $event.target.value; persistChannels()"
-                        :placeholder="t('field.color')"
-                        :style="filterBadgeStyle(ch.color) || {}"
-                        :class="filterBadgeStyle(ch.color) ? 'font-semibold' : 'bg-white/10 text-gray-400 placeholder:text-gray-600'"
-                        class="focus:outline-none text-xs rounded-full px-2 py-0.5 border-0 w-20 text-center"
-                      />
+                      <div class="flex flex-col gap-1 min-w-0">
+                        <input
+                          :value="ch.address"
+                          @change="ch.address = $event.target.value; persistChannels()"
+                          class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-xs text-gray-500 px-0 border-0 w-[6ch]"
+                        />
+                        <input
+                          :value="ch.color"
+                          @change="ch.color = $event.target.value; persistChannels()"
+                          :placeholder="t('field.color')"
+                          :style="filterBadgeStyle(ch.color) || {}"
+                          :class="filterBadgeStyle(ch.color) ? 'font-semibold' : 'bg-white/10 text-gray-400 placeholder:text-gray-600'"
+                          class="focus:outline-none text-xs rounded-full px-2 py-0.5 border-0 w-16 text-center"
+                        />
+                      </div>
                     </div>
                   </td>
                   <td class="px-3 py-2">
@@ -206,7 +208,7 @@
       </div>
 
       <!-- Aside: Sections + Fotos (fixed, left of main) -->
-      <aside class="fixed top-16 bottom-0 left-20 hidden w-[28rem] overflow-y-auto border-r border-white/10 px-4 py-6 sm:px-6 xl:block">
+      <aside class="xl:fixed xl:top-16 xl:bottom-0 xl:left-20 xl:w-[28rem] xl:overflow-y-auto xl:border-r xl:border-white/10 px-4 py-6 sm:px-6 border-b border-white/10 xl:border-b-0">
         <!-- Custom Sections -->
         <template v-if="sortedSections.length > 0">
           <section v-for="sec in sortedSections" :key="sec.id" class="mb-8">

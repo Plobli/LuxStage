@@ -113,6 +113,23 @@ export async function archiveShow(id) {
   await fs.rename(paths.showDir(id), path.join(paths.archiv(), id))
 }
 
+export async function listArchivedShows() {
+  await ensureDir(paths.archiv())
+  const entries = await fs.readdir(paths.archiv(), { withFileTypes: true })
+  return entries
+    .filter(e => e.isDirectory() && !e.name.startsWith('.'))
+    .map(e => e.name)
+}
+
+export async function restoreShow(id) {
+  await ensureDir(paths.shows())
+  await fs.rename(path.join(paths.archiv(), id), paths.showDir(id))
+}
+
+export async function readArchivedShow(id) {
+  return fs.readFile(path.join(paths.archiv(), id, 'show.md'), 'utf8')
+}
+
 // ── Templates ─────────────────────────────────────────────────────────────
 
 export async function listTemplates() {

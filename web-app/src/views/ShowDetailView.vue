@@ -143,8 +143,7 @@
                     <textarea
                       :value="ch.notes"
                       @change="ch.notes = $event.target.value; persistChannels()"
-                      rows="2"
-                      class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-gray-300 w-full px-2 border-0 resize-none py-2 leading-snug"
+                      class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-gray-300 w-full px-2 border-0 resize-none py-2 leading-snug [field-sizing:content] min-h-[45px]"
                     />
                   </td>
                   <td class="py-0 pl-2 pr-0 pt-3">
@@ -161,7 +160,7 @@
                   <td class="px-3 py-2"><input class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2" v-model="addForm.address" :placeholder="t('show.channel.address.example')" /></td>
                   <td class="px-3 py-2"><input class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2" v-model="addForm.device" /></td>
                   <td class="px-3 py-2"><ColorPicker v-model="addForm.color" /></td>
-                  <td class="px-3 py-2"><textarea class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 resize-none" rows="2" v-model="addForm.notes" /></td>
+                  <td class="px-3 py-2"><textarea class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 resize-none [field-sizing:content] min-h-[36px]" v-model="addForm.notes" /></td>
                   <td class="py-2 pl-2 pr-0"><button class="text-green-400 hover:text-green-300 text-sm" @click="saveAdd">✓</button></td>
                 </tr>
               </tbody>
@@ -171,7 +170,7 @@
                   <td class="px-3 py-2"><input class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2" v-model="addForm.address" :placeholder="t('show.channel.address.example')" /></td>
                   <td class="px-3 py-2"><input class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2" v-model="addForm.device" /></td>
                   <td class="px-3 py-2"><ColorPicker v-model="addForm.color" /></td>
-                  <td class="px-3 py-2"><textarea class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 resize-none" rows="2" v-model="addForm.notes" /></td>
+                  <td class="px-3 py-2"><textarea class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 resize-none [field-sizing:content] min-h-[36px]" v-model="addForm.notes" /></td>
                   <td class="py-2 pl-2 pr-0"><button class="text-green-400 hover:text-green-300 text-sm" @click="saveAdd">✓</button></td>
                 </tr>
                 <tr v-else class="border-t border-white/5">

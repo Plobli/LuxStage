@@ -101,7 +101,7 @@
                 <col class="w-12" />          <!-- Kanal -->
                 <col class="w-[6ch]" />       <!-- Adresse -->
                 <col class="w-[30ch]" />      <!-- Gerät -->
-                <col class="w-[8ch]" />       <!-- Farbe -->
+                <col class="w-[16ch]" />      <!-- Farbe -->
                 <col />                       <!-- Notizen (rest) -->
                 <col class="w-6" />           <!-- Löschen -->
               </colgroup>

@@ -85,8 +85,27 @@
               <tbody v-for="group in groupedChannels" :key="group.position">
                 <tr class="border-t border-white/5">
                   <th colspan="5" scope="colgroup" class="py-2 pr-3 pl-0 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                    {{ group.position || t('channel.no_category') }}
-                    <span class="ml-2 font-normal normal-case text-gray-600">{{ group.channels.length }}</span>
+                    <template v-if="editingPosition === group.position">
+                      <input
+                        v-model="editingPositionValue"
+                        autofocus
+                        @blur="savePosition"
+                        @keydown.enter="savePosition"
+                        @keydown.escape="editingPosition = null"
+                        class="bg-transparent border-b border-accent focus:outline-none text-xs font-semibold text-white uppercase tracking-wide w-40"
+                      />
+                    </template>
+                    <template v-else>
+                      <button
+                        type="button"
+                        class="hover:text-white transition-colors"
+                        :title="t('channel.position.edit')"
+                        @click="startEditPosition(group.position)"
+                      >
+                        {{ group.position || t('channel.no_category') }}
+                      </button>
+                      <span class="ml-2 font-normal normal-case text-gray-600">{{ group.channels.length }}</span>
+                    </template>
                   </th>
                 </tr>
                 <tr
@@ -355,6 +374,27 @@ const sectionContents = ref(new Map())
 const sectionsSaving = ref(false)
 const editingSections = ref(false)
 let saveSectionsTimer = null
+
+// ── Position-Bearbeitung ───────────────────────────────────────────────────────
+const editingPosition = ref(null)
+const editingPositionValue = ref('')
+
+function startEditPosition(position) {
+  editingPosition.value = position
+  editingPositionValue.value = position
+}
+
+function savePosition() {
+  const oldPos = editingPosition.value
+  const newPos = editingPositionValue.value.trim()
+  if (newPos && newPos !== oldPos) {
+    for (const ch of channels.value) {
+      if (ch.position === oldPos) ch.position = newPos
+    }
+    persistChannels()
+  }
+  editingPosition.value = null
+}
 
 const sortedSections = computed(() =>
   [...sectionDefs.value].sort((a, b) => a.order - b.order)

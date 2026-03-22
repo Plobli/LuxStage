@@ -19,6 +19,9 @@ ios-app/.build/
 # Claude Code
 .claude/
 
+# Design-Dateien
+*.af
+
 # Local dev scripts
 start.sh
 

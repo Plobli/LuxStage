@@ -157,14 +157,14 @@
                       </div>
                     </div>
                   </td>
-                  <td class="px-3 py-2 align-middle">
-                    <input :value="ch.device" @change="ch.device = $event.target.value; persistChannels()" class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-gray-300 w-full px-2 border-0" />
+                  <td class="px-3 py-0 align-middle">
+                    <input :value="ch.device" @change="ch.device = $event.target.value; persistChannels()" class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-gray-300 w-full px-2 border-0 h-14" />
                   </td>
-                  <td class="px-3 py-2 align-middle">
+                  <td class="px-3 py-0 align-middle">
                     <textarea
                       :value="ch.notes"
                       @change="ch.notes = $event.target.value; persistChannels()"
-                      class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content]"
+                      class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4"
                     />
                   </td>
                   <td class="py-2 pl-2 pr-0 align-middle">

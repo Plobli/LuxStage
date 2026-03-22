@@ -92,6 +92,7 @@
                 <tr
                   v-for="ch in group.channels"
                   :key="ch.channel"
+                  :data-nav-row="rowIndexOf(ch)"
                   class="border-t border-white/5 group/row hover:bg-white/[0.03] transition-colors align-middle"
                 >
                   <td class="py-2 pr-3 pl-0 align-middle">
@@ -99,6 +100,9 @@
                       <input
                         :value="ch.channel"
                         @change="ch.channel = $event.target.value; persistChannels()"
+                        :data-nav-row="rowIndexOf(ch)"
+                        data-nav-col="0"
+                        @keydown="onKeydown($event, rowIndexOf(ch), 0, 4, () => startAdd(ch.position))"
                         :class="dupChannelNrs.has(ch.channel) ? 'ring-1 ring-yellow-400/60 rounded' : ''"
                         class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[3ch] text-center"
                       />
@@ -113,6 +117,9 @@
                     <input
                       :value="ch.color"
                       @change="ch.color = $event.target.value; persistChannels()"
+                      :data-nav-row="rowIndexOf(ch)"
+                      data-nav-col="1"
+                      @keydown="onKeydown($event, rowIndexOf(ch), 1, 4, null)"
                       :placeholder="t('field.color')"
                       :style="filterBadgeStyle(ch.color) || {}"
                       :class="filterBadgeStyle(ch.color) ? 'font-semibold' : 'bg-white/10 text-gray-400 placeholder:text-gray-600'"
@@ -120,12 +127,22 @@
                     />
                   </td>
                   <td class="px-3 py-0 align-middle">
-                    <textarea :value="ch.device" @change="ch.device = $event.target.value; persistChannels()" class="bg-white/[0.04] focus:bg-white/[0.07] focus:outline-none focus:ring-0 text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle rounded" />
+                    <textarea
+                      :value="ch.device"
+                      @change="ch.device = $event.target.value; persistChannels()"
+                      :data-nav-row="rowIndexOf(ch)"
+                      data-nav-col="2"
+                      @keydown="onKeydown($event, rowIndexOf(ch), 2, 4, null)"
+                      class="bg-white/[0.04] focus:bg-white/[0.07] focus:outline-none focus:ring-0 text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle rounded"
+                    />
                   </td>
                   <td class="px-3 py-0 align-middle">
                     <textarea
                       :value="ch.notes"
                       @change="ch.notes = $event.target.value; persistChannels()"
+                      :data-nav-row="rowIndexOf(ch)"
+                      data-nav-col="3"
+                      @keydown="onKeydown($event, rowIndexOf(ch), 3, 4, () => startAdd(ch.position))"
                       class="bg-white/[0.04] focus:bg-white/[0.07] focus:outline-none focus:ring-0 text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle rounded"
                     />
                   </td>
@@ -303,6 +320,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLocale } from '../composables/useLocale.js'
 import { useConfirm } from '../composables/useConfirm.js'
+import { useKeyboardNav } from '../composables/useKeyboardNav.js'
 import MarkdownEditor from '../components/MarkdownEditor.vue'
 import SectionHeading from '../components/SectionHeading.vue'
 import { MagnifyingGlassIcon } from '@heroicons/vue/20/solid'
@@ -319,6 +337,7 @@ const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
 const { t } = useLocale()
 const { confirm } = useConfirm()
+const { onKeydown } = useKeyboardNav()
 
 // ── State ──────────────────────────────────────────────────────────────────
 const loading = ref(true)
@@ -405,6 +424,15 @@ const groupedChannels = computed(() => {
 })
 
 const totalVisible = computed(() => groupedChannels.value.reduce((s, g) => s + g.channels.length, 0))
+
+// Flache Liste für globale row-Indizes (Reihenfolge wie in der Tabelle)
+const flatChannels = computed(() =>
+  groupedChannels.value.flatMap(g => g.channels)
+)
+
+function rowIndexOf(ch) {
+  return flatChannels.value.findIndex(c => c === ch)
+}
 
 // ── Kanal löschen ──────────────────────────────────────────────────────────
 async function deleteChannel(ch) {

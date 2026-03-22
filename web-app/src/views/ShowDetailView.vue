@@ -35,14 +35,7 @@
         >
           {{ t('sections.btn') }}
         </button>
-        <button
-          type="button"
-          @click="downloadChannelsCsv(props.id, channels)"
-          class="rounded-md px-3 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20 no-print"
-        >
-          {{ t('channel.export') }}
-        </button>
-        <a
+        <
           :href="pdfUrl"
           target="_blank"
           class="rounded-md px-3 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20"
@@ -305,7 +298,7 @@ import MarkdownEditor from '../components/MarkdownEditor.vue'
 import SectionHeading from '../components/SectionHeading.vue'
 import { MagnifyingGlassIcon } from '@heroicons/vue/20/solid'
 import { fetchShow, updateContent } from '../api/shows.js'
-import { fetchChannels, saveChannels, downloadChannelsCsv } from '../api/channels.js'
+import { fetchChannels, saveChannels } from '../api/channels.js'
 import { fetchPhotos, uploadPhoto, deletePhoto, getPhotoUrl } from '../api/photos.js'
 import { subscribeChannels } from '../api/client.js'
 import { api } from '../api/client.js'

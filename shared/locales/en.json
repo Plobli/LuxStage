@@ -54,7 +54,6 @@
   "channel.edit": "Edit channel",
   "channel.search": "Search …",
   "channel.dup_address": "Duplicate DMX address!",
-  "channel.export": "Export CSV",
 
   "template.new": "New template",
   "template.upload": "Upload CSV",

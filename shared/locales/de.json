@@ -168,5 +168,8 @@
   "editor.italic": "I",
   "editor.heading": "Überschrift",
   "editor.list.bullet": "• Liste",
-  "editor.list.ordered": "1. Liste"
+  "editor.list.ordered": "1. Liste",
+
+  "tab.channels": "Kanäle",
+  "tab.info": "Info & Fotos"
 }

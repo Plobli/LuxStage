@@ -7,6 +7,19 @@
         <svg class="size-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M17 10a.75.75 0 0 1-.75.75H5.612l4.158 3.96a.75.75 0 1 1-1.04 1.08l-5.5-5.25a.75.75 0 0 1 0-1.08l5.5-5.25a.75.75 0 1 1 1.04 1.08L5.612 9.25H16.25A.75.75 0 0 1 17 10Z" clip-rule="evenodd" /></svg>
       </button>
       <div class="h-6 w-px bg-white/10" aria-hidden="true"></div>
+      <!-- Mobile Tab-Switcher (nur < xl) -->
+      <div class="flex xl:hidden gap-1 mr-2">
+        <button
+          :class="mobileTab === 'channels' ? 'bg-white/10 text-white' : 'text-gray-400'"
+          class="rounded px-2 py-1 text-xs font-medium"
+          @click="mobileTab = 'channels'"
+        >{{ t('tab.channels') }}</button>
+        <button
+          :class="mobileTab === 'info' ? 'bg-white/10 text-white' : 'text-gray-400'"
+          class="rounded px-2 py-1 text-xs font-medium"
+          @click="mobileTab = 'info'"
+        >{{ t('tab.info') }}</button>
+      </div>
       <div class="flex min-w-0 flex-1 items-center gap-x-3">
         <h1 class="text-sm font-semibold text-white truncate">{{ meta.name }}</h1>
         <span class="hidden sm:block text-xs text-gray-500 shrink-0">{{ meta.datum }}</span>
@@ -57,7 +70,7 @@
 
     <template v-else>
       <!-- Two-column layout: aside + main -->
-      <div class="xl:pl-[28rem] xl:ml-0">
+      <div :class="mobileTab !== 'channels' ? 'hidden xl:block' : ''" class="xl:pl-[28rem] xl:ml-0">
         <!-- Main: Kanaltabelle -->
         <main class="px-4 py-6 sm:px-6 lg:px-8">
           <div class="flex items-center gap-3 mb-4">
@@ -220,7 +233,7 @@
       </div>
 
       <!-- Aside: Sections + Fotos (fixed, left of main) -->
-      <aside class="xl:fixed xl:top-16 xl:bottom-0 xl:left-20 xl:w-[28rem] xl:overflow-y-auto xl:border-r xl:border-white/10 px-4 py-6 sm:px-6 border-b border-white/10 xl:border-b-0">
+      <aside :class="mobileTab !== 'info' ? 'hidden xl:block' : ''" class="xl:fixed xl:top-16 xl:bottom-0 xl:left-20 xl:w-[28rem] xl:overflow-y-auto xl:border-r xl:border-white/10 px-4 py-6 sm:px-6 border-b border-white/10 xl:border-b-0">
 
         <!-- Sections-Editor -->
         <template v-if="editingSections">
@@ -383,6 +396,8 @@ const photos = ref([])
 const search = ref('')
 const setupSaving = ref(false)
 const channelsSaving = ref(false)
+
+const mobileTab = ref('channels') // 'channels' | 'info'
 
 const sectionDefs = ref([])
 const sectionContents = ref(new Map())

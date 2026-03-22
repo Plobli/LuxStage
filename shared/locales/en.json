@@ -168,5 +168,8 @@
   "editor.italic": "I",
   "editor.heading": "Heading",
   "editor.list.bullet": "• List",
-  "editor.list.ordered": "1. List"
+  "editor.list.ordered": "1. List",
+
+  "tab.channels": "Channels",
+  "tab.info": "Info & Photos"
 }

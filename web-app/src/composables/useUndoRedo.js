@@ -15,6 +15,7 @@ export function useUndoRedo(getState, applyState, cancelPendingSaves, saveNow = 
   const future = ref([])  // neueste zuerst (future[0] = nächster Redo-Schritt)
 
   let debounceTimer = null
+  let pendingSnapshot = null   // Snapshot vor der ersten Änderung einer Debounce-Sequenz
 
   // ── sessionStorage ────────────────────────────────────────────────────────
 
@@ -51,12 +52,19 @@ export function useUndoRedo(getState, applyState, cancelPendingSaves, saveNow = 
     _push(getState())
   }
 
-  /** Debounced Snapshot — für Texteingaben (500ms) */
+  /** Debounced Snapshot — für Texteingaben (500ms).
+   *  Snapshot wird sofort beim ersten Aufruf aufgezeichnet (Zustand vor der Änderung),
+   *  und erst nach 500ms ohne weitere Eingabe in den Stack gepusht. */
   function pushSnapshotDebounced() {
+    if (!debounceTimer) {
+      // Erster Aufruf dieser Sequenz: Zustand VOR der Änderung sichern
+      pendingSnapshot = structuredClone(_deepRaw(getState()))
+    }
     clearTimeout(debounceTimer)
     debounceTimer = setTimeout(() => {
       debounceTimer = null
-      _push(getState())
+      _push(pendingSnapshot)
+      pendingSnapshot = null
     }, 500)
   }
 
@@ -64,6 +72,7 @@ export function useUndoRedo(getState, applyState, cancelPendingSaves, saveNow = 
   function cancelDebounce() {
     clearTimeout(debounceTimer)
     debounceTimer = null
+    pendingSnapshot = null
   }
 
   function _deepRaw(val) {

@@ -203,11 +203,11 @@
                 >
                   <td class="py-3 pr-3 pl-0 text-sm font-medium whitespace-nowrap text-white">{{ ch.channel }}</td>
                   <td class="px-3 py-3 text-sm whitespace-nowrap text-gray-400">
-                    <input v-if="editingChannel === ch.channel" class="rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent w-full min-w-[80px]" v-model="editForm.address" @click.stop />
+                    <input v-if="editingChannel === ch.channel" class="bg-transparent border-b border-white/20 focus:border-accent focus:outline-none text-sm text-white w-full min-w-[80px] pb-0.5" v-model="editForm.address" @click.stop />
                     <template v-else>{{ ch.address }}</template>
                   </td>
                   <td class="px-3 py-3 text-sm whitespace-nowrap text-gray-400">
-                    <input v-if="editingChannel === ch.channel" class="rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent w-full min-w-[120px]" v-model="editForm.device" @click.stop />
+                    <input v-if="editingChannel === ch.channel" class="bg-transparent border-b border-white/20 focus:border-accent focus:outline-none text-sm text-white w-full min-w-[120px] pb-0.5" v-model="editForm.device" @click.stop />
                     <template v-else>{{ ch.device || '—' }}</template>
                   </td>
                   <td class="px-3 py-3 text-sm whitespace-nowrap text-gray-400">
@@ -222,7 +222,7 @@
                   </td>
                   <td class="px-3 py-3 text-sm whitespace-nowrap text-gray-400">
                     <div v-if="editingChannel === ch.channel" class="flex items-center gap-2">
-                      <input ref="notesInput" class="rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent flex-1 min-w-[120px]" v-model="editForm.notes" @click.stop />
+                      <input ref="notesInput" class="bg-transparent border-b border-white/20 focus:border-accent focus:outline-none text-sm text-white flex-1 min-w-[120px] pb-0.5" v-model="editForm.notes" @click.stop />
                       <button class="text-red-400 hover:text-red-300 text-xs px-1 shrink-0" @mousedown.prevent @click.stop="deleteChannel(ch)" :title="t('action.delete')">🗑</button>
                     </div>
                     <template v-else>{{ ch.notes }}</template>

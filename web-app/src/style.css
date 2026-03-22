@@ -6,3 +6,7 @@
   --color-accent: #D95C5C;
   --color-accent-hover: #e07070;
 }
+
+:root {
+  color-scheme: dark;
+}

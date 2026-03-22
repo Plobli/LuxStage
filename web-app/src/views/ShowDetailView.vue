@@ -477,6 +477,31 @@ const { pushSnapshot, pushSnapshotDebounced, cancelDebounce, undo, redo, canUndo
     }
   )
 
+function onUndoRedoKeydown(e) {
+  const focused = document.activeElement
+  const isEditing = focused && (
+    focused.tagName === 'INPUT' ||
+    focused.tagName === 'TEXTAREA' ||
+    focused.isContentEditable
+  )
+  if (isEditing) return
+
+  const isMac = navigator.platform.toUpperCase().includes('MAC')
+  const mod = isMac ? e.metaKey : e.ctrlKey
+
+  if (mod && !e.shiftKey && e.key === 'z') {
+    e.preventDefault()
+    undo()
+  } else if (
+    (mod && e.shiftKey && e.key === 'z') ||
+    (mod && e.shiftKey && e.key === 'Z') ||
+    (!isMac && mod && e.key === 'y')
+  ) {
+    e.preventDefault()
+    redo()
+  }
+}
+
 // ── Position-Bearbeitung ───────────────────────────────────────────────────────
 const editingPosition = ref(null)
 const editingPositionValue = ref('')
@@ -874,9 +899,12 @@ onMounted(async () => {
   window.addEventListener('scroll', () => {
     sessionStorage.setItem(scrollKey, window.scrollY)
   }, { passive: true })
+  window.addEventListener('keydown', onUndoRedoKeydown)
 })
 
 onBeforeUnmount(() => {
+  cancelDebounce()
+  window.removeEventListener('keydown', onUndoRedoKeydown)
   unsubscribeSSE?.()
   unsubscribeSectionsSSE?.()
   if (saveSetupTimer) { clearTimeout(saveSetupTimer); persistSetup(pendingSetupMd) }

@@ -137,12 +137,15 @@
                         @change="ch.channel = $event.target.value; persistChannels()"
                         class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[3ch] shrink-0"
                       />
-                      <div class="flex flex-col gap-1 min-w-0">
-                        <input
-                          :value="ch.address"
-                          @change="ch.address = $event.target.value; persistChannels()"
-                          class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-xs text-gray-500 px-0 border-0 w-[6ch]"
-                        />
+                      <div class="flex flex-col gap-1 min-w-0 items-center">
+                        <div class="flex items-center">
+                          <span class="text-xs text-gray-600">#</span>
+                          <input
+                            :value="ch.address"
+                            @change="ch.address = $event.target.value; persistChannels()"
+                            class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-xs text-gray-500 px-0 border-0 w-[5ch]"
+                          />
+                        </div>
                         <input
                           :value="ch.color"
                           @change="ch.color = $event.target.value; persistChannels()"

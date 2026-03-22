@@ -9,7 +9,7 @@
       <!-- Sprache -->
       <div class="grid grid-cols-1 gap-x-8 gap-y-8 pt-10 md:grid-cols-3 first:pt-0">
         <div>
-          <h2 class="text-base/7 font-semibold text-white">{{ t('settings.language') }}</h2>
+          <SectionHeading :text="t('settings.language')" />
         </div>
         <div class="bg-gray-800/50 ring-1 ring-white/10 rounded-xl md:col-span-2">
           <div class="px-4 py-6 sm:p-8 flex gap-6">
@@ -28,7 +28,7 @@
       <!-- Server-URL -->
       <div class="grid grid-cols-1 gap-x-8 gap-y-8 pt-10 md:grid-cols-3">
         <div>
-          <h2 class="text-base/7 font-semibold text-white">{{ t('settings.server') }}</h2>
+          <SectionHeading :text="t('settings.server')" />
         </div>
         <div class="bg-gray-800/50 ring-1 ring-white/10 rounded-xl md:col-span-2">
           <div class="px-4 py-6 sm:p-8 space-y-4">
@@ -63,7 +63,7 @@
       <!-- Backup -->
       <div class="grid grid-cols-1 gap-x-8 gap-y-8 pt-10 md:grid-cols-3">
         <div>
-          <h2 class="text-base/7 font-semibold text-white">{{ t('settings.backup') }}</h2>
+          <SectionHeading :text="t('settings.backup')" />
         </div>
         <div class="bg-gray-800/50 ring-1 ring-white/10 rounded-xl md:col-span-2">
           <div class="px-4 py-6 sm:p-8">
@@ -81,7 +81,7 @@
       <!-- Update (nur Admin) -->
       <div v-if="isAdmin" class="grid grid-cols-1 gap-x-8 gap-y-8 pt-10 md:grid-cols-3">
         <div>
-          <h2 class="text-base/7 font-semibold text-white">{{ t('settings.update') }}</h2>
+          <SectionHeading :text="t('settings.update')" />
         </div>
         <div class="bg-gray-800/50 ring-1 ring-white/10 rounded-xl md:col-span-2">
           <div class="px-4 py-6 sm:p-8 space-y-3">
@@ -119,6 +119,7 @@
 </template>
 
 <script setup>
+import SectionHeading from '../components/SectionHeading.vue'
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLocale } from '../composables/useLocale.js'

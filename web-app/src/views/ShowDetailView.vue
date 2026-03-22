@@ -85,7 +85,7 @@
         <!-- Main: Kanaltabelle -->
         <main class="px-4 py-6 sm:px-6 lg:px-8">
           <div class="flex flex-wrap items-center gap-3 mb-4">
-            <h2 class="text-sm font-semibold text-white mr-auto">{{ t('show.channels') }}</h2>
+            <SectionHeading :text="t('show.channels')" class="flex-1 min-w-0" />
             <input
               v-model="search"
               type="search"
@@ -190,10 +190,7 @@
         <!-- Custom Sections -->
         <template v-if="sortedSections.length > 0">
           <section v-for="sec in sortedSections" :key="sec.id" class="mb-8">
-            <div class="flex items-center mb-4">
-              <span class="pr-3 text-lg font-semibold text-accent bg-gray-900 shrink-0">{{ sec.title }}</span>
-              <div class="w-full border-t border-white/15" aria-hidden="true"></div>
-            </div>
+            <SectionHeading :text="sec.title" class="mb-4" />
             <div v-if="sec.type === 'fields'" class="divide-y divide-white/5">
               <div v-for="field in sec.fields" :key="field.key" class="flex items-center h-[40px]">
                 <label class="w-28 text-sm text-gray-500 shrink-0">{{ field.label }}</label>
@@ -214,21 +211,15 @@
 
         <!-- Fallback: single setup editor -->
         <section v-else class="mb-8">
-          <div class="flex items-center mb-4">
-            <span class="pr-3 text-lg font-semibold text-accent bg-gray-900 shrink-0">{{ t('show.setup') }}</span>
-            <div class="w-full border-t border-white/15" aria-hidden="true"></div>
-          </div>
+          <SectionHeading :text="t('show.setup')" class="mb-4" />
           <MarkdownEditor v-model="setupMarkdown" @update:modelValue="onSetupChange" />
         </section>
 
         <!-- Foto-Galerie -->
         <section>
-          <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center mb-4">
-              <span class="pr-3 text-lg font-semibold text-accent bg-gray-900 shrink-0">{{ t('show.photos') }}</span>
-              <div class="w-full border-t border-white/15" aria-hidden="true"></div>
-            </div>
-            <label class="cursor-pointer text-sm text-gray-400 hover:text-white">
+          <div class="flex items-center gap-3 mb-4">
+            <SectionHeading :text="t('show.photos')" class="flex-1 min-w-0" />
+            <label class="cursor-pointer text-sm text-gray-400 hover:text-white shrink-0">
               + {{ t('photo.add') }}
               <input type="file" accept="image/*" multiple class="sr-only" @change="onFileInput" />
             </label>
@@ -270,6 +261,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLocale } from '../composables/useLocale.js'
 import MarkdownEditor from '../components/MarkdownEditor.vue'
+import SectionHeading from '../components/SectionHeading.vue'
 import { fetchShow, updateContent } from '../api/shows.js'
 import { fetchChannels, saveChannels } from '../api/channels.js'
 import { fetchPhotos, uploadPhoto, deletePhoto, getPhotoUrl } from '../api/photos.js'

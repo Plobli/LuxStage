@@ -97,7 +97,7 @@
               </thead>
               <tbody v-for="group in groupedChannels" :key="group.position">
                 <tr class="border-t border-white/5">
-                  <th colspan="5" scope="colgroup" class="py-2 pr-3 pl-0 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                  <th colspan="6" scope="colgroup" class="py-2 pr-3 pl-0 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">
                     <template v-if="editingPosition === group.position">
                       <input
                         v-model="editingPositionValue"
@@ -125,17 +125,23 @@
                   v-for="ch in group.channels"
                   :key="ch.channel"
                   :data-nav-row="rowIndexOf(ch)"
-                  draggable="true"
-                  @dragstart="onRowDragStart($event, ch)"
                   @dragover="onRowDragOver($event, ch)"
-                  @dragleave="onRowDragLeave"
                   @drop="onRowDrop($event, ch)"
                   @dragend="onRowDragEnd"
                   :class="[
-                    'border-t border-white/5 group/row hover:bg-white/[0.03] transition-colors align-middle cursor-grab active:cursor-grabbing',
-                    dragOverIndex === channels.indexOf(ch) && dragSrcIndex !== channels.indexOf(ch) ? 'outline outline-2 outline-accent/50 outline-offset-[-2px]' : ''
+                    'border-t border-white/5 group/row hover:bg-white/[0.03] transition-colors align-middle',
+                    dragOverIndex === channels.indexOf(ch) && dragSrcIndex !== channels.indexOf(ch) ? 'border-t-2 border-t-accent' : ''
                   ]"
                 >
+                  <td class="py-2 pr-0 pl-0 align-middle w-4">
+                    <div
+                      draggable="true"
+                      @dragstart="onRowDragStart($event, ch)"
+                      class="no-print cursor-grab active:cursor-grabbing opacity-0 group-hover/row:opacity-30 hover:!opacity-60 transition-opacity px-1"
+                    >
+                      <Bars2Icon class="size-3 text-gray-400" />
+                    </div>
+                  </td>
                   <td class="py-2 pr-3 pl-0 align-middle">
                     <div class="flex flex-col items-center gap-1">
                       <input
@@ -189,7 +195,7 @@
                   </td>
                 </tr>
                 <tr class="no-print border-t border-white/5">
-                  <td colspan="5" class="py-2 pl-0">
+                  <td colspan="6" class="py-2 pl-0">
                     <button type="button" class="text-sm text-gray-600 hover:text-gray-300" @click="startAdd(group.position)">+ {{ t('channel.add') }}</button>
                   </td>
                 </tr>
@@ -232,7 +238,7 @@
                   <td class="py-2 pl-2 pr-0 align-middle"><button class="text-green-400 hover:text-green-300 text-sm" @click="saveAdd">✓</button></td>
                 </tr>
                 <tr v-else class="border-t border-white/5">
-                  <td colspan="5" class="py-4 pl-0">
+                  <td colspan="6" class="py-4 pl-0">
                     <span class="text-sm text-gray-500">{{ t('channel.list.empty') }}</span>
                     <button type="button" class="ml-3 text-sm text-gray-400 hover:text-white" @click="startAdd('')">+ {{ t('channel.add') }}</button>
                   </td>
@@ -382,7 +388,7 @@ import { useKeyboardNav } from '../composables/useKeyboardNav.js'
 import MarkdownEditor from '../components/MarkdownEditor.vue'
 import SectionHeading from '../components/SectionHeading.vue'
 import { MagnifyingGlassIcon } from '@heroicons/vue/20/solid'
-import { TrashIcon } from '@heroicons/vue/24/outline'
+import { TrashIcon, Bars2Icon } from '@heroicons/vue/24/outline'
 import { fetchShow, updateContent } from '../api/shows.js'
 import { fetchChannels, saveChannels, downloadChannelsCsv } from '../api/channels.js'
 import { fetchPhotos, uploadPhoto, deletePhoto, getPhotoUrl } from '../api/photos.js'
@@ -523,9 +529,6 @@ function onRowDragOver(e, ch) {
   dragOverIndex.value = channels.value.indexOf(ch)
 }
 
-function onRowDragLeave() {
-  dragOverIndex.value = null
-}
 
 function onRowDrop(e, ch) {
   e.preventDefault()

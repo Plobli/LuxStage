@@ -155,7 +155,7 @@ export function generatePDF(showContent, channelsCsv, sectionsRaw, templateSecti
   // ── Pro Gruppe: Überschrift + Tabelle ────────────────────────────────────
   const headerCols = [
     { text: 'Ch',      w: COL.channel },
-    { text: 'Filter',  w: COL.color },
+    { text: 'Filter',  w: COL.color,   color: undefined }, // color key present → Filter-Spalte, aber isHeader überschreibt
     { text: 'Adresse', w: COL.address },
     { text: 'Gerät',   w: COL.device },
     { text: 'Notizen', w: COL.notes },
@@ -186,7 +186,7 @@ export function generatePDF(showContent, channelsCsv, sectionsRaw, templateSecti
     // Datenzeilen
     for (const row of filteredRows) {
       const rowCols = [
-        { text: row.channel, w: COL.channel },
+        { text: row.channel, w: COL.channel, bold: true },
         { text: row.color,   w: COL.color,   color: row.color },
         { text: row.address, w: COL.address },
         { text: row.device,  w: COL.device,  wrap: true },
@@ -227,46 +227,75 @@ function calcRowHeight(doc, cols) {
 
 function drawRow(doc, y, usableW, cols, isHeader) {
   const rowH = isHeader ? ROW_MIN_H : calcRowHeight(doc, cols)
+
+  // Hintergrund Header: sehr helles Grau, keine Außenbox
   if (isHeader) {
-    doc.rect(PAGE_MARGIN, y, usableW, rowH).fill('#e8e8e8')
+    doc.rect(PAGE_MARGIN, y, usableW, rowH).fill('#f4f4f4')
     doc.fill('black')
   }
-  doc.rect(PAGE_MARGIN, y, usableW, rowH).stroke('#cccccc')
+
+  // Nur obere + untere Linie (keine Seitenrahmen)
+  doc.moveTo(PAGE_MARGIN, y).lineTo(PAGE_MARGIN + usableW, y).stroke('#dddddd')
+  doc.moveTo(PAGE_MARGIN, y + rowH).lineTo(PAGE_MARGIN + usableW, y + rowH).stroke('#dddddd')
 
   let x = PAGE_MARGIN
   for (const col of cols) {
-    const textX = x + mm(1)
-    const textY = y + mm(1.3)
-    const textW = col.w - mm(2)
+    const textX = x + mm(1.5)
+    const textW = col.w - mm(3)
+    const FONT_SIZE = isHeader ? 7 : 8
+    doc.font(FONT_NORMAL).fontSize(FONT_SIZE)
 
-    if (!isHeader && col.color) {
-      // Farbiger Kreis für Filter-Spalte
+    if (isHeader) {
+      // Header: normale Schrift, grau, vertikal zentriert
+      const textH = doc.currentLineHeight()
+      const textY = y + (rowH - textH) / 2
+      doc.fillColor('#666666')
+        .text(col.text || '', textX, textY, { width: textW, lineBreak: false, ellipsis: true })
+      doc.fillColor('black')
+    } else if (col.bold) {
+      // Kanal-Nummer: fett, vertikal zentriert
+      doc.font(FONT_BOLD).fontSize(FONT_SIZE)
+      const textH = doc.currentLineHeight()
+      const textY = y + (rowH - textH) / 2
+      doc.fillColor('black')
+        .text(col.text || '', textX, textY, { width: textW, lineBreak: false, ellipsis: true })
+    } else if (col.color !== undefined) {
+      // Filter-Spalte: Kreis + Code
       const hex = leeHex(col.color)
+      const cy = y + rowH / 2
       if (hex) {
-        const cx = x + COLOR_SWATCH_R + mm(1)
-        const cy = y + rowH / 2
+        const cx = x + COLOR_SWATCH_R + mm(1.5)
         doc.circle(cx, cy, COLOR_SWATCH_R).fill(hex)
-        doc.circle(cx, cy, COLOR_SWATCH_R).stroke('#cccccc')
+        // dünner Ring
+        doc.save().circle(cx, cy, COLOR_SWATCH_R).lineWidth(0.3).stroke('#aaaaaa').restore()
         doc.fill('black')
-        // Code-Text nach dem Kreis
         const codeX = cx + COLOR_SWATCH_R + mm(1)
-        doc.font(FONT_NORMAL).fontSize(8).fillColor('black')
+        const textH = doc.font(FONT_NORMAL).fontSize(FONT_SIZE).currentLineHeight()
+        const textY = y + (rowH - textH) / 2
+        doc.fillColor('black')
           .text(col.text || '', codeX, textY, {
             width: col.w - (codeX - x) - mm(1),
             lineBreak: false, ellipsis: true,
           })
       } else {
-        doc.font(FONT_NORMAL).fontSize(8).fillColor('#888888')
-          .text(col.text || '', textX, textY, { width: textW, lineBreak: false, ellipsis: true })
+        // Kein bekannter Lee-Filter: Text zentriert, dezent grau
+        const textH = doc.currentLineHeight()
+        const textY = y + (rowH - textH) / 2
+        doc.fillColor(col.text ? '#444444' : '#aaaaaa')
+          .text(col.text || '—', textX, textY, { width: textW, lineBreak: false, ellipsis: true })
         doc.fillColor('black')
       }
+    } else if (col.wrap) {
+      // Mehrzeilige Spalten: vertikal oben ausrichten mit Padding
+      const textY = y + mm(1.5)
+      doc.fillColor('black')
+        .text(col.text || '', textX, textY, { width: textW, lineBreak: true })
     } else {
-      doc.font(isHeader ? FONT_BOLD : FONT_NORMAL).fontSize(isHeader ? 7.5 : 8).fillColor('black')
-        .text(col.text || '', textX, textY, {
-          width: textW,
-          lineBreak: col.wrap === true,
-          ellipsis: !col.wrap,
-        })
+      // Standard: vertikal zentriert
+      const textH = doc.currentLineHeight()
+      const textY = y + (rowH - textH) / 2
+      doc.fillColor('black')
+        .text(col.text || '', textX, textY, { width: textW, lineBreak: false, ellipsis: true })
     }
     x += col.w
   }

@@ -95,14 +95,14 @@
               <h3 class="text-sm font-semibold text-white">{{ sec.title }}</h3>
               <span v-if="sectionsSaving" class="text-xs text-gray-500">…</span>
             </div>
-            <div v-if="sec.type === 'fields'" class="space-y-3">
-              <div v-for="field in sec.fields" :key="field.key" class="flex items-center gap-3">
-                <label class="w-32 text-sm text-gray-400 shrink-0">{{ field.label }}</label>
+            <div v-if="sec.type === 'fields'" class="divide-y divide-white/5">
+              <div v-for="field in sec.fields" :key="field.key" class="flex items-center h-[40px]">
+                <label class="w-36 text-sm text-gray-400 shrink-0">{{ field.label }}</label>
                 <input
                   :value="parseFieldValue(sec.id, field.key)"
                   @change="onFieldChange(sec.id, field.key, $event.target.value)"
                   @click.stop
-                  class="flex-1 rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent"
+                  class="flex-1 bg-transparent border-0 border-b border-white/10 focus:border-accent focus:outline-none text-sm text-white h-full px-2 transition-colors"
                 />
               </div>
             </div>

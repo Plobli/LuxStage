@@ -133,16 +133,11 @@
                     </div>
                   </td>
                   <td class="px-3 py-2 align-middle">
-                    <input
-                      :value="ch.color"
-                      @change="ch.color = $event.target.value; persistChannels()"
-                      :data-nav-row="rowIndexOf(ch)"
-                      data-nav-col="1"
-                      @keydown="onKeydown($event, rowIndexOf(ch), 1, 4, null)"
+                    <ColorAutocomplete
+                      :modelValue="ch.color"
+                      @update:modelValue="ch.color = $event"
+                      @change="persistChannels()"
                       :placeholder="t('field.color')"
-                      :style="filterBadgeStyle(ch.color) || {}"
-                      :class="filterBadgeStyle(ch.color) ? 'font-semibold' : 'bg-white/10 text-gray-400 placeholder:text-gray-600'"
-                      class="focus:outline-none text-xs rounded-full px-2 py-0.5 border-0 w-16 text-center"
                     />
                   </td>
                   <td class="px-3 py-0 align-middle">
@@ -182,7 +177,11 @@
                     </div>
                   </td>
                   <td class="px-3 py-2 align-middle">
-                    <input class="bg-white/10 focus:outline-none text-xs text-gray-400 rounded-full px-2 py-0.5 border-0 w-16 text-center placeholder:text-gray-600" v-model="addForm.color" :placeholder="t('field.color')" />
+                    <ColorAutocomplete
+                      v-model="addForm.color"
+                      @change="() => {}"
+                      :placeholder="t('field.color')"
+                    />
                   </td>
                   <td class="px-3 py-0 align-middle"><textarea class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle" v-model="addForm.device" /></td>
                   <td class="px-3 py-0 align-middle"><textarea class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle" v-model="addForm.notes" /></td>
@@ -198,7 +197,11 @@
                     </div>
                   </td>
                   <td class="px-3 py-2 align-middle">
-                    <input class="bg-white/10 focus:outline-none text-xs text-gray-400 rounded-full px-2 py-0.5 border-0 w-16 text-center placeholder:text-gray-600" v-model="addForm.color" :placeholder="t('field.color')" />
+                    <ColorAutocomplete
+                      v-model="addForm.color"
+                      @change="() => {}"
+                      :placeholder="t('field.color')"
+                    />
                   </td>
                   <td class="px-3 py-0 align-middle"><textarea class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle" v-model="addForm.device" /></td>
                   <td class="px-3 py-0 align-middle"><textarea class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle" v-model="addForm.notes" /></td>
@@ -350,7 +353,7 @@ import { subscribeChannels } from '../api/client.js'
 import { api } from '../api/client.js'
 import { fetchShowSections, saveShowSections, parseSectionsMd, serializeSectionsMd, fetchShowSectionDefs, saveShowSectionDefs } from '../api/sections.js'
 import { uuid } from '../utils/uuid.js'
-import { filterBadgeStyle } from '../utils/leeColors.js'
+import ColorAutocomplete from '../components/ColorAutocomplete.vue'
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()

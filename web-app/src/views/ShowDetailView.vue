@@ -190,7 +190,7 @@
         <!-- Custom Sections -->
         <template v-if="sortedSections.length > 0">
           <section v-for="sec in sortedSections" :key="sec.id" class="mb-8">
-            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">{{ sec.title }}</h3>
+            <h2 class="text-sm font-semibold text-accent mb-3">{{ sec.title }}</h2>
             <div v-if="sec.type === 'fields'" class="divide-y divide-white/5">
               <div v-for="field in sec.fields" :key="field.key" class="flex items-center h-[40px]">
                 <label class="w-28 text-sm text-gray-500 shrink-0">{{ field.label }}</label>
@@ -211,14 +211,14 @@
 
         <!-- Fallback: single setup editor -->
         <section v-else class="mb-8">
-          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">{{ t('show.setup') }}</h3>
+          <h2 class="text-sm font-semibold text-accent mb-3">{{ t('show.setup') }}</h2>
           <MarkdownEditor v-model="setupMarkdown" @update:modelValue="onSetupChange" />
         </section>
 
         <!-- Foto-Galerie -->
         <section>
           <div class="flex items-center justify-between mb-3">
-            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ t('show.photos') }}</h3>
+            <h2 class="text-sm font-semibold text-accent">{{ t('show.photos') }}</h2>
             <label class="cursor-pointer text-sm text-gray-400 hover:text-white">
               + {{ t('photo.add') }}
               <input type="file" accept="image/*" multiple class="sr-only" @change="onFileInput" />

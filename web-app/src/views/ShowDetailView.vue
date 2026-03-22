@@ -183,7 +183,7 @@
                     />
                   </td>
                   <td class="py-2 pl-2 pr-1 align-middle">
-                    <button class="no-print text-gray-600 hover:text-red-400 opacity-0 group-hover/row:opacity-100 transition-opacity" @click="deleteChannel(ch)" :title="t('action.delete')">
+                    <button class="no-print flex items-center justify-center text-gray-600 hover:text-red-400 opacity-0 group-hover/row:opacity-100 transition-opacity" @click="deleteChannel(ch)" :title="t('action.delete')">
                       <TrashIcon class="size-4" />
                     </button>
                   </td>

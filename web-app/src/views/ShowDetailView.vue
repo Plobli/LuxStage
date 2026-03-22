@@ -543,7 +543,7 @@ function onSetupChange(md) {
   pushSnapshotDebounced()
   pendingSetupMd = md
   clearTimeout(saveSetupTimer)
-  saveSetupTimer = setTimeout(() => { persistSetup(md); saveSetupTimer = null }, 800)
+  saveSetupTimer = setTimeout(() => { persistSetup(md); saveSetupTimer = null }, 50)
 }
 
 async function persistSetup(md) {
@@ -752,11 +752,13 @@ function onSectionChange(id, value) {
   sectionContents.value.set(id, value)
   pushSnapshotDebounced()
   clearTimeout(saveSectionsTimer)
-  saveSectionsTimer = setTimeout(() => { persistSections(); saveSectionsTimer = null }, 800)
+  saveSectionsTimer = setTimeout(() => { persistSections(); saveSectionsTimer = null }, 50)
 }
 
+let ignoreSectionsSseCount = 0
 async function persistSections() {
   sectionsSaving.value = true
+  ignoreSectionsSseCount++
   try {
     const raw = serializeSectionsMd(sectionContents.value)
     await saveShowSections(props.id, raw)
@@ -886,15 +888,11 @@ onMounted(async () => {
 
   // SSE für Realtime Sections-Updates
   unsubscribeSectionsSSE = subscribeSections(props.id, async () => {
-    // Nur aktualisieren wenn kein aktiver Editor-Fokus
-    const focused = document.activeElement
-    const isEditing = focused && (focused.tagName === 'TEXTAREA' || focused.classList.contains('tiptap'))
-    if (!isEditing) {
-      const sectionsData = await fetchShowSections(props.id)
-      const freshMap = parseSectionsMd(sectionsData?.raw)
-      for (const [id, content] of freshMap) {
-        sectionContents.value.set(id, content)
-      }
+    if (ignoreSectionsSseCount > 0) { ignoreSectionsSseCount--; return }
+    const sectionsData = await fetchShowSections(props.id)
+    const freshMap = parseSectionsMd(sectionsData?.raw)
+    for (const [id, content] of freshMap) {
+      sectionContents.value.set(id, content)
     }
   })
 

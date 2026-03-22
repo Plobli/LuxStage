@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="px-4 py-10 sm:px-6 lg:px-8">
     <div class="mb-8">
       <h1 class="text-base font-semibold text-white">{{ t('nav.settings') }}</h1>
     </div>

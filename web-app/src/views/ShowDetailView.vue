@@ -1,27 +1,22 @@
 <template>
   <div>
-    <!-- Page Header -->
-    <div class="md:flex md:items-center md:justify-between mb-8">
-      <div class="min-w-0 flex-1">
-        <div class="mb-1">
-          <button
-            type="button"
-            class="text-sm text-gray-400 hover:text-white"
-            @click="router.push('/')"
-          >
-            ← {{ t('action.back') }}
-          </button>
-        </div>
-        <h2 class="text-2xl/7 font-bold text-white sm:truncate sm:text-3xl sm:tracking-tight">
-          {{ meta.name }}
-        </h2>
-        <p class="mt-1 text-sm text-gray-400">{{ meta.datum }}</p>
+    <!-- Top Header -->
+    <div class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-white/10 bg-gray-900 px-4 sm:px-6 lg:px-8">
+      <button type="button" class="text-gray-400 hover:text-white" @click="router.push('/')">
+        <span class="sr-only">{{ t('action.back') }}</span>
+        <svg class="size-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M17 10a.75.75 0 0 1-.75.75H5.612l4.158 3.96a.75.75 0 1 1-1.04 1.08l-5.5-5.25a.75.75 0 0 1 0-1.08l5.5-5.25a.75.75 0 1 1 1.04 1.08L5.612 9.25H16.25A.75.75 0 0 1 17 10Z" clip-rule="evenodd" /></svg>
+      </button>
+      <div class="h-6 w-px bg-white/10" aria-hidden="true"></div>
+      <div class="flex flex-1 items-center gap-x-3 min-w-0">
+        <h1 class="text-sm font-semibold text-white truncate">{{ meta.name }}</h1>
+        <span class="hidden sm:block text-xs text-gray-500">{{ meta.datum }}</span>
+        <span v-if="channelsSaving || sectionsSaving || setupSaving" class="text-xs text-gray-500">…</span>
       </div>
-      <div class="mt-4 flex gap-x-3 md:mt-0 md:ml-4">
+      <div class="flex items-center gap-x-3">
         <button
           type="button"
-          :class="editingSections ? 'bg-white/10 text-white' : 'text-gray-400 ring-1 ring-white/10 hover:ring-white/20'"
-          class="rounded-md px-3 py-2 text-sm font-semibold"
+          :class="editingSections ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'"
+          class="rounded-md px-3 py-1.5 text-sm font-semibold"
           @click="editingSections = !editingSections"
         >
           {{ t('sections.btn') }}
@@ -29,18 +24,18 @@
         <a
           :href="pdfUrl"
           target="_blank"
-          class="rounded-md px-3 py-2 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20"
+          class="rounded-md px-3 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20"
         >
           {{ t('show.pdf') }}
         </a>
       </div>
     </div>
 
-    <div v-if="loading" class="text-sm text-gray-400">…</div>
+    <div v-if="loading" class="flex items-center justify-center h-64 text-sm text-gray-400">…</div>
 
     <template v-else>
-      <!-- Sections-Editor -->
-      <div v-if="editingSections" class="mb-8 space-y-3">
+      <!-- Sections-Editor (overlay panel) -->
+      <div v-if="editingSections" class="border-b border-white/10 bg-gray-900/80 px-4 py-4 sm:px-6 lg:px-8 space-y-3">
         <div
           v-for="(sec, idx) in sectionDefs"
           :key="sec.id"
@@ -85,84 +80,12 @@
         <button class="text-sm text-gray-400 hover:text-white" @click="addSection">{{ t('sections.add') }}</button>
       </div>
 
-      <!-- Content Grid -->
-      <div class="grid grid-cols-1 gap-x-8 gap-y-10 lg:grid-cols-2">
-
-        <!-- Sections -->
-        <template v-if="sortedSections.length > 0">
-          <section v-for="sec in sortedSections" :key="sec.id">
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="text-sm font-semibold text-white">{{ sec.title }}</h3>
-              <span v-if="sectionsSaving" class="text-xs text-gray-500">…</span>
-            </div>
-            <div v-if="sec.type === 'fields'" class="divide-y divide-white/5">
-              <div v-for="field in sec.fields" :key="field.key" class="flex items-center h-[40px]">
-                <label class="w-36 text-sm text-gray-400 shrink-0">{{ field.label }}</label>
-                <input
-                  :value="parseFieldValue(sec.id, field.key)"
-                  @change="onFieldChange(sec.id, field.key, $event.target.value)"
-                  @click.stop
-                  class="flex-1 bg-transparent border-0 border-b border-white/10 focus:border-accent focus:outline-none text-sm text-white h-full px-2 transition-colors"
-                />
-              </div>
-            </div>
-            <MarkdownEditor
-              v-else
-              :modelValue="sectionContents.get(sec.id) ?? ''"
-              @update:modelValue="onSectionChange(sec.id, $event)"
-            />
-          </section>
-        </template>
-
-        <!-- Fallback: single setup editor -->
-        <section v-else>
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="text-sm font-semibold text-white">{{ t('show.setup') }}</h3>
-            <span v-if="setupSaving" class="text-xs text-gray-500">…</span>
-          </div>
-          <MarkdownEditor v-model="setupMarkdown" @update:modelValue="onSetupChange" />
-        </section>
-
-        <!-- Foto-Galerie -->
-        <section>
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="text-sm font-semibold text-white">{{ t('show.photos') }}</h3>
-            <label class="cursor-pointer rounded-md px-3 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20">
-              {{ t('photo.add') }}
-              <input type="file" accept="image/*" multiple class="sr-only" @change="onFileInput" />
-            </label>
-          </div>
-          <div
-            :class="{ 'ring-2 ring-accent ring-inset rounded-lg': dragging }"
-            @dragover.prevent="dragging = true"
-            @dragleave="dragging = false"
-            @drop.prevent="onDrop"
-          >
-            <p v-if="photos.length === 0 && !dragging" class="text-sm text-gray-500">{{ t('photo.empty') }}</p>
-            <ul role="list" class="grid grid-cols-3 gap-3 sm:grid-cols-4">
-              <li v-for="filename in photos" :key="filename" class="relative">
-                <div class="group aspect-square block w-full overflow-hidden rounded-lg bg-gray-800 cursor-pointer" @click="openLightbox(filename)">
-                  <img
-                    :src="getPhotoUrl(props.id, filename)"
-                    :alt="filename"
-                    class="pointer-events-none object-cover group-hover:opacity-75 w-full h-full"
-                  />
-                </div>
-                <button
-                  type="button"
-                  class="absolute top-1 right-1 rounded bg-black/60 px-1 py-0.5 text-xs text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"
-                  @click="onDeletePhoto(filename)"
-                  :title="t('action.delete')"
-                >✕</button>
-              </li>
-            </ul>
-          </div>
-        </section>
-
-        <!-- Kanäle-Tabelle (volle Breite) -->
-        <section class="lg:col-span-2">
+      <!-- Two-column layout: aside + main -->
+      <div class="xl:pl-96">
+        <!-- Main: Kanaltabelle -->
+        <main class="px-4 py-6 sm:px-6 lg:px-8">
           <div class="flex flex-wrap items-center gap-3 mb-4">
-            <h3 class="text-sm font-semibold text-white mr-auto">{{ t('show.channels') }}</h3>
+            <h2 class="text-sm font-semibold text-white mr-auto">{{ t('show.channels') }}</h2>
             <input
               v-model="search"
               type="search"
@@ -170,7 +93,6 @@
               class="rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent w-48"
             />
             <span class="text-xs text-gray-500">{{ totalVisible }} / {{ channels.length }}</span>
-            <span v-if="channelsSaving" class="text-xs text-gray-500">…</span>
             <span v-if="dupWarning" class="text-xs text-yellow-400">⚠ {{ t('channel.dup_address') }}</span>
           </div>
           <div class="overflow-x-auto">
@@ -198,42 +120,22 @@
                   class="border-t border-white/5 group/row hover:bg-white/[0.03] transition-colors"
                 >
                   <td class="py-0 pr-3 pl-0 text-sm font-medium whitespace-nowrap text-white w-16">
-                    <input
-                      :value="ch.channel"
-                      @change="ch.channel = $event.target.value; persistChannels()"
-                      class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-white w-full h-[45px] px-0 border-0 font-medium"
-                    />
+                    <input :value="ch.channel" @change="ch.channel = $event.target.value; persistChannels()" class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-white w-full h-[45px] px-0 border-0 font-medium" />
                   </td>
                   <td class="px-3 py-0 text-sm whitespace-nowrap text-gray-300">
-                    <input
-                      :value="ch.address"
-                      @change="ch.address = $event.target.value; persistChannels()"
-                      class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-gray-300 w-full h-[45px] px-2 border-0 min-w-[70px]"
-                    />
+                    <input :value="ch.address" @change="ch.address = $event.target.value; persistChannels()" class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-gray-300 w-full h-[45px] px-2 border-0 min-w-[70px]" />
                   </td>
                   <td class="px-3 py-0 text-sm whitespace-nowrap text-gray-300">
-                    <input
-                      :value="ch.device"
-                      @change="ch.device = $event.target.value; persistChannels()"
-                      class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-gray-300 w-full h-[45px] px-2 border-0 min-w-[120px]"
-                    />
+                    <input :value="ch.device" @change="ch.device = $event.target.value; persistChannels()" class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-gray-300 w-full h-[45px] px-2 border-0 min-w-[120px]" />
                   </td>
                   <td class="px-3 py-0 text-sm whitespace-nowrap text-gray-300 w-32">
                     <ColorPicker v-model="ch.color" @update:modelValue="persistChannels()" />
                   </td>
                   <td class="px-3 py-0 text-sm whitespace-nowrap text-gray-300">
-                    <input
-                      :value="ch.notes"
-                      @change="ch.notes = $event.target.value; persistChannels()"
-                      class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-gray-300 w-full h-[45px] px-2 border-0 min-w-[120px]"
-                    />
+                    <input :value="ch.notes" @change="ch.notes = $event.target.value; persistChannels()" class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-gray-300 w-full h-[45px] px-2 border-0 min-w-[120px]" />
                   </td>
                   <td class="py-0 pl-3 pr-0 w-8">
-                    <button
-                      class="text-gray-600 hover:text-red-400 text-xs opacity-0 group-hover/row:opacity-100 transition-opacity"
-                      @click="deleteChannel(ch)"
-                      :title="t('action.delete')"
-                    >🗑</button>
+                    <button class="text-gray-600 hover:text-red-400 text-xs opacity-0 group-hover/row:opacity-100 transition-opacity" @click="deleteChannel(ch)" :title="t('action.delete')">🗑</button>
                   </td>
                 </tr>
                 <tr class="border-t border-white/5">
@@ -247,9 +149,7 @@
                   <td class="px-3 py-2"><input class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 min-w-[120px]" v-model="addForm.device" /></td>
                   <td class="px-3 py-2"><ColorPicker v-model="addForm.color" /></td>
                   <td class="px-3 py-2"><input class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 min-w-[120px]" v-model="addForm.notes" /></td>
-                  <td class="py-2 pl-3 pr-0">
-                    <button class="text-green-400 hover:text-green-300 text-sm" @click="saveAdd">✓</button>
-                  </td>
+                  <td class="py-2 pl-3 pr-0"><button class="text-green-400 hover:text-green-300 text-sm" @click="saveAdd">✓</button></td>
                 </tr>
               </tbody>
               <tbody v-if="groupedChannels.length === 0">
@@ -259,9 +159,7 @@
                   <td class="px-3 py-2"><input class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 min-w-[120px]" v-model="addForm.device" /></td>
                   <td class="px-3 py-2"><ColorPicker v-model="addForm.color" /></td>
                   <td class="px-3 py-2"><input class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 min-w-[120px]" v-model="addForm.notes" /></td>
-                  <td class="py-2 pl-3 pr-0">
-                    <button class="text-green-400 hover:text-green-300 text-sm" @click="saveAdd">✓</button>
-                  </td>
+                  <td class="py-2 pl-3 pr-0"><button class="text-green-400 hover:text-green-300 text-sm" @click="saveAdd">✓</button></td>
                 </tr>
                 <tr v-else class="border-t border-white/5">
                   <td colspan="6" class="py-4 pl-0">
@@ -272,9 +170,71 @@
               </tbody>
             </table>
           </div>
+        </main>
+      </div>
+
+      <!-- Aside: Sections + Fotos (fixed, left of main) -->
+      <aside class="fixed top-16 bottom-0 left-20 hidden w-96 overflow-y-auto border-r border-white/10 px-4 py-6 sm:px-6 xl:block">
+        <!-- Custom Sections -->
+        <template v-if="sortedSections.length > 0">
+          <section v-for="sec in sortedSections" :key="sec.id" class="mb-8">
+            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">{{ sec.title }}</h3>
+            <div v-if="sec.type === 'fields'" class="divide-y divide-white/5">
+              <div v-for="field in sec.fields" :key="field.key" class="flex items-center h-[40px]">
+                <label class="w-28 text-sm text-gray-500 shrink-0">{{ field.label }}</label>
+                <input
+                  :value="parseFieldValue(sec.id, field.key)"
+                  @change="onFieldChange(sec.id, field.key, $event.target.value)"
+                  class="flex-1 bg-transparent border-0 border-b border-white/10 focus:border-accent focus:outline-none text-sm text-white h-full px-2 transition-colors"
+                />
+              </div>
+            </div>
+            <MarkdownEditor
+              v-else
+              :modelValue="sectionContents.get(sec.id) ?? ''"
+              @update:modelValue="onSectionChange(sec.id, $event)"
+            />
+          </section>
+        </template>
+
+        <!-- Fallback: single setup editor -->
+        <section v-else class="mb-8">
+          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">{{ t('show.setup') }}</h3>
+          <MarkdownEditor v-model="setupMarkdown" @update:modelValue="onSetupChange" />
         </section>
 
-      </div>
+        <!-- Foto-Galerie -->
+        <section>
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ t('show.photos') }}</h3>
+            <label class="cursor-pointer text-sm text-gray-400 hover:text-white">
+              + {{ t('photo.add') }}
+              <input type="file" accept="image/*" multiple class="sr-only" @change="onFileInput" />
+            </label>
+          </div>
+          <div
+            :class="{ 'ring-2 ring-accent ring-inset rounded-lg': dragging }"
+            @dragover.prevent="dragging = true"
+            @dragleave="dragging = false"
+            @drop.prevent="onDrop"
+          >
+            <p v-if="photos.length === 0 && !dragging" class="text-sm text-gray-500">{{ t('photo.empty') }}</p>
+            <ul role="list" class="grid grid-cols-3 gap-2">
+              <li v-for="filename in photos" :key="filename" class="relative group">
+                <div class="aspect-square block w-full overflow-hidden rounded-lg bg-gray-800 cursor-pointer" @click="openLightbox(filename)">
+                  <img :src="getPhotoUrl(props.id, filename)" :alt="filename" class="pointer-events-none object-cover group-hover:opacity-75 w-full h-full" />
+                </div>
+                <button
+                  type="button"
+                  class="absolute top-1 right-1 rounded bg-black/60 px-1 py-0.5 text-xs text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                  @click="onDeletePhoto(filename)"
+                  :title="t('action.delete')"
+                >✕</button>
+              </li>
+            </ul>
+          </div>
+        </section>
+      </aside>
     </template>
 
     <!-- Lightbox -->

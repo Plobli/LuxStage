@@ -75,39 +75,35 @@
         </Dialog>
       </TransitionRoot>
 
-      <!-- Desktop Sidebar (statisch) -->
-      <div class="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
-        <div class="flex grow flex-col gap-y-5 overflow-y-auto border-r border-white/10 bg-gray-900 px-6">
-          <div class="flex h-16 shrink-0 items-center">
-            <span class="text-lg font-bold text-accent">LuxStage</span>
-          </div>
-          <nav class="flex flex-1 flex-col">
-            <ul role="list" class="flex flex-1 flex-col gap-y-7">
-              <li>
-                <ul role="list" class="-mx-2 space-y-1">
-                  <li v-for="item in navigation" :key="item.name">
-                    <RouterLink
-                      :to="item.to"
-                      class="group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold"
-                      :class="isActiveRoute(item) ? 'bg-white/5 text-white' : 'text-gray-400 hover:bg-white/5 hover:text-white'"
-                    >
-                      <component :is="item.icon" class="size-6 shrink-0" aria-hidden="true" />
-                      {{ item.name }}
-                    </RouterLink>
-                  </li>
-                </ul>
-              </li>
-              <li class="-mx-6 mt-auto">
-                <button
-                  @click="handleLogout"
-                  class="flex w-full items-center gap-x-4 px-6 py-3 text-sm/6 font-semibold text-gray-400 hover:bg-white/5 hover:text-white"
-                >
-                  <ArrowLeftStartOnRectangleIcon class="size-5 shrink-0" aria-hidden="true" />
-                  {{ t('nav.logout') }}
-                </button>
-              </li>
-            </ul>
-          </nav>
+      <!-- Desktop Sidebar (statisch, schmal – nur Icons) -->
+      <div class="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:block lg:w-20 lg:overflow-y-auto lg:bg-gray-900 lg:pb-4 border-r border-white/10">
+        <div class="flex h-16 shrink-0 items-center justify-center">
+          <span class="text-sm font-bold text-accent">LS</span>
+        </div>
+        <nav class="mt-8">
+          <ul role="list" class="flex flex-col items-center space-y-1">
+            <li v-for="item in navigation" :key="item.name">
+              <RouterLink
+                :to="item.to"
+                :title="item.name"
+                class="group flex gap-x-3 rounded-md p-3 text-sm/6 font-semibold"
+                :class="isActiveRoute(item) ? 'bg-white/5 text-white' : 'text-gray-400 hover:bg-white/5 hover:text-white'"
+              >
+                <component :is="item.icon" class="size-6 shrink-0" aria-hidden="true" />
+                <span class="sr-only">{{ item.name }}</span>
+              </RouterLink>
+            </li>
+          </ul>
+        </nav>
+        <div class="absolute bottom-0 left-0 right-0 pb-4 flex justify-center">
+          <button
+            @click="handleLogout"
+            :title="t('nav.logout')"
+            class="p-3 text-gray-400 hover:bg-white/5 hover:text-white rounded-md"
+          >
+            <ArrowLeftStartOnRectangleIcon class="size-6 shrink-0" aria-hidden="true" />
+            <span class="sr-only">{{ t('nav.logout') }}</span>
+          </button>
         </div>
       </div>
 
@@ -121,10 +117,9 @@
       </div>
 
       <!-- Main Content -->
-      <main class="py-10 lg:pl-72 bg-gray-900 min-h-screen">
-        <div class="px-4 sm:px-6 lg:px-8">
-          <RouterView />
-        </div>
+      <main class="lg:pl-20 bg-gray-900 min-h-screen">
+        <RouterView />
+
       </main>
     </div>
   </div>

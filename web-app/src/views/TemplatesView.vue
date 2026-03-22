@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="px-4 py-10 sm:px-6 lg:px-8">
     <!-- Page header -->
     <div class="sm:flex sm:items-center mb-8">
       <div class="sm:flex-auto">

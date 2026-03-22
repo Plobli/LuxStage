@@ -1,5 +1,5 @@
 // web-app/src/composables/useUndoRedo.js
-import { ref, computed } from 'vue'
+import { ref, computed, toRaw } from 'vue'
 
 const MAX_HISTORY = 50
 
@@ -37,9 +37,20 @@ export function useUndoRedo(getState, applyState, cancelPendingSaves, saveNow = 
     debounceTimer = null
   }
 
+  function _deepRaw(val) {
+    if (Array.isArray(val)) return val.map(item => _deepRaw(toRaw(item)))
+    if (val && typeof val === 'object') {
+      const raw = toRaw(val)
+      const result = {}
+      for (const key of Object.keys(raw)) result[key] = _deepRaw(raw[key])
+      return result
+    }
+    return val
+  }
+
   function _push(snapshot) {
     future.value = []                          // Neue Änderung → Redo-Stack leeren
-    past.value.push(structuredClone(snapshot))
+    past.value.push(structuredClone(_deepRaw(snapshot)))
     if (past.value.length > MAX_HISTORY) {
       past.value.shift()                       // Ältesten Eintrag verwerfen
     }
@@ -47,7 +58,7 @@ export function useUndoRedo(getState, applyState, cancelPendingSaves, saveNow = 
 
   function undo() {
     if (!past.value.length) return
-    const current = structuredClone(getState())
+    const current = structuredClone(_deepRaw(getState()))
     future.value.unshift(current)
     const prev = past.value.pop()
     cancelPendingSaves()
@@ -57,7 +68,7 @@ export function useUndoRedo(getState, applyState, cancelPendingSaves, saveNow = 
 
   function redo() {
     if (!future.value.length) return
-    const current = structuredClone(getState())
+    const current = structuredClone(_deepRaw(getState()))
     past.value.push(current)
     const next = future.value.shift()
     cancelPendingSaves()

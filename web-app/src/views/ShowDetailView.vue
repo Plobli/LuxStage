@@ -692,15 +692,18 @@ function saveAdd() {
 
 // ── Kanäle speichern ───────────────────────────────────────────────────────
 let channelsSaveTimer = null
-let channelsSavedAt = 0   // Timestamp des letzten eigenen Saves
+let ignoreSseCount = 0   // Anzahl eigener Saves die noch kein SSE-Echo hatten
 function persistChannels() {
-  channelsSaving.value = true
+  // Debounce für schnelle Folge-Aufrufe (Drag&Drop, programmatisch)
+  // Bei @change-Aufrufen (blur) wird sofort gespeichert sobald der Timer feuert
   clearTimeout(channelsSaveTimer)
+  channelsSaving.value = true
   channelsSaveTimer = setTimeout(async () => {
     channelsSaveTimer = null
-    try { await saveChannels(props.id, channels.value); channelsSavedAt = Date.now() }
+    ignoreSseCount++
+    try { await saveChannels(props.id, channels.value) }
     finally { channelsSaving.value = false }
-  }, 400)
+  }, 50)
 }
 
 // ── Fotos ──────────────────────────────────────────────────────────────────
@@ -876,15 +879,8 @@ onMounted(async () => {
 
   // SSE für Realtime-Updates von anderen Nutzern
   unsubscribeSSE = subscribeChannels(props.id, async () => {
-    // Eigene Saves lösen SSE aus — 2s Grace-Period nach eigenem Save ignorieren
-    if (Date.now() - channelsSavedAt < 2000) return
-    const focused = document.activeElement
-    const isEditing = focused && (
-      focused.tagName === 'INPUT' ||
-      focused.tagName === 'TEXTAREA' ||
-      focused.isContentEditable
-    )
-    if (isEditing) return
+    // SSE-Echo vom eigenen Save überspringen
+    if (ignoreSseCount > 0) { ignoreSseCount--; return }
     channels.value = await fetchChannels(props.id)
   })
 

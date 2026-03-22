@@ -19,8 +19,8 @@
       <div class="w-px h-4 bg-white/10 mx-1" />
       <button
         type="button"
-        @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 3 }).run()"
-        :class="editor.isActive('heading', { level: 3 }) ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'"
+        @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 2 }).run()"
+        :class="editor.isActive('heading', { level: 2 }) ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'"
         class="rounded px-2 py-1 text-sm font-semibold transition-colors"
         :title="t('editor.heading')"
       >H</button>
@@ -44,7 +44,7 @@
     <!-- Editor Content -->
     <EditorContent
       :editor="editor"
-      class="tiptap-content min-h-[80px] text-sm text-gray-200 focus-within:outline-none [&_.tiptap]:outline-none [&_.tiptap]:min-h-[80px] [&_.tiptap_p]:my-1 [&_.tiptap_h3]:text-base [&_.tiptap_h3]:font-semibold [&_.tiptap_h3]:text-white [&_.tiptap_h3]:mt-3 [&_.tiptap_h3]:mb-1 [&_.tiptap_ul]:list-disc [&_.tiptap_ul]:pl-4 [&_.tiptap_ol]:list-decimal [&_.tiptap_ol]:pl-4 [&_.tiptap_li]:my-0.5 [&_.tiptap_strong]:text-white [&_.tiptap_strong]:font-semibold [&_.tiptap_em]:italic"
+      class="tiptap-content min-h-[80px] text-sm text-gray-200 focus-within:outline-none [&_.tiptap]:outline-none [&_.tiptap]:min-h-[80px] [&_.tiptap_p]:my-1 [&_.tiptap_h2]:text-base [&_.tiptap_h2]:font-semibold [&_.tiptap_h2]:text-accent [&_.tiptap_h2]:mt-3 [&_.tiptap_h2]:mb-1 [&_.tiptap_ul]:list-disc [&_.tiptap_ul]:pl-4 [&_.tiptap_ol]:list-decimal [&_.tiptap_ol]:pl-4 [&_.tiptap_li]:my-0.5 [&_.tiptap_strong]:text-white [&_.tiptap_strong]:font-semibold [&_.tiptap_em]:italic"
     />
   </div>
 </template>

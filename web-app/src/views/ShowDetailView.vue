@@ -126,11 +126,11 @@
                   :key="ch.channel"
                   :data-nav-row="rowIndexOf(ch)"
                   draggable="true"
-                  @dragstart="onDragStart($event, ch)"
-                  @dragover="onDragOver($event, ch)"
-                  @dragleave="onDragLeave"
-                  @drop="onDrop($event, ch)"
-                  @dragend="onDragEnd"
+                  @dragstart="onRowDragStart($event, ch)"
+                  @dragover="onRowDragOver($event, ch)"
+                  @dragleave="onRowDragLeave"
+                  @drop="onRowDrop($event, ch)"
+                  @dragend="onRowDragEnd"
                   :class="[
                     'border-t border-white/5 group/row hover:bg-white/[0.03] transition-colors align-middle cursor-grab active:cursor-grabbing',
                     dragOverIndex === channels.indexOf(ch) && dragSrcIndex !== channels.indexOf(ch) ? 'outline outline-2 outline-accent/50 outline-offset-[-2px]' : ''
@@ -511,22 +511,22 @@ const groupedChannels = computed(() => {
 const dragSrcIndex = ref(null) // Index in channels.value
 const dragOverIndex = ref(null)
 
-function onDragStart(e, ch) {
+function onRowDragStart(e, ch) {
   dragSrcIndex.value = channels.value.indexOf(ch)
   e.dataTransfer.effectAllowed = 'move'
 }
 
-function onDragOver(e, ch) {
+function onRowDragOver(e, ch) {
   e.preventDefault()
   e.dataTransfer.dropEffect = 'move'
   dragOverIndex.value = channels.value.indexOf(ch)
 }
 
-function onDragLeave() {
+function onRowDragLeave() {
   dragOverIndex.value = null
 }
 
-function onDrop(e, ch) {
+function onRowDrop(e, ch) {
   e.preventDefault()
   const from = dragSrcIndex.value
   const to = channels.value.indexOf(ch)
@@ -540,7 +540,7 @@ function onDrop(e, ch) {
   dragOverIndex.value = null
 }
 
-function onDragEnd() {
+function onRowDragEnd() {
   dragSrcIndex.value = null
   dragOverIndex.value = null
 }

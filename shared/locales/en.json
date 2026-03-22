@@ -1,6 +1,9 @@
 {
   "app.name": "LuxStage",
 
+  "action.undo": "Undo (⌘Z)",
+  "action.redo": "Redo (⌘⇧Z)",
+
   "nav.shows": "Shows",
   "nav.archive": "Archive",
   "nav.templates": "Templates",

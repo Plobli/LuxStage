@@ -1,6 +1,9 @@
 {
   "app.name": "LuxStage",
 
+  "action.undo": "Rückgängig (⌘Z)",
+  "action.redo": "Wiederherstellen (⌘⇧Z)",
+
   "nav.shows": "Shows",
   "nav.archive": "Archiv",
   "nav.templates": "Vorlagen",

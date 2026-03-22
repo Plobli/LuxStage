@@ -23,6 +23,27 @@
       <div class="flex min-w-0 flex-1 items-center gap-x-3">
         <h1 class="text-sm font-semibold text-white truncate">{{ meta.name }}</h1>
         <span class="hidden sm:block text-xs text-gray-500 shrink-0">{{ meta.datum }}</span>
+        <!-- Undo/Redo -->
+        <button
+          type="button"
+          :disabled="!canUndo"
+          :class="canUndo ? 'text-gray-400 hover:text-white' : 'opacity-30 cursor-not-allowed pointer-events-none'"
+          class="no-print p-1"
+          :title="t('action.undo')"
+          @click="undo()"
+        >
+          <ArrowUturnLeftIcon class="size-4" />
+        </button>
+        <button
+          type="button"
+          :disabled="!canRedo"
+          :class="canRedo ? 'text-gray-400 hover:text-white' : 'opacity-30 cursor-not-allowed pointer-events-none'"
+          class="no-print p-1"
+          :title="t('action.redo')"
+          @click="redo()"
+        >
+          <ArrowUturnRightIcon class="size-4" />
+        </button>
         <span v-if="channelsSaving || sectionsSaving || setupSaving" class="text-xs text-gray-500 shrink-0">…</span>
       </div>
       <!-- Suchfeld rechtsbündig -->

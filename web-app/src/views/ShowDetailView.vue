@@ -105,8 +105,7 @@
           <div class="overflow-x-auto">
             <table class="min-w-full">
               <colgroup>
-                <col class="w-20" />          <!-- Kanal + Farb-Badge -->
-                <col class="w-[6ch]" />       <!-- Adresse -->
+                <col class="w-28" />          <!-- Kanal + Adresse + Farb-Badge -->
                 <col class="w-[30ch]" />      <!-- Gerät -->
                 <col />                       <!-- Notizen (rest) -->
                 <col class="w-6" />           <!-- Löschen -->
@@ -114,7 +113,6 @@
               <thead>
                 <tr class="border-b border-white/10">
                   <th scope="col" class="py-3 pr-3 pl-0 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ t('field.channel') }}</th>
-                  <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ t('field.address') }}</th>
                   <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ t('field.device') }}</th>
                   <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ t('field.notes') }}</th>
                   <th scope="col" class="w-6"></th>
@@ -122,7 +120,7 @@
               </thead>
               <tbody v-for="group in groupedChannels" :key="group.position">
                 <tr class="border-t border-white/5">
-                  <th colspan="5" scope="colgroup" class="py-2 pr-3 pl-0 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                  <th colspan="4" scope="colgroup" class="py-2 pr-3 pl-0 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">
                     {{ group.position || t('channel.no_category') }}
                     <span class="ml-2 font-normal normal-case text-gray-600">{{ group.channels.length }}</span>
                   </th>
@@ -133,24 +131,26 @@
                   class="border-t border-white/5 group/row hover:bg-white/[0.03] transition-colors align-top"
                 >
                   <td class="py-2 pr-3 pl-0">
-                    <div class="flex flex-col items-start gap-1">
+                    <div class="flex flex-col items-start gap-1.5">
                       <input
                         :value="ch.channel"
                         @change="ch.channel = $event.target.value; persistChannels()"
-                        class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-2xl font-bold font-mono text-white w-full px-0 border-0 leading-none"
-                        style="width: 4ch"
+                        class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[4ch]"
                       />
                       <input
-                        v-if="ch.color || true"
+                        :value="ch.address"
+                        @change="ch.address = $event.target.value; persistChannels()"
+                        class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-xs text-gray-500 px-0 border-0 w-[6ch]"
+                      />
+                      <input
                         :value="ch.color"
                         @change="ch.color = $event.target.value; persistChannels()"
                         :placeholder="t('field.color')"
-                        class="bg-white/10 focus:bg-white/15 focus:outline-none text-[10px] font-semibold text-gray-400 focus:text-white rounded-full px-2 py-0.5 border-0 w-16 text-center placeholder:text-gray-600"
+                        :style="filterBadgeStyle(ch.color) || {}"
+                        :class="filterBadgeStyle(ch.color) ? 'font-semibold' : 'bg-white/10 text-gray-400 placeholder:text-gray-600'"
+                        class="focus:outline-none text-xs rounded-full px-2 py-0.5 border-0 w-20 text-center"
                       />
                     </div>
-                  </td>
-                  <td class="px-3 py-2">
-                    <input :value="ch.address" @change="ch.address = $event.target.value; persistChannels()" class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-gray-300 w-full px-2 border-0 h-[36px]" />
                   </td>
                   <td class="px-3 py-2">
                     <input :value="ch.device" @change="ch.device = $event.target.value; persistChannels()" class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-gray-300 w-full px-2 border-0 h-[36px]" />
@@ -167,18 +167,18 @@
                   </td>
                 </tr>
                 <tr class="border-t border-white/5">
-                  <td colspan="5" class="py-2 pl-0">
+                  <td colspan="4" class="py-2 pl-0">
                     <button type="button" class="text-sm text-gray-600 hover:text-gray-300" @click="startAdd(group.position)">+ {{ t('channel.add') }}</button>
                   </td>
                 </tr>
                 <tr v-if="addingPosition === group.position" class="border-t border-white/5 bg-white/5" @keydown.escape="addingPosition = null" @keydown.enter.prevent="saveAdd">
                   <td class="py-2 pr-3 pl-0">
-                    <div class="flex flex-col gap-1">
-                      <input autofocus class="bg-transparent focus:outline-none text-2xl font-bold font-mono text-white px-0 border-0 leading-none" style="width:4ch" v-model="addForm.channel" :placeholder="t('show.channel.nr')" />
-                      <input class="bg-white/10 focus:bg-white/15 focus:outline-none text-[10px] font-semibold text-gray-400 rounded-full px-2 py-0.5 border-0 w-16 text-center placeholder:text-gray-600" v-model="addForm.color" :placeholder="t('field.color')" />
+                    <div class="flex flex-col gap-1.5">
+                      <input autofocus class="bg-transparent focus:outline-none text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[4ch]" v-model="addForm.channel" :placeholder="t('show.channel.nr')" />
+                      <input class="bg-transparent focus:outline-none text-xs text-gray-500 px-0 border-0 w-[6ch]" v-model="addForm.address" :placeholder="t('show.channel.address.example')" />
+                      <input class="bg-white/10 focus:outline-none text-xs text-gray-400 rounded-full px-2 py-0.5 border-0 w-20 text-center placeholder:text-gray-600" v-model="addForm.color" :placeholder="t('field.color')" />
                     </div>
                   </td>
-                  <td class="px-3 py-2"><input class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2" v-model="addForm.address" :placeholder="t('show.channel.address.example')" /></td>
                   <td class="px-3 py-2"><input class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2" v-model="addForm.device" /></td>
                   <td class="px-3 py-2"><textarea class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 resize-none [field-sizing:content] min-h-[36px]" v-model="addForm.notes" /></td>
                   <td class="py-2 pl-2 pr-0"><button class="text-green-400 hover:text-green-300 text-sm" @click="saveAdd">✓</button></td>
@@ -194,7 +194,7 @@
                   <td class="py-2 pl-2 pr-0"><button class="text-green-400 hover:text-green-300 text-sm" @click="saveAdd">✓</button></td>
                 </tr>
                 <tr v-else class="border-t border-white/5">
-                  <td colspan="5" class="py-4 pl-0">
+                  <td colspan="4" class="py-4 pl-0">
                     <span class="text-sm text-gray-500">{{ t('channel.list.empty') }}</span>
                     <button type="button" class="ml-3 text-sm text-gray-400 hover:text-white" @click="startAdd('')">+ {{ t('channel.add') }}</button>
                   </td>
@@ -291,6 +291,7 @@ import { api } from '../api/client.js'
 import ColorPicker from '../components/ColorPicker.vue'
 import { fetchShowSections, saveShowSections, parseSectionsMd, serializeSectionsMd, fetchShowSectionDefs, saveShowSectionDefs } from '../api/sections.js'
 import { uuid } from '../utils/uuid.js'
+import { filterBadgeStyle } from '../utils/leeColors.js'
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()

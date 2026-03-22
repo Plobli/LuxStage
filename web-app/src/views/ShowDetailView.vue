@@ -305,6 +305,18 @@
               <input type="file" accept="image/*" multiple class="sr-only" @change="onFileInput" />
             </label>
           </div>
+          <div v-if="uploadQueue.length > 0" class="mb-3 space-y-1">
+            <div v-for="item in uploadQueue" :key="item.name" class="flex items-center gap-2">
+              <div class="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  class="h-full rounded-full transition-all"
+                  :class="item.error ? 'bg-red-500' : item.done ? 'bg-green-500' : 'bg-accent'"
+                  :style="{ width: item.progress + '%' }"
+                />
+              </div>
+              <span class="text-xs text-gray-500 w-8 text-right">{{ item.done ? '✓' : item.error ? '✗' : item.progress + '%' }}</span>
+            </div>
+          </div>
           <div
             :class="{ 'ring-2 ring-accent ring-inset rounded-lg': dragging }"
             @dragover.prevent="dragging = true"
@@ -516,12 +528,22 @@ function persistChannels() {
 // ── Fotos ──────────────────────────────────────────────────────────────────
 const dragging = ref(false)
 const lightboxPhoto = ref(null)
+const uploadQueue = ref([]) // [{ name, progress, done, error }]
 
 async function uploadFiles(files) {
-  for (const file of files) {
-    await uploadPhoto(props.id, file)
+  uploadQueue.value = files.map(f => ({ name: f.name, progress: 0, done: false, error: false }))
+  for (let i = 0; i < files.length; i++) {
+    try {
+      await uploadPhoto(props.id, files[i], (p) => {
+        uploadQueue.value[i].progress = p
+      })
+      uploadQueue.value[i].done = true
+      photos.value = await fetchPhotos(props.id)
+    } catch {
+      uploadQueue.value[i].error = true
+    }
   }
-  photos.value = await fetchPhotos(props.id)
+  setTimeout(() => { uploadQueue.value = [] }, 2000)
 }
 
 function onFileInput(e) { uploadFiles([...e.target.files]); e.target.value = '' }

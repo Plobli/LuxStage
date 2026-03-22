@@ -692,12 +692,13 @@ function saveAdd() {
 
 // ── Kanäle speichern ───────────────────────────────────────────────────────
 let channelsSaveTimer = null
+let channelsSavedAt = 0   // Timestamp des letzten eigenen Saves
 function persistChannels() {
   channelsSaving.value = true
   clearTimeout(channelsSaveTimer)
   channelsSaveTimer = setTimeout(async () => {
     channelsSaveTimer = null
-    try { await saveChannels(props.id, channels.value) }
+    try { await saveChannels(props.id, channels.value); channelsSavedAt = Date.now() }
     finally { channelsSaving.value = false }
   }, 400)
 }
@@ -875,6 +876,8 @@ onMounted(async () => {
 
   // SSE für Realtime-Updates von anderen Nutzern
   unsubscribeSSE = subscribeChannels(props.id, async () => {
+    // Eigene Saves lösen SSE aus — 2s Grace-Period nach eigenem Save ignorieren
+    if (Date.now() - channelsSavedAt < 2000) return
     const focused = document.activeElement
     const isEditing = focused && (
       focused.tagName === 'INPUT' ||

@@ -182,9 +182,9 @@
                       class="bg-white/[0.04] focus:bg-white/[0.07] focus:outline-none focus:ring-0 text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle rounded"
                     />
                   </td>
-                  <td class="py-2 pl-2 pr-1 align-middle">
-                    <button class="no-print flex items-center justify-center text-gray-600 hover:text-red-400 opacity-0 group-hover/row:opacity-100 transition-opacity" @click="deleteChannel(ch)" :title="t('action.delete')">
-                      <TrashIcon class="size-4" />
+                  <td class="pl-2 pr-1" style="vertical-align: middle; text-align: center;">
+                    <button class="no-print text-gray-600 hover:text-red-400 opacity-0 group-hover/row:opacity-100 transition-opacity" @click="deleteChannel(ch)" :title="t('action.delete')">
+                      <TrashIcon class="block size-4" />
                     </button>
                   </td>
                 </tr>

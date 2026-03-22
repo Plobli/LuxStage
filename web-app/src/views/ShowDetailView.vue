@@ -486,7 +486,7 @@ function onUndoRedoKeydown(e) {
   )
   if (isEditing) return
 
-  const isMac = navigator.platform.toUpperCase().includes('MAC')
+  const isMac = navigator.userAgentData?.platform === 'macOS' || /Mac/.test(navigator.userAgent)
   const mod = isMac ? e.metaKey : e.ctrlKey
 
   if (mod && !e.shiftKey && e.key === 'z') {
@@ -832,8 +832,8 @@ function hasFieldsType() {
 }
 
 function onSectionTypeChange(section, newType) {
-  pushSnapshot()
   if (newType === 'fields' && hasFieldsType() && section.type !== 'fields') return
+  pushSnapshot()
   section.type = newType
   if (newType === 'fields' && !section.fields) section.fields = []
   persistSectionDefs()
@@ -896,10 +896,10 @@ onMounted(async () => {
     await nextTick()
     window.scrollTo({ top: parseInt(saved), behavior: 'instant' })
   }
-  window.addEventListener('scroll', () => {
-    sessionStorage.setItem(scrollKey, window.scrollY)
-  }, { passive: true })
+  const onScroll = () => sessionStorage.setItem(scrollKey, window.scrollY)
+  window.addEventListener('scroll', onScroll, { passive: true })
   window.addEventListener('keydown', onUndoRedoKeydown)
+  onBeforeUnmount(() => window.removeEventListener('scroll', onScroll))
 })
 
 onBeforeUnmount(() => {

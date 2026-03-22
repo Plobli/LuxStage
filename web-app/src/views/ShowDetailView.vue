@@ -201,31 +201,35 @@
                   @keydown.escape="cancelEdit"
                   @focusout="onRowFocusOut($event, ch)"
                 >
-                  <td class="py-3 pr-3 pl-0 text-sm font-medium whitespace-nowrap text-white">{{ ch.channel }}</td>
-                  <td class="px-3 py-3 text-sm whitespace-nowrap text-gray-400">
-                    <input v-if="editingChannel === ch.channel" class="bg-transparent border-b border-white/20 focus:border-accent focus:outline-none text-sm text-white w-full min-w-[80px] pb-0.5" v-model="editForm.address" @click.stop />
-                    <template v-else>{{ ch.address }}</template>
+                  <td class="py-0 pr-3 pl-0 text-sm font-medium whitespace-nowrap text-white h-[45px]">
+                    <span class="flex items-center h-full">{{ ch.channel }}</span>
                   </td>
-                  <td class="px-3 py-3 text-sm whitespace-nowrap text-gray-400">
-                    <input v-if="editingChannel === ch.channel" class="bg-transparent border-b border-white/20 focus:border-accent focus:outline-none text-sm text-white w-full min-w-[120px] pb-0.5" v-model="editForm.device" @click.stop />
-                    <template v-else>{{ ch.device || '—' }}</template>
+                  <td class="px-3 py-0 text-sm whitespace-nowrap text-gray-400 h-[45px]">
+                    <input v-if="editingChannel === ch.channel" class="bg-transparent border-b border-white/20 focus:border-accent focus:outline-none text-sm text-white w-full min-w-[80px] h-full" v-model="editForm.address" @click.stop />
+                    <span v-else class="flex items-center h-full">{{ ch.address }}</span>
                   </td>
-                  <td class="px-3 py-3 text-sm whitespace-nowrap text-gray-400">
-                    <ColorPicker v-if="editingChannel === ch.channel" v-model="editForm.color" @click.stop />
-                    <template v-else>
-                      <span v-if="ch.color" class="inline-flex items-center gap-1.5">
-                        <span class="inline-block size-3 rounded-sm" :style="{ background: ch.color }"></span>
-                        <span class="text-xs">{{ ch.color }}</span>
-                      </span>
-                      <span v-else class="text-gray-600">—</span>
-                    </template>
+                  <td class="px-3 py-0 text-sm whitespace-nowrap text-gray-400 h-[45px]">
+                    <input v-if="editingChannel === ch.channel" class="bg-transparent border-b border-white/20 focus:border-accent focus:outline-none text-sm text-white w-full min-w-[120px] h-full" v-model="editForm.device" @click.stop />
+                    <span v-else class="flex items-center h-full">{{ ch.device || '—' }}</span>
                   </td>
-                  <td class="px-3 py-3 text-sm whitespace-nowrap text-gray-400">
-                    <div v-if="editingChannel === ch.channel" class="flex items-center gap-2">
-                      <input ref="notesInput" class="bg-transparent border-b border-white/20 focus:border-accent focus:outline-none text-sm text-white flex-1 min-w-[120px] pb-0.5" v-model="editForm.notes" @click.stop />
-                      <button class="text-red-400 hover:text-red-300 text-xs px-1 shrink-0" @mousedown.prevent @click.stop="deleteChannel(ch)" :title="t('action.delete')">🗑</button>
+                  <td class="px-3 py-0 text-sm whitespace-nowrap text-gray-400 h-[45px]">
+                    <div class="flex items-center h-full">
+                      <ColorPicker v-if="editingChannel === ch.channel" v-model="editForm.color" @click.stop />
+                      <template v-else>
+                        <span v-if="ch.color" class="inline-flex items-center gap-1.5">
+                          <span class="inline-block size-3 rounded-sm" :style="{ background: ch.color }"></span>
+                          <span class="text-xs">{{ ch.color }}</span>
+                        </span>
+                        <span v-else class="text-gray-600">—</span>
+                      </template>
                     </div>
-                    <template v-else>{{ ch.notes }}</template>
+                  </td>
+                  <td class="px-3 py-0 text-sm whitespace-nowrap text-gray-400 h-[45px]">
+                    <div class="flex items-center gap-2 h-full">
+                      <input v-if="editingChannel === ch.channel" ref="notesInput" class="bg-transparent border-b border-white/20 focus:border-accent focus:outline-none text-sm text-white flex-1 min-w-[120px] h-full" v-model="editForm.notes" @click.stop />
+                      <span v-else class="flex items-center h-full flex-1">{{ ch.notes }}</span>
+                      <button v-if="editingChannel === ch.channel" class="text-red-400 hover:text-red-300 text-xs px-1 shrink-0" @mousedown.prevent @click.stop="deleteChannel(ch)" :title="t('action.delete')">🗑</button>
+                    </div>
                   </td>
                 </tr>
                 <!-- Kanal hinzufügen -->

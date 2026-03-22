@@ -128,16 +128,16 @@
                 <tr
                   v-for="ch in group.channels"
                   :key="ch.channel"
-                  class="border-t border-white/5 group/row hover:bg-white/[0.03] transition-colors align-top"
+                  class="border-t border-white/5 group/row hover:bg-white/[0.03] transition-colors align-middle"
                 >
                   <td class="py-2 pr-3 pl-0">
                     <div class="flex items-center gap-2">
                       <input
                         :value="ch.channel"
                         @change="ch.channel = $event.target.value; persistChannels()"
-                        class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[3ch] shrink-0"
+                        class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[3ch] shrink-0 self-center"
                       />
-                      <div class="flex flex-col gap-1 min-w-0 items-center">
+                      <div class="flex flex-col gap-0.5 min-w-0 items-center">
                         <input
                           :value="ch.color"
                           @change="ch.color = $event.target.value; persistChannels()"
@@ -157,17 +157,17 @@
                       </div>
                     </div>
                   </td>
-                  <td class="px-3 py-2">
-                    <input :value="ch.device" @change="ch.device = $event.target.value; persistChannels()" class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-gray-300 w-full px-2 border-0 h-[36px]" />
+                  <td class="px-3 py-2 align-middle">
+                    <input :value="ch.device" @change="ch.device = $event.target.value; persistChannels()" class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-gray-300 w-full px-2 border-0" />
                   </td>
-                  <td class="px-3 py-1">
+                  <td class="px-3 py-2 align-middle">
                     <textarea
                       :value="ch.notes"
                       @change="ch.notes = $event.target.value; persistChannels()"
-                      class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-gray-300 w-full px-2 border-0 resize-none py-2 leading-snug [field-sizing:content] min-h-[36px]"
+                      class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content]"
                     />
                   </td>
-                  <td class="py-2 pl-2 pr-0 pt-3">
+                  <td class="py-2 pl-2 pr-0 align-middle">
                     <button class="text-gray-600 hover:text-red-400 text-xs opacity-0 group-hover/row:opacity-100 transition-opacity" @click="deleteChannel(ch)" :title="t('action.delete')">✕</button>
                   </td>
                 </tr>

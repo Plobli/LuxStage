@@ -71,7 +71,7 @@
           leave-from="opacity-100"
           leave-to="opacity-0"
         >
-          <div class="fixed inset-0 bg-gray-900/80 transition-opacity" />
+          <div class="fixed inset-0 bg-gray-950/80 transition-opacity" />
         </TransitionChild>
         <div class="fixed inset-0 overflow-hidden">
           <div class="absolute inset-0 overflow-hidden">
@@ -86,7 +86,7 @@
                 leave-to="translate-x-full"
               >
                 <DialogPanel class="pointer-events-auto w-screen max-w-md">
-                  <div class="flex h-full flex-col overflow-y-scroll bg-gray-900 py-6 shadow-xl ring-1 ring-white/10">
+                  <div class="flex h-full flex-col overflow-y-scroll bg-gray-950 py-6 shadow-xl ring-1 ring-white/10">
                     <div class="px-4 sm:px-6">
                       <div class="flex items-start justify-between">
                         <DialogTitle class="text-base font-semibold text-white">{{ t('show.new') }}</DialogTitle>

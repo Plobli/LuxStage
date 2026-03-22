@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- Top Header -->
-    <div class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-white/10 bg-gray-900 px-4 sm:px-6 lg:px-8">
+    <div class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-white/10 bg-gray-950 px-4 sm:px-6 lg:px-8">
       <button type="button" class="text-gray-400 hover:text-white" @click="router.push('/')">
         <span class="sr-only">{{ t('action.back') }}</span>
         <svg class="size-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M17 10a.75.75 0 0 1-.75.75H5.612l4.158 3.96a.75.75 0 1 1-1.04 1.08l-5.5-5.25a.75.75 0 0 1 0-1.08l5.5-5.25a.75.75 0 1 1 1.04 1.08L5.612 9.25H16.25A.75.75 0 0 1 17 10Z" clip-rule="evenodd" /></svg>
@@ -49,7 +49,7 @@
 
     <template v-else>
       <!-- Sections-Editor (overlay panel) -->
-      <div v-if="editingSections" class="border-b border-white/10 bg-gray-900/80 px-4 py-4 sm:px-6 lg:px-8 space-y-3">
+      <div v-if="editingSections" class="border-b border-white/10 bg-gray-950/80 px-4 py-4 sm:px-6 lg:px-8 space-y-3">
         <div
           v-for="(sec, idx) in sectionDefs"
           :key="sec.id"

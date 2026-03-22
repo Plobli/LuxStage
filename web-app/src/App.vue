@@ -1,10 +1,10 @@
 <template>
-  <div class="h-full bg-gray-900">
+  <div class="h-full bg-gray-950">
     <!-- Login-Route: kein Sidebar-Layout -->
     <RouterView v-if="route.meta.public" />
 
     <!-- App-Layout mit Sidebar -->
-    <div v-else class="h-full bg-gray-900">
+    <div v-else class="h-full bg-gray-950">
       <!-- Mobile Sidebar (Headless UI Dialog) -->
       <TransitionRoot as="template" :show="sidebarOpen">
         <Dialog class="relative z-50 lg:hidden" @close="sidebarOpen = false">
@@ -17,7 +17,7 @@
             leave-from="opacity-100"
             leave-to="opacity-0"
           >
-            <div class="fixed inset-0 bg-gray-900/80" />
+            <div class="fixed inset-0 bg-gray-950/80" />
           </TransitionChild>
 
           <div class="fixed inset-0 flex">
@@ -37,7 +37,7 @@
                     <XMarkIcon class="size-6 text-white" aria-hidden="true" />
                   </button>
                 </div>
-                <div class="flex grow flex-col gap-y-5 overflow-y-auto bg-gray-900 px-6 pb-2 ring-1 ring-white/10">
+                <div class="flex grow flex-col gap-y-5 overflow-y-auto bg-gray-950 px-6 pb-2 ring-1 ring-white/10">
                   <div class="flex h-16 shrink-0 items-center">
                     <span class="text-lg font-bold text-accent">LuxStage</span>
                   </div>
@@ -76,7 +76,7 @@
       </TransitionRoot>
 
       <!-- Desktop Sidebar (statisch, schmal – nur Icons) -->
-      <div class="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:block lg:w-20 lg:overflow-y-auto lg:bg-gray-900 lg:pb-4 border-r border-white/10">
+      <div class="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:block lg:w-20 lg:overflow-y-auto lg:bg-gray-950 lg:pb-4 border-r border-white/10">
         <div class="flex h-16 shrink-0 items-center justify-center">
           <span class="text-sm font-bold text-accent">LS</span>
         </div>
@@ -108,7 +108,7 @@
       </div>
 
       <!-- Mobile Top-Bar -->
-      <div class="sticky top-0 z-40 flex items-center gap-x-6 bg-gray-900 px-4 py-4 shadow-xs sm:px-6 lg:hidden">
+      <div class="sticky top-0 z-40 flex items-center gap-x-6 bg-gray-950 px-4 py-4 shadow-xs sm:px-6 lg:hidden">
         <button type="button" class="-m-2.5 p-2.5 text-gray-400 lg:hidden" @click="sidebarOpen = true">
           <span class="sr-only">Sidebar öffnen</span>
           <Bars3Icon class="size-6" aria-hidden="true" />
@@ -117,7 +117,7 @@
       </div>
 
       <!-- Main Content -->
-      <main class="lg:pl-20 bg-gray-900 min-h-screen">
+      <main class="lg:pl-20 bg-gray-950 min-h-screen">
         <RouterView />
 
       </main>

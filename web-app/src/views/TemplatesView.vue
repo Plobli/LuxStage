@@ -48,7 +48,7 @@
     </ul>
 
     <!-- Upload dialog -->
-    <dialog ref="uploadDialog" class="m-auto w-full max-w-3xl rounded-xl bg-gray-900 ring-1 ring-white/10 shadow-2xl p-0 backdrop:bg-black/50">
+    <dialog ref="uploadDialog" class="m-auto w-full max-w-3xl rounded-xl bg-gray-950 ring-1 ring-white/10 shadow-2xl p-0 backdrop:bg-black/50">
       <div class="flex items-center justify-between px-6 py-4 border-b border-white/10">
         <h3 class="text-base font-semibold text-white">{{ t('template.upload') }}</h3>
         <button class="rounded-md px-3 py-2 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @click="closeUpload">✕</button>
@@ -115,7 +115,7 @@
     </dialog>
 
     <!-- Detail dialog -->
-    <dialog ref="detailDialog" class="m-auto w-full max-w-3xl rounded-xl bg-gray-900 ring-1 ring-white/10 shadow-2xl p-0 backdrop:bg-black/50">
+    <dialog ref="detailDialog" class="m-auto w-full max-w-3xl rounded-xl bg-gray-950 ring-1 ring-white/10 shadow-2xl p-0 backdrop:bg-black/50">
       <div class="flex items-center justify-between px-6 py-4 border-b border-white/10">
         <h3 class="text-base font-semibold text-white">{{ detailName }}</h3>
         <button class="rounded-md px-3 py-2 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @click="detailDialog.close()">✕</button>

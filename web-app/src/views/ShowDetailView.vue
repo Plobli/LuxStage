@@ -361,7 +361,7 @@ import { MagnifyingGlassIcon } from '@heroicons/vue/20/solid'
 import { fetchShow, updateContent } from '../api/shows.js'
 import { fetchChannels, saveChannels, downloadChannelsCsv } from '../api/channels.js'
 import { fetchPhotos, uploadPhoto, deletePhoto, getPhotoUrl } from '../api/photos.js'
-import { subscribeChannels } from '../api/client.js'
+import { subscribeChannels, subscribeSections } from '../api/client.js'
 import { api } from '../api/client.js'
 import { fetchShowSections, saveShowSections, parseSectionsMd, serializeSectionsMd, fetchShowSectionDefs, saveShowSectionDefs } from '../api/sections.js'
 import { uuid } from '../utils/uuid.js'
@@ -664,6 +664,7 @@ function onSectionTypeChange(section, newType) {
 
 // ── Laden ──────────────────────────────────────────────────────────────────
 let unsubscribeSSE = null
+let unsubscribeSectionsSSE = null
 
 onMounted(async () => {
   try {
@@ -693,6 +694,20 @@ onMounted(async () => {
     channels.value = await fetchChannels(props.id)
   })
 
+  // SSE für Realtime Sections-Updates
+  unsubscribeSectionsSSE = subscribeSections(props.id, async () => {
+    // Nur aktualisieren wenn kein aktiver Editor-Fokus
+    const focused = document.activeElement
+    const isEditing = focused && (focused.tagName === 'TEXTAREA' || focused.classList.contains('tiptap'))
+    if (!isEditing) {
+      const sectionsData = await fetchShowSections(props.id)
+      const freshMap = parseSectionsMd(sectionsData?.raw)
+      for (const [id, content] of freshMap) {
+        sectionContents.value.set(id, content)
+      }
+    }
+  })
+
   // Scroll-Position wiederherstellen
   const scrollKey = `scroll_${props.id}`
   const saved = sessionStorage.getItem(scrollKey)
@@ -707,6 +722,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   unsubscribeSSE?.()
+  unsubscribeSectionsSSE?.()
   if (saveSetupTimer) { clearTimeout(saveSetupTimer); persistSetup(pendingSetupMd) }
   if (channelsSaveTimer) { clearTimeout(channelsSaveTimer); persistChannels() }
   if (saveSectionsTimer) { clearTimeout(saveSectionsTimer); persistSections() }

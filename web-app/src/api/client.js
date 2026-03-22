@@ -69,3 +69,12 @@ export function subscribeChannels(showId, onUpdate) {
   es.onerror = () => es.close()
   return () => es.close()
 }
+
+/** SSE-Verbindung für Realtime Sections-Updates */
+export function subscribeSections(showId, onUpdate) {
+  const url = BASE() + `/api/shows/${showId}/events`
+  const es = new EventSource(url + '?token=' + getToken())
+  es.addEventListener('sections-updated', (e) => onUpdate(JSON.parse(e.data)))
+  es.onerror = () => es.close()
+  return () => es.close()
+}

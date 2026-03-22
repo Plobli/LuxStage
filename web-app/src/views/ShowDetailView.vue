@@ -95,7 +95,7 @@
       </div>
 
       <!-- Two-column layout: aside + main -->
-      <div class="xl:pl-96">
+      <div class="xl:pl-[28rem]">
         <!-- Main: Kanaltabelle -->
         <main class="px-4 py-6 sm:px-6 lg:px-8">
           <div class="flex items-center gap-3 mb-4">
@@ -193,7 +193,7 @@
       </div>
 
       <!-- Aside: Sections + Fotos (fixed, left of main) -->
-      <aside class="fixed top-16 bottom-0 left-20 hidden w-96 overflow-y-auto border-r border-white/10 px-4 py-6 sm:px-6 xl:block">
+      <aside class="fixed top-16 bottom-0 left-20 hidden w-[28rem] overflow-y-auto border-r border-white/10 px-4 py-6 sm:px-6 xl:block">
         <!-- Custom Sections -->
         <template v-if="sortedSections.length > 0">
           <section v-for="sec in sortedSections" :key="sec.id" class="mb-8">

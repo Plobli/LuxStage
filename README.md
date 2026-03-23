@@ -35,7 +35,7 @@ Nach der Installation auf dem Raspberry Pi ist LuxStage sofort im Browser erreic
 Per SSH einloggen und ausführen:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/christopherritter/luxstage/main/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/Plobli/LuxStage/main/install.sh | sudo bash
 ```
 
 Das Script fragt nach:
@@ -132,5 +132,5 @@ sudo systemctl restart luxstage
 
 ## Lizenz
 
-- **Server & Web-App** — MIT © Christopher Ritter
-- **iOS-App** (`ios-app/`) — Alle Rechte vorbehalten © Christopher Ritter
+- **Server & Web-App** — MIT © Christopher Rohde
+- **iOS-App** (`ios-app/`) — Alle Rechte vorbehalten © Christopher Rohde

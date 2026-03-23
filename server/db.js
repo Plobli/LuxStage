@@ -26,6 +26,7 @@ export function writeShow(slug, fields) {
   const updates = Object.fromEntries(
     Object.entries(fields).filter(([k]) => allowed.includes(k))
   )
+  if (!Object.keys(updates).length) return
   const sets = Object.keys(updates).map(k => `${k} = @${k}`).join(', ')
   db.prepare(`UPDATE shows SET ${sets}, updated_at = @updated_at WHERE slug = @slug`)
     .run({ ...updates, updated_at: now(), slug })

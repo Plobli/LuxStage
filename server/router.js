@@ -355,9 +355,9 @@ export async function router(req, res) {
     // ── Status ─────────────────────────────────────────────────────────────
     if (method === 'GET' && pathname === '/api/status') {
       const user = requireAuth(req, res); if (!user) return
-      const { execSync } = await import('node:child_process')
+      const { execFileSync } = await import('node:child_process')
       let diskFree = null
-      try { diskFree = execSync('df -h ' + config.dataPath).toString().split('\n')[1] } catch {}
+      try { diskFree = execFileSync('df', ['-h', config.dataPath]).toString().split('\n')[1] } catch {}
       return json(res, 200, {
         version: '1.1.0',
         dataPath: config.dataPath,

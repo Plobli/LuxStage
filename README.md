@@ -132,4 +132,5 @@ sudo systemctl restart luxstage
 
 ## Lizenz
 
-MIT © Christopher Ritter
+- **Server & Web-App** — MIT © Christopher Ritter
+- **iOS-App** (`ios-app/`) — Alle Rechte vorbehalten © Christopher Ritter

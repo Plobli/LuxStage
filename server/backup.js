@@ -1,10 +1,21 @@
-/**
- * backup.js — ZIP-Download aller Shows + Templates
- */
+// LuxStage/server/backup.js
 import archiver from 'archiver'
+import path from 'node:path'
 import { config } from './config.js'
+import { db } from './db-init.js'
 
-export function streamBackup(res) {
+export async function streamBackup(res) {
+  const backupPath = path.join(config.dataPath, 'luxstage-backup.db')
+
+  try {
+    await db.backup(backupPath)
+  } catch (err) {
+    console.error('Backup fehlgeschlagen:', err)
+    res.writeHead(500, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({ error: 'Backup fehlgeschlagen' }))
+    return
+  }
+
   res.writeHead(200, {
     'Content-Type': 'application/zip',
     'Content-Disposition': `attachment; filename="luxstage-backup-${timestamp()}.zip"`,
@@ -12,7 +23,8 @@ export function streamBackup(res) {
 
   const archive = archiver('zip', { zlib: { level: 6 } })
   archive.pipe(res)
-  archive.directory(config.dataPath, 'LuxStage-Daten')
+  archive.file(backupPath, { name: 'luxstage.db' })
+  archive.directory(path.join(config.dataPath, 'photos'), 'photos')
   archive.finalize()
 }
 

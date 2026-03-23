@@ -1,14 +1,19 @@
-/**
- * photos.js — Server-seitige Foto-Komprimierung mit sharp
- */
+// LuxStage/server/photos.js
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import sharp from 'sharp'
 import { config } from './config.js'
-import { ensureDir, paths } from './io.js'
 
-export async function savePhoto(showId, filename, buffer) {
-  const dir = paths.showPhotos(showId)
+function photosDir(slug) {
+  return path.join(config.dataPath, 'photos', slug)
+}
+
+async function ensureDir(dir) {
+  await fs.mkdir(dir, { recursive: true })
+}
+
+export async function savePhoto(slug, filename, buffer) {
+  const dir = photosDir(slug)
   await ensureDir(dir)
 
   const safeName = path.basename(filename).replace(/[^a-zA-Z0-9._-]/g, '_')
@@ -16,7 +21,7 @@ export async function savePhoto(showId, filename, buffer) {
   const outPath = path.join(dir, outName)
 
   await sharp(buffer)
-    .rotate()  // EXIF-Orientierung einbrennen
+    .rotate()
     .resize({ width: config.photoMaxWidth, withoutEnlargement: true })
     .jpeg({ quality: config.photoQuality })
     .toFile(outPath)
@@ -24,21 +29,24 @@ export async function savePhoto(showId, filename, buffer) {
   return outName
 }
 
-export async function listPhotos(showId) {
-  const dir = paths.showPhotos(showId)
+export async function listPhotos(slug) {
+  const dir = photosDir(slug)
   try {
     const files = await fs.readdir(dir)
     return files.filter(f => /\.(jpg|jpeg|png|gif|webp)$/i.test(f))
   } catch { return [] }
 }
 
-export async function deletePhoto(showId, filename) {
-  const dir = paths.showPhotos(showId)
+export async function deletePhoto(slug, filename) {
+  const dir = photosDir(slug)
   const safeName = path.basename(filename)
   await fs.unlink(path.join(dir, safeName))
 }
 
-/** Multipart-Body parsen (kein externer Parser nötig für einfache Uploads) */
+export function getPhotoPath(slug, filename) {
+  return path.join(photosDir(slug), path.basename(filename))
+}
+
 export function parseMultipart(req) {
   return new Promise((resolve, reject) => {
     const chunks = []
@@ -56,22 +64,18 @@ export function extractFileFromMultipart(body, boundary) {
   while (start < body.length) {
     const bStart = body.indexOf(boundaryBuf, start)
     if (bStart === -1) break
-    const headerStart = bStart + boundaryBuf.length + 2 // skip \r\n
+    const headerStart = bStart + boundaryBuf.length + 2
     const headerEnd = body.indexOf(Buffer.from('\r\n\r\n'), headerStart)
     if (headerEnd === -1) break
     const header = body.slice(headerStart, headerEnd).toString()
     const dataStart = headerEnd + 4
     const bEnd = body.indexOf(boundaryBuf, dataStart)
     if (bEnd === -1) break
-    const dataEnd = bEnd - 2 // remove trailing \r\n
+    const dataEnd = bEnd - 2
     const nameMatch = header.match(/name="([^"]+)"/)
     const fileMatch = header.match(/filename="([^"]+)"/)
     if (nameMatch && fileMatch) {
-      parts.push({
-        fieldname: nameMatch[1],
-        filename: fileMatch[1],
-        data: body.slice(dataStart, dataEnd),
-      })
+      parts.push({ fieldname: nameMatch[1], filename: fileMatch[1], data: body.slice(dataStart, dataEnd) })
     }
     start = bEnd
   }

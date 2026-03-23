@@ -162,3 +162,152 @@ export function getLock(slug) {
   }
   return { user: lock.username, since: lock.since }
 }
+
+// ── Sections ────────────────────────────────────────────────────────────────
+
+export function readShowSectionDefs(slug) {
+  const show = readShow(slug)
+  if (!show) return []
+  const defs = db.prepare('SELECT * FROM section_defs WHERE show_id = ? ORDER BY sort_order').all(show.id)
+  return defs.map(def => ({
+    id: def.id,
+    title: def.title,
+    type: def.type,
+    order: def.sort_order,
+    fields: db.prepare('SELECT * FROM section_fields WHERE section_id = ? ORDER BY sort_order')
+      .all(def.id)
+      .map(f => ({ id: f.id, key: f.key, label: f.label, unit: f.unit })),
+  }))
+}
+
+export function writeShowSectionDefs(slug, defs) {
+  const show = readShow(slug)
+  if (!show) throw new Error(`Show not found: ${slug}`)
+  const tx = db.transaction(() => {
+    db.prepare('DELETE FROM section_defs WHERE show_id = ?').run(show.id)
+    for (let i = 0; i < defs.length; i++) {
+      const def = defs[i]
+      db.prepare('INSERT INTO section_defs (id, show_id, title, type, sort_order) VALUES (?, ?, ?, ?, ?)')
+        .run(def.id, show.id, def.title, def.type, def.order ?? i)
+      const fields = def.fields ?? []
+      for (let j = 0; j < fields.length; j++) {
+        const f = fields[j]
+        db.prepare('INSERT INTO section_fields (id, section_id, key, label, unit, sort_order) VALUES (?, ?, ?, ?, ?, ?)')
+          .run(f.id ?? randomUUID(), def.id, f.key, f.label ?? '', f.unit ?? '', j)
+      }
+      db.prepare('INSERT OR IGNORE INTO section_contents (section_id, show_id, content) VALUES (?, ?, ?)')
+        .run(def.id, show.id, def.type === 'fields' ? '{}' : '')
+    }
+    db.prepare('UPDATE shows SET updated_at = ? WHERE id = ?').run(now(), show.id)
+  })
+  tx()
+}
+
+export function readShowSections(slug) {
+  const show = readShow(slug)
+  if (!show) return new Map()
+  const rows = db.prepare(`
+    SELECT sc.section_id, sc.content FROM section_contents sc
+    WHERE sc.show_id = ?
+  `).all(show.id)
+  return new Map(rows.map(r => [r.section_id, r.content ?? '']))
+}
+
+export function writeShowSections(slug, map) {
+  const show = readShow(slug)
+  if (!show) throw new Error(`Show not found: ${slug}`)
+  const tx = db.transaction(() => {
+    for (const [sectionId, content] of map) {
+      db.prepare('INSERT OR REPLACE INTO section_contents (section_id, show_id, content) VALUES (?, ?, ?)')
+        .run(sectionId, show.id, content)
+    }
+    db.prepare('UPDATE shows SET updated_at = ? WHERE id = ?').run(now(), show.id)
+  })
+  tx()
+}
+
+// ── Templates ────────────────────────────────────────────────────────────────
+
+export function listTemplates() {
+  // Gibt Namen ohne .csv zurück (z.B. "kammer-1")
+  return db.prepare('SELECT name FROM templates ORDER BY name').all().map(r => r.name)
+}
+
+export function readTemplate(name) {
+  const tpl = db.prepare('SELECT * FROM templates WHERE name = ?').get(name)
+  if (!tpl) return []
+  return db.prepare('SELECT * FROM template_channels WHERE template_id = ? ORDER BY sort_order').all(tpl.id)
+}
+
+export function writeTemplate(name, channels) {
+  const tx = db.transaction(() => {
+    let tpl = db.prepare('SELECT * FROM templates WHERE name = ?').get(name)
+    if (!tpl) {
+      const id = randomUUID()
+      db.prepare('INSERT INTO templates (id, name) VALUES (?, ?)').run(id, name)
+      tpl = { id }
+    }
+    db.prepare('DELETE FROM template_channels WHERE template_id = ?').run(tpl.id)
+    for (let i = 0; i < channels.length; i++) {
+      const ch = channels[i]
+      db.prepare(`
+        INSERT INTO template_channels (id, template_id, channel, address, device, position, color, notes, sort_order)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        randomUUID(), tpl.id,
+        ch.channel ?? '', ch.address ?? '', ch.device ?? '',
+        ch.position ?? '', ch.color ?? '', ch.notes ?? '',
+        i
+      )
+    }
+  })
+  tx()
+}
+
+export function deleteTemplate(name) {
+  db.prepare('DELETE FROM templates WHERE name = ?').run(name)
+}
+
+export function readTemplateSections(name) {
+  const tpl = db.prepare('SELECT * FROM templates WHERE name = ?').get(name)
+  if (!tpl) return []
+  const defs = db.prepare('SELECT * FROM template_section_defs WHERE template_id = ? ORDER BY sort_order').all(tpl.id)
+  return defs.map(def => ({
+    id: def.id,
+    title: def.title,
+    type: def.type,
+    order: def.sort_order,
+    fields: db.prepare('SELECT * FROM template_section_fields WHERE section_id = ? ORDER BY sort_order')
+      .all(def.id)
+      .map(f => ({ id: f.id, key: f.key, label: f.label, unit: f.unit })),
+  }))
+}
+
+export function writeTemplateSections(name, defs) {
+  const tx = db.transaction(() => {
+    let tpl = db.prepare('SELECT * FROM templates WHERE name = ?').get(name)
+    if (!tpl) {
+      const id = randomUUID()
+      db.prepare('INSERT INTO templates (id, name) VALUES (?, ?)').run(id, name)
+      tpl = { id }
+    }
+    db.prepare('DELETE FROM template_section_defs WHERE template_id = ?').run(tpl.id)
+    for (let i = 0; i < defs.length; i++) {
+      const def = defs[i]
+      db.prepare('INSERT INTO template_section_defs (id, template_id, title, type, sort_order) VALUES (?, ?, ?, ?, ?)')
+        .run(def.id ?? randomUUID(), tpl.id, def.title, def.type, def.order ?? i)
+      for (let j = 0; j < (def.fields ?? []).length; j++) {
+        const f = def.fields[j]
+        db.prepare('INSERT INTO template_section_fields (id, section_id, key, label, unit, sort_order) VALUES (?, ?, ?, ?, ?, ?)')
+          .run(f.id ?? randomUUID(), def.id, f.key, f.label ?? '', f.unit ?? '', j)
+      }
+    }
+  })
+  tx()
+}
+
+export function deleteTemplateSections(name) {
+  const tpl = db.prepare('SELECT * FROM templates WHERE name = ?').get(name)
+  if (!tpl) return
+  db.prepare('DELETE FROM template_section_defs WHERE template_id = ?').run(tpl.id)
+}

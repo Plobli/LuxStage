@@ -27,3 +27,11 @@ start.sh
 
 # Laufzeit-Daten
 data/
+
+# Logs
+*.log
+**/.server.log
+
+# iOS Build-Artefakte
+ios-app/**/*.xcarchive
+ios-app/Pods/

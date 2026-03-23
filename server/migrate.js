@@ -102,35 +102,34 @@ async function migrateShow(slug, archived = false) {
     }
   } catch {}
 
-  // Section Defs
+  // Section Defs + Contents (neue UUIDs um Kollisionen bei gleichem Template zu vermeiden)
   let sectionDefs = []
   try {
     const raw = await fs.readFile(path.join(dir, 'sections.json'), 'utf8')
     sectionDefs = JSON.parse(raw)
-    for (const def of sectionDefs) {
-      sqliteDb.prepare('INSERT INTO section_defs (id, show_id, title, type, sort_order) VALUES (?, ?, ?, ?, ?)')
-        .run(def.id, id, def.title, def.type, def.order ?? 0)
-      for (let j = 0; j < (def.fields ?? []).length; j++) {
-        const f = def.fields[j]
-        sqliteDb.prepare('INSERT INTO section_fields (id, section_id, key, label, unit, sort_order) VALUES (?, ?, ?, ?, ?, ?)')
-          .run(f.id ?? randomUUID(), def.id, f.key, f.label ?? '', f.unit ?? '', j)
-      }
-    }
   } catch {}
 
-  // Section Contents
+  let contentMap = new Map()
   try {
     const raw = await fs.readFile(path.join(dir, 'sections.md'), 'utf8')
-    const contentMap = parseSectionsMd(raw)
-    for (const def of sectionDefs) {
-      const rawContent = contentMap.get(def.id) ?? ''
-      const content = def.type === 'fields'
-        ? parseFieldsContent(rawContent)
-        : rawContent
-      sqliteDb.prepare('INSERT OR REPLACE INTO section_contents (section_id, show_id, content) VALUES (?, ?, ?)')
-        .run(def.id, id, content)
-    }
+    contentMap = parseSectionsMd(raw)
   } catch {}
+
+  for (const def of sectionDefs) {
+    const newDefId = randomUUID()  // immer neue UUID, nie def.id (Kollision bei gleichem Template)
+    sqliteDb.prepare('INSERT INTO section_defs (id, show_id, title, type, sort_order) VALUES (?, ?, ?, ?, ?)')
+      .run(newDefId, id, def.title, def.type, def.order ?? 0)
+    for (let j = 0; j < (def.fields ?? []).length; j++) {
+      const f = def.fields[j]
+      sqliteDb.prepare('INSERT INTO section_fields (id, section_id, key, label, unit, sort_order) VALUES (?, ?, ?, ?, ?, ?)')
+        .run(randomUUID(), newDefId, f.key, f.label ?? '', f.unit ?? '', j)
+    }
+    // Content: alte ID aus sections.md → neue ID in DB
+    const rawContent = contentMap.get(def.id) ?? ''
+    const content = def.type === 'fields' ? parseFieldsContent(rawContent) : rawContent
+    sqliteDb.prepare('INSERT INTO section_contents (section_id, show_id, content) VALUES (?, ?, ?)')
+      .run(newDefId, id, content)
+  }
 }
 
 // ── Templates migrieren ──────────────────────────────────────────────────────

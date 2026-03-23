@@ -51,7 +51,7 @@ export async function router(req, res) {
       const slug = pathname.split('/')[3]
       const show = db.readShow(slug)
       if (!show) return notFound(res)
-      const channels = db.readChannels(slug)
+      const channels = serializeChannelsCsv(db.readChannels(slug))
       const lock = db.getLock(slug)
       return json(res, 200, { id: show.slug, content: showToFrontmatter(show), channels, lock })
     }

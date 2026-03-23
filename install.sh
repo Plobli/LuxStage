@@ -24,6 +24,7 @@ exec < /dev/tty
 
 read -rp "Hostname [luxstage]: " HOSTNAME
 HOSTNAME="${HOSTNAME:-luxstage}"
+[[ $HOSTNAME =~ ^[a-zA-Z0-9._-]+$ ]] || fail "Hostname darf nur alphanumerische Zeichen, Punkte und Bindestriche enthalten."
 
 # set -e während der Passwort-Schleife deaktivieren, damit Nichtübereinstimmungen
 # den Skriptabbruch nicht auslösen; Fehler werden explizit behandelt.
@@ -34,15 +35,22 @@ for i in 1 2 3; do
   read -rsp "Admin-Passwort bestätigen: " PW2; echo
   if [[ "$PW1" == "$PW2" && -n "$PW1" ]]; then
     ADMIN_PASSWORD="$PW1"
+    PW1=""; PW2=""
+    ok "Passwort gespeichert"
     break
   fi
-  echo "  Passwörter stimmen nicht überein oder sind leer. Bitte erneut eingeben."
+  if [[ -z "$PW1" ]]; then
+    echo "  Passwort darf nicht leer sein. Bitte erneut eingeben."
+  else
+    echo "  Passwörter stimmen nicht überein. Bitte erneut eingeben."
+  fi
   if [[ $i -eq 3 ]]; then
     echo -e "  ${RED}✗${RESET}  Fehler: Zu viele Fehlversuche."
     exit 1
   fi
 done
 set -e
+PW1=""; PW2=""
 
 JWT_SECRET=$(openssl rand -hex 32)
 TECH_PASSWORD=$(openssl rand -hex 16)

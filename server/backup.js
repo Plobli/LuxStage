@@ -1,4 +1,5 @@
 // LuxStage/server/backup.js
+import fs from 'node:fs/promises'
 import archiver from 'archiver'
 import path from 'node:path'
 import { config } from './config.js'
@@ -22,10 +23,15 @@ export async function streamBackup(res) {
   })
 
   const archive = archiver('zip', { zlib: { level: 6 } })
+  archive.on('error', err => {
+    console.error('Archive error:', err)
+    res.destroy(err)
+  })
   archive.pipe(res)
   archive.file(backupPath, { name: 'luxstage.db' })
   archive.directory(path.join(config.dataPath, 'photos'), 'photos')
-  archive.finalize()
+  await archive.finalize()
+  fs.unlink(backupPath).catch(() => {})
 }
 
 function timestamp() {

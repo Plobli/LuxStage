@@ -1,144 +1,95 @@
 # LuxStage
 
-Lighting plan management for theatre productions — channel lists, setup notes, focus checklists, and photo documentation.
+Lichttechnik-Verwaltung für Theaterproduktionen — Kanallisten, Aufbaunotizen, Einleucht-Checklisten und Fotodokumentation.
 
-## Features
+## Was LuxStage kann
 
-- **Shows** — each production has a channel list (CSV), setup notes (Markdown + custom fields), and a photo gallery
-- **Sections** — configurable sections per show (Markdown or field grids), displayed in a two-column layout
-- **Venues (Templates)** — reusable channel lists and section layouts per venue, imported via CSV
-- **Focus mode** — checklist view with OSC toggle per channel (Full/Out via EOS or compatible consoles)
-- **PDF export** — printable channel list from the web app
-- **Bilingual** — German and English UI, switchable in settings
-- **iOS app** — native SwiftUI app with offline support, photo upload, lightbox with pinch-to-zoom, and Markdown rendering
+- **Shows** — jede Produktion hat eine Kanalliste, Aufbaunotizen und eine Fotogalerie
+- **Einleuchten** — Checklisten-Ansicht mit OSC-Steuerung pro Kanal (Full/Out via ETC EOS oder kompatible Pulte)
+- **Vorlagen** — wiederverwendbare Kanallisten und Sektionen pro Spielstätte
+- **PDF-Export** — druckbare Kanalliste aus der Web-App
+- **iOS-App** — native iPhone/iPad-App mit Offline-Unterstützung, Foto-Upload und OSC-Numpad
 
-## Project Structure
-
-```
-LuxStage/
-  ios-app/        Native SwiftUI app (iPhone/iPad) – iOS 18.6+
-  web-app/        Vue.js 3 web app (browser, production build served by server)
-  server/         Node.js backend (file-based, no database)
-  shared/
-    locales/      de.json + en.json  (UI strings for both clients)
-    filters.json  Rosco/Lee gel filter presets
-  data/           Show and template data (git-ignored)
-    shows/        One folder per show (show.md, channels.csv, photos/)
-    templates/    Venue CSV files + section definitions
-```
-
-## Versions
-
-- **Web App**: `1.0 Build 3` (version shown in footer)
-- **iOS App**: Build 18
+---
 
 ## Installation (Raspberry Pi)
 
-Auf einem frischen **Raspberry Pi OS Lite** per SSH einloggen und ausführen:
+### Voraussetzungen
+
+- Raspberry Pi mit **Raspberry Pi OS Lite** (64-bit empfohlen)
+- Internetzugang während der Installation
+- SSH-Zugang zum Pi
+
+### Installieren
+
+Per SSH einloggen und ausführen:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/christopherritter/luxstage/main/install.sh | sudo bash
 ```
 
 Das Script fragt nach:
-- **Hostname** (Vorauswahl: `luxstage`) → die App ist danach unter `http://luxstage.local` erreichbar
+- **Hostname** (Vorauswahl: `luxstage`) — die App ist danach unter `http://luxstage.local` erreichbar
 - **Admin-Passwort** für den Login
 
-Was installiert wird:
-- Node.js 18, git, Caddy
-- LuxStage-Server als systemd-Service (startet automatisch beim Boot)
-- Caddy als Reverse Proxy auf Port 80
+Die Installation richtet ein:
+- LuxStage-Server (startet automatisch beim Boot)
+- Web-App (im Browser aufrufbar)
+- Caddy als Reverse Proxy (kein Port nötig)
 
-Nach der Installation einen Neustart empfohlen: `sudo reboot`
+Nach der Installation: `sudo reboot`
 
-### iOS App einrichten
+### Erster Aufruf
 
-In der iOS App unter **Einstellungen → Server-URL** eintragen:
+Nach dem Neustart im Browser öffnen:
+
 ```
 http://luxstage.local
 ```
 
+Login mit Benutzername `admin` und dem während der Installation vergebenen Passwort.
+
 ---
 
-## Entwicklung (lokal)
+## iOS-App einrichten
 
-### Server
+1. App aus dem App Store installieren *(Link folgt)*
+2. App öffnen → **Einstellungen** → **Server-URL** eintragen:
+   ```
+   http://luxstage.local
+   ```
+3. Mit `admin` und dem Admin-Passwort einloggen
 
-```bash
-cd server
-npm install
-node index.js
-# → http://localhost:3000
-```
+---
 
-### Web App (Entwicklung)
+## Vorlagen (Venue Templates)
 
-```bash
-cd web-app
-npm install
-npm run dev
-# → http://localhost:5173 (proxied API auf :3000)
-```
-
-### Web App (Produktion)
-
-```bash
-cd web-app
-npm run build
-# Ausgabe wird vom Server automatisch aus web-app/dist/ ausgeliefert
-```
-
-### iOS App
-
-`ios-app/LuxStageApp/LuxStageApp.xcodeproj` in Xcode öffnen. Server-URL in den App-Einstellungen setzen.
-
-## Venue Template Format
-
-Templates are semicolon-separated CSV files (UTF-8):
+Kanallisten werden als CSV-Datei hochgeladen. Format: Semikolon-getrennt, UTF-8.
 
 ```
 channel;address;device;position;color;notes
 1;1/001;ETC Source Four;Portal LKS;;;
 ```
 
-| Column | Description |
-|---|---|
-| `channel` | Channel number (required) |
-| `address` | DMX address, format `universe/address` e.g. `1/042` |
-| `device` | Fixture type |
-| `position` | Grouping label in focus view |
-| `color` | Gel/filter |
-| `notes` | Free text, shown in focus view |
+| Spalte | Beschreibung |
+|--------|-------------|
+| `channel` | Kanalnummer (Pflicht) |
+| `address` | DMX-Adresse, Format `universe/adresse` z.B. `1/042` |
+| `device` | Gerätetyp |
+| `position` | Gruppe in der Einleucht-Ansicht |
+| `color` | Gel/Filter |
+| `notes` | Freitext, wird in der Einleucht-Ansicht angezeigt |
 
-Upload templates via the Templates section in the web app. The filename (without `.csv`) becomes the venue display name — e.g. `kammer-1.csv` → **Kammer 1**.
+Upload über **Vorlagen** in der Web-App. Der Dateiname (ohne `.csv`) wird als Anzeigename verwendet — z.B. `kammer-1.csv` → **Kammer 1**.
 
-## Section Types
+---
 
-Each show can have multiple configurable sections:
+## OSC-Steuerung (ETC EOS)
 
-- **Markdown** — free text with headings, bullet lists, checkboxes, bold/italic
-- **Fields** — key/value grid (e.g. stage dimensions, rigging positions)
+OSC pro Spielstätte in der iOS-App unter **Einstellungen → OSC pro Bühne** konfigurieren:
 
-Sections are ordered by drag-and-drop in the web app and rendered as cards in the iOS app.
+- **IP-Adresse** des EOS-Pultes
+- **Port** (Standard: `8000`)
+- **EOS User ID** (Standard: `1`)
 
-## OSC
-
-Configure OSC per venue in iOS Settings → *OSC pro Bühne*. Global Full/Out command patterns use `{chan}` as placeholder:
-
-```
-/eos/chan/{chan}/full
-/eos/chan/{chan}/out
-```
-
-In focus mode, each channel row shows a toggle button that sends Full on first tap and Out on second tap.
-
-## iOS App – Markdown Rendering
-
-- `##` → Section title (accent color, bold, rendered as card header)
-- `###` → Subheading (uppercase, accent color, kerning, with horizontal rule)
-- `- [ ]` / `- [x]` → Interactive checkboxes (persisted per device via UserDefaults)
-- `**text**` → Bold, `*text*` → Italic
-
-## Languages
-
-The app supports German and English. Language can be changed in Settings. All internal identifiers (API routes, CSV headers, file names) are English.
+Im Einleuchten-Modus sendet jeder Kanal-Button `Full` beim ersten Tippen und `Out` beim zweiten. Das OSC-Numpad ermöglicht freie Kommandoeingabe direkt ans Pult.

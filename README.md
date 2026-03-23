@@ -32,7 +32,35 @@ LuxStage/
 - **Web App**: `1.0 Build 3` (version shown in footer)
 - **iOS App**: Build 18
 
-## Quick Start
+## Installation (Raspberry Pi)
+
+Auf einem frischen **Raspberry Pi OS Lite** per SSH einloggen und ausführen:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/christopherritter/luxstage/main/install.sh | sudo bash
+```
+
+Das Script fragt nach:
+- **Hostname** (Vorauswahl: `luxstage`) → die App ist danach unter `http://luxstage.local` erreichbar
+- **Admin-Passwort** für den Login
+
+Was installiert wird:
+- Node.js 18, git, Caddy
+- LuxStage-Server als systemd-Service (startet automatisch beim Boot)
+- Caddy als Reverse Proxy auf Port 80
+
+Nach der Installation einen Neustart empfohlen: `sudo reboot`
+
+### iOS App einrichten
+
+In der iOS App unter **Einstellungen → Server-URL** eintragen:
+```
+http://luxstage.local
+```
+
+---
+
+## Entwicklung (lokal)
 
 ### Server
 
@@ -43,27 +71,26 @@ node index.js
 # → http://localhost:3000
 ```
 
-### Web App (development)
+### Web App (Entwicklung)
 
 ```bash
 cd web-app
 npm install
 npm run dev
-# → http://localhost:5173 (proxies API to :3000)
+# → http://localhost:5173 (proxied API auf :3000)
 ```
 
-### Web App (production)
+### Web App (Produktion)
 
 ```bash
 cd web-app
 npm run build
-# Output is served automatically by the server from web-app/dist/
-# To deploy: rsync -av --delete web-app/dist/ user@server:~/LuxStage/web-app/dist/
+# Ausgabe wird vom Server automatisch aus web-app/dist/ ausgeliefert
 ```
 
 ### iOS App
 
-Open `ios-app/LuxStageApp/LuxStageApp.xcodeproj` in Xcode. Set the server URL in the app's Settings tab.
+`ios-app/LuxStageApp/LuxStageApp.xcodeproj` in Xcode öffnen. Server-URL in den App-Einstellungen setzen.
 
 ## Venue Template Format
 

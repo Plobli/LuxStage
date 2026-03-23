@@ -16,8 +16,10 @@ ios-app/*.xcodeproj/xcuserdata/
 ios-app/.build/
 **/*.xcuserstate
 
-# Claude Code
+# Claude Code / Superpowers
 .claude/
+.superpowers/
+docs/superpowers/
 
 # Design-Dateien
 *.af

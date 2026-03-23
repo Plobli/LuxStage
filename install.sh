@@ -140,3 +140,33 @@ EOF
 systemctl daemon-reload
 systemctl enable --now luxstage
 ok "systemd-Service aktiv"
+
+# ── Caddy konfigurieren ───────────────────────────────────────────────────────
+step "Konfiguriere Caddy..."
+# Unquoted EOF: $HOSTNAME wird bewusst expandiert.
+cat > /etc/caddy/Caddyfile << EOF
+http://$HOSTNAME.local {
+    reverse_proxy localhost:3000
+}
+EOF
+
+systemctl restart caddy
+ok "Caddy konfiguriert"
+
+# ── Hostname setzen ───────────────────────────────────────────────────────────
+step "Setze Hostname '$HOSTNAME'..."
+OLD_HOSTNAME=$(hostname)
+hostnamectl set-hostname "$HOSTNAME"
+sed -i "s/\b${OLD_HOSTNAME}\b/$HOSTNAME/g" /etc/hosts
+ok "Hostname gesetzt"
+
+# ── Fertig ────────────────────────────────────────────────────────────────────
+echo ""
+echo -e "  ${GREEN}✓  LuxStage wurde erfolgreich installiert.${RESET}"
+echo ""
+echo "     Erreichbar unter:  http://$HOSTNAME.local"
+echo "     Login:             admin / $ADMIN_PASSWORD"
+echo ""
+echo "  Hinweis: Neustart empfohlen damit der neue Hostname aktiv wird:"
+echo "           sudo reboot"
+echo ""

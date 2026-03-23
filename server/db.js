@@ -1,6 +1,7 @@
 // LuxStage/server/db.js
 import { db } from './db-init.js'
 import { config } from './config.js'
+import { randomUUID } from 'node:crypto'
 
 // ── Hilfsfunktionen ────────────────────────────────────────────────────────
 
@@ -31,7 +32,7 @@ export function writeShow(slug, fields) {
 }
 
 export function createShow(slug, fields) {
-  const id = crypto.randomUUID()
+  const id = randomUUID()
   const ts = now()
   db.prepare(`
     INSERT INTO shows (id, slug, name, datum, template, untertitel, spielzeit, archived, created_at, updated_at)
@@ -58,7 +59,7 @@ export function createShow(slug, fields) {
 function _copyTemplateToShow(templateId, showId) {
   const tDefs = db.prepare('SELECT * FROM template_section_defs WHERE template_id = ? ORDER BY sort_order').all(templateId)
   for (const tDef of tDefs) {
-    const newDefId = crypto.randomUUID()
+    const newDefId = randomUUID()
     db.prepare(`
       INSERT INTO section_defs (id, show_id, title, type, sort_order)
       VALUES (?, ?, ?, ?, ?)
@@ -69,7 +70,7 @@ function _copyTemplateToShow(templateId, showId) {
       db.prepare(`
         INSERT INTO section_fields (id, section_id, key, label, unit, sort_order)
         VALUES (?, ?, ?, ?, ?, ?)
-      `).run(crypto.randomUUID(), newDefId, tField.key, tField.label, tField.unit, tField.sort_order)
+      `).run(randomUUID(), newDefId, tField.key, tField.label, tField.unit, tField.sort_order)
     }
 
     // Leerer Content-Eintrag
@@ -105,7 +106,7 @@ export function writeChannels(slug, channels) {
         INSERT INTO channels (id, show_id, channel, address, device, position, color, notes, sort_order)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
-        ch.id ?? crypto.randomUUID(),
+        ch.id ?? randomUUID(),
         show.id,
         ch.channel ?? '', ch.address ?? '', ch.device ?? '',
         ch.position ?? '', ch.color ?? '', ch.notes ?? '',

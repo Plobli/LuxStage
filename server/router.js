@@ -1,6 +1,7 @@
 import { readBody, json, send, notFound, parseUrl } from './helpers.js'
 import { login, requireAuth, requireAdmin } from './auth.js'
-import * as io from './io.js'
+import * as db from './db.js'
+import { listHistory, getHistoryEntry, restoreHistoryEntry } from './history.js'
 import * as photos from './photos.js'
 import { subscribe, broadcast } from './sse.js'
 import { streamBackup } from './backup.js'
@@ -8,6 +9,7 @@ import { generatePDF } from './pdf.js'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { randomUUID } from 'node:crypto'
 import { config } from './config.js'
 
 export async function router(req, res) {
@@ -32,28 +34,19 @@ export async function router(req, res) {
     // ── Shows — Liste ──────────────────────────────────────────────────────
     if (method === 'GET' && pathname === '/api/shows') {
       const user = requireAuth(req, res); if (!user) return
-      const ids = await io.listShows()
-      // Frontmatter für jede Show lesen (name, datum, template)
-      const shows = await Promise.all(ids.map(async id => {
-        try {
-          const content = await io.readShow(id)
-          const fm = parseFrontmatter(content)
-          return { id, ...fm }
-        } catch { return { id } }
-      }))
-      return json(res, 200, shows)
+      const shows = db.listShows()
+      return json(res, 200, shows.map(s => ({ id: s.slug, ...s })))
     }
 
     // ── Shows — Einzelne Show lesen ────────────────────────────────────────
     if (method === 'GET' && pathname.match(/^\/api\/shows\/([^/]+)$/)) {
       const user = requireAuth(req, res); if (!user) return
-      const id = pathname.split('/')[3]
-      const [content, channels, lock] = await Promise.all([
-        io.readShow(id),
-        io.readChannels(id),
-        io.getLock(id),
-      ])
-      return json(res, 200, { id, content, channels, lock })
+      const slug = pathname.split('/')[3]
+      const show = db.readShow(slug)
+      if (!show) return notFound(res)
+      const channels = db.readChannels(slug)
+      const lock = db.getLock(slug)
+      return json(res, 200, { id: show.slug, content: showToFrontmatter(show), channels, lock })
     }
 
     // ── Shows — Erstellen ──────────────────────────────────────────────────
@@ -62,19 +55,11 @@ export async function router(req, res) {
       const body = await readBody(req)
       const { id, content, channels, template } = JSON.parse(body)
       if (!id || !/^[a-z0-9_-]+$/i.test(id)) return json(res, 400, { error: 'Ungültige ID' })
-      await io.ensureDir(io.paths.showDir(id))
-      await io.writeAtomic(io.paths.showMd(id), content || defaultShowContent(id))
-      await io.writeAtomic(io.paths.showCsv(id), channels || 'channel;address;device;position;color;notes\n')
-      if (template) {
-        const templateSecs = await io.readTemplateSections(template)
-        if (templateSecs.length) {
-          await io.writeShowSectionDefs(id, templateSecs)
-          const emptyMd = templateSecs
-            .sort((a, b) => a.order - b.order)
-            .map(s => `---section: ${s.id}---\n`)
-            .join('')
-          await io.writeShowSections(id, emptyMd)
-        }
+      const fm = content ? parseFrontmatter(content) : {}
+      db.createShow(id, { ...fm, template })
+      if (channels) {
+        const parsed = parseChannelsCsv(channels)
+        if (parsed.length) db.writeChannels(id, parsed)
       }
       return json(res, 201, { id })
     }
@@ -82,29 +67,32 @@ export async function router(req, res) {
     // ── Shows — Metadaten + Aufbau speichern ───────────────────────────────
     if (method === 'PUT' && pathname.match(/^\/api\/shows\/([^/]+)\/content$/)) {
       const user = requireAuth(req, res); if (!user) return
-      const id = pathname.split('/')[3]
+      const slug = pathname.split('/')[3]
       const body = await readBody(req)
       const { content } = JSON.parse(body)
-      await io.writeShow(id, content)
+      const fm = parseFrontmatter(content)
+      db.writeShow(slug, fm)
       return json(res, 200, { ok: true })
     }
 
     // ── Shows — Kanäle lesen ───────────────────────────────────────────────
     if (method === 'GET' && pathname.match(/^\/api\/shows\/([^/]+)\/channels$/)) {
       const user = requireAuth(req, res); if (!user) return
-      const id = pathname.split('/')[3]
-      const csv = await io.readChannels(id)
+      const slug = pathname.split('/')[3]
+      const channels = db.readChannels(slug)
+      const csv = serializeChannelsCsv(channels)
       return json(res, 200, { csv })
     }
 
     // ── Shows — Kanäle speichern ───────────────────────────────────────────
     if (method === 'PUT' && pathname.match(/^\/api\/shows\/([^/]+)\/channels$/)) {
       const user = requireAuth(req, res); if (!user) return
-      const id = pathname.split('/')[3]
+      const slug = pathname.split('/')[3]
       const body = await readBody(req)
       const { csv } = JSON.parse(body)
-      await io.writeChannels(id, csv)
-      broadcast(id, 'channels-updated', { updatedBy: user.username })
+      const channels = parseChannelsCsv(csv)
+      db.writeChannels(slug, channels)
+      broadcast(slug, 'channels-updated', { updatedBy: user.username })
       return json(res, 200, { ok: true })
     }
 
@@ -119,52 +107,45 @@ export async function router(req, res) {
     // ── Shows — Archiv-Liste ───────────────────────────────────────────────
     if (method === 'GET' && pathname === '/api/shows/archived') {
       const user = requireAuth(req, res); if (!user) return
-      const ids = await io.listArchivedShows()
-      const shows = await Promise.all(ids.map(async id => {
-        try {
-          const content = await io.readArchivedShow(id)
-          const fm = parseFrontmatter(content)
-          return { id, ...fm }
-        } catch { return { id } }
-      }))
-      return json(res, 200, shows)
+      const shows = db.listArchivedShows()
+      return json(res, 200, shows.map(s => ({ id: s.slug, ...s })))
     }
 
     // ── Shows — Wiederherstellen ───────────────────────────────────────────
     if (method === 'POST' && pathname.match(/^\/api\/shows\/([^/]+)\/restore$/)) {
       const user = requireAuth(req, res); if (!user) return
-      const id = pathname.split('/')[3]
-      await io.restoreShow(id)
+      const slug = pathname.split('/')[3]
+      db.restoreShow(slug)
       return json(res, 200, { ok: true })
     }
 
     // ── Shows — Archivieren ────────────────────────────────────────────────
     if (method === 'DELETE' && pathname.match(/^\/api\/shows\/([^/]+)$/)) {
       const user = requireAuth(req, res); if (!user) return
-      const id = pathname.split('/')[3]
-      await io.archiveShow(id)
+      const slug = pathname.split('/')[3]
+      db.archiveShow(slug)
       return json(res, 200, { ok: true })
     }
 
     // ── Locking ────────────────────────────────────────────────────────────
     if (method === 'POST' && pathname.match(/^\/api\/shows\/([^/]+)\/lock$/)) {
       const user = requireAuth(req, res); if (!user) return
-      const id = pathname.split('/')[3]
-      const result = await io.acquireLock(id, user.username)
+      const slug = pathname.split('/')[3]
+      const result = db.acquireLock(slug, user.username)
       return json(res, result.ok ? 200 : 423, result)
     }
 
     if (method === 'DELETE' && pathname.match(/^\/api\/shows\/([^/]+)\/lock$/)) {
       const user = requireAuth(req, res); if (!user) return
-      const id = pathname.split('/')[3]
-      await io.releaseLock(id, user.username)
+      const slug = pathname.split('/')[3]
+      db.releaseLock(slug, user.username)
       return json(res, 200, { ok: true })
     }
 
     if (method === 'PUT' && pathname.match(/^\/api\/shows\/([^/]+)\/lock$/)) {
       const user = requireAuth(req, res); if (!user) return
-      const id = pathname.split('/')[3]
-      await io.touchLock(id, user.username)
+      const slug = pathname.split('/')[3]
+      db.touchLock(slug, user.username)
       return json(res, 200, { ok: true })
     }
 
@@ -206,8 +187,8 @@ export async function router(req, res) {
     if (method === 'GET' && pathname.match(/^\/api\/shows\/([^/]+)\/photos\/(.+)$/)) {
       const user = requireAuth(req, res); if (!user) return
       const parts = pathname.split('/')
-      const id = parts[3], filename = path.basename(parts[5])
-      const filePath = path.join(io.paths.showPhotos(id), filename)
+      const slug = parts[3], filename = path.basename(parts[5])
+      const filePath = photos.getPhotoPath(slug, filename)
       try {
         const stat = await fs.promises.stat(filePath)
         res.writeHead(200, {
@@ -223,21 +204,21 @@ export async function router(req, res) {
     // ── Templates ──────────────────────────────────────────────────────────
     if (method === 'GET' && pathname === '/api/templates') {
       const user = requireAuth(req, res); if (!user) return
-      const list = await io.listTemplates()
+      const list = db.listTemplates()
       return json(res, 200, list)
     }
 
     if (method === 'GET' && pathname.match(/^\/api\/templates\/([^/]+)\/channels$/)) {
       const user = requireAuth(req, res); if (!user) return
       const name = pathname.split('/')[3]
-      const csv = await io.readTemplate(name)
-      return json(res, 200, { csv })
+      const channels = db.readTemplate(name)
+      return json(res, 200, { csv: serializeChannelsCsv(channels) })
     }
 
     if (method === 'GET' && pathname.match(/^\/api\/templates\/([^/]+)\/sections$/)) {
       const user = requireAuth(req, res); if (!user) return
       const name = pathname.split('/')[3]
-      const sections = await io.readTemplateSections(name)
+      const sections = db.readTemplateSections(name)
       return json(res, 200, sections)
     }
 
@@ -246,15 +227,15 @@ export async function router(req, res) {
       const name = pathname.split('/')[3]
       const body = await readBody(req)
       const { sections } = JSON.parse(body)
-      await io.writeTemplateSections(name, sections)
+      db.writeTemplateSections(name, sections)
       return json(res, 200, { ok: true })
     }
 
     if (method === 'GET' && pathname.match(/^\/api\/templates\/(.+)$/)) {
       const user = requireAuth(req, res); if (!user) return
       const name = pathname.slice('/api/templates/'.length)
-      const csv = await io.readTemplate(name)
-      return json(res, 200, { csv })
+      const channels = db.readTemplate(name)
+      return json(res, 200, { csv: serializeChannelsCsv(channels) })
     }
 
     if (method === 'PUT' && pathname.match(/^\/api\/templates\/(.+)$/)) {
@@ -262,12 +243,13 @@ export async function router(req, res) {
       const name = pathname.slice('/api/templates/'.length)
       const body = await readBody(req)
       const { csv } = JSON.parse(body)
-      await io.writeTemplate(name, csv)
-      const existing = await io.readTemplateSections(name)
+      const channels = parseChannelsCsv(csv)
+      db.writeTemplate(name, channels)
+      const existing = db.readTemplateSections(name)
       if (!existing.length) {
-        await io.writeTemplateSections(name, [
-          { id: crypto.randomUUID(), title: 'Aufbau', type: 'markdown', order: 0, fields: [] },
-          { id: crypto.randomUUID(), title: 'Besonderheiten', type: 'markdown', order: 1, fields: [] },
+        db.writeTemplateSections(name, [
+          { id: randomUUID(), title: 'Aufbau', type: 'markdown', order: 0, fields: [] },
+          { id: randomUUID(), title: 'Besonderheiten', type: 'markdown', order: 1, fields: [] },
         ])
       }
       return json(res, 200, { ok: true })
@@ -276,70 +258,91 @@ export async function router(req, res) {
     if (method === 'DELETE' && pathname.match(/^\/api\/templates\/(.+)$/)) {
       const user = requireAdmin(req, res); if (!user) return
       const name = pathname.slice('/api/templates/'.length)
-      await io.deleteTemplate(name)
-      await io.deleteTemplateSections(name)
+      db.deleteTemplate(name)
+      db.deleteTemplateSections(name)
       return json(res, 200, { ok: true })
     }
 
     // ── Show Sections ──────────────────────────────────────────────────────
     if (method === 'GET' && pathname.match(/^\/api\/shows\/([^/]+)\/sections$/)) {
       const user = requireAuth(req, res); if (!user) return
-      const id = pathname.split('/')[3]
-      const raw = await io.readShowSections(id)
-      return json(res, 200, { raw })
+      const slug = pathname.split('/')[3]
+      const map = db.readShowSections(slug)
+      return json(res, 200, { raw: serializeSectionsMd(map) })
     }
 
     if (method === 'PUT' && pathname.match(/^\/api\/shows\/([^/]+)\/sections$/)) {
       const user = requireAuth(req, res); if (!user) return
-      const id = pathname.split('/')[3]
+      const slug = pathname.split('/')[3]
       const body = await readBody(req)
       const { raw } = JSON.parse(body)
-      await io.writeShowSections(id, raw)
+      const map = parseSectionsMd(raw)
+      db.writeShowSections(slug, map)
+      broadcast(slug, 'sections-updated', { updatedBy: user.username })
       return json(res, 200, { ok: true })
     }
 
     // ── Show Section Defs ──────────────────────────────────────────────────
     if (method === 'GET' && pathname.match(/^\/api\/shows\/([^/]+)\/section-defs$/)) {
       const user = requireAuth(req, res); if (!user) return
-      const id = pathname.split('/')[3]
-      const sections = await io.readShowSectionDefs(id)
+      const slug = pathname.split('/')[3]
+      const sections = db.readShowSectionDefs(slug)
       return json(res, 200, sections)
     }
 
     if (method === 'PUT' && pathname.match(/^\/api\/shows\/([^/]+)\/section-defs$/)) {
       const user = requireAuth(req, res); if (!user) return
-      const id = pathname.split('/')[3]
+      const slug = pathname.split('/')[3]
       const body = await readBody(req)
       const { sections } = JSON.parse(body)
-      await io.writeShowSectionDefs(id, sections)
-      return json(res, 200, { ok: true })
-    }
-
-    if (method === 'POST' && pathname.match(/^\/api\/shows\/([^/]+)\/migrate-sections$/)) {
-      const user = requireAuth(req, res); if (!user) return
-      const id = pathname.split('/')[3]
-      // Nicht überschreiben, wenn sections.md schon existiert
-      const existing = await io.readShowSections(id)
-      if (existing !== '') return json(res, 200, { ok: true, skipped: true })
-      const content = await io.readShow(id)
-      // Alles nach dem YAML-Frontmatter extrahieren
-      const fmMatch = content.match(/^---\n[\s\S]*?\n---\n([\s\S]*)$/)
-      const body = fmMatch ? fmMatch[1] : content
-      const raw = `---section: aufbau---\n${body.trim()}`
-      await io.writeShowSections(id, raw)
+      db.writeShowSectionDefs(slug, sections)
       return json(res, 200, { ok: true })
     }
 
     // ── PDF Export ────────────────────────────────────────────────────────
     if (method === 'GET' && pathname.match(/^\/api\/shows\/([^/]+)\/pdf$/)) {
       const user = requireAuth(req, res); if (!user) return
-      const id = pathname.split('/')[3]
-      const [content, csv, sectionsRaw] = await Promise.all([
-        io.readShow(id), io.readChannels(id), io.readShowSections(id),
-      ])
-      const templateSections = await io.readShowSectionDefs(id)
-      generatePDF(content, csv, sectionsRaw, templateSections, res)
+      const slug = pathname.split('/')[3]
+      const show = db.readShow(slug)
+      if (!show) return notFound(res)
+      const channels = db.readChannels(slug)
+      const sectionsMap = db.readShowSections(slug)
+      const templateSections = db.readShowSectionDefs(slug)
+      generatePDF(
+        showToFrontmatter(show),
+        serializeChannelsCsv(channels),
+        serializeSectionsMd(sectionsMap),
+        templateSections,
+        res
+      )
       return
+    }
+
+    // ── History ────────────────────────────────────────────────────────────────
+    if (method === 'GET' && pathname.match(/^\/api\/shows\/([^/]+)\/history$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const slug = pathname.split('/')[3]
+      return json(res, 200, listHistory(slug))
+    }
+
+    if (method === 'GET' && pathname.match(/^\/api\/shows\/([^/]+)\/history\/([^/]+)$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const parts = pathname.split('/')
+      const slug = parts[3], historyId = parts[5]
+      const entry = getHistoryEntry(slug, historyId)
+      if (!entry) return notFound(res)
+      return json(res, 200, { ...entry, channels: JSON.parse(entry.channels), sections: JSON.parse(entry.sections) })
+    }
+
+    if (method === 'POST' && pathname.match(/^\/api\/shows\/([^/]+)\/history\/([^/]+)\/restore$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const parts = pathname.split('/')
+      const slug = parts[3], historyId = parts[5]
+      const lock = db.getLock(slug)
+      if (lock && lock.user !== user.username) return json(res, 423, { lockedBy: lock.user })
+      const ok = restoreHistoryEntry(slug, historyId)
+      if (!ok) return notFound(res)
+      return json(res, 200, { ok: true })
     }
 
     // ── Backup ─────────────────────────────────────────────────────────────
@@ -421,18 +424,45 @@ function parseFrontmatter(content) {
   return result
 }
 
-function defaultShowContent(id) {
-  return `---\nname: ${id}\ndatum: ${new Date().toISOString().slice(0, 10)}\n---\n\n`
+function showToFrontmatter(show) {
+  const fields = ['name', 'datum', 'template', 'untertitel', 'spielzeit']
+    .filter(k => show[k] != null)
+    .map(k => `${k}: ${show[k]}`)
+    .join('\n')
+  return `---\n${fields}\n---\n\n`
 }
 
-function parseFrontmatterSimple(content) {
-  const match = content?.match(/^---\n([\s\S]*?)\n---/)
-  if (!match) return {}
-  const result = {}
-  for (const line of match[1].split('\n')) {
-    const idx = line.indexOf(':')
-    if (idx === -1) continue
-    result[line.slice(0, idx).trim()] = line.slice(idx + 1).trim().replace(/^"|"$/g, '')
+function parseChannelsCsv(csv) {
+  const lines = csv.split('\n').filter(Boolean)
+  if (lines.length <= 1) return []
+  return lines.slice(1).map((line, i) => {
+    const [channel, address, device, position, color, notes] = line.split(';')
+    return { id: randomUUID(), channel: channel ?? '', address: address ?? '', device: device ?? '', position: position ?? '', color: color ?? '', notes: notes ?? '', sort_order: i }
+  })
+}
+
+function serializeChannelsCsv(channels) {
+  const header = 'channel;address;device;position;color;notes'
+  const rows = channels.map(ch =>
+    [ch.channel, ch.address, ch.device, ch.position, ch.color, ch.notes].join(';')
+  )
+  return [header, ...rows].join('\n') + '\n'
+}
+
+function parseSectionsMd(raw) {
+  const map = new Map()
+  const parts = raw.split(/^---section: [^\s]+---$/m)
+  const ids = [...raw.matchAll(/^---section: ([^\s]+)---$/mg)].map(m => m[1])
+  for (let i = 0; i < ids.length; i++) {
+    map.set(ids[i], (parts[i + 1] ?? '').trim())
   }
-  return result
+  return map
+}
+
+function serializeSectionsMd(map) {
+  const parts = []
+  for (const [id, content] of map) {
+    parts.push(`---section: ${id}---\n${content}`)
+  }
+  return parts.join('\n')
 }

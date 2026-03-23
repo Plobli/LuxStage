@@ -4,7 +4,16 @@
  * Kanäle nach Position gruppiert, mit Abschnitts-Überschriften
  */
 import PDFDocument from 'pdfkit'
-import { parseSectionsMd } from './io.js'
+
+function parseSectionsMd(raw) {
+  const map = new Map()
+  const parts = raw.split(/^---section: [^\s]+---$/m)
+  const ids = [...raw.matchAll(/^---section: ([^\s]+)---$/mg)].map(m => m[1])
+  for (let i = 0; i < ids.length; i++) {
+    map.set(ids[i], (parts[i + 1] ?? '').trim())
+  }
+  return map
+}
 
 // Spaltenbreiten (mm → pt: 1mm ≈ 2.835pt)
 const mm = (v) => v * 2.835

@@ -35,14 +35,14 @@ export async function router(req, res) {
     if (method === 'GET' && pathname === '/api/shows') {
       const user = requireAuth(req, res); if (!user) return
       const shows = db.listShows()
-      return json(res, 200, shows.map(s => ({ id: s.slug, ...s })))
+      return json(res, 200, shows.map(({ id: _id, ...s }) => ({ id: s.slug, ...s })))
     }
 
     // ── Shows — Archiv-Liste (muss vor dem Regex-Handler stehen) ──────────
     if (method === 'GET' && pathname === '/api/shows/archived') {
       const user = requireAuth(req, res); if (!user) return
       const shows = db.listArchivedShows()
-      return json(res, 200, shows.map(s => ({ id: s.slug, ...s })))
+      return json(res, 200, shows.map(({ id: _id, ...s }) => ({ id: s.slug, ...s })))
     }
 
     // ── Shows — Einzelne Show lesen ────────────────────────────────────────

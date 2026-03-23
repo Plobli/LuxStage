@@ -114,3 +114,29 @@ ok "System-User bereit"
 step "Setze Eigentümer..."
 chown -R luxstage:luxstage "$INSTALL_DIR"
 ok "Eigentümer gesetzt"
+
+# ── systemd Service ───────────────────────────────────────────────────────────
+step "Erstelle systemd-Service..."
+# Unquoted EOF: Variablen werden bewusst in die Unit-Datei expandiert.
+cat > /etc/systemd/system/luxstage.service << EOF
+[Unit]
+Description=LuxStage Server
+After=network.target
+
+[Service]
+WorkingDirectory=$INSTALL_DIR/server
+ExecStart=/usr/bin/node index.js
+Restart=always
+User=luxstage
+Environment=NODE_ENV=production
+Environment=JWT_SECRET=$JWT_SECRET
+Environment=ADMIN_PASSWORD=$ADMIN_PASSWORD
+Environment=TECH_PASSWORD=$TECH_PASSWORD
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable --now luxstage
+ok "systemd-Service aktiv"

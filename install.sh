@@ -84,3 +84,33 @@ ok "Caddy-Repository hinzugefügt"
 step "Installiere Pakete (git, nodejs, caddy)..."
 apt-get install -y git nodejs caddy
 ok "Pakete installiert"
+
+# ── Repo klonen ───────────────────────────────────────────────────────────────
+step "Klone Repository nach $INSTALL_DIR..."
+git clone "$REPO_URL" "$INSTALL_DIR"
+ok "Repository geklont"
+
+# ── Web-App bauen (als root, vor chown) ───────────────────────────────────────
+# Subshell verwenden damit cwd sich nicht ändert und Vite korrekt baut.
+step "Installiere Web-App-Abhängigkeiten und baue Web-App..."
+(cd "$INSTALL_DIR/web-app" && npm install --silent && npm run build)
+ok "Web-App gebaut"
+
+# ── Server-Abhängigkeiten (als root, vor chown) ───────────────────────────────
+step "Installiere Server-Abhängigkeiten..."
+(cd "$INSTALL_DIR/server" && npm install --silent)
+ok "Server-Abhängigkeiten installiert"
+
+# ── Data-Verzeichnis anlegen (vor chown-R, damit es mit übernommen wird) ──────
+mkdir -p "$INSTALL_DIR/data"
+
+# ── System-User anlegen ───────────────────────────────────────────────────────
+step "Erstelle System-User 'luxstage'..."
+# Guard: kein Fehler falls User bereits existiert (z.B. nach abgebrochenem Lauf)
+id luxstage &>/dev/null || useradd --system --no-create-home --shell /usr/sbin/nologin luxstage
+ok "System-User bereit"
+
+# ── Eigentümer setzen (ein Aufruf deckt repo + data ab) ──────────────────────
+step "Setze Eigentümer..."
+chown -R luxstage:luxstage "$INSTALL_DIR"
+ok "Eigentümer gesetzt"

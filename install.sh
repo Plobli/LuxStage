@@ -59,3 +59,28 @@ echo ""
 echo "  Hostname:    $HOSTNAME"
 echo "  Verzeichnis: $INSTALL_DIR"
 echo ""
+
+# ── apt-Listen aktualisieren ──────────────────────────────────────────────────
+step "Aktualisiere Paketlisten..."
+apt-get update -qq
+ok "Paketlisten aktualisiert"
+
+# ── NodeSource-Repository (Node.js 18) ────────────────────────────────────────
+step "Füge NodeSource-Repository hinzu (Node.js 18)..."
+curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+ok "NodeSource-Repository hinzugefügt"
+
+# ── Caddy-Repository ──────────────────────────────────────────────────────────
+step "Füge Caddy-Repository hinzu..."
+apt-get install -y debian-keyring debian-archive-keyring apt-transport-https
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' \
+  | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' \
+  | tee /etc/apt/sources.list.d/caddy-stable.list
+apt-get update -qq
+ok "Caddy-Repository hinzugefügt"
+
+# ── Pakete installieren ───────────────────────────────────────────────────────
+step "Installiere Pakete (git, nodejs, caddy)..."
+apt-get install -y git nodejs caddy
+ok "Pakete installiert"

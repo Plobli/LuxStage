@@ -38,6 +38,13 @@ export async function router(req, res) {
       return json(res, 200, shows.map(s => ({ id: s.slug, ...s })))
     }
 
+    // ── Shows — Archiv-Liste (muss vor dem Regex-Handler stehen) ──────────
+    if (method === 'GET' && pathname === '/api/shows/archived') {
+      const user = requireAuth(req, res); if (!user) return
+      const shows = db.listArchivedShows()
+      return json(res, 200, shows.map(s => ({ id: s.slug, ...s })))
+    }
+
     // ── Shows — Einzelne Show lesen ────────────────────────────────────────
     if (method === 'GET' && pathname.match(/^\/api\/shows\/([^/]+)$/)) {
       const user = requireAuth(req, res); if (!user) return
@@ -102,13 +109,6 @@ export async function router(req, res) {
       const id = pathname.split('/')[3]
       subscribe(id, res)
       return // res bleibt offen
-    }
-
-    // ── Shows — Archiv-Liste ───────────────────────────────────────────────
-    if (method === 'GET' && pathname === '/api/shows/archived') {
-      const user = requireAuth(req, res); if (!user) return
-      const shows = db.listArchivedShows()
-      return json(res, 200, shows.map(s => ({ id: s.slug, ...s })))
     }
 
     // ── Shows — Wiederherstellen ───────────────────────────────────────────

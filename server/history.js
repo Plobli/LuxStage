@@ -82,5 +82,6 @@ export function restoreHistoryEntry(slug, historyId) {
   const sections = new Map(Object.entries(JSON.parse(entry.sections)))
   db.writeChannels(slug, channels)
   db.writeShowSections(slug, sections)
+  snapshotHashes.set(show.id, computeHash(channels, sections))
   return true
 }

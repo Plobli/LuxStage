@@ -180,6 +180,17 @@
                           :class="dupChannelNrs.has(ch.channel) ? 'ring-1 ring-yellow-400/60 rounded' : ''"
                           class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[3ch] text-center"
                         />
+                        <button
+                          v-if="eosStatus(ch.channel) !== null"
+                          type="button"
+                          @click.stop="toggleEosStatus(ch.channel)"
+                          :class="eosStatus(ch.channel) === 'active'
+                            ? 'bg-green-500/20 border border-green-500/40 text-green-400 hover:bg-green-500/30'
+                            : 'bg-red-500/20 border border-red-500/40 text-red-400 hover:bg-red-500/30'"
+                          class="text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap font-medium transition-colors no-print"
+                        >
+                          {{ t(eosStatus(ch.channel) === 'active' ? 'eos.status.active' : 'eos.status.inactive') }}
+                        </button>
                         <input
                           :value="ch.address"
                           @focus="pushSnapshot()"
@@ -631,6 +642,25 @@ async function onEosFileSelected(e) {
     ...activeChannels,                // alle neuen: grün
     ...nowGone.map(ch => `-${ch}`),   // weggefallene: rot
   ]
+  await persistEosChannels()
+}
+
+function eosStatus(channelNr) {
+  if (!eosActiveChannels.value) return null
+  const nr = String(channelNr)
+  if (eosActiveChannels.value.includes(nr)) return 'active'
+  if (eosActiveChannels.value.includes(`-${nr}`)) return 'inactive'
+  return null
+}
+
+async function toggleEosStatus(channelNr) {
+  if (!eosActiveChannels.value) return
+  const nr = String(channelNr)
+  eosActiveChannels.value = eosActiveChannels.value.map(ch => {
+    if (ch === nr) return `-${nr}`       // aktiv → inaktiv
+    if (ch === `-${nr}`) return nr       // inaktiv → aktiv
+    return ch
+  })
   await persistEosChannels()
 }
 

@@ -401,7 +401,11 @@ export async function router(req, res) {
           '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
           '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg',
         }[ext] || 'application/octet-stream'
-        res.writeHead(200, { 'Content-Type': mime })
+        // Assets mit Hash (in /assets/) → 1 Jahr cachen; index.html → nie cachen
+        const cacheControl = pathname.startsWith('/assets/')
+          ? 'public, max-age=31536000, immutable'
+          : 'no-cache'
+        res.writeHead(200, { 'Content-Type': mime, 'Cache-Control': cacheControl })
         fs.createReadStream(filePath).pipe(res)
       } catch {
         // SPA Fallback

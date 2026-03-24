@@ -77,6 +77,14 @@
         >
           {{ t('channel.export') }}
         </button>
+        <button
+          type="button"
+          class="rounded-md px-3 py-1.5 text-sm font-semibold text-amber-400 ring-1 ring-amber-400/30 hover:ring-amber-400/60 no-print"
+          @click="eosFileInput?.click()"
+        >
+          {{ t('eos.import.button') }}
+        </button>
+        <input ref="eosFileInput" type="file" accept=".csv" class="hidden" @change="onEosFileSelected" />
         <a
           :href="pdfUrl"
           target="_blank"
@@ -433,10 +441,12 @@ const { onKeydown } = useKeyboardNav()
 const loading = ref(true)
 const meta = ref({})          // frontmatter: name, datum, venue, …
 const setupMarkdown = ref('') // Aufbau-Abschnitt aus .md-Datei
+const eosActiveChannels = ref(null) // null = noch kein Import; Array<string> (neg. Prefix = inaktiv)
 const channels = ref([])
 const photos = ref([])
 
 const sortableTbody = ref(null)
+const eosFileInput = ref(null)
 const search = ref('')
 const setupSaving = ref(false)
 const channelsSaving = ref(false)
@@ -553,6 +563,36 @@ async function persistSetup(md) {
   } finally {
     setupSaving.value = false
   }
+}
+
+async function persistEosChannels() {
+  await updateMeta(props.id, { ...meta.value, setupMarkdown: setupMarkdown.value, eosActiveChannels: eosActiveChannels.value })
+}
+
+// ── Eos CSV Parser ─────────────────────────────────────────────────────────
+function parseEosCsv(text) {
+  const lines = text.split(/\r?\n/)
+  if (lines[0].trim() !== 'START_LEVELS') {
+    return { activeChannels: null, error: 'eos.import.error.invalid' }
+  }
+  const headerIdx = lines.findIndex(l => l.startsWith('TARGET_TYPE,'))
+  if (headerIdx === -1) return { activeChannels: null, error: 'eos.import.error.parse' }
+  const headers = lines[headerIdx].split(',')
+  const colChannel   = headers.indexOf('CHANNEL')
+  const colParamType = headers.indexOf('PARAMETER_TYPE_AS_TEXT')
+  const colLevel     = headers.indexOf('LEVEL')
+  if (colChannel === -1 || colParamType === -1 || colLevel === -1) {
+    return { activeChannels: null, error: 'eos.import.error.parse' }
+  }
+  const active = new Set()
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const cols = lines[i].split(',')
+    if (cols[colParamType] === 'Intens' && parseFloat(cols[colLevel]) > 0) {
+      const ch = (cols[colChannel] ?? '').trim()
+      if (ch) active.add(ch)
+    }
+  }
+  return { activeChannels: [...active], error: null }
 }
 
 // ── PDF ────────────────────────────────────────────────────────────────────
@@ -853,6 +893,7 @@ onMounted(async () => {
 
     meta.value = { name: showData.name, datum: showData.datum, template: showData.template, untertitel: showData.untertitel, spielzeit: showData.spielzeit }
     setupMarkdown.value = showData.setupMarkdown ?? ''
+    eosActiveChannels.value = showData.eosActiveChannels ?? null
     channels.value = Array.isArray(chs) ? chs : []
     photos.value = photoList
 

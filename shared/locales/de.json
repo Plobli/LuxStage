@@ -135,7 +135,7 @@
   "csv.preview.channels": "{count} Kanäle",
   "csv.preview.custom_fields": "{count} Show-Felder",
 
-  "eos.import.button": "⬆ Aus Eos importieren",
+  "eos.import.button": "Aus Eos importieren",
   "eos.import.error.invalid": "Keine gültige Eos-Exportdatei.",
   "eos.import.error.parse": "Datei konnte nicht gelesen werden.",
   "eos.import.confirm_empty.title": "0 aktive Kanäle",

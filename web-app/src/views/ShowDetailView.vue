@@ -176,7 +176,10 @@
                       </div>
                     </td>
                     <td class="py-2 pr-3 pl-0 align-middle">
-                      <div class="flex flex-col items-center gap-1">
+                      <div
+                        class="flex flex-col items-center gap-1 cursor-pointer select-none"
+                        @click.stop="toggleChannelStatus(ch)"
+                      >
                         <input
                           :value="ch.channel"
                           @focus="pushSnapshot()"
@@ -184,20 +187,9 @@
                           :data-nav-row="rowIndexOf(ch)"
                           data-nav-col="0"
                           @keydown="onKeydown($event, rowIndexOf(ch), 0, 4, () => startAdd(ch.position))"
-                          :class="dupChannelNrs.has(ch.channel) ? 'ring-1 ring-yellow-400/60 rounded' : ''"
-                          class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[3ch] text-center"
+                          :class="[dupChannelNrs.has(ch.channel) ? 'ring-1 ring-yellow-400/60 rounded' : '', channelStatus(ch) === 'active' ? 'text-green-400' : channelStatus(ch) === 'eos' ? 'text-amber-400' : 'text-gray-400']"
+                          class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-2xl font-bold font-mono px-0 border-0 leading-none w-[3ch] text-center"
                         />
-                        <button
-                          v-if="eosStatus(ch.channel) !== null"
-                          type="button"
-                          @click.stop="toggleEosStatus(ch.channel)"
-                          :class="eosStatus(ch.channel) === 'active'
-                            ? 'bg-green-500/20 border border-green-500/40 text-green-400 hover:bg-green-500/30'
-                            : 'bg-red-500/20 border border-red-500/40 text-red-400 hover:bg-red-500/30'"
-                          class="text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap font-medium transition-colors no-print"
-                        >
-                          {{ t(eosStatus(ch.channel) === 'active' ? 'eos.status.active' : 'eos.status.inactive') }}
-                        </button>
                         <input
                           :value="ch.address"
                           @focus="pushSnapshot()"
@@ -745,22 +737,33 @@ async function onEosFileSelected(e) {
   await persistEosChannels()
 }
 
-function eosStatus(channelNr) {
-  if (!eosActiveChannels.value) return null
-  const nr = String(channelNr)
-  if (eosActiveChannels.value.includes(nr)) return 'active'
-  if (eosActiveChannels.value.includes(`-${nr}`)) return 'inactive'
-  return null
+function channelStatus(ch) {
+  const notes = (ch.notes ?? '').trim()
+  if (notes.length > 0) return 'active'   // grün — Notizen vorhanden
+  const nr = String(ch.channel)
+  if (!eosActiveChannels.value) return 'default'
+  if (eosActiveChannels.value.includes(nr)) return 'eos'        // gelb — Eos aktiv, keine Notizen
+  if (eosActiveChannels.value.includes(`-${nr}`)) return 'default'  // grau — manuell inaktiv
+  return 'default'
 }
 
-async function toggleEosStatus(channelNr) {
+async function toggleChannelStatus(ch) {
   if (!eosActiveChannels.value) return
-  const nr = String(channelNr)
-  eosActiveChannels.value = eosActiveChannels.value.map(ch => {
-    if (ch === nr) return `-${nr}`       // aktiv → inaktiv
-    if (ch === `-${nr}`) return nr       // inaktiv → aktiv
-    return ch
-  })
+  const nr = String(ch.channel)
+  const status = channelStatus(ch)
+  if (status === 'active') return  // grün = durch Notizen gesteuert, kein Toggle
+
+  if (status === 'eos') {
+    // Gelb → Grau: deaktivieren
+    eosActiveChannels.value = eosActiveChannels.value.map(c => c === nr ? `-${nr}` : c)
+  } else {
+    // Grau → Gelb: reaktivieren (nur wenn Kanal bekannt in eosActiveChannels)
+    const hasInactive = eosActiveChannels.value.includes(`-${nr}`)
+    if (hasInactive) {
+      eosActiveChannels.value = eosActiveChannels.value.map(c => c === `-${nr}` ? nr : c)
+    }
+    // Wenn Kanal gar nicht in eosActiveChannels: kein Toggle möglich
+  }
   await persistEosChannels()
 }
 

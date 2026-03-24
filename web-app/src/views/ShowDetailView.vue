@@ -64,14 +64,6 @@
       <div class="no-print flex items-center gap-x-3 shrink-0">
         <button
           type="button"
-          :class="editingSections ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'"
-          class="rounded-md px-3 py-1.5 text-sm font-semibold"
-          @click="editingSections = !editingSections"
-        >
-          {{ t('sections.btn') }}
-        </button>
-        <button
-          type="button"
           class="no-print rounded-md px-3 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20"
           @click="openHistory"
         >
@@ -293,79 +285,89 @@
       <!-- Aside: Sections + Fotos (fixed, left of main) -->
       <aside :class="mobileTab !== 'info' ? 'hidden xl:block' : ''" class="xl:fixed xl:top-16 xl:bottom-0 xl:left-20 xl:w-[28rem] xl:overflow-y-auto xl:border-r xl:border-white/10 px-4 py-6 sm:px-6 border-b border-white/10 xl:border-b-0">
 
-        <!-- Sections-Editor -->
-        <template v-if="editingSections">
-          <div class="space-y-4 mb-6">
-            <div v-for="(sec, idx) in sectionDefs" :key="sec.id" class="border border-white/10 rounded-lg p-4 space-y-3">
-              <!-- Row: reorder + title + type + delete -->
-              <div class="flex items-center gap-2">
-                <div class="flex flex-col gap-0.5">
-                  <button class="text-gray-500 hover:text-white text-[10px] leading-none px-0.5 disabled:opacity-30" :disabled="idx === 0" @click="moveSectionDef(idx, -1)">▲</button>
-                  <button class="text-gray-500 hover:text-white text-[10px] leading-none px-0.5 disabled:opacity-30" :disabled="idx === sectionDefs.length - 1" @click="moveSectionDef(idx, 1)">▼</button>
-                </div>
-                <input
-                  :value="sec.title"
-                  :placeholder="t('sections.title.placeholder')"
-                  @input="sec.title = $event.target.value"
-                  @change="persistSectionDefs"
-                  class="flex-1 bg-white/5 rounded-md px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent"
-                />
-                <select
-                  :value="sec.type"
-                  @change="onSectionTypeChange(sec, $event.target.value)"
-                  class="bg-white/5 rounded-md px-2 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-accent"
-                >
-                  <option value="markdown" class="bg-gray-900">{{ t('sections.type.markdown') }}</option>
-                  <option value="fields" :disabled="hasFieldsType() && sec.type !== 'fields'" class="bg-gray-900">{{ t('sections.type.fields') }}</option>
-                </select>
-                <button class="text-gray-500 hover:text-red-400 text-sm shrink-0" @click="deleteSectionDef(idx)">✕</button>
-              </div>
-              <!-- Fields sub-editor -->
-              <div v-if="sec.type === 'fields'" class="space-y-2 pl-6">
-                <div v-for="(field, fidx) in sec.fields" :key="field.key" class="flex items-center gap-2">
-                  <input
-                    :value="field.label"
-                    :placeholder="t('sections.field.label')"
-                    @input="field.label = $event.target.value"
-                    @change="persistSectionDefs"
-                    class="flex-1 bg-white/5 rounded-md px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-accent"
-                  />
-                  <button class="text-gray-500 hover:text-red-400 text-sm shrink-0" @click="deleteFieldDef(sec, fidx)">✕</button>
-                </div>
-                <button class="text-sm text-gray-400 hover:text-white" @click="addFieldDef(sec)">+ {{ t('sections.field.add') }}</button>
-              </div>
+        <!-- Sections (inline editor) -->
+        <div ref="sortableSections" class="space-y-6 mb-6">
+          <section
+            v-for="sec in sortedSections"
+            :key="sec.id"
+            :data-section-id="sec.id"
+            class="group/sec"
+          >
+            <!-- Section header: drag handle + title input + delete -->
+            <div class="flex items-center gap-2 mb-3">
+              <span class="section-drag-handle cursor-grab text-gray-600 hover:text-gray-400 opacity-0 group-hover/sec:opacity-100 transition-opacity shrink-0">
+                <svg class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M7 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/></svg>
+              </span>
+              <input
+                :value="sec.title"
+                :placeholder="t('sections.title.placeholder')"
+                @input="sec.title = $event.target.value"
+                @change="persistSectionDefs"
+                class="flex-1 bg-transparent border-0 border-b border-white/10 focus:border-accent focus:outline-none text-sm font-semibold text-white py-1 px-0 transition-colors min-w-0"
+              />
+              <button
+                class="text-gray-600 hover:text-red-400 text-sm shrink-0 opacity-0 group-hover/sec:opacity-100 transition-opacity"
+                @click="deleteSectionDef(sortedSections.indexOf(sec))"
+              >✕</button>
             </div>
-            <button class="text-sm text-gray-400 hover:text-white" @click="addSection">+ {{ t('sections.add') }}</button>
-          </div>
-        </template>
 
-        <!-- Custom Sections (view mode) -->
-        <template v-else-if="sortedSections.length > 0">
-          <section v-for="sec in sortedSections" :key="sec.id" class="mb-8">
-            <SectionHeading :text="sec.title" class="mb-4" />
-            <div v-if="sec.type === 'fields'" class="divide-y divide-white/5">
-              <div v-for="field in sec.fields" :key="field.key" class="flex items-center h-[40px]">
-                <label class="w-28 text-sm text-gray-500 shrink-0">{{ field.label }}</label>
-                <input
-                  :value="parseFieldValue(sec.id, field.key)"
-                  @change="onFieldChange(sec.id, field.key, $event.target.value)"
-                  class="flex-1 bg-transparent border-0 border-b border-white/10 focus:border-accent focus:outline-none text-sm text-white h-full px-2 transition-colors"
-                />
+            <!-- Fields section -->
+            <div v-if="sec.type === 'fields'">
+              <div
+                :data-fields-sortable="sec.id"
+                class="divide-y divide-white/5 mb-2"
+              >
+                <div
+                  v-for="(field, fidx) in sec.fields"
+                  :key="field.key"
+                  class="flex items-center h-[40px] gap-2 group/field"
+                >
+                  <span class="field-drag-handle cursor-grab text-gray-600 hover:text-gray-400 opacity-0 group-hover/field:opacity-100 transition-opacity shrink-0">
+                    <svg class="size-3" viewBox="0 0 20 20" fill="currentColor"><path d="M7 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/></svg>
+                  </span>
+                  <label class="w-28 text-sm text-gray-500 shrink-0">
+                    <input
+                      :value="field.label"
+                      :placeholder="t('sections.field.label')"
+                      @input="field.label = $event.target.value"
+                      @change="persistSectionDefs"
+                      class="w-full bg-transparent border-0 text-sm text-gray-400 focus:text-white focus:outline-none placeholder:text-gray-600"
+                    />
+                  </label>
+                  <input
+                    :value="parseFieldValue(sec.id, field.key)"
+                    @change="onFieldChange(sec.id, field.key, $event.target.value)"
+                    class="flex-1 bg-transparent border-0 border-b border-white/10 focus:border-accent focus:outline-none text-sm text-white h-full px-2 transition-colors"
+                  />
+                  <button
+                    class="text-gray-600 hover:text-red-400 text-xs shrink-0 opacity-0 group-hover/field:opacity-100 transition-opacity"
+                    @click="deleteFieldDef(sec, fidx)"
+                  >✕</button>
+                </div>
               </div>
+              <button class="text-xs text-gray-500 hover:text-white" @click="addFieldDef(sec)">+ {{ t('sections.field.add') }}</button>
             </div>
+
+            <!-- Markdown/Textfeld section -->
             <MarkdownEditor
               v-else
               :modelValue="sectionContents.get(sec.id) ?? ''"
               @update:modelValue="onSectionChange(sec.id, $event)"
             />
           </section>
-        </template>
+        </div>
 
-        <!-- Fallback: single setup editor -->
-        <section v-else class="mb-8">
+        <!-- Fallback: single setup editor (when no sections defined) -->
+        <section v-if="sortedSections.length === 0" class="mb-8">
           <SectionHeading :text="t('show.setup')" class="mb-4" />
           <MarkdownEditor v-model="setupMarkdown" @update:modelValue="onSetupChange" />
         </section>
+
+        <!-- Add section buttons -->
+        <div class="flex gap-3 mb-6">
+          <button class="text-sm text-gray-400 hover:text-white" @click="addMarkdownSection">+ {{ t('sections.add.markdown') }}</button>
+          <button v-if="!hasFieldsType()" class="text-sm text-gray-400 hover:text-white" @click="addFieldsSection">+ {{ t('sections.add.fields') }}</button>
+        </div>
 
         <!-- Foto-Galerie -->
         <section>
@@ -559,7 +561,7 @@ const mobileTab = ref('channels') // 'channels' | 'info'
 const sectionDefs = ref([])
 const sectionContents = ref(new Map())
 const sectionsSaving = ref(false)
-const editingSections = ref(false)
+const sortableSections = ref(null)
 let saveSectionsTimer = null
 
 // ── Undo/Redo ──────────────────────────────────────────────────────────────
@@ -915,6 +917,46 @@ function initSortable() {
 // Sortable nach externen channels-Updates neu binden (z.B. SSE-Reload)
 watch(() => channels.value.length, () => nextTick(initSortable))
 
+// SortableJS for sections
+watch(() => sectionDefs.value.length, async () => {
+  await nextTick()
+  if (sortableSections.value) {
+    Sortable.create(sortableSections.value, {
+      handle: '.section-drag-handle',
+      animation: 150,
+      onEnd() {
+        const els = sortableSections.value.querySelectorAll('[data-section-id]')
+        const newOrder = [...els].map(el => el.getAttribute('data-section-id'))
+        sectionDefs.value = newOrder.map((id, i) => {
+          const sec = sectionDefs.value.find(s => s.id === id)
+          return { ...sec, order: i }
+        })
+        persistSectionDefs()
+      }
+    })
+  }
+}, { immediate: true })
+
+// SortableJS for fields within sections
+watch(() => sectionDefs.value.map(s => s.fields?.length).join(','), async () => {
+  await nextTick()
+  document.querySelectorAll('[data-fields-sortable]').forEach(el => {
+    Sortable.create(el, {
+      handle: '.field-drag-handle',
+      animation: 150,
+      onEnd(evt) {
+        const sectionId = el.getAttribute('data-fields-sortable')
+        const sec = sectionDefs.value.find(s => s.id === sectionId)
+        if (!sec) return
+        const moved = sec.fields.splice(evt.oldIndex, 1)[0]
+        sec.fields.splice(evt.newIndex, 0, moved)
+        sec.fields.forEach((f, i) => { f.sort_order = i })
+        persistSectionDefs()
+      }
+    })
+  })
+}, { immediate: true })
+
 const totalVisible = computed(() => groupedChannels.value.reduce((s, g) => s + g.channels.length, 0))
 
 // Flache Liste für globale row-Indizes (Reihenfolge wie in der Tabelle)
@@ -1053,16 +1095,18 @@ async function persistSectionDefs() {
   await saveShowSectionDefs(props.id, sectionDefs.value)
 }
 
-function addSection() {
+async function addMarkdownSection() {
   pushSnapshot()
-  sectionDefs.value.push({
-    id: uuid(),
-    title: '',
-    type: 'markdown',
-    order: sectionDefs.value.length,
-    fields: []
-  })
-  persistSectionDefs()
+  const id = uuid()
+  sectionDefs.value.push({ id, title: '', type: 'markdown', order: sectionDefs.value.length, fields: [] })
+  await persistSectionDefs()
+}
+
+async function addFieldsSection() {
+  pushSnapshot()
+  const id = uuid()
+  sectionDefs.value.push({ id, title: '', type: 'fields', order: sectionDefs.value.length, fields: [] })
+  await persistSectionDefs()
 }
 
 function deleteSectionDef(idx) {

@@ -61,6 +61,7 @@ export async function router(req, res) {
         untertitel: show.untertitel,
         spielzeit: show.spielzeit,
         setupMarkdown: show.setup_markdown ?? '',
+        eosActiveChannels: show.eos_active_channels ? JSON.parse(show.eos_active_channels) : null,
         channels,
         lock,
       })
@@ -82,9 +83,10 @@ export async function router(req, res) {
       const user = requireAuth(req, res); if (!user) return
       const slug = pathname.split('/')[3]
       const body = await readBody(req)
-      const { setupMarkdown, ...rest } = JSON.parse(body)
+      const { setupMarkdown, eosActiveChannels, ...rest } = JSON.parse(body)
       const fields = { ...rest }
       if (setupMarkdown !== undefined) fields.setup_markdown = setupMarkdown
+      if (eosActiveChannels !== undefined) fields.eos_active_channels = JSON.stringify(eosActiveChannels)
       db.writeShow(slug, fields)
       return json(res, 200, { ok: true })
     }

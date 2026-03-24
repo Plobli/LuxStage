@@ -5,16 +5,6 @@
  */
 import PDFDocument from 'pdfkit'
 
-function parseSectionsMd(raw) {
-  const map = new Map()
-  const parts = raw.split(/^---section: [^\s]+---$/m)
-  const ids = [...raw.matchAll(/^---section: ([^\s]+)---$/mg)].map(m => m[1])
-  for (let i = 0; i < ids.length; i++) {
-    map.set(ids[i], (parts[i + 1] ?? '').trim())
-  }
-  return map
-}
-
 // Spaltenbreiten (mm → pt: 1mm ≈ 2.835pt)
 const mm = (v) => v * 2.835
 const PAGE_MARGIN = mm(15)
@@ -87,13 +77,16 @@ function contrastColor(hex) {
   return (0.299*r + 0.587*g + 0.114*b)/255 > 0.5 ? '#000000' : '#ffffff'
 }
 
-export function generatePDF(showContent, channelsCsv, sectionsRaw, templateSections, res) {
-  const fm = parseFrontmatter(showContent)
-  const channels = parseCsv(channelsCsv)
+// show: { name, datum, untertitel, ... }
+// channels: [{ channel, address, device, position, color, notes }]
+// sectionsMap: Map<sectionId, contentString>  (from db.readShowSections)
+// templateSections: [{ id, title, order, type }]
+export function generatePDF(show, channels, sectionsMap, templateSections, res) {
+  const fm = { name: show.name, datum: show.datum, venue: show.untertitel }
   const grouped = groupByPosition(channels)
 
   const hasSections = Array.isArray(templateSections) && templateSections.length > 0
-  const sectionContents = hasSections ? parseSectionsMd(sectionsRaw) : null
+  const sectionContents = hasSections ? sectionsMap : null
   const sortedSections = hasSections
     ? [...templateSections].sort((a, b) => a.order - b.order)
     : null
@@ -433,28 +426,6 @@ function renderSetupBlocks(doc, blocks, margin, usableW) {
       doc.moveDown(0.3)
     }
   }
-}
-
-function parseFrontmatter(content) {
-  const match = content.match(/^---\n([\s\S]*?)\n---/)
-  if (!match) return {}
-  const result = {}
-  for (const line of match[1].split('\n')) {
-    const idx = line.indexOf(':')
-    if (idx === -1) continue
-    result[line.slice(0, idx).trim()] = line.slice(idx + 1).trim().replace(/^"|"$/g, '')
-  }
-  return result
-}
-
-function parseCsv(csv) {
-  const lines = csv.trim().split('\n')
-  if (!lines.length) return []
-  const headers = lines[0].split(';').map(h => h.trim())
-  return lines.slice(1).map(line => {
-    const vals = line.split(';')
-    return Object.fromEntries(headers.map((h, i) => [h, (vals[i] || '').trim()]))
-  })
 }
 
 function groupByPosition(channels) {

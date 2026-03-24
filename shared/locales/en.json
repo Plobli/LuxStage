@@ -162,6 +162,7 @@
   "sections.field.label": "Label",
   "sections.field.unit": "Unit",
   "sections.field.add": "+ Field",
+  "sections.new": "Section",
   "sections.add.markdown": "+ Text field",
   "sections.add.fields": "+ Custom fields",
 

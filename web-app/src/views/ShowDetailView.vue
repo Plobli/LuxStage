@@ -163,8 +163,8 @@
                     class="border-t border-white/5 group/row hover:bg-white/[0.03] transition-colors align-middle"
                   >
                     <td class="py-2 pr-0 pl-0 align-middle w-4">
-                      <div class="drag-handle no-print cursor-grab active:cursor-grabbing opacity-0 group-hover/row:opacity-30 hover:!opacity-60 transition-opacity px-1">
-                        <Bars2Icon class="size-3 text-gray-400" />
+                      <div class="drag-handle no-print cursor-grab active:cursor-grabbing px-1 text-gray-400 hover:text-gray-200 transition-colors">
+                        <svg class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M7 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/></svg>
                       </div>
                     </td>
                     <td class="py-2 pr-3 pl-0 align-middle">
@@ -222,8 +222,8 @@
                       />
                     </td>
                     <td class="pl-2 pr-1" style="vertical-align: middle; text-align: center;">
-                      <button class="no-print text-gray-600 hover:text-red-400 opacity-0 group-hover/row:opacity-100 transition-opacity" @click="deleteChannel(ch)" :title="t('action.delete')">
-                        <TrashIcon class="block size-4" />
+                      <button class="no-print text-gray-400 hover:text-red-400 transition-colors" @click="deleteChannel(ch)" :title="t('action.delete')">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
                       </button>
                     </td>
                   </tr>
@@ -293,24 +293,23 @@
             :data-section-id="sec.id"
             class="group/sec mb-8"
           >
-            <!-- Section header: SectionHeading style + drag handle + delete -->
-            <div class="flex items-center gap-3 mb-4">
-              <span class="section-drag-handle cursor-grab text-gray-600 hover:text-gray-400 opacity-0 group-hover/sec:opacity-100 transition-opacity shrink-0">
-                <svg class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M7 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/></svg>
-              </span>
+            <!-- Section header -->
+            <div class="flex items-center mb-4">
               <input
                 :value="sec.title"
                 :placeholder="t('sections.title.placeholder')"
                 @input="sec.title = $event.target.value"
                 @change="persistSectionDefs"
-                class="bg-transparent border-0 focus:outline-none text-sm font-semibold text-accent uppercase tracking-widest py-0 px-0 shrink-0 min-w-0 w-auto"
-                :style="{ width: Math.max((sec.title || t('sections.title.placeholder')).length, 4) + 'ch' }"
+                class="pr-3 text-lg font-semibold text-accent bg-gray-950 shrink-0 border-0 focus:outline-none min-w-0 placeholder:text-accent/40"
+                :size="Math.max((sec.title || t('sections.title.placeholder')).length, 4)"
               />
-              <div class="flex-1 h-px bg-accent/30"></div>
-              <button
-                class="text-gray-600 hover:text-red-400 text-xs shrink-0 opacity-0 group-hover/sec:opacity-100 transition-opacity"
-                @click="deleteSectionDef(sortedSections.indexOf(sec))"
-              >✕</button>
+              <div class="flex-1 border-t border-accent/40"></div>
+              <span class="section-drag-handle cursor-grab text-gray-400 hover:text-gray-200 transition-colors shrink-0 pl-3">
+                <svg class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M7 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/></svg>
+              </span>
+              <button class="text-gray-400 hover:text-red-400 shrink-0 transition-colors pl-2" @click="deleteSectionDef(sortedSections.indexOf(sec))">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+              </button>
             </div>
 
             <!-- Fields section -->
@@ -324,8 +323,8 @@
                   :key="field.key"
                   class="flex items-center h-[40px] gap-2 group/field"
                 >
-                  <span class="field-drag-handle cursor-grab text-gray-600 hover:text-gray-400 opacity-0 group-hover/field:opacity-100 transition-opacity shrink-0">
-                    <svg class="size-3" viewBox="0 0 20 20" fill="currentColor"><path d="M7 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/></svg>
+                  <span class="field-drag-handle cursor-grab text-gray-400 hover:text-gray-200 transition-colors shrink-0">
+                    <svg class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M7 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/></svg>
                   </span>
                   <label class="w-28 text-sm text-gray-500 shrink-0">
                     <input
@@ -341,13 +340,12 @@
                     @change="onFieldChange(sec.id, field.key, $event.target.value)"
                     class="flex-1 bg-transparent border-0 border-b border-white/10 focus:border-accent focus:outline-none text-sm text-white h-full px-2 transition-colors"
                   />
-                  <button
-                    class="text-gray-600 hover:text-red-400 text-xs shrink-0 opacity-0 group-hover/field:opacity-100 transition-opacity"
-                    @click="deleteFieldDef(sec, fidx)"
-                  >✕</button>
+                  <button class="text-gray-400 hover:text-red-400 shrink-0 transition-colors" @click="deleteFieldDef(sec, fidx)">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                  </button>
                 </div>
               </div>
-              <button class="text-xs text-gray-500 hover:text-white" @click="addFieldDef(sec)">+ {{ t('sections.field.add') }}</button>
+              <button class="text-xs text-gray-500 hover:text-white" @click="addFieldDef(sec)">{{ t('sections.field.add') }}</button>
             </div>
 
             <!-- Markdown/Textfeld section -->
@@ -367,8 +365,9 @@
 
         <!-- Add section buttons -->
         <div class="flex items-center gap-3 mb-6">
-          <button class="cursor-pointer text-sm text-gray-400 hover:text-white shrink-0" @click="addMarkdownSection">+ {{ t('sections.add.markdown') }}</button>
-          <button v-if="!hasFieldsType()" class="cursor-pointer text-sm text-gray-400 hover:text-white shrink-0" @click="addFieldsSection">+ {{ t('sections.add.fields') }}</button>
+          <SectionHeading :text="t('sections.new')" class="flex-1 min-w-0" />
+          <button class="cursor-pointer text-sm text-gray-400 hover:text-white shrink-0" @click="addMarkdownSection">{{ t('sections.add.markdown') }}</button>
+          <button v-if="!hasFieldsType()" class="cursor-pointer text-sm text-gray-400 hover:text-white shrink-0" @click="addFieldsSection">{{ t('sections.add.fields') }}</button>
         </div>
 
         <!-- Foto-Galerie -->
@@ -522,7 +521,7 @@ import { useKeyboardNav } from '../composables/useKeyboardNav.js'
 import MarkdownEditor from '../components/MarkdownEditor.vue'
 import SectionHeading from '../components/SectionHeading.vue'
 import { MagnifyingGlassIcon } from '@heroicons/vue/20/solid'
-import { TrashIcon, Bars2Icon, ArrowUturnLeftIcon, ArrowUturnRightIcon } from '@heroicons/vue/24/outline'
+import { ArrowUturnLeftIcon, ArrowUturnRightIcon } from '@heroicons/vue/24/outline'
 import { useUndoRedo } from '../composables/useUndoRedo.js'
 import { fetchShow, updateMeta, fetchHistory, fetchHistoryEntry, restoreHistory } from '../api/shows.js'
 import { fetchChannels, saveChannels, downloadChannelsCsv } from '../api/channels.js'
@@ -1111,7 +1110,9 @@ async function addFieldsSection() {
   await persistSectionDefs()
 }
 
-function deleteSectionDef(idx) {
+async function deleteSectionDef(idx) {
+  const ok = await confirm({ t, titleKey: 'action.delete', confirmKey: 'action.delete', cancelKey: 'action.cancel' })
+  if (!ok) return
   pushSnapshot()
   sectionDefs.value.splice(idx, 1)
   sectionDefs.value.forEach((s, i) => s.order = i)
@@ -1125,7 +1126,9 @@ function addFieldDef(section) {
   persistSectionDefs()
 }
 
-function deleteFieldDef(section, idx) {
+async function deleteFieldDef(section, idx) {
+  const ok = await confirm({ t, titleKey: 'action.delete', confirmKey: 'action.delete', cancelKey: 'action.cancel' })
+  if (!ok) return
   pushSnapshot()
   section.fields.splice(idx, 1)
   persistSectionDefs()

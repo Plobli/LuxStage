@@ -162,6 +162,7 @@
   "sections.field.label": "Label",
   "sections.field.unit": "Einheit",
   "sections.field.add": "+ Feld",
+  "sections.new": "Abschnitt",
   "sections.add.markdown": "+ Textfeld",
   "sections.add.fields": "+ Custom Fields",
 

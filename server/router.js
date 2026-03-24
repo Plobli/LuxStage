@@ -1,4 +1,6 @@
+import { readFileSync } from 'node:fs'
 import { readBody, json, send, notFound, parseUrl } from './helpers.js'
+const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url)))
 import { login, requireAuth, requireAdmin } from './auth.js'
 import * as db from './db.js'
 import { listHistory, getHistoryEntry, restoreHistoryEntry } from './history.js'
@@ -366,7 +368,7 @@ export async function router(req, res) {
       let diskFree = null
       try { diskFree = execFileSync('df', ['-h', config.dataPath]).toString().split('\n')[1] } catch {}
       return json(res, 200, {
-        version: '1.1.0',
+        version,
         dataPath: config.dataPath,
         diskFree,
       })

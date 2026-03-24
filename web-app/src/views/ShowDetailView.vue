@@ -569,6 +569,71 @@ async function persistEosChannels() {
   await updateMeta(props.id, { ...meta.value, setupMarkdown: setupMarkdown.value, eosActiveChannels: eosActiveChannels.value })
 }
 
+async function onEosFileSelected(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+  e.target.value = '' // Reset: dieselbe Datei kann erneut gewählt werden
+
+  const text = await file.text()
+  const { activeChannels, error } = parseEosCsv(text)
+
+  if (error) {
+    window.alert(t(error))
+    return
+  }
+
+  // Warnung bei 0 aktiven Kanälen
+  if (activeChannels.length === 0) {
+    const ok = await confirm({
+      t,
+      titleKey: 'eos.import.confirm_empty.title',
+      messageKey: 'eos.import.confirm_empty.message',
+      confirmKey: 'eos.import.confirm_empty.confirm',
+      cancelKey: 'action.cancel',
+    })
+    if (!ok) return
+  }
+
+  // Re-Import: prüfe ob bisher aktive Kanäle wegfallen
+  if (eosActiveChannels.value !== null) {
+    const currentActive = eosActiveChannels.value.filter(ch => !ch.startsWith('-'))
+    const removed = currentActive.filter(ch => !activeChannels.includes(ch))
+    if (removed.length > 0) {
+      const ok = await confirm({
+        t,
+        titleKey: 'eos.reimport.title',
+        messageKey: 'eos.reimport.message',
+        messageParams: {
+          n: removed.length,
+          channels: removed.join(', '),
+        },
+        confirmKey: 'eos.reimport.confirm',
+        cancelKey: 'action.cancel',
+      })
+      if (!ok) return
+    }
+  }
+
+  // Import durchführen.
+  // Regel: Import ist autoritativ — überschreibt manuelle Overrides.
+  // Kanäle im neuen CSV            → immer aktiv (grün)
+  // Kanäle vorher aktiv, jetzt weg → werden rot
+  // Kanäle vorher manuell rot, jetzt weg → bleiben rot
+  // Kanäle vorher manuell rot, jetzt im CSV → werden grün (import wins)
+  const prev = eosActiveChannels.value ?? []
+  const prevActive   = prev.filter(ch => !ch.startsWith('-'))
+  const prevInactive = prev.filter(ch => ch.startsWith('-')).map(ch => ch.slice(1))
+
+  // Alle Kanäle die vorher bekannt waren, aber nicht im neuen CSV → rot
+  const nowGone = [...prevActive, ...prevInactive].filter(ch => !activeChannels.includes(ch))
+
+  eosActiveChannels.value = [
+    ...activeChannels,                // alle neuen: grün
+    ...nowGone.map(ch => `-${ch}`),   // weggefallene: rot
+  ]
+  await persistEosChannels()
+}
+
 // ── Eos CSV Parser ─────────────────────────────────────────────────────────
 function parseEosCsv(text) {
   const lines = text.split(/\r?\n/)

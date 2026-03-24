@@ -8,7 +8,7 @@ step() { echo -e "  →  $1"; }
 fail() { echo -e "  ${RED}✗${RESET}  Fehler: $1"; exit 1; }
 
 # ── Konstanten ────────────────────────────────────────────────────────────────
-REPO_URL="https://github.com/christopherritter/luxstage"
+REPO_URL="https://github.com/Plobli/luxstage"
 INSTALL_DIR="$HOME/LuxStage"
 DATA_DIR="$INSTALL_DIR/data"
 
@@ -49,9 +49,14 @@ echo "  Hostname:    $HOSTNAME"
 echo "  Verzeichnis: $INSTALL_DIR"
 echo ""
 
+# ── Paketlisten aktualisieren ─────────────────────────────────────────────────
+step "Aktualisiere Paketlisten..."
+sudo apt-get update -qq
+ok "Paketlisten aktualisiert"
+
 # ── Node.js via nvm ───────────────────────────────────────────────────────────
 step "Installiere nvm und Node.js 22..."
-if ! command -v nvm &>/dev/null && [ ! -d "$HOME/.nvm" ]; then
+if [ ! -d "$HOME/.nvm" ]; then
   curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 fi
 export NVM_DIR="$HOME/.nvm"
@@ -67,11 +72,16 @@ step "Installiere PM2..."
 npm install -g pm2 --silent
 ok "PM2 installiert"
 
-# ── avahi-daemon (mDNS für .local) ───────────────────────────────────────────
-step "Installiere avahi-daemon für mDNS (.local)..."
+# ── Caddy installieren ────────────────────────────────────────────────────────
+step "Installiere Caddy..."
+sudo apt-get install -y debian-keyring debian-archive-keyring apt-transport-https
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' \
+  | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' \
+  | sudo tee /etc/apt/sources.list.d/caddy-stable.list > /dev/null
 sudo apt-get update -qq
-sudo apt-get install -y avahi-daemon
-ok "avahi-daemon installiert"
+sudo apt-get install -y caddy
+ok "Caddy installiert"
 
 # ── Hostname setzen ───────────────────────────────────────────────────────────
 step "Setze Hostname '$HOSTNAME'..."
@@ -129,10 +139,19 @@ ok "PM2-Konfiguration erstellt"
 step "Starte LuxStage mit PM2..."
 pm2 start "$INSTALL_DIR/ecosystem.config.cjs"
 pm2 save
-# PM2 autostart beim Systemstart
 PM2_STARTUP=$(pm2 startup | grep "sudo" | tail -1)
 eval "$PM2_STARTUP"
 ok "LuxStage läuft und startet automatisch beim Booten"
+
+# ── Caddy konfigurieren ───────────────────────────────────────────────────────
+step "Konfiguriere Caddy..."
+sudo tee /etc/caddy/Caddyfile > /dev/null << EOF
+http://$HOSTNAME.local {
+    reverse_proxy localhost:3000
+}
+EOF
+sudo systemctl restart caddy
+ok "Caddy konfiguriert"
 
 # ── Fertig ────────────────────────────────────────────────────────────────────
 echo ""

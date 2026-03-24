@@ -787,6 +787,7 @@ async function loadHistoryEntry(id) {
 
 async function doRestoreHistory() {
   if (!historyEntry.value) return
+  pushSnapshot()
   await restoreHistory(props.id, historyEntry.value.id)
   // Reload current show data
   const [chs, sections] = await Promise.all([

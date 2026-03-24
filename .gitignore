@@ -26,6 +26,7 @@ docs/superpowers/
 
 # Local dev scripts
 start.sh
+dev.sh
 
 # Laufzeit-Daten
 data/

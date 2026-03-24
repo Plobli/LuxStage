@@ -86,7 +86,12 @@ ok "Caddy installiert"
 # ── Hostname setzen ───────────────────────────────────────────────────────────
 step "Setze Hostname '$HOSTNAME'..."
 OLD_HOSTNAME=$(hostname)
-sudo hostnamectl set-hostname "$HOSTNAME"
+if command -v hostnamectl &>/dev/null && systemctl is-system-running &>/dev/null 2>&1; then
+  sudo hostnamectl set-hostname "$HOSTNAME"
+else
+  echo "$HOSTNAME" | sudo tee /etc/hostname > /dev/null
+  hostname "$HOSTNAME"
+fi
 sudo sed -i "s/\b${OLD_HOSTNAME}\b/$HOSTNAME/g" /etc/hosts
 ok "Hostname gesetzt"
 
@@ -139,9 +144,13 @@ ok "PM2-Konfiguration erstellt"
 step "Starte LuxStage mit PM2..."
 pm2 start "$INSTALL_DIR/ecosystem.config.cjs"
 pm2 save
-PM2_STARTUP=$(pm2 startup | grep "sudo" | tail -1)
-eval "$PM2_STARTUP"
-ok "LuxStage läuft und startet automatisch beim Booten"
+if systemctl is-system-running &>/dev/null 2>&1; then
+  PM2_STARTUP=$(pm2 startup | grep "sudo" | tail -1)
+  eval "$PM2_STARTUP"
+  ok "LuxStage läuft und startet automatisch beim Booten"
+else
+  ok "LuxStage läuft (kein systemd — Autostart nicht eingerichtet)"
+fi
 
 # ── Caddy konfigurieren ───────────────────────────────────────────────────────
 step "Konfiguriere Caddy..."
@@ -150,7 +159,12 @@ http://$HOSTNAME.local {
     reverse_proxy localhost:3000
 }
 EOF
-sudo systemctl restart caddy
+if systemctl is-system-running &>/dev/null 2>&1; then
+  sudo systemctl restart caddy
+else
+  caddy stop 2>/dev/null || true
+  caddy start --config /etc/caddy/Caddyfile 2>/dev/null || true
+fi
 ok "Caddy konfiguriert"
 
 # ── Fertig ────────────────────────────────────────────────────────────────────

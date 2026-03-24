@@ -9,25 +9,21 @@ fail() { echo -e "  ${RED}✗${RESET}  Fehler: $1"; exit 1; }
 
 # ── Konstanten ────────────────────────────────────────────────────────────────
 REPO_URL="https://github.com/christopherritter/luxstage"
-INSTALL_DIR="/opt/luxstage"
+INSTALL_DIR="$HOME/LuxStage"
+DATA_DIR="$INSTALL_DIR/data"
 
 # ── Preflight ─────────────────────────────────────────────────────────────────
 step "Prüfe Voraussetzungen..."
-[[ $EUID -eq 0 ]] || fail "Bitte als root oder mit sudo ausführen."
 curl -sf --max-time 5 https://github.com > /dev/null || fail "Kein Internetzugang."
 ok "Voraussetzungen erfüllt"
 
 # ── Nutzereingaben ────────────────────────────────────────────────────────────
-# Wenn das Script via "curl | sudo bash" aufgerufen wird, ist stdin eine Pipe.
-# exec < /dev/tty stellt die Terminal-Eingabe wieder her, damit read funktioniert.
 exec < /dev/tty
 
 read -rp "Hostname [luxstage]: " HOSTNAME
 HOSTNAME="${HOSTNAME:-luxstage}"
-[[ $HOSTNAME =~ ^[a-zA-Z0-9._-]+$ ]] || fail "Hostname darf nur alphanumerische Zeichen, Punkte und Bindestriche enthalten."
+[[ $HOSTNAME =~ ^[a-zA-Z0-9._-]+$ ]] || fail "Ungültiger Hostname."
 
-# set -e während der Passwort-Schleife deaktivieren, damit Nichtübereinstimmungen
-# den Skriptabbruch nicht auslösen; Fehler werden explizit behandelt.
 set +e
 ADMIN_PASSWORD=""
 for i in 1 2 3; do
@@ -39,15 +35,8 @@ for i in 1 2 3; do
     ok "Passwort gespeichert"
     break
   fi
-  if [[ -z "$PW1" ]]; then
-    echo "  Passwort darf nicht leer sein. Bitte erneut eingeben."
-  else
-    echo "  Passwörter stimmen nicht überein. Bitte erneut eingeben."
-  fi
-  if [[ $i -eq 3 ]]; then
-    echo -e "  ${RED}✗${RESET}  Fehler: Zu viele Fehlversuche."
-    exit 1
-  fi
+  [[ -z "$PW1" ]] && echo "  Passwort darf nicht leer sein." || echo "  Passwörter stimmen nicht überein."
+  [[ $i -eq 3 ]] && { echo -e "  ${RED}✗${RESET}  Fehler: Zu viele Fehlversuche."; exit 1; }
 done
 set -e
 PW1=""; PW2=""
@@ -60,105 +49,90 @@ echo "  Hostname:    $HOSTNAME"
 echo "  Verzeichnis: $INSTALL_DIR"
 echo ""
 
-# ── apt-Listen aktualisieren ──────────────────────────────────────────────────
-step "Aktualisiere Paketlisten..."
-apt-get update -qq
-ok "Paketlisten aktualisiert"
+# ── Node.js via nvm ───────────────────────────────────────────────────────────
+step "Installiere nvm und Node.js 22..."
+if ! command -v nvm &>/dev/null && [ ! -d "$HOME/.nvm" ]; then
+  curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+fi
+export NVM_DIR="$HOME/.nvm"
+# shellcheck source=/dev/null
+[ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+nvm install 22
+nvm use 22
+nvm alias default 22
+ok "Node.js $(node -v) aktiv"
 
-# ── NodeSource-Repository (Node.js 18) ────────────────────────────────────────
-step "Füge NodeSource-Repository hinzu (Node.js 18)..."
-curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-ok "NodeSource-Repository hinzugefügt"
+# ── PM2 installieren ──────────────────────────────────────────────────────────
+step "Installiere PM2..."
+npm install -g pm2 --silent
+ok "PM2 installiert"
 
-# ── Caddy-Repository ──────────────────────────────────────────────────────────
-step "Füge Caddy-Repository hinzu..."
-apt-get install -y debian-keyring debian-archive-keyring apt-transport-https
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' \
-  | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' \
-  | tee /etc/apt/sources.list.d/caddy-stable.list
-apt-get update -qq
-ok "Caddy-Repository hinzugefügt"
-
-# ── Pakete installieren ───────────────────────────────────────────────────────
-step "Installiere Pakete (git, nodejs, caddy)..."
-apt-get install -y git nodejs caddy
-ok "Pakete installiert"
-
-# ── Repo klonen ───────────────────────────────────────────────────────────────
-step "Klone Repository nach $INSTALL_DIR..."
-git clone "$REPO_URL" "$INSTALL_DIR"
-ok "Repository geklont"
-
-# ── Web-App bauen (als root, vor chown) ───────────────────────────────────────
-# Subshell verwenden damit cwd sich nicht ändert und Vite korrekt baut.
-step "Installiere Web-App-Abhängigkeiten und baue Web-App..."
-(cd "$INSTALL_DIR/web-app" && npm install --silent && npm run build)
-ok "Web-App gebaut"
-
-# ── Server-Abhängigkeiten (als root, vor chown) ───────────────────────────────
-step "Installiere Server-Abhängigkeiten..."
-(cd "$INSTALL_DIR/server" && npm install --silent)
-ok "Server-Abhängigkeiten installiert"
-
-# ── Data-Verzeichnis anlegen (vor chown-R, damit es mit übernommen wird) ──────
-mkdir -p "$INSTALL_DIR/data"
-
-# ── System-User anlegen ───────────────────────────────────────────────────────
-step "Erstelle System-User 'luxstage'..."
-# Guard: kein Fehler falls User bereits existiert (z.B. nach abgebrochenem Lauf)
-id luxstage &>/dev/null || useradd --system --no-create-home --shell /usr/sbin/nologin luxstage
-ok "System-User bereit"
-
-# ── Eigentümer setzen (ein Aufruf deckt repo + data ab) ──────────────────────
-step "Setze Eigentümer..."
-chown -R luxstage:luxstage "$INSTALL_DIR"
-ok "Eigentümer gesetzt"
-
-# ── systemd Service ───────────────────────────────────────────────────────────
-step "Erstelle systemd-Service..."
-# Unquoted EOF: Variablen werden bewusst in die Unit-Datei expandiert.
-cat > /etc/systemd/system/luxstage.service << EOF
-[Unit]
-Description=LuxStage Server
-After=network.target
-
-[Service]
-WorkingDirectory=$INSTALL_DIR/server
-ExecStart=/usr/bin/node index.js
-Restart=always
-User=luxstage
-Environment=NODE_ENV=production
-Environment=JWT_SECRET=$JWT_SECRET
-Environment=ADMIN_PASSWORD=$ADMIN_PASSWORD
-Environment=TECH_PASSWORD=$TECH_PASSWORD
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-systemctl daemon-reload
-systemctl enable --now luxstage
-ok "systemd-Service aktiv"
-
-# ── Caddy konfigurieren ───────────────────────────────────────────────────────
-step "Konfiguriere Caddy..."
-# Unquoted EOF: $HOSTNAME wird bewusst expandiert.
-cat > /etc/caddy/Caddyfile << EOF
-http://$HOSTNAME.local {
-    reverse_proxy localhost:3000
-}
-EOF
-
-systemctl restart caddy
-ok "Caddy konfiguriert"
+# ── avahi-daemon (mDNS für .local) ───────────────────────────────────────────
+step "Installiere avahi-daemon für mDNS (.local)..."
+sudo apt-get update -qq
+sudo apt-get install -y avahi-daemon
+ok "avahi-daemon installiert"
 
 # ── Hostname setzen ───────────────────────────────────────────────────────────
 step "Setze Hostname '$HOSTNAME'..."
 OLD_HOSTNAME=$(hostname)
-hostnamectl set-hostname "$HOSTNAME"
-sed -i "s/\b${OLD_HOSTNAME}\b/$HOSTNAME/g" /etc/hosts
+sudo hostnamectl set-hostname "$HOSTNAME"
+sudo sed -i "s/\b${OLD_HOSTNAME}\b/$HOSTNAME/g" /etc/hosts
 ok "Hostname gesetzt"
+
+# ── Repo klonen ───────────────────────────────────────────────────────────────
+step "Klone Repository nach $INSTALL_DIR..."
+if [ -d "$INSTALL_DIR/.git" ]; then
+  step "Repository existiert bereits, führe git pull aus..."
+  git -C "$INSTALL_DIR" pull
+else
+  git clone "$REPO_URL" "$INSTALL_DIR"
+fi
+ok "Repository aktuell"
+
+# ── Web-App bauen ─────────────────────────────────────────────────────────────
+step "Installiere Web-App-Abhängigkeiten und baue Web-App..."
+(cd "$INSTALL_DIR/web-app" && npm install --silent && npm run build)
+ok "Web-App gebaut"
+
+# ── Server-Abhängigkeiten ─────────────────────────────────────────────────────
+step "Installiere Server-Abhängigkeiten..."
+(cd "$INSTALL_DIR/server" && npm install --silent)
+ok "Server-Abhängigkeiten installiert"
+
+# ── Data-Verzeichnis ──────────────────────────────────────────────────────────
+mkdir -p "$DATA_DIR"
+ok "Datenverzeichnis bereit: $DATA_DIR"
+
+# ── PM2 Ecosystem-Datei ───────────────────────────────────────────────────────
+step "Erstelle PM2-Konfiguration..."
+cat > "$INSTALL_DIR/ecosystem.config.cjs" << EOF
+module.exports = {
+  apps: [{
+    name: 'luxstage',
+    script: 'index.js',
+    cwd: '$INSTALL_DIR/server',
+    env: {
+      NODE_ENV: 'production',
+      PORT: 3000,
+      JWT_SECRET: '$JWT_SECRET',
+      ADMIN_PASSWORD: '$ADMIN_PASSWORD',
+      TECH_PASSWORD: '$TECH_PASSWORD',
+      DATA_PATH: '$DATA_DIR',
+    }
+  }]
+}
+EOF
+ok "PM2-Konfiguration erstellt"
+
+# ── PM2 starten und autostart einrichten ──────────────────────────────────────
+step "Starte LuxStage mit PM2..."
+pm2 start "$INSTALL_DIR/ecosystem.config.cjs"
+pm2 save
+# PM2 autostart beim Systemstart
+PM2_STARTUP=$(pm2 startup | grep "sudo" | tail -1)
+eval "$PM2_STARTUP"
+ok "LuxStage läuft und startet automatisch beim Booten"
 
 # ── Fertig ────────────────────────────────────────────────────────────────────
 echo ""
@@ -166,6 +140,7 @@ echo -e "  ${GREEN}✓  LuxStage wurde erfolgreich installiert.${RESET}"
 echo ""
 echo "     Erreichbar unter:  http://$HOSTNAME.local"
 echo "     Login:             admin / $ADMIN_PASSWORD"
+echo "     Tech-Login:        tech  / $TECH_PASSWORD"
 echo ""
 echo "  Hinweis: Neustart empfohlen damit der neue Hostname aktiv wird:"
 echo "           sudo reboot"

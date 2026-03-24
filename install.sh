@@ -11,10 +11,6 @@ fail() { echo -e "  ${RED}✗${RESET}  Fehler: $1"; exit 1; }
 REPO_URL="https://github.com/Plobli/luxstage"
 INSTALL_DIR="$HOME/LuxStage"
 DATA_DIR="$INSTALL_DIR/data"
-# Als root kein sudo nötig
-[ "$(id -u)" = "0" ] && SUDO="" || SUDO="sudo"
-# systemd verfügbar?
-[ "$(ps -p 1 -o comm= 2>/dev/null)" = "systemd" ] && HAS_SYSTEMD=1 || HAS_SYSTEMD=0
 
 # ── Preflight ─────────────────────────────────────────────────────────────────
 step "Prüfe Voraussetzungen..."
@@ -55,7 +51,7 @@ echo ""
 
 # ── Paketlisten aktualisieren ─────────────────────────────────────────────────
 step "Aktualisiere Paketlisten..."
-$SUDO apt-get update -qq
+sudo apt-get update -qq
 ok "Paketlisten aktualisiert"
 
 # ── Node.js via nvm ───────────────────────────────────────────────────────────
@@ -78,26 +74,20 @@ ok "PM2 installiert"
 
 # ── Caddy installieren ────────────────────────────────────────────────────────
 step "Installiere Caddy..."
-$SUDO apt-get install -y git debian-keyring debian-archive-keyring apt-transport-https
+sudo apt-get install -y debian-keyring debian-archive-keyring apt-transport-https
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' \
-  | $SUDO gpg --yes --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+  | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' \
-  | $SUDO tee /etc/apt/sources.list.d/caddy-stable.list > /dev/null
-$SUDO apt-get update -qq
-$SUDO apt-get install -y caddy
+  | sudo tee /etc/apt/sources.list.d/caddy-stable.list > /dev/null
+sudo apt-get update -qq
+sudo apt-get install -y caddy
 ok "Caddy installiert"
 
 # ── Hostname setzen ───────────────────────────────────────────────────────────
 step "Setze Hostname '$HOSTNAME'..."
 OLD_HOSTNAME=$(hostname)
-if [ "$HAS_SYSTEMD" = "1" ]; then
-  $SUDO hostnamectl set-hostname "$HOSTNAME" 2>/dev/null || true
-fi
-echo "$HOSTNAME" | $SUDO tee /etc/hostname > /dev/null 2>&1 || true
-$SUDO hostname "$HOSTNAME" 2>/dev/null || true
-if [ "$OLD_HOSTNAME" != "$HOSTNAME" ]; then
-  $SUDO sed -i "s/\b${OLD_HOSTNAME}\b/$HOSTNAME/g" /etc/hosts 2>/dev/null || true
-fi
+sudo hostnamectl set-hostname "$HOSTNAME"
+sudo sed -i "s/\b${OLD_HOSTNAME}\b/$HOSTNAME/g" /etc/hosts
 ok "Hostname gesetzt"
 
 # ── Repo klonen ───────────────────────────────────────────────────────────────
@@ -149,27 +139,18 @@ ok "PM2-Konfiguration erstellt"
 step "Starte LuxStage mit PM2..."
 pm2 start "$INSTALL_DIR/ecosystem.config.cjs"
 pm2 save
-if [ "$HAS_SYSTEMD" = "1" ]; then
-  PM2_STARTUP=$(pm2 startup | grep "sudo" | tail -1)
-  eval "$PM2_STARTUP"
-  ok "LuxStage läuft und startet automatisch beim Booten"
-else
-  ok "LuxStage läuft (kein systemd — Autostart nicht eingerichtet)"
-fi
+PM2_STARTUP=$(pm2 startup | grep "sudo" | tail -1)
+eval "$PM2_STARTUP"
+ok "LuxStage läuft und startet automatisch beim Booten"
 
 # ── Caddy konfigurieren ───────────────────────────────────────────────────────
 step "Konfiguriere Caddy..."
-$SUDO tee /etc/caddy/Caddyfile > /dev/null << EOF
+sudo tee /etc/caddy/Caddyfile > /dev/null << EOF
 http://$HOSTNAME.local {
     reverse_proxy localhost:3000
 }
 EOF
-if [ "$HAS_SYSTEMD" = "1" ]; then
-  $SUDO systemctl restart caddy
-else
-  pkill caddy 2>/dev/null || true
-  nohup caddy run --config /etc/caddy/Caddyfile >/var/log/caddy.log 2>&1 &
-fi
+sudo systemctl restart caddy
 ok "Caddy konfiguriert"
 
 # ── Fertig ────────────────────────────────────────────────────────────────────
@@ -180,8 +161,6 @@ echo "     Erreichbar unter:  http://$HOSTNAME.local"
 echo "     Login:             admin / $ADMIN_PASSWORD"
 echo "     Tech-Login:        tech  / $TECH_PASSWORD"
 echo ""
-if [ "$HAS_SYSTEMD" = "1" ]; then
-  echo "  Hinweis: Neustart empfohlen damit der neue Hostname aktiv wird:"
-  echo "           sudo reboot"
-fi
+echo "  Hinweis: Neustart empfohlen damit der neue Hostname aktiv wird:"
+echo "           sudo reboot"
 echo ""

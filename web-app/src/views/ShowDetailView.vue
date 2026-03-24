@@ -72,6 +72,13 @@
         </button>
         <button
           type="button"
+          class="no-print rounded-md px-3 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20"
+          @click="openHistory"
+        >
+          {{ t('history.btn') }}
+        </button>
+        <button
+          type="button"
           class="rounded-md px-3 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20"
           @click="downloadChannelsCsv(props.id, channels)"
         >
@@ -418,6 +425,95 @@
     <div v-if="lightboxPhoto" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80" @click="lightboxPhoto = null">
       <img :src="getPhotoUrl(props.id, lightboxPhoto)" class="max-h-screen max-w-screen-lg object-contain" @click.stop />
     </div>
+
+    <!-- History Slide-Over -->
+    <Transition
+      enter-active-class="transition-transform duration-300 ease-out"
+      enter-from-class="translate-x-full"
+      enter-to-class="translate-x-0"
+      leave-active-class="transition-transform duration-200 ease-in"
+      leave-from-class="translate-x-0"
+      leave-to-class="translate-x-full"
+    >
+      <div
+        v-if="historyOpen"
+        class="fixed inset-y-0 right-0 z-50 w-96 bg-gray-900 border-l border-white/10 flex flex-col shadow-2xl no-print"
+      >
+        <!-- Header -->
+        <div class="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0">
+          <div class="flex items-center gap-2">
+            <button
+              v-if="historyEntry"
+              type="button"
+              class="text-xs text-gray-400 hover:text-white"
+              @click="historyEntry = null"
+            >
+              {{ t('history.back') }}
+            </button>
+            <h2 class="text-sm font-semibold text-white">{{ t('history.title') }}</h2>
+          </div>
+          <button type="button" class="text-gray-400 hover:text-white" @click="historyOpen = false">
+            <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Loading -->
+        <div v-if="historyLoading" class="flex-1 flex items-center justify-center text-gray-500 text-sm">
+          …
+        </div>
+
+        <!-- Snapshot list -->
+        <div v-else-if="!historyEntry" class="flex-1 overflow-y-auto">
+          <p v-if="historyList.length === 0" class="px-4 py-6 text-sm text-gray-500">{{ t('history.empty') }}</p>
+          <button
+            v-for="entry in historyList"
+            :key="entry.id"
+            type="button"
+            class="w-full text-left px-4 py-3 border-b border-white/5 hover:bg-white/5 transition-colors"
+            @click="loadHistoryEntry(entry.id)"
+          >
+            <p class="text-sm text-white">{{ new Date(entry.created_at).toLocaleString() }}</p>
+          </button>
+        </div>
+
+        <!-- Snapshot detail -->
+        <div v-else class="flex-1 flex flex-col overflow-hidden">
+          <div class="px-4 py-2 border-b border-white/5 shrink-0">
+            <p class="text-xs text-gray-400">{{ new Date(historyEntry.created_at).toLocaleString() }}</p>
+            <p class="text-xs text-gray-500 mt-0.5">{{ t('history.channel_count', { n: historyEntry.channels?.length ?? 0 }) }}</p>
+          </div>
+          <div class="flex-1 overflow-y-auto">
+            <div
+              v-for="ch in historyEntry.channels"
+              :key="ch.id"
+              class="flex items-baseline gap-3 px-4 py-2 border-b border-white/5 text-xs"
+            >
+              <span class="font-mono font-bold text-white w-8 shrink-0">{{ ch.channel }}</span>
+              <span class="text-gray-400 truncate">{{ ch.device }}</span>
+              <span class="text-gray-600 truncate ml-auto">{{ ch.notes }}</span>
+            </div>
+          </div>
+          <div class="px-4 py-3 border-t border-white/10 shrink-0">
+            <button
+              type="button"
+              class="w-full rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white hover:opacity-90"
+              @click="doRestoreHistory"
+            >
+              {{ t('history.restore') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- History backdrop -->
+    <div
+      v-if="historyOpen"
+      class="fixed inset-0 z-40 bg-black/40 no-print"
+      @click="historyOpen = false"
+    />
   </div>
 </template>
 
@@ -432,7 +528,7 @@ import SectionHeading from '../components/SectionHeading.vue'
 import { MagnifyingGlassIcon } from '@heroicons/vue/20/solid'
 import { TrashIcon, Bars2Icon, ArrowUturnLeftIcon, ArrowUturnRightIcon } from '@heroicons/vue/24/outline'
 import { useUndoRedo } from '../composables/useUndoRedo.js'
-import { fetchShow, updateMeta } from '../api/shows.js'
+import { fetchShow, updateMeta, fetchHistory, fetchHistoryEntry, restoreHistory } from '../api/shows.js'
 import { fetchChannels, saveChannels, downloadChannelsCsv } from '../api/channels.js'
 import { fetchPhotos, uploadPhoto, deletePhoto, getPhotoUrl } from '../api/photos.js'
 import { subscribeChannels, subscribeSections } from '../api/client.js'
@@ -458,6 +554,10 @@ const photos = ref([])
 
 const sortableTbody = ref(null)
 const eosFileInput = ref(null)
+const historyOpen = ref(false)
+const historyList = ref([])
+const historyEntry = ref(null)      // selected snapshot detail
+const historyLoading = ref(false)
 const search = ref('')
 const setupSaving = ref(false)
 const channelsSaving = ref(false)
@@ -662,6 +762,37 @@ async function toggleEosStatus(channelNr) {
     return ch
   })
   await persistEosChannels()
+}
+
+// ── History ─────────────────────────────────────────────────────────────────
+async function openHistory() {
+  historyOpen.value = true
+  historyEntry.value = null
+  historyLoading.value = true
+  historyList.value = await fetchHistory(props.id)
+  historyLoading.value = false
+}
+
+async function loadHistoryEntry(id) {
+  historyLoading.value = true
+  historyEntry.value = await fetchHistoryEntry(props.id, id)
+  historyLoading.value = false
+}
+
+async function doRestoreHistory() {
+  if (!historyEntry.value) return
+  await restoreHistory(props.id, historyEntry.value.id)
+  // Reload current show data
+  const [chs, sections] = await Promise.all([
+    fetchChannels(props.id),
+    fetchShowSections(props.id),
+  ])
+  channels.value = Array.isArray(chs) ? chs : []
+  for (const { id, content } of (Array.isArray(sections) ? sections : [])) {
+    sectionContents.value.set(id, content)
+  }
+  historyOpen.value = false
+  historyEntry.value = null
 }
 
 // ── Eos CSV Parser ─────────────────────────────────────────────────────────

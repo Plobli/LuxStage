@@ -7,3 +7,15 @@ export const updateMeta         = (id, fields) => api.put(`/api/shows/${id}/meta
 export const archiveShow        = (id)         => api.delete(`/api/shows/${id}`)
 export const fetchArchivedShows = ()           => api.get('/api/shows/archived')
 export const restoreShow        = (id)         => api.post(`/api/shows/${id}/restore`, {})
+
+export function fetchHistory(showId) {
+  return api.get(`/api/shows/${showId}/history`)
+}
+
+export function fetchHistoryEntry(showId, historyId) {
+  return api.get(`/api/shows/${showId}/history/${historyId}`)
+}
+
+export function restoreHistory(showId, historyId) {
+  return api.post(`/api/shows/${showId}/history/${historyId}/restore`, {})
+}

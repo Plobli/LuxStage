@@ -147,6 +147,13 @@
   "eos.status.active": "● active",
   "eos.status.inactive": "● inactive",
 
+  "history.btn": "History",
+  "history.title": "Version History",
+  "history.empty": "No versions available.",
+  "history.restore": "Restore",
+  "history.channel_count": "{n} channels",
+  "history.back": "← Back",
+
   "sections.btn": "Sections",
   "sections.add": "+ Section",
   "sections.title.placeholder": "Title",

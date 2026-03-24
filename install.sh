@@ -78,7 +78,7 @@ ok "PM2 installiert"
 
 # ── Caddy installieren ────────────────────────────────────────────────────────
 step "Installiere Caddy..."
-$SUDO apt-get install -y debian-keyring debian-archive-keyring apt-transport-https
+$SUDO apt-get install -y git debian-keyring debian-archive-keyring apt-transport-https
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' \
   | $SUDO gpg --yes --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' \

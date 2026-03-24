@@ -3,8 +3,7 @@
  * Ersetzt pocketbase.js
  */
 
-const DEV_SERVER = import.meta.env.VITE_SERVER_URL || null
-const BASE = () => localStorage.getItem('server_url') || DEV_SERVER || window.location.origin
+const BASE = () => localStorage.getItem('server_url') || window.location.origin
 const TOKEN_KEY = 'luxstage_token'
 
 export function getToken() { return localStorage.getItem(TOKEN_KEY) }

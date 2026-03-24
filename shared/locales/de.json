@@ -135,6 +135,18 @@
   "csv.preview.channels": "{count} Kanäle",
   "csv.preview.custom_fields": "{count} Show-Felder",
 
+  "eos.import.button": "⬆ Aus Eos importieren",
+  "eos.import.error.invalid": "Keine gültige Eos-Exportdatei.",
+  "eos.import.error.parse": "Datei konnte nicht gelesen werden.",
+  "eos.import.confirm_empty.title": "0 aktive Kanäle",
+  "eos.import.confirm_empty.message": "Keine aktiven Kanäle gefunden. Trotzdem importieren?",
+  "eos.import.confirm_empty.confirm": "Importieren",
+  "eos.reimport.title": "{n} Kanäle nicht mehr aktiv",
+  "eos.reimport.message": "Folgende Kanäle spielen in der neuen Version nicht mehr mit: {channels}. Trotzdem importieren?",
+  "eos.reimport.confirm": "Importieren",
+  "eos.status.active": "● aktiv",
+  "eos.status.inactive": "● inaktiv",
+
   "sections.btn": "Abschnitte",
   "sections.add": "+ Abschnitt",
   "sections.title.placeholder": "Titel",

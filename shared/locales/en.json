@@ -135,6 +135,18 @@
   "csv.preview.channels": "{count} channels",
   "csv.preview.custom_fields": "{count} show fields",
 
+  "eos.import.button": "⬆ Import from Eos",
+  "eos.import.error.invalid": "Not a valid Eos export file.",
+  "eos.import.error.parse": "Could not read file.",
+  "eos.import.confirm_empty.title": "0 active channels",
+  "eos.import.confirm_empty.message": "No active channels found. Import anyway?",
+  "eos.import.confirm_empty.confirm": "Import",
+  "eos.reimport.title": "{n} channels no longer active",
+  "eos.reimport.message": "The following channels are no longer active: {channels}. Import anyway?",
+  "eos.reimport.confirm": "Import",
+  "eos.status.active": "● active",
+  "eos.status.inactive": "● inactive",
+
   "sections.btn": "Sections",
   "sections.add": "+ Section",
   "sections.title.placeholder": "Title",

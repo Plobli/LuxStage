@@ -11,16 +11,17 @@ db.pragma('foreign_keys = ON')
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS shows (
-    id         TEXT PRIMARY KEY,
-    slug       TEXT UNIQUE NOT NULL,
-    name       TEXT,
-    datum      TEXT,
-    template   TEXT,
-    untertitel TEXT,
-    spielzeit  TEXT,
-    archived   INTEGER NOT NULL DEFAULT 0,
-    created_at INTEGER NOT NULL,
-    updated_at INTEGER NOT NULL
+    id             TEXT PRIMARY KEY,
+    slug           TEXT UNIQUE NOT NULL,
+    name           TEXT,
+    datum          TEXT,
+    template       TEXT,
+    untertitel     TEXT,
+    spielzeit      TEXT,
+    setup_markdown TEXT,
+    archived       INTEGER NOT NULL DEFAULT 0,
+    created_at     INTEGER NOT NULL,
+    updated_at     INTEGER NOT NULL
   );
 
   CREATE INDEX IF NOT EXISTS idx_shows_archived ON shows(archived);

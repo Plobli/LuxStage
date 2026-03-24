@@ -51,34 +51,41 @@ export async function router(req, res) {
       const slug = pathname.split('/')[3]
       const show = db.readShow(slug)
       if (!show) return notFound(res)
-      const channels = serializeChannelsCsv(db.readChannels(slug))
+      const channels = db.readChannels(slug).map(({ show_id: _, sort_order: __, ...ch }) => ch)
       const lock = db.getLock(slug)
-      return json(res, 200, { id: show.slug, content: showToFrontmatter(show), channels, lock })
+      return json(res, 200, {
+        id: show.slug,
+        name: show.name,
+        datum: show.datum,
+        template: show.template,
+        untertitel: show.untertitel,
+        spielzeit: show.spielzeit,
+        setupMarkdown: show.setup_markdown ?? '',
+        channels,
+        lock,
+      })
     }
 
     // ── Shows — Erstellen ──────────────────────────────────────────────────
     if (method === 'POST' && pathname === '/api/shows') {
       const user = requireAuth(req, res); if (!user) return
       const body = await readBody(req)
-      const { id, content, channels, template } = JSON.parse(body)
+      const { id, name, datum, template, untertitel, spielzeit, channels } = JSON.parse(body)
       if (!id || !/^[a-z0-9_-]+$/i.test(id)) return json(res, 400, { error: 'Ungültige ID' })
-      const fm = content ? parseFrontmatter(content) : {}
-      db.createShow(id, { ...fm, template })
-      if (channels) {
-        const parsed = parseChannelsCsv(channels)
-        if (parsed.length) db.writeChannels(id, parsed)
-      }
+      db.createShow(id, { name, datum, template, untertitel, spielzeit })
+      if (Array.isArray(channels) && channels.length) db.writeChannels(id, channels)
       return json(res, 201, { id })
     }
 
-    // ── Shows — Metadaten + Aufbau speichern ───────────────────────────────
-    if (method === 'PUT' && pathname.match(/^\/api\/shows\/([^/]+)\/content$/)) {
+    // ── Shows — Metadaten speichern ────────────────────────────────────────
+    if (method === 'PUT' && pathname.match(/^\/api\/shows\/([^/]+)\/meta$/)) {
       const user = requireAuth(req, res); if (!user) return
       const slug = pathname.split('/')[3]
       const body = await readBody(req)
-      const { content } = JSON.parse(body)
-      const fm = parseFrontmatter(content)
-      db.writeShow(slug, fm)
+      const { setupMarkdown, ...rest } = JSON.parse(body)
+      const fields = { ...rest }
+      if (setupMarkdown !== undefined) fields.setup_markdown = setupMarkdown
+      db.writeShow(slug, fields)
       return json(res, 200, { ok: true })
     }
 
@@ -86,9 +93,8 @@ export async function router(req, res) {
     if (method === 'GET' && pathname.match(/^\/api\/shows\/([^/]+)\/channels$/)) {
       const user = requireAuth(req, res); if (!user) return
       const slug = pathname.split('/')[3]
-      const channels = db.readChannels(slug)
-      const csv = serializeChannelsCsv(channels)
-      return json(res, 200, { csv })
+      const channels = db.readChannels(slug).map(({ show_id: _, sort_order: __, ...ch }) => ch)
+      return json(res, 200, channels)
     }
 
     // ── Shows — Kanäle speichern ───────────────────────────────────────────
@@ -96,8 +102,7 @@ export async function router(req, res) {
       const user = requireAuth(req, res); if (!user) return
       const slug = pathname.split('/')[3]
       const body = await readBody(req)
-      const { csv } = JSON.parse(body)
-      const channels = parseChannelsCsv(csv)
+      const channels = JSON.parse(body)
       db.writeChannels(slug, channels)
       broadcast(slug, 'channels-updated', { updatedBy: user.username })
       return json(res, 200, { ok: true })
@@ -211,8 +216,8 @@ export async function router(req, res) {
     if (method === 'GET' && pathname.match(/^\/api\/templates\/([^/]+)\/channels$/)) {
       const user = requireAuth(req, res); if (!user) return
       const name = pathname.split('/')[3]
-      const channels = db.readTemplate(name)
-      return json(res, 200, { csv: serializeChannelsCsv(channels) })
+      const channels = db.readTemplate(name).map(({ template_id: _, sort_order: __, ...ch }) => ch)
+      return json(res, 200, channels)
     }
 
     if (method === 'GET' && pathname.match(/^\/api\/templates\/([^/]+)\/sections$/)) {
@@ -234,16 +239,15 @@ export async function router(req, res) {
     if (method === 'GET' && pathname.match(/^\/api\/templates\/(.+)$/)) {
       const user = requireAuth(req, res); if (!user) return
       const name = pathname.slice('/api/templates/'.length)
-      const channels = db.readTemplate(name)
-      return json(res, 200, { csv: serializeChannelsCsv(channels) })
+      const channels = db.readTemplate(name).map(({ template_id: _, sort_order: __, ...ch }) => ch)
+      return json(res, 200, channels)
     }
 
     if (method === 'PUT' && pathname.match(/^\/api\/templates\/(.+)$/)) {
       const user = requireAdmin(req, res); if (!user) return
       const name = pathname.slice('/api/templates/'.length)
       const body = await readBody(req)
-      const { csv } = JSON.parse(body)
-      const channels = parseChannelsCsv(csv)
+      const channels = JSON.parse(body)
       db.writeTemplate(name, channels)
       const existing = db.readTemplateSections(name)
       if (!existing.length) {
@@ -268,15 +272,16 @@ export async function router(req, res) {
       const user = requireAuth(req, res); if (!user) return
       const slug = pathname.split('/')[3]
       const map = db.readShowSections(slug)
-      return json(res, 200, { raw: serializeSectionsMd(map) })
+      const sections = [...map.entries()].map(([id, content]) => ({ id, content }))
+      return json(res, 200, sections)
     }
 
     if (method === 'PUT' && pathname.match(/^\/api\/shows\/([^/]+)\/sections$/)) {
       const user = requireAuth(req, res); if (!user) return
       const slug = pathname.split('/')[3]
       const body = await readBody(req)
-      const { raw } = JSON.parse(body)
-      const map = parseSectionsMd(raw)
+      const sections = JSON.parse(body) // [{ id, content }]
+      const map = new Map(sections.map(s => [s.id, s.content]))
       db.writeShowSections(slug, map)
       broadcast(slug, 'sections-updated', { updatedBy: user.username })
       return json(res, 200, { ok: true })
@@ -309,9 +314,9 @@ export async function router(req, res) {
       const sectionsMap = db.readShowSections(slug)
       const templateSections = db.readShowSectionDefs(slug)
       generatePDF(
-        showToFrontmatter(show),
-        serializeChannelsCsv(channels),
-        serializeSectionsMd(sectionsMap),
+        show,
+        channels,
+        sectionsMap,
         templateSections,
         res
       )
@@ -411,58 +416,3 @@ export async function router(req, res) {
   }
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-function parseFrontmatter(content) {
-  const match = content.match(/^---\n([\s\S]*?)\n---/)
-  if (!match) return {}
-  const result = {}
-  for (const line of match[1].split('\n')) {
-    const [key, ...rest] = line.split(':')
-    if (key && rest.length) result[key.trim()] = rest.join(':').trim().replace(/^"|"$/g, '')
-  }
-  return result
-}
-
-function showToFrontmatter(show) {
-  const fields = ['name', 'datum', 'template', 'untertitel', 'spielzeit']
-    .filter(k => show[k] != null)
-    .map(k => `${k}: ${show[k]}`)
-    .join('\n')
-  return `---\n${fields}\n---\n\n`
-}
-
-function parseChannelsCsv(csv) {
-  const lines = csv.split('\n').filter(Boolean)
-  if (lines.length <= 1) return []
-  return lines.slice(1).map((line, i) => {
-    const [channel, address, device, position, color, notes] = line.split(';')
-    return { id: randomUUID(), channel: channel ?? '', address: address ?? '', device: device ?? '', position: position ?? '', color: color ?? '', notes: notes ?? '', sort_order: i }
-  })
-}
-
-function serializeChannelsCsv(channels) {
-  const header = 'channel;address;device;position;color;notes'
-  const rows = channels.map(ch =>
-    [ch.channel, ch.address, ch.device, ch.position, ch.color, ch.notes].join(';')
-  )
-  return [header, ...rows].join('\n') + '\n'
-}
-
-function parseSectionsMd(raw) {
-  const map = new Map()
-  const parts = raw.split(/^---section: [^\s]+---$/m)
-  const ids = [...raw.matchAll(/^---section: ([^\s]+)---$/mg)].map(m => m[1])
-  for (let i = 0; i < ids.length; i++) {
-    map.set(ids[i], (parts[i + 1] ?? '').trim())
-  }
-  return map
-}
-
-function serializeSectionsMd(map) {
-  const parts = []
-  for (const [id, content] of map) {
-    parts.push(`---section: ${id}---\n${content}`)
-  }
-  return parts.join('\n')
-}

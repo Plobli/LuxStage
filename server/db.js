@@ -22,7 +22,7 @@ export function readShow(slug) {
 }
 
 export function writeShow(slug, fields) {
-  const allowed = ['name', 'datum', 'template', 'untertitel', 'spielzeit']
+  const allowed = ['name', 'datum', 'template', 'untertitel', 'spielzeit', 'setup_markdown']
   const updates = Object.fromEntries(
     Object.entries(fields).filter(([k]) => allowed.includes(k))
   )

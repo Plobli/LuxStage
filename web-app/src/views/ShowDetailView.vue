@@ -413,12 +413,12 @@ import SectionHeading from '../components/SectionHeading.vue'
 import { MagnifyingGlassIcon } from '@heroicons/vue/20/solid'
 import { TrashIcon, Bars2Icon, ArrowUturnLeftIcon, ArrowUturnRightIcon } from '@heroicons/vue/24/outline'
 import { useUndoRedo } from '../composables/useUndoRedo.js'
-import { fetchShow, updateContent } from '../api/shows.js'
+import { fetchShow, updateMeta } from '../api/shows.js'
 import { fetchChannels, saveChannels, downloadChannelsCsv } from '../api/channels.js'
 import { fetchPhotos, uploadPhoto, deletePhoto, getPhotoUrl } from '../api/photos.js'
 import { subscribeChannels, subscribeSections } from '../api/client.js'
 import { api } from '../api/client.js'
-import { fetchShowSections, saveShowSections, parseSectionsMd, serializeSectionsMd, fetchShowSectionDefs, saveShowSectionDefs } from '../api/sections.js'
+import { fetchShowSections, saveShowSections, fetchShowSectionDefs, saveShowSectionDefs } from '../api/sections.js'
 import { uuid } from '../utils/uuid.js'
 import ColorAutocomplete from '../components/ColorAutocomplete.vue'
 import Sortable from 'sortablejs'
@@ -549,9 +549,7 @@ function onSetupChange(md) {
 async function persistSetup(md) {
   setupSaving.value = true
   try {
-    // Gesamte .md-Datei neu zusammenbauen: frontmatter + Markdown
-    const newContent = buildFileContent(meta.value, md)
-    await updateContent(props.id, newContent)
+    await updateMeta(props.id, { ...meta.value, setupMarkdown: md })
   } finally {
     setupSaving.value = false
   }
@@ -760,37 +758,24 @@ async function persistSections() {
   sectionsSaving.value = true
   ignoreSectionsSseCount++
   try {
-    const raw = serializeSectionsMd(sectionContents.value)
-    await saveShowSections(props.id, raw)
+    const sections = [...sectionContents.value.entries()].map(([id, content]) => ({ id, content }))
+    await saveShowSections(props.id, sections)
   } finally {
     sectionsSaving.value = false
   }
 }
 
 function parseFieldValue(sectionId, key) {
-  const raw = sectionContents.value.get(sectionId) ?? ''
-  for (const line of raw.split('\n')) {
-    const colonIdx = line.indexOf(':')
-    if (colonIdx !== -1 && line.slice(0, colonIdx).trim() === key) {
-      return line.slice(colonIdx + 1).trim()
-    }
-  }
-  return ''
+  const raw = sectionContents.value.get(sectionId) ?? '{}'
+  try { return JSON.parse(raw)[key] ?? '' } catch { return '' }
 }
 
 function onFieldChange(sectionId, key, value) {
-  const raw = sectionContents.value.get(sectionId) ?? ''
-  const lines = raw ? raw.split('\n') : []
-  const idx = lines.findIndex(l => {
-    const colonIdx = l.indexOf(':')
-    return colonIdx !== -1 && l.slice(0, colonIdx).trim() === key
-  })
-  if (idx !== -1) {
-    lines[idx] = `${key}: ${value}`
-  } else {
-    lines.push(`${key}: ${value}`)
-  }
-  onSectionChange(sectionId, lines.join('\n'))
+  const raw = sectionContents.value.get(sectionId) ?? '{}'
+  let obj = {}
+  try { obj = JSON.parse(raw) } catch {}
+  if (value === '') { delete obj[key] } else { obj[key] = value }
+  onSectionChange(sectionId, JSON.stringify(obj))
 }
 
 // ── Section Defs verwalten ─────────────────────────────────────────────────
@@ -858,7 +843,7 @@ let unsubscribeSectionsSSE = null
 
 onMounted(async () => {
   try {
-    const [showData, chs, photoList, sectionsData, defs] = await Promise.all([
+    const [showData, chs, photoList, sections, defs] = await Promise.all([
       fetchShow(props.id),
       fetchChannels(props.id),
       fetchPhotos(props.id),
@@ -866,12 +851,12 @@ onMounted(async () => {
       fetchShowSectionDefs(props.id),
     ])
 
-    meta.value = parseFrontmatter(showData.content)
-    setupMarkdown.value = parseSetupSection(showData.content)
-    channels.value = chs
+    meta.value = { name: showData.name, datum: showData.datum, template: showData.template, untertitel: showData.untertitel, spielzeit: showData.spielzeit }
+    setupMarkdown.value = showData.setupMarkdown ?? ''
+    channels.value = Array.isArray(chs) ? chs : []
     photos.value = photoList
 
-    sectionContents.value = parseSectionsMd(sectionsData?.raw)
+    sectionContents.value = new Map((Array.isArray(sections) ? sections : []).map(s => [s.id, s.content]))
     sectionDefs.value = Array.isArray(defs) ? defs : []
   } catch (e) {
     console.error('Ladefehler:', e)
@@ -889,9 +874,8 @@ onMounted(async () => {
   // SSE für Realtime Sections-Updates
   unsubscribeSectionsSSE = subscribeSections(props.id, async () => {
     if (ignoreSectionsSseCount > 0) { ignoreSectionsSseCount--; return }
-    const sectionsData = await fetchShowSections(props.id)
-    const freshMap = parseSectionsMd(sectionsData?.raw)
-    for (const [id, content] of freshMap) {
+    const sections = await fetchShowSections(props.id)
+    for (const { id, content } of (Array.isArray(sections) ? sections : [])) {
       sectionContents.value.set(id, content)
     }
   })
@@ -923,31 +907,4 @@ onBeforeUnmount(() => {
   if (saveSectionsTimer) { clearTimeout(saveSectionsTimer); persistSections() }
 })
 
-// ── Hilfsfunktionen ────────────────────────────────────────────────────────
-
-function parseFrontmatter(content) {
-  const match = content?.match(/^---\n([\s\S]*?)\n---/)
-  if (!match) return {}
-  const result = {}
-  for (const line of match[1].split('\n')) {
-    const idx = line.indexOf(':')
-    if (idx === -1) continue
-    result[line.slice(0, idx).trim()] = line.slice(idx + 1).trim().replace(/^"|"$/g, '')
-  }
-  return result
-}
-
-function parseSetupSection(content) {
-  if (!content) return ''
-  // Alles nach dem YAML frontmatter
-  const withoutFm = content.replace(/^---\n[\s\S]*?\n---\n/, '')
-  return withoutFm.trim()
-}
-
-function buildFileContent(fm, markdown) {
-  const yamlLines = Object.entries(fm)
-    .map(([k, v]) => `${k}: ${v.includes(':') || v.includes('"') ? `"${v}"` : v}`)
-    .join('\n')
-  return `---\n${yamlLines}\n---\n\n${markdown}\n`
-}
 </script>

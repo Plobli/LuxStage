@@ -305,7 +305,6 @@ import { ref, computed, onMounted } from 'vue'
 import { useLocale } from '../composables/useLocale.js'
 import { useConfirm } from '../composables/useConfirm.js'
 import { fetchTemplates, fetchTemplateChannels, saveTemplate, uploadTemplate, deleteTemplate } from '../api/templates.js'
-import { parseCsv } from '../api/channels.js'
 import { fetchTemplateSections, saveTemplateSections } from '../api/sections.js'
 import { templateDisplayName } from '../utils/templateName.js'
 import ColorAutocomplete from '../components/ColorAutocomplete.vue'
@@ -385,7 +384,15 @@ function processFile(file) {
   const reader = new FileReader()
   reader.onload = (e) => {
     csvText.value = e.target.result
-    previewChannels.value = parseCsv(csvText.value)
+    const lines = csvText.value.trim().split('\n').filter(Boolean)
+    const headerIdx = lines.findIndex(l => l.startsWith('channel'))
+    if (headerIdx !== -1) {
+      const headers = lines[headerIdx].split(';').map(h => h.trim())
+      previewChannels.value = lines.slice(headerIdx + 1).map(line => {
+        const vals = line.split(';')
+        return Object.fromEntries(headers.map((h, i) => [h, (vals[i] ?? '').trim()]))
+      })
+    }
     step.value = 'preview'
   }
   reader.readAsText(file, 'utf-8')

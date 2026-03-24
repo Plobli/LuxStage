@@ -19,6 +19,7 @@ db.exec(`
     untertitel     TEXT,
     spielzeit      TEXT,
     setup_markdown TEXT,
+    eos_active_channels TEXT,
     archived       INTEGER NOT NULL DEFAULT 0,
     created_at     INTEGER NOT NULL,
     updated_at     INTEGER NOT NULL
@@ -110,3 +111,9 @@ db.exec(`
     sections   TEXT NOT NULL
   );
 `)
+
+// Spalte nachträglich hinzufügen falls noch nicht vorhanden (bestehende DBs)
+const showCols = db.pragma('table_info(shows)').map(c => c.name)
+if (!showCols.includes('eos_active_channels')) {
+  db.exec('ALTER TABLE shows ADD COLUMN eos_active_channels TEXT')
+}

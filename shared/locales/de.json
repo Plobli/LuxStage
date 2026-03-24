@@ -97,6 +97,8 @@
   "settings.osc.out": "Out-Befehl",
   "settings.osc.autosave": "Wird automatisch gespeichert.",
   "settings.status.version": "Server-Version",
+  "settings.status.version.app": "App-Version",
+  "settings.status.version.server": "Server-Version",
   "settings.status.disk": "Festplatte (frei)",
 
   "photo.add": "Foto hinzufügen",

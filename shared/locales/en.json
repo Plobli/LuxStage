@@ -97,6 +97,8 @@
   "settings.osc.out": "Out command",
   "settings.osc.autosave": "Saved automatically.",
   "settings.status.version": "Server version",
+  "settings.status.version.app": "App version",
+  "settings.status.version.server": "Server version",
   "settings.status.disk": "Disk (free)",
 
   "photo.add": "Add photo",

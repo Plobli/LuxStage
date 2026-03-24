@@ -64,18 +64,24 @@
                 class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent"
               />
             </div>
-            <template v-if="status">
-              <div class="py-4 sm:flex">
-                <dt class="font-medium text-white sm:w-64 sm:flex-none sm:pr-6">{{ t('settings.status.version') }}</dt>
-                <dd class="mt-1 text-gray-300 sm:mt-0 sm:flex-auto">{{ status.version }}</dd>
-              </div>
-              <div class="py-4 sm:flex">
-                <dt class="font-medium text-white sm:w-64 sm:flex-none sm:pr-6">{{ t('settings.status.disk') }}</dt>
-                <dd class="mt-1 text-gray-300 sm:mt-0 sm:flex-auto">{{ status.diskFree }}</dd>
-              </div>
-            </template>
-            <div v-else-if="statusError" class="py-4">
-              <p class="text-sm text-red-400">{{ statusError }}</p>
+            <div class="py-4 sm:flex">
+              <dt class="font-medium text-white sm:w-64 sm:flex-none sm:pr-6">{{ t('settings.status.version.app') }}</dt>
+              <dd class="mt-1 text-gray-300 sm:mt-0 sm:flex-auto">{{ appVersion }}</dd>
+            </div>
+            <div class="py-4 sm:flex">
+              <dt class="font-medium text-white sm:w-64 sm:flex-none sm:pr-6">{{ t('settings.status.version.server') }}</dt>
+              <dd class="mt-1 sm:mt-0 sm:flex-auto">
+                <span v-if="status" :class="status.version !== appVersion ? 'text-amber-400' : 'text-gray-300'">
+                  {{ status.version }}
+                  <span v-if="status.version !== appVersion" class="ml-2 text-xs text-amber-400">⚠ abweichend</span>
+                </span>
+                <span v-else-if="statusError" class="text-red-400 text-sm">{{ t('error.network') }}</span>
+                <span v-else class="text-gray-500 text-sm">…</span>
+              </dd>
+            </div>
+            <div v-if="status" class="py-4 sm:flex">
+              <dt class="font-medium text-white sm:w-64 sm:flex-none sm:pr-6">{{ t('settings.status.disk') }}</dt>
+              <dd class="mt-1 text-gray-300 sm:mt-0 sm:flex-auto">{{ status.diskFree }}</dd>
             </div>
           </dl>
         </section>
@@ -149,6 +155,8 @@ import {
 const { t, locale, setLocale } = useLocale()
 const router = useRouter()
 
+/* global __APP_VERSION__ */
+const appVersion = __APP_VERSION__
 const serverUrl = ref(localStorage.getItem('server_url') || 'http://localhost:3000')
 const updating = ref(false)
 const updateMsg = ref('')

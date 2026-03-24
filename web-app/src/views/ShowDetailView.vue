@@ -291,10 +291,10 @@
             v-for="sec in sortedSections"
             :key="sec.id"
             :data-section-id="sec.id"
-            class="group/sec"
+            class="group/sec mb-8"
           >
-            <!-- Section header: drag handle + title input + delete -->
-            <div class="flex items-center gap-2 mb-3">
+            <!-- Section header: SectionHeading style + drag handle + delete -->
+            <div class="flex items-center gap-3 mb-4">
               <span class="section-drag-handle cursor-grab text-gray-600 hover:text-gray-400 opacity-0 group-hover/sec:opacity-100 transition-opacity shrink-0">
                 <svg class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M7 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/></svg>
               </span>
@@ -303,10 +303,12 @@
                 :placeholder="t('sections.title.placeholder')"
                 @input="sec.title = $event.target.value"
                 @change="persistSectionDefs"
-                class="flex-1 bg-transparent border-0 border-b border-white/10 focus:border-accent focus:outline-none text-sm font-semibold text-white py-1 px-0 transition-colors min-w-0"
+                class="bg-transparent border-0 focus:outline-none text-sm font-semibold text-accent uppercase tracking-widest py-0 px-0 shrink-0 min-w-0 w-auto"
+                :style="{ width: Math.max((sec.title || t('sections.title.placeholder')).length, 4) + 'ch' }"
               />
+              <div class="flex-1 h-px bg-accent/30"></div>
               <button
-                class="text-gray-600 hover:text-red-400 text-sm shrink-0 opacity-0 group-hover/sec:opacity-100 transition-opacity"
+                class="text-gray-600 hover:text-red-400 text-xs shrink-0 opacity-0 group-hover/sec:opacity-100 transition-opacity"
                 @click="deleteSectionDef(sortedSections.indexOf(sec))"
               >✕</button>
             </div>
@@ -364,9 +366,9 @@
         </section>
 
         <!-- Add section buttons -->
-        <div class="flex gap-3 mb-6">
-          <button class="text-sm text-gray-400 hover:text-white" @click="addMarkdownSection">+ {{ t('sections.add.markdown') }}</button>
-          <button v-if="!hasFieldsType()" class="text-sm text-gray-400 hover:text-white" @click="addFieldsSection">+ {{ t('sections.add.fields') }}</button>
+        <div class="flex items-center gap-3 mb-6">
+          <button class="cursor-pointer text-sm text-gray-400 hover:text-white shrink-0" @click="addMarkdownSection">+ {{ t('sections.add.markdown') }}</button>
+          <button v-if="!hasFieldsType()" class="cursor-pointer text-sm text-gray-400 hover:text-white shrink-0" @click="addFieldsSection">+ {{ t('sections.add.fields') }}</button>
         </div>
 
         <!-- Foto-Galerie -->
@@ -1116,15 +1118,6 @@ function deleteSectionDef(idx) {
   persistSectionDefs()
 }
 
-function moveSectionDef(idx, dir) {
-  pushSnapshot()
-  const arr = sectionDefs.value
-  const swap = idx + dir
-  if (swap < 0 || swap >= arr.length) return
-  ;[arr[idx], arr[swap]] = [arr[swap], arr[idx]]
-  arr.forEach((s, i) => s.order = i)
-  persistSectionDefs()
-}
 
 function addFieldDef(section) {
   pushSnapshot()
@@ -1142,13 +1135,6 @@ function hasFieldsType() {
   return sectionDefs.value.some(s => s.type === 'fields')
 }
 
-function onSectionTypeChange(section, newType) {
-  if (newType === 'fields' && hasFieldsType() && section.type !== 'fields') return
-  pushSnapshot()
-  section.type = newType
-  if (newType === 'fields' && !section.fields) section.fields = []
-  persistSectionDefs()
-}
 
 // ── Laden ──────────────────────────────────────────────────────────────────
 let unsubscribeSSE = null

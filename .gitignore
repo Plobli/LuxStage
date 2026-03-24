@@ -27,6 +27,7 @@ docs/superpowers/
 # Local dev scripts
 start.sh
 Procfile
+Caddyfile.local
 
 # Laufzeit-Daten
 data/

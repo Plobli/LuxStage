@@ -76,7 +76,7 @@ ok "PM2 installiert"
 step "Installiere Caddy..."
 sudo apt-get install -y debian-keyring debian-archive-keyring apt-transport-https
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' \
-  | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+  | sudo gpg --yes --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' \
   | sudo tee /etc/apt/sources.list.d/caddy-stable.list > /dev/null
 sudo apt-get update -qq
@@ -87,12 +87,11 @@ ok "Caddy installiert"
 step "Setze Hostname '$HOSTNAME'..."
 OLD_HOSTNAME=$(hostname)
 if [ "$(ps -p 1 -o comm= 2>/dev/null)" = "systemd" ]; then
-  sudo hostnamectl set-hostname "$HOSTNAME"
-else
-  echo "$HOSTNAME" | sudo tee /etc/hostname > /dev/null
-  hostname "$HOSTNAME"
+  sudo hostnamectl set-hostname "$HOSTNAME" 2>/dev/null || true
 fi
-sudo sed -i "s/\b${OLD_HOSTNAME}\b/$HOSTNAME/g" /etc/hosts
+echo "$HOSTNAME" | sudo tee /etc/hostname > /dev/null
+hostname "$HOSTNAME" 2>/dev/null || true
+sudo sed -i "s/\b${OLD_HOSTNAME}\b/$HOSTNAME/g" /etc/hosts 2>/dev/null || true
 ok "Hostname gesetzt"
 
 # ── Repo klonen ───────────────────────────────────────────────────────────────

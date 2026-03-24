@@ -162,8 +162,8 @@ EOF
 if [ "$(ps -p 1 -o comm= 2>/dev/null)" = "systemd" ]; then
   sudo systemctl restart caddy
 else
-  caddy stop 2>/dev/null || true
-  caddy start --config /etc/caddy/Caddyfile 2>/dev/null || true
+  pkill caddy 2>/dev/null || true
+  nohup caddy run --config /etc/caddy/Caddyfile >/var/log/caddy.log 2>&1 &
 fi
 ok "Caddy konfiguriert"
 

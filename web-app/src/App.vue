@@ -68,6 +68,9 @@
                       <ArrowLeftStartOnRectangleIcon class="size-5 shrink-0" aria-hidden="true" />
                       {{ t('nav.logout') }}
                     </button>
+                    <div class="px-6 text-xs text-gray-600">
+                      Web {{ appVersion }}<span v-if="serverVersion"> · Srv {{ serverVersion }}</span>
+                    </div>
                   </div>
                 </div>
               </DialogPanel>
@@ -96,7 +99,7 @@
             </li>
           </ul>
         </nav>
-        <div class="absolute bottom-0 left-0 right-0 pb-4 flex justify-center">
+        <div class="absolute bottom-0 left-0 right-0 pb-2 flex flex-col items-center gap-1">
           <button
             @click="handleLogout"
             :title="t('nav.logout')"
@@ -105,6 +108,10 @@
             <ArrowLeftStartOnRectangleIcon class="size-6 shrink-0" aria-hidden="true" />
             <span class="sr-only">{{ t('nav.logout') }}</span>
           </button>
+          <div class="text-center leading-tight">
+            <div class="text-[9px] text-gray-600">Web {{ appVersion }}</div>
+            <div v-if="serverVersion" class="text-[9px] text-gray-600">Srv {{ serverVersion }}</div>
+          </div>
         </div>
       </div>
 
@@ -140,7 +147,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { RouterView, RouterLink, useRoute, useRouter } from 'vue-router'
 import { Dialog, DialogPanel, TransitionChild, TransitionRoot } from '@headlessui/vue'
 import {
@@ -153,13 +160,22 @@ import {
   Cog6ToothIcon,
 } from '@heroicons/vue/24/outline'
 import { useLocale } from './composables/useLocale.js'
-import { logout } from './api/client.js'
+import { logout, api } from './api/client.js'
 import ConfirmDialog from './components/ConfirmDialog.vue'
 import { useConfirmDialog, resolveConfirm } from './composables/useConfirm.js'
 
 const confirmState = useConfirmDialog()
 
 const { t } = useLocale()
+const appVersion = __APP_VERSION__
+const serverVersion = ref(null)
+
+onMounted(async () => {
+  try {
+    const status = await api.get('/api/status')
+    serverVersion.value = status.version
+  } catch {}
+})
 const route = useRoute()
 const router = useRouter()
 const sidebarOpen = ref(false)

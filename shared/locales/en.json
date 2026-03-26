@@ -62,6 +62,7 @@
   "channel.dup_address": "Duplicate DMX address!",
   "channel.dup_channel": "Duplicate channel number!",
   "channel.export": "Export CSV",
+  "channel.import": "Import CSV",
   "channel.position.edit": "Rename position",
 
   "template.new": "New template",

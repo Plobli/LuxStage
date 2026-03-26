@@ -78,6 +78,14 @@
         </button>
         <button
           type="button"
+          class="rounded-md px-3 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20"
+          @click="csvImportInput?.click()"
+        >
+          {{ t('channel.import') }}
+        </button>
+        <input ref="csvImportInput" type="file" accept=".csv" class="hidden" @change="onCsvImportSelected" />
+        <button
+          type="button"
           class="rounded-md px-3 py-1.5 text-sm font-semibold text-amber-400 ring-1 ring-amber-400/30 hover:ring-amber-400/60 no-print"
           @click="eosFileInput?.click()"
         >
@@ -109,7 +117,7 @@
             <table class="min-w-full overflow-x-auto">
               <colgroup>
                 <col class="w-4" />            <!-- Handle -->
-                <col class="w-16" />           <!-- Kanal + Adresse -->
+                <col class="w-24" />           <!-- Kanal + Adresse -->
                 <col class="w-20" />           <!-- Farbe -->
                 <col class="w-[30ch]" />       <!-- Gerät -->
                 <col />                        <!-- Notizen (rest) -->
@@ -180,7 +188,7 @@
                           data-nav-col="0"
                           @keydown="onKeydown($event, rowIndexOf(ch), 0, 4, () => startAdd(ch.position))"
                           :class="[dupChannelNrs.has(ch.channel) ? 'ring-1 ring-yellow-400/60 rounded' : '', channelStatus(ch) === 'active' ? 'text-green-400' : channelStatus(ch) === 'eos' ? 'text-amber-400' : 'text-gray-400']"
-                          class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-2xl font-bold font-mono px-0 border-0 leading-none w-[3ch] text-center"
+                          class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-2xl font-bold font-mono px-0 border-0 leading-none w-[4ch] text-center"
                         />
                         <input
                           :value="ch.address"
@@ -237,7 +245,7 @@
                     <td class="w-4"></td>
                     <td class="py-2 pr-3 pl-0 align-middle">
                       <div class="flex flex-col items-center gap-1">
-                        <input autofocus class="bg-transparent focus:outline-none text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[3ch] text-center" v-model="addForm.channel" :placeholder="t('show.channel.nr')" />
+                        <input autofocus class="bg-transparent focus:outline-none text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[4ch] text-center" v-model="addForm.channel" :placeholder="t('show.channel.nr')" />
                         <input class="bg-transparent focus:outline-none text-xs text-gray-500 px-0 border-0 w-[5ch] text-center" v-model="addForm.address" :placeholder="t('show.channel.address.example')" />
                       </div>
                     </td>
@@ -255,7 +263,7 @@
                   <td class="w-4"></td>
                   <td class="py-2 pr-3 pl-0 align-middle">
                     <div class="flex flex-col items-center gap-1">
-                      <input autofocus class="bg-transparent focus:outline-none text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[3ch] text-center" v-model="addForm.channel" :placeholder="t('show.channel.nr')" />
+                      <input autofocus class="bg-transparent focus:outline-none text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[4ch] text-center" v-model="addForm.channel" :placeholder="t('show.channel.nr')" />
                       <input class="bg-transparent focus:outline-none text-xs text-gray-500 px-0 border-0 w-[5ch] text-center" v-model="addForm.address" :placeholder="t('show.channel.address.example')" />
                     </div>
                   </td>
@@ -524,7 +532,7 @@ import { MagnifyingGlassIcon } from '@heroicons/vue/20/solid'
 import { ArrowUturnLeftIcon, ArrowUturnRightIcon } from '@heroicons/vue/24/outline'
 import { useUndoRedo } from '../composables/useUndoRedo.js'
 import { fetchShow, updateMeta, fetchHistory, fetchHistoryEntry, restoreHistory } from '../api/shows.js'
-import { fetchChannels, saveChannels, downloadChannelsCsv } from '../api/channels.js'
+import { fetchChannels, saveChannels, downloadChannelsCsv, parseChannelsCsv, mergeChannels } from '../api/channels.js'
 import { fetchPhotos, uploadPhoto, deletePhoto, getPhotoUrl } from '../api/photos.js'
 import { subscribeChannels, subscribeSections } from '../api/client.js'
 import { api } from '../api/client.js'
@@ -549,6 +557,7 @@ const photos = ref([])
 
 const sortableTbody = ref(null)
 const eosFileInput = ref(null)
+const csvImportInput = ref(null)
 const historyOpen = ref(false)
 const historyList = ref([])
 const historyEntry = ref(null)      // selected snapshot detail
@@ -800,6 +809,22 @@ async function doRestoreHistory() {
   }
   historyOpen.value = false
   historyEntry.value = null
+}
+
+// ── Kanal CSV Import ───────────────────────────────────────────────────────
+function onCsvImportSelected(event) {
+  const file = event.target.files?.[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = e => {
+    const imported = parseChannelsCsv(e.target.result)
+    if (imported.length === 0) return
+    pushSnapshot()
+    channels.value = mergeChannels(channels.value, imported)
+    persistChannels()
+  }
+  reader.readAsText(file)
+  event.target.value = ''
 }
 
 // ── Eos CSV Parser ─────────────────────────────────────────────────────────

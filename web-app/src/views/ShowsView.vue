@@ -221,7 +221,7 @@ async function handleCreate() {
   let created = false
   try {
     const content = `---\nid: ${id}\nname: ${form.value.name || id}\ndatum: ${form.value.datum || new Date().toISOString().slice(0, 10)}\n${form.value.template ? `template: ${form.value.template}\n` : ''}---\n\n`
-    await createShow({ id, content, template: form.value.template || undefined })
+    await createShow({ id, name: form.value.name || id, datum: form.value.datum || new Date().toISOString().slice(0, 10), content, template: form.value.template || undefined })
     if (form.value.template) {
       const channels = await fetchTemplateChannels(form.value.template)
       if (channels.length) await saveChannels(id, channels)

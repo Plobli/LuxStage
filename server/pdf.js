@@ -190,7 +190,7 @@ export function generatePDF(show, channels, sectionsMap, templateSections, res) 
       const rowCols = [
         { text: row.channel, w: COL.channel, bold: true },
         { text: row.color,   w: COL.color,   color: row.color },
-        { text: row.address, w: COL.address },
+        { text: row.address, w: COL.address, wrap: true },
         { text: row.device,  w: COL.device,  wrap: true },
         { text: row.notes,   w: COL.notes,   wrap: true },
       ]

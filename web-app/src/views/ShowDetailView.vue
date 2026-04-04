@@ -61,66 +61,38 @@
         </div>
       </div>
       <div class="h-6 w-px bg-white/10 shrink-0" aria-hidden="true"></div>
-      <div class="no-print flex items-center gap-x-2 shrink-0">
-        <!-- Verlauf: nur auf großen Screens -->
+      <!-- Hamburger (< xl) -->
+      <div class="no-print relative xl:hidden">
         <button
           type="button"
-          class="no-print rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20 hidden xl:block"
-          @click="openHistory"
+          class="rounded-md p-1.5 text-gray-400 hover:text-white ring-1 ring-white/10 hover:ring-white/20"
+          @click="menuOpen = !menuOpen"
         >
-          {{ t('history.btn') }}
+          <Bars3Icon class="size-5" />
         </button>
-        <!-- CSV Export: Icon bis xl, Text ab xl -->
-        <button
-          type="button"
-          class="rounded-md p-1.5 text-gray-400 ring-1 ring-white/10 hover:ring-white/20 xl:hidden"
-          :title="t('channel.export')"
-          @click="downloadChannelsCsv(props.id, channels)"
+        <!-- Dropdown -->
+        <div
+          v-if="menuOpen"
+          class="absolute right-0 top-full mt-1 z-50 w-52 rounded-md bg-gray-900 ring-1 ring-white/10 shadow-xl py-1"
+          @click="menuOpen = false"
         >
-          <svg class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z" /><path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" /></svg>
-        </button>
-        <button
-          type="button"
-          class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20 hidden xl:block"
-          @click="downloadChannelsCsv(props.id, channels)"
-        >
-          {{ t('channel.export') }}
-        </button>
-        <!-- CSV Import: Icon bis xl, Text ab xl -->
-        <button
-          type="button"
-          class="rounded-md p-1.5 text-gray-400 ring-1 ring-white/10 hover:ring-white/20 xl:hidden"
-          :title="t('channel.import')"
-          @click="csvImportInput?.click()"
-        >
-          <svg class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M9.25 2.75a.75.75 0 0 1 1.5 0v8.614l2.955-3.129a.75.75 0 1 1 1.09 1.03l-4.25 4.5a.75.75 0 0 1-1.09 0l-4.25-4.5a.75.75 0 0 1 1.09-1.03L9.25 11.364V2.75Z" /><path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" /></svg>
-        </button>
-        <button
-          type="button"
-          class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20 hidden xl:block"
-          @click="csvImportInput?.click()"
-        >
-          {{ t('channel.import') }}
-        </button>
-        <input ref="csvImportInput" type="file" accept=".csv" class="hidden" @change="onCsvImportSelected" />
-        <!-- Eos: immer sichtbar, Text ab xl -->
-        <button
-          type="button"
-          class="rounded-md px-2 py-1.5 text-sm font-semibold text-amber-400 ring-1 ring-amber-400/30 hover:ring-amber-400/60 no-print"
-          @click="eosFileInput?.click()"
-        >
-          <span class="hidden xl:inline">{{ t('eos.import.button') }}</span>
-          <span class="xl:hidden">Eos</span>
-        </button>
-        <input ref="eosFileInput" type="file" accept=".csv" class="hidden" @change="onEosFileSelected" />
-        <a
-          :href="pdfUrl"
-          target="_blank"
-          class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20"
-        >
-          {{ t('show.pdf') }}
-        </a>
+          <button class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/5" @click="openHistory">{{ t('history.btn') }}</button>
+          <button class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/5" @click="downloadChannelsCsv(props.id, channels)">{{ t('channel.export') }}</button>
+          <button class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/5" @click="csvImportInput?.click()">{{ t('channel.import') }}</button>
+          <button class="w-full text-left px-4 py-2 text-sm text-amber-400 hover:bg-white/5" @click="eosFileInput?.click()">{{ t('eos.import.button') }}</button>
+          <a :href="pdfUrl" target="_blank" class="block px-4 py-2 text-sm text-gray-300 hover:bg-white/5">{{ t('show.pdf') }}</a>
+        </div>
       </div>
+      <!-- Normale Buttons (xl+) -->
+      <div class="no-print hidden xl:flex items-center gap-x-2 shrink-0">
+        <button type="button" class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @click="openHistory">{{ t('history.btn') }}</button>
+        <button type="button" class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @click="downloadChannelsCsv(props.id, channels)">{{ t('channel.export') }}</button>
+        <button type="button" class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @click="csvImportInput?.click()">{{ t('channel.import') }}</button>
+        <button type="button" class="rounded-md px-2 py-1.5 text-sm font-semibold text-amber-400 ring-1 ring-amber-400/30 hover:ring-amber-400/60" @click="eosFileInput?.click()">{{ t('eos.import.button') }}</button>
+        <a :href="pdfUrl" target="_blank" class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20">{{ t('show.pdf') }}</a>
+      </div>
+      <input ref="csvImportInput" type="file" accept=".csv" class="hidden" @change="onCsvImportSelected" />
+      <input ref="eosFileInput" type="file" accept=".csv" class="hidden" @change="onEosFileSelected" />
     </div>
 
     <div v-if="loading" class="flex items-center justify-center h-64 text-sm text-gray-400">…</div>
@@ -549,7 +521,7 @@ import { useKeyboardNav } from '../composables/useKeyboardNav.js'
 import MarkdownEditor from '../components/MarkdownEditor.vue'
 import SectionHeading from '../components/SectionHeading.vue'
 import { MagnifyingGlassIcon } from '@heroicons/vue/20/solid'
-import { ArrowUturnLeftIcon, ArrowUturnRightIcon } from '@heroicons/vue/24/outline'
+import { ArrowUturnLeftIcon, ArrowUturnRightIcon, Bars3Icon } from '@heroicons/vue/24/outline'
 import { useUndoRedo } from '../composables/useUndoRedo.js'
 import { fetchShow, updateMeta, fetchHistory, fetchHistoryEntry, restoreHistory } from '../api/shows.js'
 import { fetchChannels, saveChannels, downloadChannelsCsv, parseChannelsCsv, mergeChannels } from '../api/channels.js'
@@ -587,6 +559,7 @@ const setupSaving = ref(false)
 const channelsSaving = ref(false)
 
 const mobileTab = ref('channels') // 'channels' | 'info'
+const menuOpen = ref(false)
 
 const sectionDefs = ref([])
 const sectionContents = ref(new Map())

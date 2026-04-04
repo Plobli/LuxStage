@@ -6,7 +6,7 @@ import * as db from './db.js'
 import { randomBytes } from 'node:crypto'
 import { listHistory, getHistoryEntry, restoreHistoryEntry } from './history.js'
 import * as photos from './photos.js'
-import { subscribe, broadcast } from './sse.js'
+import { subscribe, broadcast, getPresence } from './sse.js'
 import { streamBackup } from './backup.js'
 import { generatePDF } from './pdf.js'
 import fs from 'node:fs'
@@ -170,8 +170,16 @@ export async function router(req, res) {
     if (method === 'GET' && pathname.match(/^\/api\/shows\/([^/]+)\/events$/)) {
       const user = requireAuth(req, res); if (!user) return
       const id = pathname.split('/')[3]
-      subscribe(id, res)
+      const device = params.device || 'web'
+      subscribe(id, res, user.username, device)
       return // res bleibt offen
+    }
+
+    // ── Shows — Presence abfragen ──────────────────────────────────────────
+    if (method === 'GET' && pathname.match(/^\/api\/shows\/([^/]+)\/presence$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const id = pathname.split('/')[3]
+      return json(res, 200, { users: getPresence(id) })
     }
 
     // ── Shows — Wiederherstellen ───────────────────────────────────────────

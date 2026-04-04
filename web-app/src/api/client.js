@@ -92,19 +92,33 @@ export function setServerUrl(url) {
   localStorage.setItem('server_url', url.replace(/\/$/, ''))
 }
 
-/** SSE-Verbindung für Realtime Kanal-Updates */
+/**
+ * Gemeinsame SSE-Verbindung pro Show.
+ * Gibt { onChannels, onSections, onPresence, close } zurück.
+ */
+export function subscribeShow(showId, { onChannels, onSections, onPresence } = {}) {
+  const url = BASE() + `/api/shows/${showId}/events?token=${getToken()}&device=web`
+  const es = new EventSource(url)
+  if (onChannels) es.addEventListener('channels-updated', (e) => onChannels(JSON.parse(e.data)))
+  if (onSections) es.addEventListener('sections-updated', (e) => onSections(JSON.parse(e.data)))
+  if (onPresence) es.addEventListener('presence-updated', (e) => onPresence(JSON.parse(e.data)))
+  es.onerror = () => {} // reconnect automatically
+  return () => es.close()
+}
+
+/** @deprecated Nutze subscribeShow() */
 export function subscribeChannels(showId, onUpdate) {
   const url = BASE() + `/api/shows/${showId}/events`
-  const es = new EventSource(url + '?token=' + getToken())
+  const es = new EventSource(url + '?token=' + getToken() + '&device=web')
   es.addEventListener('channels-updated', (e) => onUpdate(JSON.parse(e.data)))
   es.onerror = () => es.close()
   return () => es.close()
 }
 
-/** SSE-Verbindung für Realtime Sections-Updates */
+/** @deprecated Nutze subscribeShow() */
 export function subscribeSections(showId, onUpdate) {
   const url = BASE() + `/api/shows/${showId}/events`
-  const es = new EventSource(url + '?token=' + getToken())
+  const es = new EventSource(url + '?token=' + getToken() + '&device=web')
   es.addEventListener('sections-updated', (e) => onUpdate(JSON.parse(e.data)))
   es.onerror = () => es.close()
   return () => es.close()

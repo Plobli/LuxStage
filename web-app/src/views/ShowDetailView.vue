@@ -48,6 +48,16 @@
       </div>
       <!-- Suchfeld rechtsbündig -->
       <div class="flex items-center gap-x-3 shrink-0">
+        <!-- Presence: aktive Nutzer -->
+        <div v-if="presence.length > 1" class="flex items-center -space-x-1.5">
+          <div
+            v-for="u in presence.slice(0, 4)"
+            :key="u.username"
+            :title="u.username + (u.devices.includes('ios') ? ' (iOS)' : '')"
+            class="size-6 rounded-full bg-gray-700 ring-2 ring-gray-950 flex items-center justify-center text-[10px] font-semibold text-white uppercase"
+          >{{ u.username[0] }}</div>
+          <div v-if="presence.length > 4" class="size-6 rounded-full bg-gray-700 ring-2 ring-gray-950 flex items-center justify-center text-[9px] text-gray-400">+{{ presence.length - 4 }}</div>
+        </div>
         <span v-if="dupWarning" class="text-xs text-yellow-400">⚠ {{ t('channel.dup_address') }}</span>
         <span v-if="dupChannelWarning" class="text-xs text-yellow-400">⚠ {{ t('channel.dup_channel') }}</span>
         <div class="grid grid-cols-1">
@@ -526,7 +536,7 @@ import { useUndoRedo } from '../composables/useUndoRedo.js'
 import { fetchShow, updateMeta, fetchHistory, fetchHistoryEntry, restoreHistory } from '../api/shows.js'
 import { fetchChannels, saveChannels, downloadChannelsCsv, parseChannelsCsv, mergeChannels } from '../api/channels.js'
 import { fetchPhotos, uploadPhoto, deletePhoto, getPhotoUrl } from '../api/photos.js'
-import { subscribeChannels, subscribeSections } from '../api/client.js'
+import { subscribeShow } from '../api/client.js'
 import { api } from '../api/client.js'
 import { fetchShowSections, saveShowSections, fetchShowSectionDefs, saveShowSectionDefs } from '../api/sections.js'
 import { uuid } from '../utils/uuid.js'
@@ -1160,7 +1170,7 @@ function hasFieldsType() {
 
 // ── Laden ──────────────────────────────────────────────────────────────────
 let unsubscribeSSE = null
-let unsubscribeSectionsSSE = null
+const presence = ref([]) // [{ username, devices }]
 
 onMounted(async () => {
   try {
@@ -1186,20 +1196,22 @@ onMounted(async () => {
     loading.value = false
   }
 
-  // SSE für Realtime-Updates von anderen Nutzern
-  unsubscribeSSE = subscribeChannels(props.id, async () => {
-    // SSE-Echo vom eigenen Save überspringen
-    if (ignoreSseCount > 0) { ignoreSseCount--; return }
-    channels.value = await fetchChannels(props.id)
-  })
-
-  // SSE für Realtime Sections-Updates
-  unsubscribeSectionsSSE = subscribeSections(props.id, async () => {
-    if (ignoreSectionsSseCount > 0) { ignoreSectionsSseCount--; return }
-    const sections = await fetchShowSections(props.id)
-    for (const { id, content } of (Array.isArray(sections) ? sections : [])) {
-      sectionContents.value.set(id, content)
-    }
+  // SSE — gemeinsame Verbindung für Channels, Sections und Presence
+  unsubscribeSSE = subscribeShow(props.id, {
+    onChannels: async () => {
+      if (ignoreSseCount > 0) { ignoreSseCount--; return }
+      channels.value = await fetchChannels(props.id)
+    },
+    onSections: async () => {
+      if (ignoreSectionsSseCount > 0) { ignoreSectionsSseCount--; return }
+      const sections = await fetchShowSections(props.id)
+      for (const { id, content } of (Array.isArray(sections) ? sections : [])) {
+        sectionContents.value.set(id, content)
+      }
+    },
+    onPresence: ({ users }) => {
+      presence.value = users
+    },
   })
 
   // Drag & Drop initialisieren
@@ -1223,7 +1235,6 @@ onBeforeUnmount(() => {
   cancelDebounce()
   window.removeEventListener('keydown', onUndoRedoKeydown)
   unsubscribeSSE?.()
-  unsubscribeSectionsSSE?.()
   if (saveSetupTimer) { clearTimeout(saveSetupTimer); persistSetup(pendingSetupMd) }
   if (channelsSaveTimer) { clearTimeout(channelsSaveTimer); persistChannels() }
   if (saveSectionsTimer) { clearTimeout(saveSectionsTimer); persistSections() }

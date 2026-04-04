@@ -55,24 +55,25 @@
             v-model="search"
             type="search"
             :placeholder="t('channel.search')"
-            class="col-start-1 row-start-1 block w-32 sm:w-48 bg-white/5 py-1.5 pr-3 pl-9 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent rounded-md placeholder:text-gray-500"
+            class="col-start-1 row-start-1 block w-28 xl:w-48 bg-white/5 py-1.5 pr-3 pl-9 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent rounded-md placeholder:text-gray-500"
           />
           <MagnifyingGlassIcon class="pointer-events-none col-start-1 row-start-1 ml-3 size-4 self-center text-gray-400" aria-hidden="true" />
         </div>
       </div>
       <div class="h-6 w-px bg-white/10 shrink-0" aria-hidden="true"></div>
       <div class="no-print flex items-center gap-x-2 shrink-0">
+        <!-- Verlauf: nur auf großen Screens -->
         <button
           type="button"
-          class="no-print rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20 hidden sm:block"
+          class="no-print rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20 hidden xl:block"
           @click="openHistory"
         >
           {{ t('history.btn') }}
         </button>
-        <!-- CSV Export/Import: auf kleinen Screens nur Icons -->
+        <!-- CSV Export: Icon bis xl, Text ab xl -->
         <button
           type="button"
-          class="rounded-md p-1.5 text-gray-400 ring-1 ring-white/10 hover:ring-white/20 sm:hidden"
+          class="rounded-md p-1.5 text-gray-400 ring-1 ring-white/10 hover:ring-white/20 xl:hidden"
           :title="t('channel.export')"
           @click="downloadChannelsCsv(props.id, channels)"
         >
@@ -80,14 +81,15 @@
         </button>
         <button
           type="button"
-          class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20 hidden sm:block"
+          class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20 hidden xl:block"
           @click="downloadChannelsCsv(props.id, channels)"
         >
           {{ t('channel.export') }}
         </button>
+        <!-- CSV Import: Icon bis xl, Text ab xl -->
         <button
           type="button"
-          class="rounded-md p-1.5 text-gray-400 ring-1 ring-white/10 hover:ring-white/20 sm:hidden"
+          class="rounded-md p-1.5 text-gray-400 ring-1 ring-white/10 hover:ring-white/20 xl:hidden"
           :title="t('channel.import')"
           @click="csvImportInput?.click()"
         >
@@ -95,19 +97,20 @@
         </button>
         <button
           type="button"
-          class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20 hidden sm:block"
+          class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20 hidden xl:block"
           @click="csvImportInput?.click()"
         >
           {{ t('channel.import') }}
         </button>
         <input ref="csvImportInput" type="file" accept=".csv" class="hidden" @change="onCsvImportSelected" />
+        <!-- Eos: immer sichtbar, Text ab xl -->
         <button
           type="button"
           class="rounded-md px-2 py-1.5 text-sm font-semibold text-amber-400 ring-1 ring-amber-400/30 hover:ring-amber-400/60 no-print"
           @click="eosFileInput?.click()"
         >
-          <span class="hidden sm:inline">{{ t('eos.import.button') }}</span>
-          <span class="sm:hidden">Eos</span>
+          <span class="hidden xl:inline">{{ t('eos.import.button') }}</span>
+          <span class="xl:hidden">Eos</span>
         </button>
         <input ref="eosFileInput" type="file" accept=".csv" class="hidden" @change="onEosFileSelected" />
         <a

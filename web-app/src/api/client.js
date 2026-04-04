@@ -25,7 +25,7 @@ async function request(method, path, body) {
     headers: headers(),
     body: body !== undefined ? JSON.stringify(body) : undefined,
   })
-  if (res.status === 401) { clearToken(); location.href = '/login'; return }
+  if (res.status === 401) { clearToken(); if (location.pathname !== '/login') location.href = '/login'; return }
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
     throw new Error(err.error || `HTTP ${res.status}`)
@@ -57,6 +57,36 @@ export async function login(username, password) {
 }
 
 export function logout() { clearToken() }
+
+export async function changePassword(currentPassword, newPassword) {
+  const res = await fetch(BASE() + '/api/auth/change-password', {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({ currentPassword, newPassword }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || `HTTP ${res.status}`)
+  }
+  return res.json()
+}
+
+export function listUsers() { return api.get('/api/users') }
+export function createUser(username, password, role) { return api.post('/api/users', { username, password, role }) }
+export function deleteUser(username) { return api.delete(`/api/users/${username}`) }
+
+export async function resetPassword(username) {
+  const res = await fetch(BASE() + '/api/auth/reset-password', {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({ username }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || `HTTP ${res.status}`)
+  }
+  return res.json()
+}
 
 export function setServerUrl(url) {
   localStorage.setItem('server_url', url.replace(/\/$/, ''))

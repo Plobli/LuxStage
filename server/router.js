@@ -3,6 +3,7 @@ import { readBody, json, send, notFound, parseUrl } from './helpers.js'
 const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url)))
 import { login, requireAuth, requireAdmin } from './auth.js'
 import * as db from './db.js'
+import { randomBytes } from 'node:crypto'
 import { listHistory, getHistoryEntry, restoreHistoryEntry } from './history.js'
 import * as photos from './photos.js'
 import { subscribe, broadcast } from './sse.js'
@@ -31,6 +32,59 @@ export async function router(req, res) {
       const token = login(username, password)
       if (!token) return json(res, 401, { error: 'Ungültige Anmeldedaten' })
       return json(res, 200, { token })
+    }
+
+    // ── Auth — Passwort ändern ─────────────────────────────────────────────
+    if (method === 'POST' && pathname === '/api/auth/change-password') {
+      const user = requireAuth(req, res); if (!user) return
+      const body = await readBody(req)
+      const { currentPassword, newPassword } = JSON.parse(body)
+      if (!newPassword || newPassword.length < 4) return json(res, 400, { error: 'Passwort zu kurz' })
+      // Aktuelles Passwort prüfen
+      const configUser = config.users.find(u => u.username === user.username)
+      const effectivePassword = db.getDbPassword(user.username) ?? configUser?.password
+      if (effectivePassword !== currentPassword) return json(res, 403, { error: 'Aktuelles Passwort falsch' })
+      db.changePassword(user.username, newPassword)
+      return json(res, 200, { ok: true })
+    }
+
+    // ── Auth — Passwort zurücksetzen (nur Admin) ───────────────────────────
+    if (method === 'POST' && pathname === '/api/auth/reset-password') {
+      const admin = requireAdmin(req, res); if (!admin) return
+      const body = await readBody(req)
+      const { username } = JSON.parse(body)
+      const allUsers = db.listUsers(config.users)
+      if (!allUsers.find(u => u.username === username)) return json(res, 404, { error: 'Benutzer nicht gefunden' })
+      const newPassword = randomBytes(6).toString('hex')
+      db.changePassword(username, newPassword)
+      return json(res, 200, { newPassword })
+    }
+
+    // ── Benutzer — Liste ───────────────────────────────────────────────────
+    if (method === 'GET' && pathname === '/api/users') {
+      const admin = requireAdmin(req, res); if (!admin) return
+      return json(res, 200, db.listUsers(config.users))
+    }
+
+    // ── Benutzer — Anlegen ─────────────────────────────────────────────────
+    if (method === 'POST' && pathname === '/api/users') {
+      const admin = requireAdmin(req, res); if (!admin) return
+      const body = await readBody(req)
+      const { username, password, role } = JSON.parse(body)
+      if (!username || !/^[a-zA-Z0-9_-]+$/.test(username)) return json(res, 400, { error: 'Ungültiger Benutzername' })
+      if (!password || password.length < 4) return json(res, 400, { error: 'Passwort zu kurz' })
+      if (!['admin', 'techniker'].includes(role)) return json(res, 400, { error: 'Ungültige Rolle' })
+      db.createUser(username, password, role)
+      return json(res, 201, { ok: true })
+    }
+
+    // ── Benutzer — Löschen ─────────────────────────────────────────────────
+    if (method === 'DELETE' && pathname.match(/^\/api\/users\/([^/]+)$/)) {
+      const admin = requireAdmin(req, res); if (!admin) return
+      const username = pathname.split('/')[3]
+      if (username === admin.username) return json(res, 400, { error: 'Eigenen Account kann man nicht löschen' })
+      db.deleteUser(username)
+      return json(res, 200, { ok: true })
     }
 
     // ── Shows — Liste ──────────────────────────────────────────────────────

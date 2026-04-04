@@ -312,3 +312,40 @@ export function deleteTemplateSections(name) {
   if (!tpl) return
   db.prepare('DELETE FROM template_section_defs WHERE template_id = ?').run(tpl.id)
 }
+
+// ── Benutzer-Passwörter ────────────────────────────────────────────────────
+
+/** Gibt das Passwort aus der DB zurück, oder null wenn keins gesetzt. */
+export function getDbPassword(username) {
+  const row = db.prepare('SELECT password FROM users WHERE username = ?').get(username)
+  return row?.password ?? null
+}
+
+/** Setzt das Passwort eines Benutzers in der DB (überschreibt Env-Passwort). */
+export function changePassword(username, newPassword) {
+  db.prepare('INSERT INTO users (username, password) VALUES (?, ?) ON CONFLICT(username) DO UPDATE SET password = excluded.password')
+    .run(username, newPassword)
+}
+
+/** Alle Benutzer aus DB + Env zusammengeführt (DB hat Vorrang). */
+export function listUsers(configUsers) {
+  const dbUsers = db.prepare('SELECT username, role FROM users').all()
+  const dbMap = new Map(dbUsers.map(u => [u.username, u]))
+  // Env-User, die nicht in DB sind
+  const envOnly = configUsers
+    .filter(u => !dbMap.has(u.username))
+    .map(u => ({ username: u.username, role: u.role, source: 'env' }))
+  const dbList = dbUsers.map(u => ({ username: u.username, role: u.role, source: 'db' }))
+  return [...dbList, ...envOnly]
+}
+
+/** Legt einen neuen Benutzer in der DB an (oder überschreibt bestehenden). */
+export function createUser(username, password, role) {
+  db.prepare('INSERT INTO users (username, password, role) VALUES (?, ?, ?) ON CONFLICT(username) DO UPDATE SET password = excluded.password, role = excluded.role')
+    .run(username, password, role)
+}
+
+/** Löscht einen Benutzer aus der DB. Env-User können nicht gelöscht werden. */
+export function deleteUser(username) {
+  db.prepare('DELETE FROM users WHERE username = ?').run(username)
+}

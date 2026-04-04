@@ -110,10 +110,20 @@ db.exec(`
     channels   TEXT NOT NULL,
     sections   TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS users (
+    username TEXT PRIMARY KEY,
+    password TEXT NOT NULL,
+    role     TEXT NOT NULL DEFAULT 'techniker'
+  );
 `)
 
-// Spalte nachträglich hinzufügen falls noch nicht vorhanden (bestehende DBs)
+// Spalten nachträglich hinzufügen falls noch nicht vorhanden (bestehende DBs)
 const showCols = db.pragma('table_info(shows)').map(c => c.name)
 if (!showCols.includes('eos_active_channels')) {
   db.exec('ALTER TABLE shows ADD COLUMN eos_active_channels TEXT')
+}
+const userCols = db.pragma('table_info(users)').map(c => c.name)
+if (!userCols.includes('role')) {
+  db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'techniker'")
 }

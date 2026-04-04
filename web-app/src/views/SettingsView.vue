@@ -101,6 +101,57 @@
           </div>
         </section>
 
+        <!-- Benutzer (nur Admin) -->
+        <section v-if="isAdmin" v-show="activeSection === 'users'">
+          <h2 class="text-base/7 font-semibold text-white">{{ t('settings.users') }}</h2>
+          <p class="mt-1 text-sm/6 text-gray-400">{{ t('settings.users.hint') }}</p>
+
+          <!-- Benutzerliste -->
+          <ul class="mt-6 divide-y divide-white/5 border-t border-white/5 text-sm">
+            <li v-for="u in users" :key="u.username" class="flex items-center justify-between py-3">
+              <div class="flex items-center gap-3">
+                <span class="text-white font-medium">{{ u.username }}</span>
+                <span class="text-xs text-gray-400 bg-white/5 px-2 py-0.5 rounded">{{ t('settings.users.role.' + u.role) }}</span>
+                <span class="text-xs text-gray-600">{{ t('settings.users.source.' + u.source) }}</span>
+              </div>
+              <button v-if="u.source === 'db'" @click="doDeleteUser(u.username)"
+                class="text-xs text-red-400 hover:text-red-300">
+                {{ t('settings.users.delete') }}
+              </button>
+            </li>
+          </ul>
+
+          <!-- Neuen Benutzer anlegen -->
+          <div class="mt-8">
+            <h3 class="text-sm font-semibold text-white">{{ t('settings.users.new') }}</h3>
+            <form class="mt-4 space-y-4 max-w-md" @submit.prevent="doCreateUser">
+              <div>
+                <label class="block text-sm font-medium text-white mb-1">{{ t('settings.users.username') }}</label>
+                <input v-model="newUsername" type="text" required pattern="[a-zA-Z0-9_-]+"
+                  class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-white mb-1">{{ t('settings.users.password') }}</label>
+                <input v-model="newPassword" type="password" required minlength="4"
+                  class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-white mb-1">{{ t('settings.users.role') }}</label>
+                <select v-model="newRole"
+                  class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent">
+                  <option value="techniker">{{ t('settings.users.role.techniker') }}</option>
+                  <option value="admin">{{ t('settings.users.role.admin') }}</option>
+                </select>
+              </div>
+              <p v-if="usersMsg" :class="usersMsg.startsWith('✓') ? 'text-green-400' : 'text-red-400'" class="text-sm">{{ usersMsg }}</p>
+              <button type="submit" :disabled="usersLoading"
+                class="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-50">
+                {{ usersLoading ? '…' : t('settings.users.create') }}
+              </button>
+            </form>
+          </div>
+        </section>
+
         <!-- Update (nur Admin) -->
         <section v-if="isAdmin" v-show="activeSection === 'update'">
           <h2 class="text-base/7 font-semibold text-white">{{ t('settings.update') }}</h2>
@@ -119,17 +170,63 @@
         </section>
 
         <!-- Konto -->
-        <section v-show="activeSection === 'account'">
-          <h2 class="text-base/7 font-semibold text-white">{{ t('settings.logout') }}</h2>
-          <div class="mt-6 border-t border-white/5 pt-6">
-            <button
-              type="button"
-              @click="handleLogout"
-              class="rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-500"
-            >
-              {{ t('settings.logout') }}
-            </button>
+        <section v-show="activeSection === 'account'" class="space-y-10">
+
+          <!-- Passwort ändern -->
+          <div>
+            <h2 class="text-base/7 font-semibold text-white">{{ t('settings.account.change_password') }}</h2>
+            <form class="mt-6 border-t border-white/5 pt-6 space-y-4 max-w-md" @submit.prevent="doChangePassword">
+              <div>
+                <label class="block text-sm font-medium text-white mb-1">{{ t('settings.account.current_password') }}</label>
+                <input v-model="pwCurrent" type="password" required
+                  class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-white mb-1">{{ t('settings.account.new_password') }}</label>
+                <input v-model="pwNew" type="password" required
+                  class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-white mb-1">{{ t('settings.account.new_password.confirm') }}</label>
+                <input v-model="pwConfirm" type="password" required
+                  class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent" />
+              </div>
+              <p v-if="pwMsg" :class="pwMsg.startsWith('✓') ? 'text-green-400' : 'text-red-400'" class="text-sm">{{ pwMsg }}</p>
+              <button type="submit" :disabled="pwLoading"
+                class="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-50">
+                {{ pwLoading ? '…' : t('settings.account.change_password.submit') }}
+              </button>
+            </form>
           </div>
+
+          <!-- Admin: Passwort eines anderen Benutzers zurücksetzen -->
+          <div v-if="isAdmin">
+            <h2 class="text-base/7 font-semibold text-white">{{ t('settings.account.reset_password') }}</h2>
+            <form class="mt-6 border-t border-white/5 pt-6 space-y-4 max-w-md" @submit.prevent="doResetPassword">
+              <div>
+                <label class="block text-sm font-medium text-white mb-1">{{ t('settings.account.reset_password.username') }}</label>
+                <input v-model="resetUsername" type="text" required
+                  class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent" />
+              </div>
+              <p v-if="resetMsg" :class="resetMsg.startsWith('✓') ? 'text-green-400' : 'text-red-400'" class="text-sm font-mono">{{ resetMsg }}</p>
+              <button type="submit" :disabled="resetLoading"
+                class="rounded-md bg-white/10 px-3 py-2 text-sm font-semibold text-white hover:bg-white/20 disabled:opacity-50">
+                {{ resetLoading ? '…' : t('settings.account.reset_password.submit') }}
+              </button>
+            </form>
+          </div>
+
+          <!-- Abmelden -->
+          <div>
+            <h2 class="text-base/7 font-semibold text-white">{{ t('settings.logout') }}</h2>
+            <div class="mt-6 border-t border-white/5 pt-6">
+              <button type="button" @click="handleLogout"
+                class="rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-500">
+                {{ t('settings.logout') }}
+              </button>
+            </div>
+          </div>
+
         </section>
 
       </div>
@@ -141,7 +238,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLocale } from '../composables/useLocale.js'
-import { logout, setServerUrl, api } from '../api/client.js'
+import { logout, setServerUrl, api, changePassword, resetPassword, listUsers, createUser, deleteUser } from '../api/client.js'
 import { downloadBackup } from '../api/backup.js'
 import { jwtDecode } from '../api/jwtDecode.js'
 import {
@@ -150,6 +247,7 @@ import {
   ArchiveBoxArrowDownIcon,
   ArrowPathIcon,
   ArrowLeftStartOnRectangleIcon,
+  UsersIcon,
 } from '@heroicons/vue/24/outline'
 
 const { t, locale, setLocale } = useLocale()
@@ -170,12 +268,94 @@ try {
   if (token) isAdmin.value = jwtDecode(token)?.role === 'admin'
 } catch { /* ignorieren */ }
 
+// Passwort ändern
+const pwCurrent = ref('')
+const pwNew = ref('')
+const pwConfirm = ref('')
+const pwMsg = ref('')
+const pwLoading = ref(false)
+
+async function doChangePassword() {
+  pwMsg.value = ''
+  if (pwNew.value.length < 4) { pwMsg.value = t('settings.account.change_password.error.short'); return }
+  if (pwNew.value !== pwConfirm.value) { pwMsg.value = t('settings.account.change_password.error.mismatch'); return }
+  pwLoading.value = true
+  try {
+    await changePassword(pwCurrent.value, pwNew.value)
+    pwMsg.value = t('settings.account.change_password.success')
+    pwCurrent.value = ''; pwNew.value = ''; pwConfirm.value = ''
+  } catch (e) {
+    pwMsg.value = e.message.includes('403') || e.message.toLowerCase().includes('falsch')
+      ? t('settings.account.change_password.error.wrong')
+      : e.message
+  } finally {
+    pwLoading.value = false
+  }
+}
+
+// Admin: Passwort zurücksetzen
+const resetUsername = ref('')
+const resetMsg = ref('')
+const resetLoading = ref(false)
+
+async function doResetPassword() {
+  resetMsg.value = ''
+  resetLoading.value = true
+  try {
+    const { newPassword } = await resetPassword(resetUsername.value)
+    resetMsg.value = t('settings.account.reset_password.success', { password: newPassword })
+  } catch (e) {
+    resetMsg.value = t('settings.account.reset_password.error', { message: e.message })
+  } finally {
+    resetLoading.value = false
+  }
+}
+
+// Benutzerverwaltung (Admin)
+const users = ref([])
+const newUsername = ref('')
+const newPassword = ref('')
+const newRole = ref('techniker')
+const usersMsg = ref('')
+const usersLoading = ref(false)
+
+async function loadUsers() {
+  if (!isAdmin.value) return
+  try { users.value = await listUsers() } catch { /* ignore */ }
+}
+
+async function doCreateUser() {
+  usersMsg.value = ''
+  usersLoading.value = true
+  try {
+    await createUser(newUsername.value, newPassword.value, newRole.value)
+    usersMsg.value = t('settings.users.success')
+    newUsername.value = ''; newPassword.value = ''; newRole.value = 'techniker'
+    await loadUsers()
+  } catch (e) {
+    usersMsg.value = t('settings.users.error', { message: e.message })
+  } finally {
+    usersLoading.value = false
+  }
+}
+
+async function doDeleteUser(username) {
+  if (!confirm(t('settings.users.delete.confirm', { username }))) return
+  try {
+    await deleteUser(username)
+    await loadUsers()
+  } catch (e) {
+    usersMsg.value = t('settings.users.error', { message: e.message })
+  }
+}
+
 const secondaryNav = computed(() => [
   { key: 'general', name: t('settings.language'), icon: LanguageIcon },
   { key: 'server', name: t('settings.server'), icon: ServerIcon },
   { key: 'backup', name: t('settings.backup'), icon: ArchiveBoxArrowDownIcon },
   ...(isAdmin.value ? [{ key: 'update', name: t('settings.update'), icon: ArrowPathIcon }] : []),
-  { key: 'account', name: t('nav.logout'), icon: ArrowLeftStartOnRectangleIcon },
+  ...(isAdmin.value ? [{ key: 'users', name: t('settings.users'), icon: UsersIcon }] : []),
+  { key: 'account', name: t('settings.account'), icon: ArrowLeftStartOnRectangleIcon },
 ])
 
 onMounted(async () => {
@@ -184,6 +364,7 @@ onMounted(async () => {
   } catch {
     statusError.value = t('error.network')
   }
+  await loadUsers()
 })
 
 function applyServer() {

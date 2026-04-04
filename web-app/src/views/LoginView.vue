@@ -6,7 +6,9 @@
 
     <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-[480px]">
       <div class="bg-gray-800/50 px-6 py-12 outline -outline-offset-1 outline-white/10 sm:rounded-lg sm:px-12">
-        <form class="space-y-6" @submit.prevent="handleLogin">
+
+        <!-- Login-Formular -->
+        <form v-if="!showReset" class="space-y-6" @submit.prevent="handleLogin">
           <div>
             <label for="username" class="block text-sm/6 font-medium text-white">{{ t('auth.username') }}</label>
             <div class="mt-2">
@@ -46,7 +48,23 @@
               {{ loading ? '…' : t('auth.login.submit') }}
             </button>
           </div>
+
+          <div class="text-center">
+            <button type="button" @click="showReset = true" class="text-sm text-gray-400 hover:text-white">
+              {{ t('auth.reset') }}
+            </button>
+          </div>
         </form>
+
+        <!-- Passwort-Reset-Hinweis -->
+        <div v-else class="space-y-6">
+          <h2 class="text-base/7 font-semibold text-white">{{ t('auth.reset.title') }}</h2>
+          <p class="text-sm text-gray-400">{{ t('auth.reset.hint') }}</p>
+          <button type="button" @click="showReset = false" class="text-sm text-accent hover:text-accent-hover">
+            ← {{ t('auth.reset.back') }}
+          </button>
+        </div>
+
       </div>
     </div>
   </div>
@@ -64,6 +82,7 @@ const username = ref('')
 const password = ref('')
 const error = ref(false)
 const loading = ref(false)
+const showReset = ref(false)
 
 async function handleLogin() {
   error.value = false

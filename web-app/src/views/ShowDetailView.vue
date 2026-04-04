@@ -55,30 +55,47 @@
             v-model="search"
             type="search"
             :placeholder="t('channel.search')"
-            class="col-start-1 row-start-1 block w-48 bg-white/5 py-1.5 pr-3 pl-9 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent rounded-md placeholder:text-gray-500"
+            class="col-start-1 row-start-1 block w-32 sm:w-48 bg-white/5 py-1.5 pr-3 pl-9 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent rounded-md placeholder:text-gray-500"
           />
           <MagnifyingGlassIcon class="pointer-events-none col-start-1 row-start-1 ml-3 size-4 self-center text-gray-400" aria-hidden="true" />
         </div>
       </div>
       <div class="h-6 w-px bg-white/10 shrink-0" aria-hidden="true"></div>
-      <div class="no-print flex items-center gap-x-3 shrink-0">
+      <div class="no-print flex items-center gap-x-2 shrink-0">
         <button
           type="button"
-          class="no-print rounded-md px-3 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20"
+          class="no-print rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20 hidden sm:block"
           @click="openHistory"
         >
           {{ t('history.btn') }}
         </button>
+        <!-- CSV Export/Import: auf kleinen Screens nur Icons -->
         <button
           type="button"
-          class="rounded-md px-3 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20"
+          class="rounded-md p-1.5 text-gray-400 ring-1 ring-white/10 hover:ring-white/20 sm:hidden"
+          :title="t('channel.export')"
+          @click="downloadChannelsCsv(props.id, channels)"
+        >
+          <svg class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z" /><path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" /></svg>
+        </button>
+        <button
+          type="button"
+          class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20 hidden sm:block"
           @click="downloadChannelsCsv(props.id, channels)"
         >
           {{ t('channel.export') }}
         </button>
         <button
           type="button"
-          class="rounded-md px-3 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20"
+          class="rounded-md p-1.5 text-gray-400 ring-1 ring-white/10 hover:ring-white/20 sm:hidden"
+          :title="t('channel.import')"
+          @click="csvImportInput?.click()"
+        >
+          <svg class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M9.25 2.75a.75.75 0 0 1 1.5 0v8.614l2.955-3.129a.75.75 0 1 1 1.09 1.03l-4.25 4.5a.75.75 0 0 1-1.09 0l-4.25-4.5a.75.75 0 0 1 1.09-1.03L9.25 11.364V2.75Z" /><path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" /></svg>
+        </button>
+        <button
+          type="button"
+          class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20 hidden sm:block"
           @click="csvImportInput?.click()"
         >
           {{ t('channel.import') }}
@@ -86,16 +103,17 @@
         <input ref="csvImportInput" type="file" accept=".csv" class="hidden" @change="onCsvImportSelected" />
         <button
           type="button"
-          class="rounded-md px-3 py-1.5 text-sm font-semibold text-amber-400 ring-1 ring-amber-400/30 hover:ring-amber-400/60 no-print"
+          class="rounded-md px-2 py-1.5 text-sm font-semibold text-amber-400 ring-1 ring-amber-400/30 hover:ring-amber-400/60 no-print"
           @click="eosFileInput?.click()"
         >
-          {{ t('eos.import.button') }}
+          <span class="hidden sm:inline">{{ t('eos.import.button') }}</span>
+          <span class="sm:hidden">Eos</span>
         </button>
         <input ref="eosFileInput" type="file" accept=".csv" class="hidden" @change="onEosFileSelected" />
         <a
           :href="pdfUrl"
           target="_blank"
-          class="rounded-md px-3 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20"
+          class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20"
         >
           {{ t('show.pdf') }}
         </a>
@@ -372,10 +390,9 @@
         </section>
 
         <!-- Add section buttons -->
-        <div class="flex items-center gap-3 mb-6">
-          <SectionHeading :text="t('sections.new')" class="flex-1 min-w-0" />
-          <button class="cursor-pointer text-sm text-gray-400 hover:text-white shrink-0" @click="addMarkdownSection">{{ t('sections.add.markdown') }}</button>
-          <button v-if="!hasFieldsType()" class="cursor-pointer text-sm text-gray-400 hover:text-white shrink-0" @click="addFieldsSection">{{ t('sections.add.fields') }}</button>
+        <div class="flex items-center gap-2 mb-6 py-2 border-t border-white/10">
+          <button class="cursor-pointer text-sm text-gray-500 hover:text-white px-2 py-1 rounded hover:bg-white/5 transition-colors" @click="addMarkdownSection">{{ t('sections.add.markdown') }}</button>
+          <button v-if="!hasFieldsType()" class="cursor-pointer text-sm text-gray-500 hover:text-white px-2 py-1 rounded hover:bg-white/5 transition-colors" @click="addFieldsSection">{{ t('sections.add.fields') }}</button>
         </div>
 
         <!-- Foto-Galerie -->

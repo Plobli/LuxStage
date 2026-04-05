@@ -24,6 +24,13 @@ jobs:
           cache: npm
           cache-dependency-path: web-app/package-lock.json
 
+      - name: Tailscale verbinden
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
       - name: Web-App bauen
         if: ${{ !inputs.skip_build }}
         run: |

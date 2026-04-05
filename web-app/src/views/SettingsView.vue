@@ -179,6 +179,18 @@
           <p class="mt-1 text-sm/6 text-gray-400">{{ t('settings.update.hint') }}</p>
           <div class="mt-6 border-t border-white/5 pt-6 space-y-4">
 
+            <!-- Branch-Auswahl -->
+            <div class="flex items-center gap-3">
+              <label class="text-sm text-gray-400 shrink-0">{{ t('settings.update.branch') }}</label>
+              <select
+                v-model="selectedBranch"
+                @change="onBranchChange"
+                class="rounded-md bg-white/5 px-2 py-1 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent"
+              >
+                <option v-for="b in availableBranches" :key="b" :value="b">{{ b }}</option>
+              </select>
+            </div>
+
             <!-- Check-Status -->
             <div class="text-sm">
               <span v-if="checkLoading" class="text-gray-400">{{ t('settings.update.checking') }}</span>
@@ -305,6 +317,8 @@ const updateLog = ref([])
 const checkLoading = ref(false)
 const checkResult = ref(null)
 const checkError = ref(false)
+const selectedBranch = ref('main')
+const availableBranches = ref(['main'])
 const status = ref(null)
 const statusError = ref('')
 const activeSection = ref('general')
@@ -431,12 +445,24 @@ const secondaryNav = computed(() => [
   { key: 'account', name: t('settings.account'), icon: ArrowLeftStartOnRectangleIcon },
 ])
 
+async function loadBranches() {
+  try {
+    const { branches } = await api.get('/api/update/branches')
+    if (branches?.length) availableBranches.value = branches
+  } catch { /* ignore, fallback to ['main'] */ }
+}
+
+function onBranchChange() {
+  checkResult.value = null
+  checkForUpdate()
+}
+
 async function checkForUpdate() {
   checkLoading.value = true
   checkResult.value = null
   checkError.value = false
   try {
-    checkResult.value = await api.get('/api/update/check')
+    checkResult.value = await api.get(`/api/update/check?branch=${encodeURIComponent(selectedBranch.value)}`)
   } catch {
     checkError.value = true
   } finally {
@@ -450,7 +476,7 @@ onMounted(async () => {
   } catch {
     statusError.value = t('error.network')
   }
-  if (isAdmin.value) checkForUpdate()
+  if (isAdmin.value) { loadBranches(); checkForUpdate() }
   await loadUsers()
 })
 
@@ -469,7 +495,7 @@ async function doUpdate() {
   updateError.value = false
   updateLog.value = []
   try {
-    const result = await api.post('/api/update', {})
+    const result = await api.post('/api/update', { branch: selectedBranch.value })
     updateLog.value = result?.log ?? []
     updateMsg.value = t('settings.update.success')
     checkResult.value = null

@@ -449,6 +449,30 @@ export async function router(req, res) {
       })
     }
 
+    // ── Update: Remote-Branches (Admin) ───────────────────────────────────
+    if (method === 'GET' && pathname === '/api/update/branches') {
+      const user = requireAdmin(req, res); if (!user) return
+      const { execFile } = await import('node:child_process')
+      const repoDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+      const nvmDir = process.env.NVM_DIR || path.join(process.env.HOME, '.nvm')
+      const nvmInit = `export NVM_DIR="${nvmDir}" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"`
+      const run = (cmd) => new Promise((resolve, reject) => {
+        execFile('/bin/bash', ['-c', `${nvmInit} && ${cmd}`], { maxBuffer: 1024 * 1024 }, (err, stdout) => {
+          if (err) { reject(err) } else { resolve(stdout.trim()) }
+        })
+      })
+      try {
+        await run(`git -C "${repoDir}" fetch --prune --quiet`)
+        const out = await run(`git -C "${repoDir}" branch -r --format=%(refname:short)`)
+        const branches = out.split('\n')
+          .map(b => b.trim().replace(/^origin\//, ''))
+          .filter(b => b && b !== 'HEAD')
+        return json(res, 200, { branches })
+      } catch (err) {
+        return json(res, 200, { branches: ['main'], error: err.message })
+      }
+    }
+
     // ── Update-Check (Admin) ───────────────────────────────────────────────
     if (method === 'GET' && pathname === '/api/update/check') {
       const user = requireAdmin(req, res); if (!user) return
@@ -461,15 +485,16 @@ export async function router(req, res) {
           if (err) { reject(err) } else { resolve(stdout.trim()) }
         })
       })
+      const branch = params.branch || 'main'
       try {
-        await run(`git -C "${repoDir}" fetch origin main --quiet`)
-        const behind = await run(`git -C "${repoDir}" rev-list HEAD..origin/main --count`)
+        await run(`git -C "${repoDir}" fetch origin "${branch}" --quiet`)
+        const behind = await run(`git -C "${repoDir}" rev-list HEAD..origin/${branch} --count`)
         const commits = parseInt(behind, 10)
-        if (commits === 0) return json(res, 200, { available: false })
-        const log = await run(`git -C "${repoDir}" log HEAD..origin/main --oneline --no-decorate`)
-        return json(res, 200, { available: true, commits, log })
+        if (commits === 0) return json(res, 200, { available: false, branch })
+        const log = await run(`git -C "${repoDir}" log HEAD..origin/${branch} --oneline --no-decorate`)
+        return json(res, 200, { available: true, commits, log, branch })
       } catch (err) {
-        return json(res, 200, { available: false, error: err.message })
+        return json(res, 200, { available: false, branch, error: err.message })
       }
     }
 
@@ -484,6 +509,10 @@ export async function router(req, res) {
       const distOld = path.join(repoDir, 'web-app', 'dist-old')
       const dbPath  = path.join(config.dataPath, 'luxstage.db')
       const dbSnap  = path.join(config.dataPath, 'luxstage-preupdate.db')
+
+      const body = await readBody(req)
+      const bodyJson = body ? JSON.parse(body) : {}
+      const branch = bodyJson.branch || 'main'
 
       // nvm-Pfad ermitteln damit npm in non-login shells verfügbar ist
       const nvmDir = process.env.NVM_DIR || path.join(process.env.HOME, '.nvm')
@@ -523,13 +552,12 @@ export async function router(req, res) {
         await run(`cp "${dbPath}" "${dbSnap}"`)
         step('DB-Snapshot erstellt')
 
-        // 3. Git pull
-        const pullOut = await run(`git -C "${repoDir}" pull origin main`)
-        step(`git pull: ${pullOut.trim().split('\n').pop()}`)
+        // 3. Git pull (gewählter Branch)
+        const pullOut = await run(`git -C "${repoDir}" pull origin "${branch}"`)
+        step(`git pull (${branch}): ${pullOut.trim().split('\n').pop()}`)
 
         const newCommit = (await run(`git -C "${repoDir}" rev-parse HEAD`)).trim()
         if (newCommit === oldCommit) {
-          // Kein neuer Commit – trotzdem dist neu bauen falls nötig
           step('Bereits aktuell')
         }
 

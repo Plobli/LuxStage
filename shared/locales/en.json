@@ -204,6 +204,7 @@
   "settings.update.uptodate": "Already up to date",
   "settings.update.check_failed": "Could not reach GitHub",
   "settings.update.rollback": "Update failed — automatically restored",
+  "settings.update.branch": "Branch",
   "settings.server_url.label": "Server URL",
   "settings.language.hint": "Choose the display language of the app.",
   "settings.backup.hint": "Download all show data as a ZIP archive.",

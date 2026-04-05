@@ -204,6 +204,7 @@
   "settings.update.uptodate": "Bereits aktuell",
   "settings.update.check_failed": "Verbindung zu GitHub fehlgeschlagen",
   "settings.update.rollback": "Update fehlgeschlagen — automatisch wiederhergestellt",
+  "settings.update.branch": "Branch",
   "settings.server_url.label": "Server-URL",
   "settings.language.hint": "Wähle die Anzeigesprache der App.",
   "settings.backup.hint": "Lade alle Show-Daten als ZIP-Archiv herunter.",

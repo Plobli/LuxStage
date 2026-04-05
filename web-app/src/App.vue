@@ -52,7 +52,10 @@
                               class="group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold"
                               :class="isActiveRoute(item) ? 'bg-white/5 text-white' : 'text-gray-400 hover:bg-white/5 hover:text-white'"
                             >
-                              <component :is="item.icon" class="size-6 shrink-0" aria-hidden="true" />
+                              <span class="relative shrink-0">
+                                <component :is="item.icon" class="size-6" aria-hidden="true" />
+                                <span v-if="item.badge?.value" class="absolute -top-1 -right-1 size-2 rounded-full bg-accent" />
+                              </span>
                               {{ item.name }}
                             </RouterLink>
                           </li>
@@ -90,10 +93,11 @@
               <RouterLink
                 :to="item.to"
                 :title="item.name"
-                class="group flex gap-x-3 rounded-md p-3 text-sm/6 font-semibold"
+                class="group relative flex gap-x-3 rounded-md p-3 text-sm/6 font-semibold"
                 :class="isActiveRoute(item) ? 'bg-white/5 text-white' : 'text-gray-400 hover:bg-white/5 hover:text-white'"
               >
                 <component :is="item.icon" class="size-6 shrink-0" aria-hidden="true" />
+                <span v-if="item.badge?.value" class="absolute top-2 right-2 size-2 rounded-full bg-accent" />
                 <span class="sr-only">{{ item.name }}</span>
               </RouterLink>
             </li>
@@ -161,6 +165,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import { useLocale } from './composables/useLocale.js'
 import { logout, api } from './api/client.js'
+import { jwtDecode } from './api/jwtDecode.js'
 import ConfirmDialog from './components/ConfirmDialog.vue'
 import { useConfirmDialog, resolveConfirm } from './composables/useConfirm.js'
 
@@ -169,11 +174,21 @@ const confirmState = useConfirmDialog()
 const { t } = useLocale()
 const appVersion = __APP_VERSION__
 const serverVersion = ref(null)
+const updateAvailable = ref(false)
 
 onMounted(async () => {
   try {
     const status = await api.get('/api/status')
     serverVersion.value = status.version
+  } catch {}
+
+  try {
+    const token = localStorage.getItem('luxstage_token')
+    const isAdmin = token && jwtDecode(token)?.role === 'admin'
+    if (isAdmin) {
+      const check = await api.get('/api/update/check')
+      if (check?.available) updateAvailable.value = true
+    }
   } catch {}
 })
 const route = useRoute()
@@ -193,7 +208,7 @@ const navigation = [
   { name: t('nav.shows'), to: '/', routeName: 'shows', icon: RectangleStackIcon },
   { name: t('nav.archive'), to: '/archive', routeName: 'archive', icon: ArchiveBoxIcon },
   { name: t('nav.templates'), to: '/templates', routeName: 'templates', icon: DocumentDuplicateIcon },
-  { name: t('nav.settings'), to: '/settings', routeName: 'settings', icon: Cog6ToothIcon },
+  { name: t('nav.settings'), to: '/settings', routeName: 'settings', icon: Cog6ToothIcon, badge: updateAvailable },
 ]
 
 async function handleLogout() {

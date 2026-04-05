@@ -443,23 +443,132 @@ export async function router(req, res) {
       })
     }
 
+    // ── Update-Check (Admin) ───────────────────────────────────────────────
+    if (method === 'GET' && pathname === '/api/update/check') {
+      const user = requireAdmin(req, res); if (!user) return
+      const { execFile } = await import('node:child_process')
+      const repoDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+      const nvmDir = process.env.NVM_DIR || path.join(process.env.HOME, '.nvm')
+      const nvmInit = `export NVM_DIR="${nvmDir}" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"`
+      const run = (cmd) => new Promise((resolve, reject) => {
+        execFile('/bin/bash', ['-c', `${nvmInit} && ${cmd}`], { maxBuffer: 1024 * 1024 }, (err, stdout) => {
+          if (err) reject(err) else resolve(stdout.trim())
+        })
+      })
+      try {
+        await run(`git -C "${repoDir}" fetch origin main --quiet`)
+        const behind = await run(`git -C "${repoDir}" rev-list HEAD..origin/main --count`)
+        const commits = parseInt(behind, 10)
+        if (commits === 0) return json(res, 200, { available: false })
+        const log = await run(`git -C "${repoDir}" log HEAD..origin/main --oneline --no-decorate`)
+        return json(res, 200, { available: true, commits, log })
+      } catch (err) {
+        return json(res, 200, { available: false, error: err.message })
+      }
+    }
+
     // ── Update (Admin) ─────────────────────────────────────────────────────
     if (method === 'POST' && pathname === '/api/update') {
       const user = requireAdmin(req, res); if (!user) return
-      const { exec } = await import('node:child_process')
-      const repoDir = path.join(fileURLToPath(import.meta.url), '..', '..')
-      const cmd = [
-        `git -C "${repoDir}" pull origin main`,
-        `npm install --prefix "${repoDir}/server"`,
-        `npm install --include=dev --prefix "${repoDir}/web-app"`,
-        `npm run build --prefix "${repoDir}/web-app"`,
-      ].join(' && ')
-      exec(cmd, (err, stdout) => {
-        if (err) return json(res, 500, { error: err.message })
-        json(res, 200, { output: stdout })
-        // Server neu starten nach kurzer Pause
-        setTimeout(() => process.exit(0), 500)
+      const { execFile } = await import('node:child_process')
+      const fsp = await import('node:fs/promises')
+      const repoDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+      const distDir = path.join(repoDir, 'web-app', 'dist')
+      const distNew = path.join(repoDir, 'web-app', 'dist-new')
+      const distOld = path.join(repoDir, 'web-app', 'dist-old')
+      const dbPath  = path.join(config.dataPath, 'luxstage.db')
+      const dbSnap  = path.join(config.dataPath, 'luxstage-preupdate.db')
+
+      // nvm-Pfad ermitteln damit npm in non-login shells verfügbar ist
+      const nvmDir = process.env.NVM_DIR || path.join(process.env.HOME, '.nvm')
+      const nvmInit = `export NVM_DIR="${nvmDir}" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"`
+      const run = (cmd) => new Promise((resolve, reject) => {
+        execFile('/bin/bash', ['-c', `${nvmInit} && ${cmd}`], { maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
+          if (err) { err.stderr = stderr; reject(err) } else resolve(stdout)
+        })
       })
+
+      let oldCommit = ''
+      const log = []
+      const step = (msg) => { log.push(msg); console.log('[update]', msg) }
+
+      const rollback = async (reason) => {
+        step(`Rollback: ${reason}`)
+        try { await run(`git -C "${repoDir}" reset --hard "${oldCommit}"`) } catch {}
+        // dist-new aufräumen falls vorhanden
+        try { await fsp.rm(distNew, { recursive: true, force: true }) } catch {}
+        // dist-old zurückspielen falls dist durch den Update-Prozess bereits verschoben wurde
+        try {
+          const distOldExists = await fsp.access(distOld).then(() => true).catch(() => false)
+          if (distOldExists) {
+            await fsp.rm(distDir, { recursive: true, force: true }).catch(() => {})
+            await fsp.rename(distOld, distDir)
+          }
+        } catch {}
+        json(res, 500, { error: reason, log })
+      }
+
+      try {
+        // 1. Aktuellen Commit merken
+        oldCommit = (await run(`git -C "${repoDir}" rev-parse HEAD`)).trim()
+        step(`Aktueller Commit: ${oldCommit.slice(0, 8)}`)
+
+        // 2. DB-Snapshot (non-blocking, WAL-sicher)
+        await run(`cp "${dbPath}" "${dbSnap}"`)
+        step('DB-Snapshot erstellt')
+
+        // 3. Git pull
+        const pullOut = await run(`git -C "${repoDir}" pull origin main`)
+        step(`git pull: ${pullOut.trim().split('\n').pop()}`)
+
+        const newCommit = (await run(`git -C "${repoDir}" rev-parse HEAD`)).trim()
+        if (newCommit === oldCommit) {
+          // Kein neuer Commit – trotzdem dist neu bauen falls nötig
+          step('Bereits aktuell')
+        }
+
+        // 4. Abhängigkeiten installieren
+        await run(`npm install --prefix "${repoDir}/server"`)
+        step('Server-Abhängigkeiten installiert')
+
+        await run(`npm install --include=dev --prefix "${repoDir}/web-app"`)
+        step('Web-App-Abhängigkeiten installiert')
+
+        // 5. Build in dist-new (laufende dist/ bleibt unangetastet)
+        await fsp.rm(distNew, { recursive: true, force: true }).catch(() => {})
+        const buildEnv = { ...process.env, VITE_OUTDIR: 'dist-new' }
+        await new Promise((resolve, reject) => {
+          execFile('/bin/bash', ['-c',
+            `${nvmInit} && cd "${repoDir}/web-app" && npm run build -- --outDir dist-new`
+          ], { env: buildEnv, maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
+            if (err) { err.stderr = stderr; reject(err) } else resolve(stdout)
+          })
+        })
+        step('Web-App gebaut')
+
+        // Prüfen ob index.html im Build vorhanden (Minimalcheck)
+        await fsp.access(path.join(distNew, 'index.html'))
+        step('Build-Validierung OK')
+
+        // 6. Atomarer dist-Tausch: dist → dist-old, dist-new → dist
+        await fsp.rm(distOld, { recursive: true, force: true }).catch(() => {})
+        const distExists = await fsp.access(distDir).then(() => true).catch(() => false)
+        if (distExists) await fsp.rename(distDir, distOld)
+        await fsp.rename(distNew, distDir)
+        step('dist atomar ersetzt')
+
+        // 7. dist-old + DB-Snapshot aufräumen
+        fsp.rm(distOld, { recursive: true, force: true }).catch(() => {})
+        fsp.unlink(dbSnap).catch(() => {})
+
+        // 8. Antwort senden, dann Neustart
+        json(res, 200, { log })
+        step('Neustart...')
+        setTimeout(() => process.exit(0), 500)
+
+      } catch (err) {
+        await rollback(err.message + (err.stderr ? '\n' + err.stderr : ''))
+      }
       return
     }
 

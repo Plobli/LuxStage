@@ -156,16 +156,36 @@
         <section v-if="isAdmin" v-show="activeSection === 'update'">
           <h2 class="text-base/7 font-semibold text-white">{{ t('settings.update') }}</h2>
           <p class="mt-1 text-sm/6 text-gray-400">{{ t('settings.update.hint') }}</p>
-          <div class="mt-6 border-t border-white/5 pt-6 space-y-3">
+          <div class="mt-6 border-t border-white/5 pt-6 space-y-4">
+
+            <!-- Check-Status -->
+            <div class="text-sm">
+              <span v-if="checkLoading" class="text-gray-400">{{ t('settings.update.checking') }}</span>
+              <span v-else-if="checkResult?.available" class="text-amber-400 font-medium">
+                ↑ {{ t('settings.update.available', { commits: checkResult.commits }) }}
+              </span>
+              <span v-else-if="checkResult && !checkResult.available" class="text-green-400">
+                ✓ {{ t('settings.update.uptodate') }}
+              </span>
+              <span v-else-if="checkError" class="text-gray-500">{{ t('settings.update.check_failed') }}</span>
+            </div>
+
+            <!-- Changelog-Preview -->
+            <pre v-if="checkResult?.log" class="text-xs text-gray-400 bg-white/5 rounded-md px-3 py-2 whitespace-pre-wrap font-mono">{{ checkResult.log }}</pre>
+
+            <!-- Update-Button -->
             <button
               type="button"
-              :disabled="updating"
+              :disabled="updating || !checkResult?.available"
               @click="doUpdate"
               class="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-50"
             >
               {{ updating ? '…' : t('settings.update.run') }}
             </button>
-            <p v-if="updateMsg" class="text-sm text-gray-400">{{ updateMsg }}</p>
+
+            <!-- Ergebnis -->
+            <p v-if="updateMsg" :class="updateError ? 'text-red-400' : 'text-green-400'" class="text-sm">{{ updateMsg }}</p>
+            <pre v-if="updateLog.length" class="text-xs text-gray-500 bg-white/5 rounded-md px-3 py-2 whitespace-pre-wrap font-mono">{{ updateLog.join('\n') }}</pre>
           </div>
         </section>
 
@@ -258,6 +278,11 @@ const appVersion = __APP_VERSION__
 const serverUrl = ref(localStorage.getItem('server_url') || 'http://localhost:3000')
 const updating = ref(false)
 const updateMsg = ref('')
+const updateError = ref(false)
+const updateLog = ref([])
+const checkLoading = ref(false)
+const checkResult = ref(null)
+const checkError = ref(false)
 const status = ref(null)
 const statusError = ref('')
 const activeSection = ref('general')
@@ -358,12 +383,26 @@ const secondaryNav = computed(() => [
   { key: 'account', name: t('settings.account'), icon: ArrowLeftStartOnRectangleIcon },
 ])
 
+async function checkForUpdate() {
+  checkLoading.value = true
+  checkResult.value = null
+  checkError.value = false
+  try {
+    checkResult.value = await api.get('/api/update/check')
+  } catch {
+    checkError.value = true
+  } finally {
+    checkLoading.value = false
+  }
+}
+
 onMounted(async () => {
   try {
     status.value = await api.get('/api/status')
   } catch {
     statusError.value = t('error.network')
   }
+  if (isAdmin.value) checkForUpdate()
   await loadUsers()
 })
 
@@ -379,11 +418,21 @@ function handleLogout() {
 async function doUpdate() {
   updating.value = true
   updateMsg.value = ''
+  updateError.value = false
+  updateLog.value = []
   try {
-    await api.post('/api/update', {})
+    const result = await api.post('/api/update', {})
+    updateLog.value = result?.log ?? []
     updateMsg.value = t('settings.update.success')
+    checkResult.value = null
   } catch (e) {
-    updateMsg.value = t('settings.update.error', { message: e.message })
+    updateError.value = true
+    const msg = e.message || ''
+    updateMsg.value = msg.includes('wiederhergestellt') || msg.includes('restored')
+      ? t('settings.update.rollback')
+      : t('settings.update.error', { message: msg })
+    // Nach Fehler erneut prüfen ob wirklich zurückgerollt
+    checkForUpdate()
   } finally {
     updating.value = false
   }

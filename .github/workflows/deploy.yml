@@ -59,6 +59,7 @@ jobs:
             cd ~/LuxStage
 
             echo "→ Git Pull..."
+            git reset --hard HEAD
             git fetch origin main
             git reset --hard origin/main
 

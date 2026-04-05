@@ -40,7 +40,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { LEE_FILTERS, filterBadgeStyle } from '../utils/leeColors.js'
+import { ALL_FILTERS, filterBadgeStyle } from '../utils/filterColors.js'
 
 const props = defineProps({
   modelValue: { type: String, default: '' },
@@ -54,10 +54,10 @@ const activeIdx = ref(0)
 const badgeStyle = computed(() => filterBadgeStyle(props.modelValue))
 
 const filtered = computed(() => {
-  const q = (props.modelValue || '').toUpperCase().replace(/^L/, '')
-  if (!q) return LEE_FILTERS.slice(0, 12)
-  return LEE_FILTERS.filter(f =>
-    f.code.includes(q) || f.name.toUpperCase().includes(q)
+  const q = (props.modelValue || '').toUpperCase()
+  if (!q) return ALL_FILTERS.slice(0, 12)
+  return ALL_FILTERS.filter(f =>
+    f.code.includes(q) || f.code.slice(1).includes(q) || f.name.toUpperCase().includes(q)
   ).slice(0, 12)
 })
 

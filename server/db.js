@@ -317,6 +317,31 @@ export function deleteTemplateSections(name) {
   db.prepare('DELETE FROM template_section_defs WHERE template_id = ?').run(tpl.id)
 }
 
+// ── Foto-Beschreibungen ────────────────────────────────────────────────────
+
+export function readPhotoDescriptions(slug) {
+  const show = readShow(slug)
+  if (!show) return {}
+  const rows = db.prepare('SELECT filename, caption FROM photo_descriptions WHERE show_id = ?').all(show.id)
+  return Object.fromEntries(rows.map(r => [r.filename, r.caption]))
+}
+
+export function writePhotoDescription(slug, filename, caption) {
+  const show = readShow(slug)
+  if (!show) throw new Error(`Show not found: ${slug}`)
+  db.prepare(`
+    INSERT INTO photo_descriptions (show_id, filename, caption)
+    VALUES (?, ?, ?)
+    ON CONFLICT(show_id, filename) DO UPDATE SET caption = excluded.caption
+  `).run(show.id, filename, caption)
+}
+
+export function deletePhotoDescription(slug, filename) {
+  const show = readShow(slug)
+  if (!show) return
+  db.prepare('DELETE FROM photo_descriptions WHERE show_id = ? AND filename = ?').run(show.id, filename)
+}
+
 // ── Benutzer-Passwörter ────────────────────────────────────────────────────
 
 /** Gibt das Passwort aus der DB zurück, oder null wenn keins gesetzt. */

@@ -35,6 +35,14 @@ export async function deletePhoto(showId, filename) {
   return api.delete(`/api/shows/${showId}/photos/${filename}`)
 }
 
+export async function fetchPhotoCaptions(showId) {
+  return api.get(`/api/shows/${showId}/photo-captions`)
+}
+
+export async function savePhotoCaption(showId, filename, caption) {
+  return api.put(`/api/shows/${showId}/photo-captions/${encodeURIComponent(filename)}`, { caption })
+}
+
 export function getPhotoUrl(showId, filename) {
   return `${BASE()}/api/shows/${showId}/photos/${filename}?token=${getToken()}`
 }

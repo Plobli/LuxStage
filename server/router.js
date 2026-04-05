@@ -258,6 +258,25 @@ export async function router(req, res) {
       const parts = pathname.split('/')
       const id = parts[3], filename = parts[5]
       await photos.deletePhoto(id, filename)
+      db.deletePhotoDescription(id, filename)
+      return json(res, 200, { ok: true })
+    }
+
+    // ── Foto-Beschreibungen — Alle lesen ───────────────────────────────────
+    if (method === 'GET' && pathname.match(/^\/api\/shows\/([^/]+)\/photo-captions$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const id = pathname.split('/')[3]
+      return json(res, 200, db.readPhotoDescriptions(id))
+    }
+
+    // ── Foto-Beschreibung — Speichern ──────────────────────────────────────
+    if (method === 'PUT' && pathname.match(/^\/api\/shows\/([^/]+)\/photo-captions\/(.+)$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const parts = pathname.split('/')
+      const id = parts[3], filename = decodeURIComponent(parts[5])
+      const body = await readBody(req)
+      const { caption } = JSON.parse(body)
+      db.writePhotoDescription(id, filename, caption ?? '')
       return json(res, 200, { ok: true })
     }
 
@@ -386,11 +405,18 @@ export async function router(req, res) {
       const channels = db.readChannels(slug)
       const sectionsMap = db.readShowSections(slug)
       const templateSections = db.readShowSectionDefs(slug)
+      const photoFilenames = await photos.listPhotos(slug)
+      const captionsMap = db.readPhotoDescriptions(slug)
+      const photoEntries = photoFilenames.map(f => ({
+        path: photos.getPhotoPath(slug, f),
+        caption: captionsMap[f] ?? '',
+      }))
       generatePDF(
         show,
         channels,
         sectionsMap,
         templateSections,
+        photoEntries,
         res
       )
       return

@@ -97,6 +97,13 @@ db.exec(`
     sort_order INTEGER NOT NULL DEFAULT 0
   );
 
+  CREATE TABLE IF NOT EXISTS photo_descriptions (
+    show_id  TEXT NOT NULL REFERENCES shows(id) ON DELETE CASCADE,
+    filename TEXT NOT NULL,
+    caption  TEXT NOT NULL DEFAULT '',
+    PRIMARY KEY (show_id, filename)
+  );
+
   CREATE TABLE IF NOT EXISTS locks (
     show_id  TEXT PRIMARY KEY REFERENCES shows(id) ON DELETE CASCADE,
     username TEXT NOT NULL,

@@ -106,6 +106,7 @@
 
   "photo.add": "Foto hinzufügen",
   "photo.caption": "Beschriftung",
+  "photo.caption.placeholder": "Beschreibung …",
   "photo.delete": "Foto löschen",
   "photo.empty": "Noch keine Fotos vorhanden.",
 

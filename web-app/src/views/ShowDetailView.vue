@@ -409,7 +409,7 @@
           >
             <p v-if="photos.length === 0 && !dragging" class="text-sm text-gray-500">{{ t('photo.empty') }}</p>
             <ul role="list" class="grid grid-cols-3 gap-2">
-              <li v-for="filename in photos" :key="filename" class="relative group">
+              <li v-for="filename in photos" :key="filename" class="relative group flex flex-col gap-1">
                 <div class="aspect-square block w-full overflow-hidden rounded-lg bg-gray-800 cursor-pointer" @click="openLightbox(filename)">
                   <img :src="getPhotoUrl(props.id, filename)" :alt="filename" class="pointer-events-none object-cover group-hover:opacity-75 w-full h-full" />
                 </div>
@@ -419,6 +419,14 @@
                   @click="onDeletePhoto(filename)"
                   :title="t('action.delete')"
                 >✕</button>
+                <input
+                  type="text"
+                  :value="photoCaptions[filename] ?? ''"
+                  :placeholder="t('photo.caption.placeholder')"
+                  class="w-full rounded bg-white/5 px-2 py-1 text-xs text-gray-300 placeholder-gray-600 border border-transparent focus:border-white/20 focus:outline-none"
+                  @blur="onCaptionBlur(filename, $event)"
+                  @keydown.enter="$event.target.blur()"
+                />
               </li>
             </ul>
           </div>
@@ -427,8 +435,9 @@
     </template>
 
     <!-- Lightbox -->
-    <div v-if="lightboxPhoto" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80" @click="lightboxPhoto = null">
-      <img :src="getPhotoUrl(props.id, lightboxPhoto)" class="max-h-screen max-w-screen-lg object-contain" @click.stop />
+    <div v-if="lightboxPhoto" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80" @click="lightboxPhoto = null">
+      <img :src="getPhotoUrl(props.id, lightboxPhoto)" class="max-h-[85vh] max-w-screen-lg object-contain" @click.stop />
+      <p v-if="photoCaptions[lightboxPhoto]" class="mt-3 text-sm text-gray-300 max-w-lg text-center px-4" @click.stop>{{ photoCaptions[lightboxPhoto] }}</p>
     </div>
 
     <!-- History Slide-Over -->
@@ -535,7 +544,7 @@ import { ArrowUturnLeftIcon, ArrowUturnRightIcon, Bars3Icon } from '@heroicons/v
 import { useUndoRedo } from '../composables/useUndoRedo.js'
 import { fetchShow, updateMeta, fetchHistory, fetchHistoryEntry, restoreHistory } from '../api/shows.js'
 import { fetchChannels, saveChannels, downloadChannelsCsv, parseChannelsCsv, mergeChannels } from '../api/channels.js'
-import { fetchPhotos, uploadPhoto, deletePhoto, getPhotoUrl } from '../api/photos.js'
+import { fetchPhotos, uploadPhoto, deletePhoto, getPhotoUrl, fetchPhotoCaptions, savePhotoCaption } from '../api/photos.js'
 import { subscribeShow } from '../api/client.js'
 import { api } from '../api/client.js'
 import { fetchShowSections, saveShowSections, fetchShowSectionDefs, saveShowSectionDefs } from '../api/sections.js'
@@ -1049,6 +1058,13 @@ function persistChannels() {
 const dragging = ref(false)
 const lightboxPhoto = ref(null)
 const uploadQueue = ref([]) // [{ name, progress, done, error }]
+const photoCaptions = ref({}) // { filename: caption }
+
+async function onCaptionBlur(filename, event) {
+  const caption = event.target.value
+  photoCaptions.value[filename] = caption
+  await savePhotoCaption(props.id, filename, caption)
+}
 
 async function uploadFiles(files) {
   uploadQueue.value = files.map(f => ({ name: f.name, progress: 0, done: false, error: false }))
@@ -1078,6 +1094,7 @@ async function onDeletePhoto(filename) {
   if (!ok) return
   await deletePhoto(props.id, filename)
   photos.value = photos.value.filter(f => f !== filename)
+  delete photoCaptions.value[filename]
 }
 
 function openLightbox(filename) {
@@ -1174,10 +1191,11 @@ const presence = ref([]) // [{ username, devices }]
 
 onMounted(async () => {
   try {
-    const [showData, chs, photoList, sections, defs] = await Promise.all([
+    const [showData, chs, photoList, captions, sections, defs] = await Promise.all([
       fetchShow(props.id),
       fetchChannels(props.id),
       fetchPhotos(props.id),
+      fetchPhotoCaptions(props.id),
       fetchShowSections(props.id),
       fetchShowSectionDefs(props.id),
     ])
@@ -1187,6 +1205,7 @@ onMounted(async () => {
     eosActiveChannels.value = showData.eosActiveChannels ?? null
     channels.value = Array.isArray(chs) ? chs : []
     photos.value = photoList
+    photoCaptions.value = captions ?? {}
 
     sectionContents.value = new Map((Array.isArray(sections) ? sections : []).map(s => [s.id, s.content]))
     sectionDefs.value = Array.isArray(defs) ? defs : []

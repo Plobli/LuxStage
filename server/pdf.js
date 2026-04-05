@@ -4,6 +4,7 @@
  * Kanäle nach Position gruppiert, mit Abschnitts-Überschriften
  */
 import PDFDocument from 'pdfkit'
+import fs from 'node:fs'
 
 // Spaltenbreiten (mm → pt: 1mm ≈ 2.835pt)
 const mm = (v) => v * 2.835
@@ -81,7 +82,8 @@ function contrastColor(hex) {
 // channels: [{ channel, address, device, position, color, notes }]
 // sectionsMap: Map<sectionId, contentString>  (from db.readShowSections)
 // templateSections: [{ id, title, order, type }]
-export function generatePDF(show, channels, sectionsMap, templateSections, res) {
+// photoEntries: [{ path, caption }]  — Fotos mit optionaler Beschreibung
+export function generatePDF(show, channels, sectionsMap, templateSections, photoEntries, res) {
   const fm = { name: show.name, datum: show.datum, venue: show.untertitel }
   const grouped = groupByPosition(channels)
 
@@ -209,6 +211,61 @@ export function generatePDF(show, channels, sectionsMap, templateSections, res) 
       y = drawRow(doc, y, usableW, rowCols, false)
     }
     y += mm(3)
+  }
+
+  // ── Foto-Abschnitt ────────────────────────────────────────────────────────
+  const validPhotos = (photoEntries ?? []).filter(e => {
+    try { fs.accessSync(e.path); return true } catch { return false }
+  })
+
+  if (validPhotos.length > 0) {
+    doc.addPage()
+    y = PAGE_MARGIN
+
+    // Überschrift
+    doc.font(FONT_BOLD).fontSize(13).fillColor('black')
+      .text('Fotos', PAGE_MARGIN, y)
+    y += mm(10)
+
+    const PHOTOS_PER_PAGE = 4
+    const COLS = 2
+    const ROWS = 2
+    const PHOTO_GAP = mm(6)
+    const CAPTION_H = mm(8)
+    const photoW = (usableW - PHOTO_GAP) / COLS
+    const photoH = (printableBottom - y - (ROWS - 1) * PHOTO_GAP - ROWS * CAPTION_H) / ROWS
+
+    let col = 0
+    let row = 0
+    let photoOnPage = 0
+
+    for (let i = 0; i < validPhotos.length; i++) {
+      if (photoOnPage > 0 && photoOnPage % PHOTOS_PER_PAGE === 0) {
+        doc.addPage()
+        y = PAGE_MARGIN
+        row = 0
+        col = 0
+      }
+
+      const x = PAGE_MARGIN + col * (photoW + PHOTO_GAP)
+      const imgY = y + row * (photoH + CAPTION_H + PHOTO_GAP)
+
+      try {
+        doc.image(validPhotos[i].path, x, imgY, { width: photoW, height: photoH, fit: [photoW, photoH], align: 'center', valign: 'center' })
+      } catch { /* Bild nicht lesbar → überspringen */ }
+
+      // Beschriftung unter dem Foto
+      const caption = validPhotos[i].caption?.trim() ?? ''
+      if (caption) {
+        doc.font(FONT_NORMAL).fontSize(7.5).fillColor('#444444')
+          .text(caption, x, imgY + photoH + mm(1.5), { width: photoW, lineBreak: false, ellipsis: true })
+        doc.fillColor('black')
+      }
+
+      col++
+      if (col >= COLS) { col = 0; row++ }
+      photoOnPage++
+    }
   }
 
   doc.end()

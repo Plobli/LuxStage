@@ -38,20 +38,28 @@ jobs:
           npm ci
           npm run build
 
-      - name: Server-Abhängigkeiten installieren
-        run: cd server && npm ci --omit=dev
-
-      - name: Dateien auf Pi kopieren
+      - name: Server-Code auf Pi kopieren
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.PI_HOST }}
           username: ${{ secrets.PI_USER }}
           key: ${{ secrets.PI_SSH_KEY }}
-          source: "server,shared,web-app/dist"
+          source: "server,shared"
           target: ~/LuxStage/
-          rm: true
+          rm: false
 
-      - name: PM2 neu starten
+      - name: Web-App auf Pi kopieren
+        if: ${{ !inputs.skip_build }}
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.PI_HOST }}
+          username: ${{ secrets.PI_USER }}
+          key: ${{ secrets.PI_SSH_KEY }}
+          source: "web-app/dist"
+          target: ~/LuxStage/
+          rm: false
+
+      - name: Abhängigkeiten installieren und PM2 neu starten
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.PI_HOST }}
@@ -60,5 +68,7 @@ jobs:
           script: |
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+            cd ~/LuxStage/server
+            npm install --omit=dev
             pm2 restart luxstage
             pm2 list

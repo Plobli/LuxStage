@@ -151,7 +151,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { RouterView, RouterLink, useRoute, useRouter } from 'vue-router'
 import { Dialog, DialogPanel, TransitionChild, TransitionRoot } from '@headlessui/vue'
 import {
@@ -176,20 +176,30 @@ const appVersion = __APP_VERSION__
 const serverVersion = ref(null)
 const updateAvailable = ref(false)
 
+async function checkForUpdate() {
+  try {
+    const token = localStorage.getItem('luxstage_token')
+    const isAdmin = token && jwtDecode(token)?.role === 'admin'
+    if (!isAdmin) return
+    const check = await api.get('/api/update/check')
+    if (check?.available) updateAvailable.value = true
+  } catch {}
+}
+
+let updateCheckInterval = null
+
 onMounted(async () => {
   try {
     const status = await api.get('/api/status')
     serverVersion.value = status.version
   } catch {}
 
-  try {
-    const token = localStorage.getItem('luxstage_token')
-    const isAdmin = token && jwtDecode(token)?.role === 'admin'
-    if (isAdmin) {
-      const check = await api.get('/api/update/check')
-      if (check?.available) updateAvailable.value = true
-    }
-  } catch {}
+  await checkForUpdate()
+  updateCheckInterval = setInterval(checkForUpdate, 60 * 60 * 1000)
+})
+
+onUnmounted(() => {
+  clearInterval(updateCheckInterval)
 })
 const route = useRoute()
 const router = useRouter()

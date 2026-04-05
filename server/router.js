@@ -198,6 +198,13 @@ export async function router(req, res) {
       return json(res, 200, { ok: true })
     }
 
+    if (method === 'DELETE' && pathname.match(/^\/api\/shows\/([^/]+)\/permanent$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const slug = pathname.split('/')[3]
+      db.deleteShow(slug)
+      return json(res, 200, { ok: true })
+    }
+
     // ── Locking ────────────────────────────────────────────────────────────
     if (method === 'POST' && pathname.match(/^\/api\/shows\/([^/]+)\/lock$/)) {
       const user = requireAuth(req, res); if (!user) return

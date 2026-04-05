@@ -88,6 +88,10 @@ export function restoreShow(slug) {
   db.prepare('UPDATE shows SET archived = 0, updated_at = ? WHERE slug = ?').run(now(), slug)
 }
 
+export function deleteShow(slug) {
+  db.prepare('DELETE FROM shows WHERE slug = ?').run(slug)
+}
+
 // ── Channels ────────────────────────────────────────────────────────────────
 
 export function readChannels(slug) {

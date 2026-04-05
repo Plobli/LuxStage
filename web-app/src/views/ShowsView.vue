@@ -199,13 +199,25 @@ function generateId(name, datum) {
 }
 
 const groupedShows = computed(() => {
-  const map = new Map()
-  for (const show of shows.value) {
+  const sorted = [...shows.value].sort((a, b) => {
+    const tplA = (a.template || '').toLowerCase()
+    const tplB = (b.template || '').toLowerCase()
+    if (tplA < tplB) return -1
+    if (tplA > tplB) return 1
+    return (b.datum || '').localeCompare(a.datum || '')
+  })
+  const groups = []
+  const seen = new Map()
+  for (const show of sorted) {
     const tpl = show.template || ''
-    if (!map.has(tpl)) map.set(tpl, [])
-    map.get(tpl).push(show)
+    if (seen.has(tpl)) {
+      groups[seen.get(tpl)].shows.push(show)
+    } else {
+      seen.set(tpl, groups.length)
+      groups.push({ template: tpl, shows: [show] })
+    }
   }
-  return [...map.entries()].map(([template, s]) => ({ template, shows: s }))
+  return groups
 })
 
 onMounted(async () => {
@@ -228,6 +240,8 @@ async function handleCreate() {
       const secs = await fetchTemplateSections(form.value.template)
       if (secs.length) await saveShowSectionDefs(id, secs)
     }
+    const newShow = { id, name: form.value.name || id, datum: form.value.datum || new Date().toISOString().slice(0, 10), template: form.value.template || '' }
+    shows.value.push(newShow)
     created = true
   } catch (e) {
     console.error('Failed to create show:', e)

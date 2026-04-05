@@ -16,7 +16,7 @@
     />
     <ul
       v-if="open && filtered.length > 0"
-      class="absolute left-0 top-full mt-1 z-50 w-56 max-h-48 overflow-y-auto rounded-md bg-gray-900 ring-1 ring-white/10 shadow-xl text-sm"
+      class="absolute left-0 top-full mt-1 z-50 w-72 max-h-48 overflow-y-auto rounded-md bg-gray-900 ring-1 ring-white/10 shadow-xl text-sm"
     >
       <li
         v-for="(f, idx) in filtered"

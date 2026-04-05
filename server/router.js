@@ -451,7 +451,7 @@ export async function router(req, res) {
       const cmd = [
         `git -C "${repoDir}" pull origin main`,
         `npm install --prefix "${repoDir}/server"`,
-        `npm install --prefix "${repoDir}/web-app"`,
+        `npm install --include=dev --prefix "${repoDir}/web-app"`,
         `npm run build --prefix "${repoDir}/web-app"`,
       ].join(' && ')
       exec(cmd, (err, stdout) => {

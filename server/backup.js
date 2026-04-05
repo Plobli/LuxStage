@@ -73,7 +73,7 @@ export async function restoreBackup(req, res) {
         })
       } else if (fileName.startsWith('photos/')) {
         const relPath = fileName.slice('photos/'.length)
-        if (!relPath) { entry.autodrain(); continue }
+        if (!relPath || relPath.endsWith('/') || entry.type === 'Directory') { entry.autodrain(); continue }
         const destPath = path.join(photosPath, relPath)
         await fs.mkdir(path.dirname(destPath), { recursive: true })
         await new Promise((resolve, reject) => {

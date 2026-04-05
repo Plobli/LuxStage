@@ -71,10 +71,7 @@
             <div class="py-4 sm:flex">
               <dt class="font-medium text-white sm:w-64 sm:flex-none sm:pr-6">{{ t('settings.status.version.server') }}</dt>
               <dd class="mt-1 sm:mt-0 sm:flex-auto">
-                <span v-if="status" :class="status.version !== appVersion ? 'text-amber-400' : 'text-gray-300'">
-                  {{ status.version }}
-                  <span v-if="status.version !== appVersion" class="ml-2 text-xs text-amber-400">⚠ abweichend</span>
-                </span>
+                <span v-if="status" class="text-gray-300">{{ status.version }}</span>
                 <span v-else-if="statusError" class="text-red-400 text-sm">{{ t('error.network') }}</span>
                 <span v-else class="text-gray-500 text-sm">…</span>
               </dd>

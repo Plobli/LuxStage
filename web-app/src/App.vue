@@ -166,6 +166,7 @@ import {
 import { useLocale } from './composables/useLocale.js'
 import { logout, api } from './api/client.js'
 import { jwtDecode } from './api/jwtDecode.js'
+import { updateAvailable } from './composables/useUpdateCheck.js'
 import ConfirmDialog from './components/ConfirmDialog.vue'
 import { useConfirmDialog, resolveConfirm } from './composables/useConfirm.js'
 
@@ -174,7 +175,6 @@ const confirmState = useConfirmDialog()
 const { t } = useLocale()
 const appVersion = __APP_VERSION__
 const serverVersion = ref(null)
-const updateAvailable = ref(false)
 
 async function checkForUpdate() {
   try {

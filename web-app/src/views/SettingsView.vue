@@ -282,6 +282,7 @@ import { useLocale } from '../composables/useLocale.js'
 import { logout, setServerUrl, api, changePassword, resetPassword, listUsers, createUser, deleteUser } from '../api/client.js'
 import { downloadBackup, uploadRestore } from '../api/backup.js'
 import { jwtDecode } from '../api/jwtDecode.js'
+import { updateAvailable } from '../composables/useUpdateCheck.js'
 import {
   LanguageIcon,
   ServerIcon,
@@ -472,6 +473,7 @@ async function doUpdate() {
     updateLog.value = result?.log ?? []
     updateMsg.value = t('settings.update.success')
     checkResult.value = null
+    updateAvailable.value = false
   } catch (e) {
     updateError.value = true
     const msg = e.message || ''

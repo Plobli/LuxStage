@@ -196,7 +196,7 @@
   "settings.backup.restore.error": "✗ {message}",
   "settings.update": "Update",
   "settings.update.run": "Update now",
-  "settings.update.success": "✓ Update successful — server is restarting",
+  "settings.update.success": "✓ Update successful — server has restarted",
   "settings.update.error": "✗ {message}",
   "settings.update.hint": "Checks for new versions and updates the server. If anything fails, the previous state is automatically restored.",
   "settings.update.checking": "Checking for updates…",

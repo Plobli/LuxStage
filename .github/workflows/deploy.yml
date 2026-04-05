@@ -1,0 +1,64 @@
+name: Deploy to Raspberry Pi
+
+on:
+  workflow_dispatch:
+    inputs:
+      skip_build:
+        description: 'Web-App Build überspringen (nur Server-Neustart)'
+        type: boolean
+        default: false
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web-app/package-lock.json
+
+      - name: Web-App bauen
+        if: ${{ !inputs.skip_build }}
+        run: |
+          cd web-app
+          npm ci
+          npm run build
+
+      - name: Build-Artefakt hochladen
+        if: ${{ !inputs.skip_build }}
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.PI_HOST }}
+          username: ${{ secrets.PI_USER }}
+          key: ${{ secrets.PI_SSH_KEY }}
+          source: web-app/dist
+          target: ~/LuxStage/
+
+      - name: Server-Code und Abhängigkeiten deployen
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PI_HOST }}
+          username: ${{ secrets.PI_USER }}
+          key: ${{ secrets.PI_SSH_KEY }}
+          script: |
+            set -e
+            cd ~/LuxStage
+
+            echo "→ Git Pull..."
+            git pull origin main
+
+            echo "→ Server-Abhängigkeiten..."
+            cd server && npm ci --omit=dev && cd ..
+
+            echo "→ PM2 neu starten..."
+            pm2 restart luxstage
+
+            echo "→ PM2 Status:"
+            pm2 list

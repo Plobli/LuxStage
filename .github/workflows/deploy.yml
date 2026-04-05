@@ -59,7 +59,8 @@ jobs:
             cd ~/LuxStage
 
             echo "→ Git Pull..."
-            git pull origin main
+            git fetch origin main
+            git reset --hard origin/main
 
             echo "→ Server-Abhängigkeiten..."
             cd server && npm ci --omit=dev && cd ..

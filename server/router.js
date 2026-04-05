@@ -447,7 +447,14 @@ export async function router(req, res) {
     if (method === 'POST' && pathname === '/api/update') {
       const user = requireAdmin(req, res); if (!user) return
       const { exec } = await import('node:child_process')
-      exec('git pull && npm install', { cwd: path.join(config.dataPath, '..') }, (err, stdout) => {
+      const repoDir = path.join(fileURLToPath(import.meta.url), '..', '..')
+      const cmd = [
+        `git -C "${repoDir}" pull`,
+        `npm install --prefix "${repoDir}/server"`,
+        `npm install --prefix "${repoDir}/web-app"`,
+        `npm run build --prefix "${repoDir}/web-app"`,
+      ].join(' && ')
+      exec(cmd, (err, stdout) => {
         if (err) return json(res, 500, { error: err.message })
         json(res, 200, { output: stdout })
         // Server neu starten nach kurzer Pause

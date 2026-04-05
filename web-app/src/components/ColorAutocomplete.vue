@@ -31,7 +31,7 @@
           class="size-4 rounded-full shrink-0 ring-1 ring-white/10"
           :style="f.hex ? { backgroundColor: f.hex } : { backgroundColor: '#555' }"
         />
-        <span class="text-white font-mono text-xs">{{ f.code }}</span>
+        <span class="text-white font-mono text-xs">{{ f.displayCode }}</span>
         <span class="text-gray-400 text-xs truncate">{{ f.name }}</span>
       </li>
     </ul>
@@ -57,7 +57,10 @@ const filtered = computed(() => {
   const q = (props.modelValue || '').toUpperCase()
   if (!q) return ALL_FILTERS.slice(0, 12)
   return ALL_FILTERS.filter(f =>
-    f.code.includes(q) || f.code.slice(1).includes(q) || f.name.toUpperCase().includes(q)
+    f.code.includes(q) ||
+    f.code.slice(1).includes(q) ||
+    (f.altCode && (f.altCode.includes(q) || f.altCode.slice(1).includes(q))) ||
+    f.name.toUpperCase().includes(q)
   ).slice(0, 12)
 })
 

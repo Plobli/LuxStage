@@ -1,23 +1,29 @@
 import filters from '../../../shared/filters.json'
 
-// Build lookup: code → entry (all brands)
+// Build lookup: code → entry, plus equivalent code → same entry
 const BY_CODE = {}
 for (const f of filters) {
-  if (f.hex) BY_CODE[f.code] = f
+  if (!f.hex) continue
+  BY_CODE[f.code] = f
+  if (f.equivalent) BY_CODE[f.equivalent] = f
 }
 
 /**
- * Normalizes user input to a filter code.
+ * Normalizes user input to a primary filter code.
  * Handles: "201", "L201", "R44", "l201", "r44"
  */
 function normalizeInput(input) {
   if (!input) return null
   const s = input.trim().toUpperCase()
-  // Explicit brand prefix
-  if (/^[LR]\d+$/.test(s)) {
-    const brand = s[0]
-    const num = s.slice(1).padStart(brand === 'L' ? 3 : 2, '0')
-    return `${brand}${num}`
+  if (BY_CODE[s]) return s
+  // Normalize padding
+  if (/^L\d+$/.test(s)) {
+    const code = `L${s.slice(1).padStart(3, '0')}`
+    if (BY_CODE[code]) return code
+  }
+  if (/^R\d+$/.test(s)) {
+    const code = `R${s.slice(1).padStart(2, '0')}`
+    if (BY_CODE[code]) return code
   }
   // Plain number — try Lee first, then Rosco
   const num = s.match(/^(\d+)$/)
@@ -55,11 +61,16 @@ function contrastColor(hex) {
   return l > 0.5 ? '#000000' : '#ffffff'
 }
 
-/** Vollständige Liste aller Filter für Autocomplete */
-export const ALL_FILTERS = Array.from(
-  new Map(
-    filters
-      .filter(f => f.hex)
-      .map(f => [f.code, { code: f.code, name: f.name, hex: f.hex }])
-  ).values()
-)
+/**
+ * Liste aller Filter für Autocomplete.
+ * Einträge mit Äquivalent zeigen beide Codes: "L052 / R52"
+ */
+export const ALL_FILTERS = filters
+  .filter(f => f.hex)
+  .map(f => ({
+    code: f.code,
+    altCode: f.equivalent ?? null,
+    displayCode: f.equivalent ? `${f.code} / ${f.equivalent}` : f.code,
+    name: f.name,
+    hex: f.hex,
+  }))

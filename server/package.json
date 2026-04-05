@@ -1,6 +1,6 @@
 {
   "name": "luxstage-server",
-  "version": "1.5.2",
+  "version": "1.5.9",
   "private": true,
   "type": "module",
   "scripts": {

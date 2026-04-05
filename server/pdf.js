@@ -5,6 +5,19 @@
  */
 import PDFDocument from 'pdfkit'
 import fs from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const filtersData = JSON.parse(fs.readFileSync(join(__dirname, '../shared/filters.json'), 'utf8'))
+
+// Build lookup: code → hex (same logic as filterColors.js in web-app)
+const FILTER_HEX = {}
+for (const f of filtersData) {
+  if (!f.hex) continue
+  FILTER_HEX[f.code] = f.hex
+  if (f.equivalent) FILTER_HEX[f.equivalent] = f.hex
+}
 
 // Spaltenbreiten (mm → pt: 1mm ≈ 2.835pt)
 const mm = (v) => v * 2.835
@@ -23,54 +36,19 @@ const FONT_NORMAL = 'Helvetica'
 const FONT_BOLD   = 'Helvetica-Bold'
 const COLOR_SWATCH_R = mm(2)
 
-// Lee-Farbpalette (Subset der häufigsten Filter)
-const LEE_HEX = {
-  'L001':'#f5c5a3','L002':'#f4a45a','L003':'#e8812a','L004':'#e05a1e','L005':'#c84010',
-  'L006':'#b83010','L007':'#a02010','L008':'#881808','L009':'#701000','L010':'#f8e8d0',
-  'L013':'#f0d0a0','L015':'#e8c080','L016':'#f0a030','L017':'#e08820','L019':'#c06010',
-  'L020':'#a04010','L021':'#804020','L022':'#603020','L023':'#402010','L024':'#301810',
-  'L025':'#f8f0e0','L026':'#f0e8c0','L027':'#e8d890','L028':'#e0c860','L029':'#d8b830',
-  'L030':'#c8a010','L031':'#b89000','L032':'#a07800','L033':'#886000','L034':'#705000',
-  'L035':'#584000','L036':'#403000','L037':'#302000','L038':'#201800','L039':'#181000',
-  'L040':'#f8f8f0','L041':'#f0f0e0','L042':'#e8e8c8','L043':'#e0e0b0','L044':'#d8d898',
-  'L045':'#d0d080','L046':'#c8c868','L047':'#c0c050','L048':'#b8b840','L049':'#b0b030',
-  'L050':'#a0a020','L051':'#909010','L052':'#808000','L053':'#707000','L054':'#606000',
-  'L055':'#505000','L056':'#404000','L057':'#303000','L058':'#202000','L059':'#181800',
-  'L061':'#a0d0f0','L062':'#80c0e8','L063':'#60b0e0','L064':'#4098d0','L065':'#2080c0',
-  'L068':'#1060a0','L069':'#0848808','L070':'#0830600','L071':'#062040','L072':'#041830',
-  'L079':'#c8e8f8','L085':'#e0f0f8','L086':'#f0f8fc','L087':'#ffffff',
-  'L100':'#f8f0f0','L101':'#f8d0d0','L102':'#f8b0b0','L103':'#f89090','L104':'#f87070',
-  'L105':'#f85050','L106':'#f83030','L107':'#f81010','L108':'#e00000','L109':'#c00000',
-  'L110':'#a00000','L111':'#800000','L113':'#600000','L114':'#400000','L115':'#200000',
-  'L116':'#ffc0c0','L117':'#ff8080','L119':'#ff4040','L120':'#ff0000',
-  'L121':'#f0e0f0','L122':'#e8c0e8','L123':'#e0a0e0','L124':'#d880d8','L125':'#d060d0',
-  'L126':'#c040c0','L127':'#b020b0','L128':'#a000a0','L129':'#900090','L130':'#800080',
-  'L131':'#700070','L132':'#600060','L133':'#500050','L134':'#400040','L135':'#300030',
-  'L136':'#200020','L137':'#100010',
-  'L138':'#e0e0f8','L139':'#c0c0f0','L140':'#a0a0e8','L141':'#8080e0','L142':'#6060d8',
-  'L143':'#4040d0','L144':'#2020c8','L145':'#0000c0','L146':'#0000a0','L147':'#000080',
-  'L148':'#000060','L149':'#000040','L150':'#000020',
-  'L151':'#e8f8e8','L152':'#c0f0c0','L153':'#98e898','L154':'#70e070','L155':'#48d848',
-  'L156':'#20d020','L157':'#00c800','L158':'#00a000','L159':'#008000','L160':'#006000',
-  'L161':'#004000','L162':'#002000',
-  'L170':'#fff8e0','L171':'#fff0c0','L172':'#ffe8a0','L173':'#ffe080','L174':'#ffd860',
-  'L175':'#ffd040','L176':'#ffc820','L177':'#ffc000','L178':'#ffb800','L179':'#ffb000',
-  'L180':'#ff9800','L181':'#ff8000','L182':'#ff6800','L183':'#ff5000','L184':'#ff3800',
-  'L185':'#ff2000','L186':'#ff0808',
-  'L190':'#f0f8ff','L191':'#e0f0ff','L192':'#c8e8ff','L193':'#b0e0ff','L194':'#98d8ff',
-  'L195':'#80d0ff','L196':'#68c8ff','L197':'#50c0ff','L198':'#38b8ff','L199':'#20b0ff',
-  'L200':'#a0d0f8','L201':'#a0d0f0','L202':'#80c8e8',
-  'L203':'#d0e8f0','L204':'#b8d8e8','L205':'#a0c8e0','L206':'#88b8d8','L207':'#70a8d0',
-  'L208':'#5898c8','L209':'#4088c0','L210':'#2878b8',
-  'L281':'#e8f0e0','L282':'#d0e8c0','L283':'#b8e0a0','L284':'#a0d880','L285':'#88d060',
-  'L286':'#70c840','L287':'#58c020','L288':'#40b800','L289':'#28a800','L290':'#109800',
-}
-
-function leeHex(code) {
-  if (!code) return null
-  const m = code.trim().toUpperCase().match(/L?(\d{3})/)
-  if (!m) return null
-  return LEE_HEX[`L${m[1]}`] ?? null
+function leeHex(input) {
+  if (!input) return null
+  const s = input.trim().toUpperCase()
+  if (FILTER_HEX[s]) return FILTER_HEX[s]
+  // Normalize padding: "L147" → "L147", "147" → "L147"
+  const num = s.match(/^[LR]?(\d+)$/)
+  if (num) {
+    const lee = `L${num[1].padStart(3, '0')}`
+    if (FILTER_HEX[lee]) return FILTER_HEX[lee]
+    const rosco = `R${num[1].padStart(2, '0')}`
+    if (FILTER_HEX[rosco]) return FILTER_HEX[rosco]
+  }
+  return null
 }
 
 function contrastColor(hex) {

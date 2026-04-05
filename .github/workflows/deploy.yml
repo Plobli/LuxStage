@@ -38,36 +38,25 @@ jobs:
           npm ci
           npm run build
 
-      - name: Build-Artefakt hochladen
-        if: ${{ !inputs.skip_build }}
+      - name: Server-Abhängigkeiten installieren
+        run: cd server && npm ci --omit=dev
+
+      - name: Dateien auf Pi kopieren
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.PI_HOST }}
           username: ${{ secrets.PI_USER }}
           key: ${{ secrets.PI_SSH_KEY }}
-          source: web-app/dist
+          source: "server,shared,web-app/dist"
           target: ~/LuxStage/
+          rm: true
 
-      - name: Server-Code und Abhängigkeiten deployen
+      - name: PM2 neu starten
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.PI_HOST }}
           username: ${{ secrets.PI_USER }}
           key: ${{ secrets.PI_SSH_KEY }}
           script: |
-            set -e
-            cd ~/LuxStage
-
-            echo "→ Git Pull..."
-            git reset --hard HEAD
-            git fetch origin main
-            git reset --hard origin/main
-
-            echo "→ Server-Abhängigkeiten..."
-            cd server && npm ci --omit=dev && cd ..
-
-            echo "→ PM2 neu starten..."
             pm2 restart luxstage
-
-            echo "→ PM2 Status:"
             pm2 list

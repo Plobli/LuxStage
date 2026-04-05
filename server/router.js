@@ -452,7 +452,7 @@ export async function router(req, res) {
       const nvmInit = `export NVM_DIR="${nvmDir}" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"`
       const run = (cmd) => new Promise((resolve, reject) => {
         execFile('/bin/bash', ['-c', `${nvmInit} && ${cmd}`], { maxBuffer: 1024 * 1024 }, (err, stdout) => {
-          if (err) reject(err) else resolve(stdout.trim())
+          if (err) { reject(err) } else { resolve(stdout.trim()) }
         })
       })
       try {
@@ -484,7 +484,7 @@ export async function router(req, res) {
       const nvmInit = `export NVM_DIR="${nvmDir}" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"`
       const run = (cmd) => new Promise((resolve, reject) => {
         execFile('/bin/bash', ['-c', `${nvmInit} && ${cmd}`], { maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
-          if (err) { err.stderr = stderr; reject(err) } else resolve(stdout)
+          if (err) { err.stderr = stderr; reject(err) } else { resolve(stdout) }
         })
       })
 
@@ -541,7 +541,7 @@ export async function router(req, res) {
           execFile('/bin/bash', ['-c',
             `${nvmInit} && cd "${repoDir}/web-app" && npm run build -- --outDir dist-new`
           ], { env: buildEnv, maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
-            if (err) { err.stderr = stderr; reject(err) } else resolve(stdout)
+            if (err) { err.stderr = stderr; reject(err) } else { resolve(stdout) }
           })
         })
         step('Web-App gebaut')

@@ -7,7 +7,7 @@ import { randomBytes } from 'node:crypto'
 import { listHistory, getHistoryEntry, restoreHistoryEntry } from './history.js'
 import * as photos from './photos.js'
 import { subscribe, broadcast, getPresence } from './sse.js'
-import { streamBackup } from './backup.js'
+import { streamBackup, restoreBackup } from './backup.js'
 import { generatePDF } from './pdf.js'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -427,6 +427,12 @@ export async function router(req, res) {
     if (method === 'GET' && pathname === '/api/backup') {
       const user = requireAdmin(req, res); if (!user) return
       streamBackup(res)
+      return
+    }
+
+    if (method === 'POST' && pathname === '/api/restore') {
+      const user = requireAdmin(req, res); if (!user) return
+      restoreBackup(req, res)
       return
     }
 

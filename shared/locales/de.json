@@ -187,6 +187,13 @@
 
   "settings.backup": "Backup",
   "settings.backup.download": "↓ ZIP-Backup herunterladen",
+  "settings.backup.restore": "Backup wiederherstellen",
+  "settings.backup.restore.hint": "Stellt alle Show-Daten und Fotos aus einem zuvor erstellten ZIP-Backup wieder her. Der Server startet danach automatisch neu.",
+  "settings.backup.restore.choose": "ZIP-Datei auswählen …",
+  "settings.backup.restore.submit": "↑ Wiederherstellen",
+  "settings.backup.restore.confirm": "Achtung: Alle aktuellen Daten werden durch das Backup ersetzt. Fortfahren?",
+  "settings.backup.restore.success": "✓ Backup wiederhergestellt – Server startet neu",
+  "settings.backup.restore.error": "✗ {message}",
   "settings.update": "Update",
   "settings.update.run": "Jetzt aktualisieren",
   "settings.update.success": "✓ Update erfolgreich — Server startet neu",

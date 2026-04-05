@@ -187,6 +187,13 @@
 
   "settings.backup": "Backup",
   "settings.backup.download": "↓ Download ZIP backup",
+  "settings.backup.restore": "Restore backup",
+  "settings.backup.restore.hint": "Restores all show data and photos from a previously created ZIP backup. The server will restart automatically afterwards.",
+  "settings.backup.restore.choose": "Choose ZIP file …",
+  "settings.backup.restore.submit": "↑ Restore",
+  "settings.backup.restore.confirm": "Warning: All current data will be replaced by the backup. Continue?",
+  "settings.backup.restore.success": "✓ Backup restored — server is restarting",
+  "settings.backup.restore.error": "✗ {message}",
   "settings.update": "Update",
   "settings.update.run": "Update now",
   "settings.update.success": "✓ Update successful — server is restarting",

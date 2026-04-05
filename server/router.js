@@ -449,7 +449,7 @@ export async function router(req, res) {
       const { exec } = await import('node:child_process')
       const repoDir = path.join(fileURLToPath(import.meta.url), '..', '..')
       const cmd = [
-        `git -C "${repoDir}" pull`,
+        `git -C "${repoDir}" pull origin main`,
         `npm install --prefix "${repoDir}/server"`,
         `npm install --prefix "${repoDir}/web-app"`,
         `npm run build --prefix "${repoDir}/web-app"`,

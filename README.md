@@ -35,7 +35,8 @@ Nach der Installation auf dem Raspberry Pi ist LuxStage sofort im Browser erreic
 Per SSH einloggen und ausführen:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Plobli/LuxStage/main/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/Plobli/LuxStage/main/install.sh -o /tmp/luxstage-install.sh
+sudo bash /tmp/luxstage-install.sh
 ```
 
 Das Script fragt nach:

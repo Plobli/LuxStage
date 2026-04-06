@@ -7,16 +7,18 @@ ok()   { echo -e "  ${GREEN}✓${RESET}  $1"; }
 step() { echo -e "  →  $1"; }
 fail() { echo -e "  ${RED}✗${RESET}  Fehler: $1"; exit 1; }
 
-# ── Neustart mit TTY wenn via curl|bash aufgerufen (kein interaktives stdin) ───
-if [ ! -t 0 ]; then
-  TMPSCRIPT=$(mktemp /tmp/luxstage-install.XXXXXX.sh)
-  curl -fsSL https://raw.githubusercontent.com/Plobli/LuxStage/main/install.sh -o "$TMPSCRIPT"
-  chmod +x "$TMPSCRIPT"
-  exec sudo bash "$TMPSCRIPT" < /dev/tty
+# ── TTY-Check + Root-Check ────────────────────────────────────────────────────
+# curl|bash funktioniert nicht (kein interaktives stdin für Passwort-Eingabe).
+# Script muss erst gespeichert und dann direkt ausgeführt werden.
+if [ ! -t 0 ] || [ "$(id -u)" -ne 0 ]; then
+  echo ""
+  echo "  LuxStage installieren — bitte diese zwei Befehle ausführen:"
+  echo ""
+  echo "    curl -fsSL https://raw.githubusercontent.com/Plobli/LuxStage/main/install.sh -o /tmp/luxstage-install.sh"
+  echo "    sudo bash /tmp/luxstage-install.sh"
+  echo ""
+  exit 1
 fi
-
-# ── Root-Check ────────────────────────────────────────────────────────────────
-[ "$(id -u)" -eq 0 ] || fail "Bitte als root ausführen: sudo bash install.sh"
 
 # ── Konstanten ────────────────────────────────────────────────────────────────
 REPO_URL="https://github.com/Plobli/luxstage"

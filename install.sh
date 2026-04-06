@@ -186,6 +186,8 @@ ok "Datenverzeichnis bereit: $DATA_DIR"
 
 # ── PM2 Ecosystem-Datei ───────────────────────────────────────────────────────
 step "Erstelle PM2-Konfiguration..."
+USERS_JSON='[{"username":"admin","password":"'"$ADMIN_PASSWORD"'","role":"admin"},{"username":"tech","password":"'"$TECH_PASSWORD"'","role":"techniker"}]'
+
 cat > "$INSTALL_DIR/ecosystem.config.cjs" << EOF
 module.exports = {
   apps: [{
@@ -196,8 +198,7 @@ module.exports = {
       NODE_ENV: 'production',
       PORT: 3000,
       JWT_SECRET: '$JWT_SECRET',
-      ADMIN_PASSWORD: '$ADMIN_PASSWORD',
-      TECH_PASSWORD: '$TECH_PASSWORD',
+      USERS: '$USERS_JSON',
       DATA_PATH: '$DATA_DIR',
       CORS_ORIGIN: 'http://$HOSTNAME.local',
     }

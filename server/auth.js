@@ -15,6 +15,14 @@ export function issueDownloadToken(username, role) {
   return token
 }
 
+// Abgelaufene Token periodisch bereinigen (verhindert Memory-Leak bei abgebrochenen Downloads)
+setInterval(() => {
+  const now = Date.now()
+  for (const [token, entry] of downloadTokens) {
+    if (now > entry.expiresAt) downloadTokens.delete(token)
+  }
+}, 60_000)
+
 function redeemDownloadToken(token) {
   const entry = downloadTokens.get(token)
   if (!entry) return null

@@ -2,6 +2,7 @@
 import { db } from './db-init.js'
 import { config } from './config.js'
 import { randomUUID } from 'node:crypto'
+import { hashPassword } from './auth.js'
 
 // ── Hilfsfunktionen ────────────────────────────────────────────────────────
 
@@ -351,9 +352,10 @@ export function getDbPassword(username) {
 }
 
 /** Setzt das Passwort eines Benutzers in der DB (überschreibt Env-Passwort). */
-export function changePassword(username, newPassword) {
+export async function changePassword(username, newPassword) {
+  const hash = await hashPassword(newPassword)
   db.prepare('INSERT INTO users (username, password) VALUES (?, ?) ON CONFLICT(username) DO UPDATE SET password = excluded.password')
-    .run(username, newPassword)
+    .run(username, hash)
 }
 
 /** Alle Benutzer aus DB + Env zusammengeführt (DB hat Vorrang). */
@@ -369,9 +371,10 @@ export function listUsers(configUsers) {
 }
 
 /** Legt einen neuen Benutzer in der DB an (oder überschreibt bestehenden). */
-export function createUser(username, password, role) {
+export async function createUser(username, password, role) {
+  const hash = await hashPassword(password)
   db.prepare('INSERT INTO users (username, password, role) VALUES (?, ?, ?) ON CONFLICT(username) DO UPDATE SET password = excluded.password, role = excluded.role')
-    .run(username, password, role)
+    .run(username, hash, role)
 }
 
 /** Löscht einen Benutzer aus der DB. Env-User können nicht gelöscht werden. */

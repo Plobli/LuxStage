@@ -1,12 +1,34 @@
 import jwt from 'jsonwebtoken'
+import bcrypt from 'bcrypt'
 import { config } from './config.js'
 import { db } from './db-init.js'
 
-export function login(username, password) {
+const BCRYPT_COST = 12
+
+export async function hashPassword(plain) {
+  return bcrypt.hash(plain, BCRYPT_COST)
+}
+
+async function verifyPassword(plain, stored) {
+  // Klartext-Migration: gespeichertes Passwort ist noch kein bcrypt-Hash
+  if (!stored.startsWith('$2')) {
+    if (plain !== stored) return false
+    return true // caller must rehash
+  }
+  return bcrypt.compare(plain, stored)
+}
+
+export async function login(username, password) {
   // DB-User (dynamisch angelegt) haben Vorrang vor Env-Usern
   const dbRow = db.prepare('SELECT * FROM users WHERE username = ?').get(username)
   if (dbRow) {
-    if (dbRow.password !== password) return null
+    const ok = await verifyPassword(password, dbRow.password)
+    if (!ok) return null
+    // Klartext-Migration: bei Erfolg sofort hashen
+    if (!dbRow.password.startsWith('$2')) {
+      const hash = await hashPassword(password)
+      db.prepare('UPDATE users SET password = ? WHERE username = ?').run(hash, dbRow.username)
+    }
     return jwt.sign({ username: dbRow.username, role: dbRow.role }, config.jwtSecret, { expiresIn: '7d' })
   }
   // Fallback: Env-User

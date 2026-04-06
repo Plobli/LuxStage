@@ -47,10 +47,16 @@ export function getPhotoPath(slug, filename) {
   return path.join(photosDir(slug), path.basename(filename))
 }
 
+const MAX_PHOTO_UPLOAD_BYTES = 50 * 1024 * 1024 // 50 MB
+
 export function parseMultipart(req) {
   return new Promise((resolve, reject) => {
-    const chunks = []
-    req.on('data', c => chunks.push(c))
+    const chunks = []; let size = 0
+    req.on('data', c => {
+      size += c.length
+      if (size > MAX_PHOTO_UPLOAD_BYTES) { req.destroy(); return reject(new Error('Upload zu groß')) }
+      chunks.push(c)
+    })
     req.on('end', () => resolve(Buffer.concat(chunks)))
     req.on('error', reject)
   })

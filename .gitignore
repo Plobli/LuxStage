@@ -27,6 +27,7 @@ docs/superpowers/
 # Local dev scripts
 start.sh
 dev.sh
+ecosystem.config.cjs
 
 # Laufzeit-Daten
 data/

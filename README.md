@@ -11,6 +11,10 @@
 - ✅ **Aufbaunotizen** — Freitext-Sektionen mit Markdown und strukturierten Feldern pro Produktion
 - ✅ **Fotos** — Dokumentation direkt aus der iOS-App, mit Lightbox
 - ✅ **Spielstätten-Vorlagen** — Kanallisten einmal anlegen, für jede Produktion wiederverwenden
+  
+
+![luxstage webapp screenshot](https://github.com/Plobli/LuxStage/blob/main/webapp-mockup.png)
+
 
 ## Schnellstart
 

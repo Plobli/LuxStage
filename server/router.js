@@ -596,7 +596,7 @@ export async function router(req, res) {
         step('DB-Snapshot erstellt')
 
         // 3. Git pull (gewählter Branch)
-        const pullOut = await run(`git -C "${repoDir}" pull --no-rebase origin "${branch}"`)
+        const pullOut = await run(`git -C "${repoDir}" pull --ff-only origin "${branch}"`)
         step(`git pull (${branch}): ${pullOut.trim().split('\n').pop()}`)
 
         const newCommit = (await run(`git -C "${repoDir}" rev-parse HEAD`)).trim()

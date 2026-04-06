@@ -4,8 +4,6 @@
  */
 import { api, getToken } from './client.js'
 
-const BASE = () => localStorage.getItem('server_url') || 'http://localhost:3000'
-
 export async function fetchPhotos(showId) {
   return api.get(`/api/shows/${showId}/photos`)
 }
@@ -44,5 +42,5 @@ export async function savePhotoCaption(showId, filename, caption) {
 }
 
 export function getPhotoUrl(showId, filename) {
-  return `${BASE()}/api/shows/${showId}/photos/${filename}?token=${getToken()}`
+  return api.url(`/api/shows/${showId}/photos/${filename}`)
 }

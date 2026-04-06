@@ -7,10 +7,11 @@ ok()   { echo -e "  ${GREEN}✓${RESET}  $1"; }
 step() { echo -e "  →  $1"; }
 fail() { echo -e "  ${RED}✗${RESET}  Fehler: $1"; exit 1; }
 
+# ── Root-Check ────────────────────────────────────────────────────────────────
+[ "$(id -u)" -eq 0 ] || fail "Bitte als root ausführen: sudo bash install.sh"
+
 # ── Konstanten ────────────────────────────────────────────────────────────────
 REPO_URL="https://github.com/Plobli/luxstage"
-INSTALL_DIR="$HOME/LuxStage"
-DATA_DIR="$INSTALL_DIR/data"
 
 # ── Preflight ─────────────────────────────────────────────────────────────────
 step "Prüfe Voraussetzungen..."
@@ -18,24 +19,34 @@ curl -sf --max-time 5 https://github.com > /dev/null || fail "Kein Internetzugan
 ok "Voraussetzungen erfüllt"
 
 # ── Nutzereingaben ────────────────────────────────────────────────────────────
-exec < /dev/tty
+read -rp "Systemnutzer für LuxStage [luxstage]: " SERVICE_USER </dev/tty
+SERVICE_USER="${SERVICE_USER:-luxstage}"
+[[ $SERVICE_USER =~ ^[a-z_][a-z0-9_-]*$ ]] || fail "Ungültiger Nutzername (nur Kleinbuchstaben, Ziffern, - und _)."
 
-read -rp "Hostname [luxstage]: " HOSTNAME
+read -rp "Hostname [luxstage]: " HOSTNAME </dev/tty
 HOSTNAME="${HOSTNAME:-luxstage}"
 [[ $HOSTNAME =~ ^[a-zA-Z0-9._-]+$ ]] || fail "Ungültiger Hostname."
 
+MIN_PW_LEN=8
 set +e
 ADMIN_PASSWORD=""
 for i in 1 2 3; do
-  read -rsp "Admin-Passwort: " PW1; echo
-  read -rsp "Admin-Passwort bestätigen: " PW2; echo
-  if [[ "$PW1" == "$PW2" && -n "$PW1" ]]; then
+  read -rsp "Admin-Passwort (mind. ${MIN_PW_LEN} Zeichen): " PW1 </dev/tty; echo
+  read -rsp "Admin-Passwort bestätigen: " PW2 </dev/tty; echo
+  if [[ -z "$PW1" ]]; then
+    echo "  Passwort darf nicht leer sein."
+  elif [[ ${#PW1} -lt $MIN_PW_LEN ]]; then
+    echo "  Passwort zu kurz (mind. ${MIN_PW_LEN} Zeichen)."
+    PW1=""; PW2=""
+  elif [[ "$PW1" != "$PW2" ]]; then
+    echo "  Passwörter stimmen nicht überein."
+    PW1=""; PW2=""
+  else
     ADMIN_PASSWORD="$PW1"
     PW1=""; PW2=""
     ok "Passwort gespeichert"
     break
   fi
-  [[ -z "$PW1" ]] && echo "  Passwort darf nicht leer sein." || echo "  Passwörter stimmen nicht überein."
   [[ $i -eq 3 ]] && { echo -e "  ${RED}✗${RESET}  Fehler: Zu viele Fehlversuche."; exit 1; }
 done
 set -e
@@ -44,74 +55,119 @@ PW1=""; PW2=""
 JWT_SECRET=$(openssl rand -hex 32)
 TECH_PASSWORD=$(openssl rand -hex 16)
 
+SERVICE_HOME="/home/$SERVICE_USER"
+INSTALL_DIR="$SERVICE_HOME/LuxStage"
+DATA_DIR="$INSTALL_DIR/data"
+
 echo ""
-echo "  Hostname:    $HOSTNAME"
-echo "  Verzeichnis: $INSTALL_DIR"
+echo "  Systemnutzer: $SERVICE_USER"
+echo "  Hostname:     $HOSTNAME"
+echo "  Verzeichnis:  $INSTALL_DIR"
 echo ""
 
 # ── Paketlisten aktualisieren ─────────────────────────────────────────────────
 step "Aktualisiere Paketlisten..."
-sudo apt-get update -qq
+apt-get update -qq
 ok "Paketlisten aktualisiert"
 
-# ── Node.js via nvm ───────────────────────────────────────────────────────────
-step "Installiere nvm und Node.js 22..."
-if [ ! -d "$HOME/.nvm" ]; then
+# ── Systemnutzer anlegen ──────────────────────────────────────────────────────
+step "Lege Systemnutzer '$SERVICE_USER' an..."
+if id "$SERVICE_USER" &>/dev/null; then
+  ok "Nutzer '$SERVICE_USER' existiert bereits"
+else
+  useradd --system --create-home --shell /bin/bash "$SERVICE_USER"
+  ok "Nutzer '$SERVICE_USER' angelegt"
+fi
+
+# ── Caddy installieren ────────────────────────────────────────────────────────
+step "Installiere Caddy..."
+apt-get install -y debian-keyring debian-archive-keyring apt-transport-https curl gnupg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' \
+  | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' \
+  | tee /etc/apt/sources.list.d/caddy-stable.list > /dev/null
+apt-get update -qq
+apt-get install -y caddy
+ok "Caddy installiert"
+
+# ── avahi-daemon installieren (für *.local) ───────────────────────────────────
+step "Installiere avahi-daemon..."
+apt-get install -y avahi-daemon
+systemctl enable avahi-daemon
+systemctl start avahi-daemon
+ok "avahi-daemon installiert und gestartet"
+
+# ── Hostname setzen ───────────────────────────────────────────────────────────
+step "Setze Hostname '$HOSTNAME'..."
+OLD_HOSTNAME=$(hostname)
+hostnamectl set-hostname "$HOSTNAME"
+sed -i "s/\b${OLD_HOSTNAME}\b/$HOSTNAME/g" /etc/hosts
+ok "Hostname gesetzt"
+
+# ── Node.js via nvm (als Service-User) ───────────────────────────────────────
+step "Installiere nvm und Node.js 22 für '$SERVICE_USER'..."
+sudo -u "$SERVICE_USER" bash << 'USERSCRIPT'
+set -e
+export NVM_DIR="$HOME/.nvm"
+if [ ! -d "$NVM_DIR" ]; then
   curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 fi
-export NVM_DIR="$HOME/.nvm"
 # shellcheck source=/dev/null
 [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
 nvm install 22
 nvm use 22
 nvm alias default 22
-ok "Node.js $(node -v) aktiv"
+USERSCRIPT
+ok "Node.js installiert"
 
-# ── PM2 installieren ──────────────────────────────────────────────────────────
+# ── PM2 installieren (als Service-User) ───────────────────────────────────────
 step "Installiere PM2..."
+sudo -u "$SERVICE_USER" bash << 'USERSCRIPT'
+set -e
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
 npm install -g pm2 --silent
+USERSCRIPT
 ok "PM2 installiert"
 
-# ── Caddy installieren ────────────────────────────────────────────────────────
-step "Installiere Caddy..."
-sudo apt-get install -y debian-keyring debian-archive-keyring apt-transport-https
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' \
-  | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' \
-  | sudo tee /etc/apt/sources.list.d/caddy-stable.list > /dev/null
-sudo apt-get update -qq
-sudo apt-get install -y caddy
-ok "Caddy installiert"
-
-# ── Hostname setzen ───────────────────────────────────────────────────────────
-step "Setze Hostname '$HOSTNAME'..."
-OLD_HOSTNAME=$(hostname)
-sudo hostnamectl set-hostname "$HOSTNAME"
-sudo sed -i "s/\b${OLD_HOSTNAME}\b/$HOSTNAME/g" /etc/hosts
-ok "Hostname gesetzt"
-
-# ── Repo klonen ───────────────────────────────────────────────────────────────
+# ── Repo klonen (als Service-User) ────────────────────────────────────────────
 step "Klone Repository nach $INSTALL_DIR..."
+sudo -u "$SERVICE_USER" bash << USERSCRIPT
+set -e
 if [ -d "$INSTALL_DIR/.git" ]; then
-  step "Repository existiert bereits, führe git pull aus..."
   git -C "$INSTALL_DIR" pull
 else
   git clone "$REPO_URL" "$INSTALL_DIR"
 fi
+USERSCRIPT
 ok "Repository aktuell"
 
-# ── Web-App bauen ─────────────────────────────────────────────────────────────
+# ── Web-App bauen (als Service-User) ─────────────────────────────────────────
 step "Installiere Web-App-Abhängigkeiten und baue Web-App..."
-(cd "$INSTALL_DIR/web-app" && npm install --silent && npm run build)
+sudo -u "$SERVICE_USER" bash << USERSCRIPT
+set -e
+export NVM_DIR="\$HOME/.nvm"
+[ -s "\$NVM_DIR/nvm.sh" ] && source "\$NVM_DIR/nvm.sh"
+cd "$INSTALL_DIR/web-app"
+npm install --silent
+npm run build
+USERSCRIPT
 ok "Web-App gebaut"
 
-# ── Server-Abhängigkeiten ─────────────────────────────────────────────────────
+# ── Server-Abhängigkeiten (als Service-User) ──────────────────────────────────
 step "Installiere Server-Abhängigkeiten..."
-(cd "$INSTALL_DIR/server" && npm install --silent)
+sudo -u "$SERVICE_USER" bash << USERSCRIPT
+set -e
+export NVM_DIR="\$HOME/.nvm"
+[ -s "\$NVM_DIR/nvm.sh" ] && source "\$NVM_DIR/nvm.sh"
+cd "$INSTALL_DIR/server"
+npm install --silent
+USERSCRIPT
 ok "Server-Abhängigkeiten installiert"
 
 # ── Data-Verzeichnis ──────────────────────────────────────────────────────────
 mkdir -p "$DATA_DIR"
+chown "$SERVICE_USER:$SERVICE_USER" "$DATA_DIR"
 ok "Datenverzeichnis bereit: $DATA_DIR"
 
 # ── PM2 Ecosystem-Datei ───────────────────────────────────────────────────────
@@ -134,25 +190,37 @@ module.exports = {
   }]
 }
 EOF
+chown "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/ecosystem.config.cjs"
 chmod 600 "$INSTALL_DIR/ecosystem.config.cjs"
 ok "PM2-Konfiguration erstellt"
 
-# ── PM2 starten und autostart einrichten ──────────────────────────────────────
+# ── PM2 starten und autostart einrichten (als Service-User) ───────────────────
 step "Starte LuxStage mit PM2..."
+sudo -u "$SERVICE_USER" bash << USERSCRIPT
+set -e
+export NVM_DIR="\$HOME/.nvm"
+[ -s "\$NVM_DIR/nvm.sh" ] && source "\$NVM_DIR/nvm.sh"
 pm2 start "$INSTALL_DIR/ecosystem.config.cjs"
 pm2 save
-PM2_STARTUP=$(pm2 startup | grep "sudo" | tail -1)
+USERSCRIPT
+
+# PM2-Startup für den Service-User einrichten
+PM2_STARTUP=$(sudo -u "$SERVICE_USER" bash -c '
+  export NVM_DIR="$HOME/.nvm"
+  [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+  pm2 startup | grep "sudo"
+' | tail -1)
 eval "$PM2_STARTUP"
 ok "LuxStage läuft und startet automatisch beim Booten"
 
 # ── Caddy konfigurieren ───────────────────────────────────────────────────────
 step "Konfiguriere Caddy..."
-sudo tee /etc/caddy/Caddyfile > /dev/null << EOF
+tee /etc/caddy/Caddyfile > /dev/null << EOF
 http://$HOSTNAME.local {
     reverse_proxy localhost:3000
 }
 EOF
-sudo systemctl restart caddy
+systemctl restart caddy
 ok "Caddy konfiguriert"
 
 # ── Fertig ────────────────────────────────────────────────────────────────────

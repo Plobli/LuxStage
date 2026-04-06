@@ -39,8 +39,9 @@ curl -fsSL https://raw.githubusercontent.com/Plobli/LuxStage/main/install.sh | s
 ```
 
 Das Script fragt nach:
+- **Systemnutzer** (Vorauswahl: `luxstage`) — unter diesem Nutzer läuft der LuxStage-Dienst
 - **Hostname** (Vorauswahl: `luxstage`) — die App ist danach unter `http://luxstage.local` erreichbar
-- **Admin-Passwort** für den Login
+- **Admin-Passwort** für den Login (mind. 8 Zeichen)
 
 Was eingerichtet wird:
 - LuxStage-Server (startet automatisch beim Boot)

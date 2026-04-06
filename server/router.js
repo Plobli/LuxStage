@@ -4,7 +4,7 @@ const { version } = JSON.parse(readFileSync(new URL('./package.json', import.met
 import { login, signToken, requireAuth, requireAdmin, issueDownloadToken } from './auth.js'
 import * as db from './db.js'
 import { randomBytes } from 'node:crypto'
-import { listHistory, getHistoryEntry, restoreHistoryEntry } from './history.js'
+import { listHistory, getHistoryEntry, restoreHistoryEntry, takeSnapshotNow } from './history.js'
 import * as photos from './photos.js'
 import { subscribe, broadcast, getPresence } from './sse.js'
 import { streamBackup, restoreBackup } from './backup.js'
@@ -469,6 +469,13 @@ export async function router(req, res) {
     }
 
     // ── History ────────────────────────────────────────────────────────────────
+    if (method === 'POST' && pathname.match(/^\/api\/shows\/([^/]+)\/history\/snapshot$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const slug = pathname.split('/')[3]
+      takeSnapshotNow(slug)
+      return json(res, 200, { ok: true })
+    }
+
     if (method === 'GET' && pathname.match(/^\/api\/shows\/([^/]+)\/history$/)) {
       const user = requireAuth(req, res); if (!user) return
       const slug = pathname.split('/')[3]

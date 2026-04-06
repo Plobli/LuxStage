@@ -185,8 +185,7 @@
                       >
                         <input
                           :value="ch.channel"
-                          @focus="pushSnapshot()"
-                          @change="ch.channel = $event.target.value; persistChannels()"
+                          @change="pushSnapshot(); ch.channel = $event.target.value; persistChannels()"
                           :data-nav-row="rowIndexOf(ch)"
                           data-nav-col="0"
                           @keydown="onKeydown($event, rowIndexOf(ch), 0, 4, () => startAdd(ch.position))"
@@ -195,8 +194,7 @@
                         />
                         <input
                           :value="ch.address"
-                          @focus="pushSnapshot()"
-                          @change="ch.address = $event.target.value; persistChannels()"
+                          @change="pushSnapshot(); ch.address = $event.target.value; persistChannels()"
                           class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-xs text-gray-500 px-0 border-0 w-[5ch] text-center"
                         />
                       </div>
@@ -205,16 +203,14 @@
                       <ColorAutocomplete
                         :modelValue="ch.color"
                         @update:modelValue="ch.color = $event"
-                        @focus="pushSnapshot()"
-                        @change="persistChannels()"
+                        @change="pushSnapshot(); persistChannels()"
                         :placeholder="t('field.color')"
                       />
                     </td>
                     <td class="px-3 py-0 align-middle">
                       <textarea
                         :value="ch.device"
-                        @focus="pushSnapshot()"
-                        @change="ch.device = $event.target.value; persistChannels()"
+                        @change="pushSnapshot(); ch.device = $event.target.value; persistChannels()"
                         :data-nav-row="rowIndexOf(ch)"
                         data-nav-col="2"
                         @keydown="onKeydown($event, rowIndexOf(ch), 2, 4, null)"
@@ -224,8 +220,7 @@
                     <td class="px-3 py-0 align-middle">
                       <textarea
                         :value="ch.notes"
-                        @focus="pushSnapshot()"
-                        @change="ch.notes = $event.target.value; persistChannels()"
+                        @change="pushSnapshot(); ch.notes = $event.target.value; persistChannels()"
                         :data-nav-row="rowIndexOf(ch)"
                         data-nav-col="3"
                         @keydown="onKeydown($event, rowIndexOf(ch), 3, 4, () => startAdd(ch.position))"
@@ -542,7 +537,7 @@ import SectionHeading from '../components/SectionHeading.vue'
 import { MagnifyingGlassIcon } from '@heroicons/vue/20/solid'
 import { ArrowUturnLeftIcon, ArrowUturnRightIcon, Bars3Icon } from '@heroicons/vue/24/outline'
 import { useUndoRedo } from '../composables/useUndoRedo.js'
-import { fetchShow, updateMeta, fetchHistory, fetchHistoryEntry, restoreHistory } from '../api/shows.js'
+import { fetchShow, updateMeta, fetchHistory, fetchHistoryEntry, restoreHistory, createSnapshot } from '../api/shows.js'
 import { fetchChannels, saveChannels, downloadChannelsCsv, parseChannelsCsv, mergeChannels } from '../api/channels.js'
 import { fetchPhotos, uploadPhoto, deletePhoto, getPhotoUrl, fetchPhotoCaptions, savePhotoCaption } from '../api/photos.js'
 import { subscribeShow } from '../api/client.js'
@@ -1221,6 +1216,8 @@ onMounted(async () => {
   // Initialer Snapshot: sauberer Ausgangspunkt für Undo, löscht alte sessionStorage-History
   // Außerhalb des try-Blocks damit er immer ausgeführt wird (auch bei teilweisem Ladefehler)
   initSnapshot()
+  // Server-seitiger Snapshot beim Öffnen (fire-and-forget)
+  createSnapshot(props.id).catch(() => {})
 
   // SSE — gemeinsame Verbindung für Channels, Sections und Presence
   unsubscribeSSE = subscribeShow(props.id, {

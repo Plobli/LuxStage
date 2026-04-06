@@ -20,3 +20,7 @@ export function fetchHistoryEntry(showId, historyId) {
 export function restoreHistory(showId, historyId) {
   return api.post(`/api/shows/${showId}/history/${historyId}/restore`, {})
 }
+
+export function createSnapshot(showId) {
+  return api.post(`/api/shows/${showId}/history/snapshot`, {})
+}

@@ -84,6 +84,7 @@ if id "$SERVICE_USER" &>/dev/null; then
   ok "Nutzer '$SERVICE_USER' existiert bereits"
 else
   useradd --create-home --shell /bin/bash "$SERVICE_USER"
+  chmod 755 "$SERVICE_HOME"
   ok "Nutzer '$SERVICE_USER' angelegt"
 fi
 
@@ -155,12 +156,15 @@ fi
 echo "repo_ok"
 
 # Web-App bauen
+echo "  →  Installiere Web-App-Abhängigkeiten..."
 cd "\$INSTALL_DIR/web-app"
 npm install --silent
+echo "  →  Baue Web-App (kann 1-2 Minuten dauern)..."
 npm run build
 echo "webapp_ok"
 
 # Server-Abhängigkeiten
+echo "  →  Installiere Server-Abhängigkeiten..."
 cd "\$INSTALL_DIR/server"
 npm install --silent
 echo "server_ok"

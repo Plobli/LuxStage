@@ -50,7 +50,8 @@ export async function router(req, res) {
 
     // ── Auth ───────────────────────────────────────────────────────────────
     if (method === 'POST' && pathname === '/api/auth/login') {
-      const ip = req.socket.remoteAddress || 'unknown'
+      // X-Forwarded-For auswerten wenn hinter einem Reverse-Proxy (z.B. Caddy)
+      const ip = (req.headers['x-forwarded-for']?.split(',')[0].trim()) || req.socket.remoteAddress || 'unknown'
       if (isRateLimited(ip)) return json(res, 429, { error: 'Zu viele Versuche. Bitte warten.' })
       const body = await readJsonBody(req, res); if (body === null) return
       const { username, password } = body
@@ -117,6 +118,8 @@ export async function router(req, res) {
       const admin = requireAdmin(req, res); if (!admin) return
       const username = pathname.split('/')[3]
       if (username === admin.username) return json(res, 400, { error: 'Eigenen Account kann man nicht löschen' })
+      const isEnvOnly = !db.getDbPassword(username) && config.users.find(u => u.username === username)
+      if (isEnvOnly) return json(res, 422, { error: 'Env-User können nur über die Serverkonfiguration entfernt werden' })
       db.deleteUser(username)
       return json(res, 200, { ok: true })
     }
@@ -661,7 +664,8 @@ export async function router(req, res) {
         fsp.rm(distOld, { recursive: true, force: true }).catch(() => {})
         fsp.unlink(dbSnap).catch(() => {})
 
-        // 8. Antwort senden, dann Neustart
+        // 8. Antwort senden, dann Neustart (erfordert PM2)
+        if (!process.env.pm_id) step('WARNUNG: Kein PM2 erkannt — manueller Neustart erforderlich!')
         json(res, 200, { log })
         step('Neustart...')
         setTimeout(() => process.exit(0), 500)

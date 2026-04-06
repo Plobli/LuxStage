@@ -5,7 +5,12 @@ import sharp from 'sharp'
 import { config } from './config.js'
 
 function photosDir(slug) {
-  return path.join(config.dataPath, 'photos', slug)
+  const base = path.join(config.dataPath, 'photos')
+  const resolved = path.resolve(base, slug)
+  if (!resolved.startsWith(base + path.sep) && resolved !== base) {
+    throw new Error('Invalid slug')
+  }
+  return resolved
 }
 
 async function ensureDir(dir) {

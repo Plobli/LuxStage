@@ -117,7 +117,8 @@ export async function restoreBackup(req, res) {
   try {
     db.close()
     await fs.rename(dbRestorePath, dbPath)
-    // Prozess neu starten damit die DB frisch eingelesen wird
+    // Prozess neu starten damit die DB frisch eingelesen wird (erfordert PM2)
+    if (!process.env.pm_id) console.warn('WARNUNG: Kein PM2 erkannt — manueller Neustart nach Restore erforderlich!')
     res.writeHead(200, { 'Content-Type': 'application/json' })
     res.end(JSON.stringify({ ok: true, restart: true }))
     setTimeout(() => process.exit(0), 500)

@@ -3,11 +3,11 @@ import { router } from './router.js'
 import { config } from './config.js'
 import { startHistoryJob } from './history.js'
 
-const corsOrigin = process.env.CORS_ORIGIN || 'null'
+const corsOrigin = process.env.CORS_ORIGIN || ''
 
 const server = http.createServer((req, res) => {
   // CORS
-  res.setHeader('Access-Control-Allow-Origin', corsOrigin)
+  if (corsOrigin) res.setHeader('Access-Control-Allow-Origin', corsOrigin)
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return }

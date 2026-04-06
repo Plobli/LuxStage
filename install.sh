@@ -8,8 +8,6 @@ step() { echo -e "  →  $1"; }
 fail() { echo -e "  ${RED}✗${RESET}  Fehler: $1"; exit 1; }
 
 # ── TTY-Check + Root-Check ────────────────────────────────────────────────────
-# curl|bash funktioniert nicht (kein interaktives stdin für Passwort-Eingabe).
-# Script muss erst gespeichert und dann direkt ausgeführt werden.
 if [ ! -t 0 ] || [ "$(id -u)" -ne 0 ]; then
   echo ""
   echo "  LuxStage installieren — bitte diese zwei Befehle ausführen:"
@@ -29,11 +27,11 @@ curl -sf --max-time 5 https://github.com > /dev/null || fail "Kein Internetzugan
 ok "Voraussetzungen erfüllt"
 
 # ── Nutzereingaben ────────────────────────────────────────────────────────────
-read -rp "Systemnutzer für LuxStage [luxstage]: " SERVICE_USER </dev/tty
+read -rp "Systemnutzer für LuxStage [luxstage]: " SERVICE_USER
 SERVICE_USER="${SERVICE_USER:-luxstage}"
 [[ $SERVICE_USER =~ ^[a-z_][a-z0-9_-]*$ ]] || fail "Ungültiger Nutzername (nur Kleinbuchstaben, Ziffern, - und _)."
 
-read -rp "Hostname [luxstage]: " HOSTNAME </dev/tty
+read -rp "Hostname [luxstage]: " HOSTNAME
 HOSTNAME="${HOSTNAME:-luxstage}"
 [[ $HOSTNAME =~ ^[a-zA-Z0-9._-]+$ ]] || fail "Ungültiger Hostname."
 
@@ -41,8 +39,8 @@ MIN_PW_LEN=8
 set +e
 ADMIN_PASSWORD=""
 for i in 1 2 3; do
-  read -rsp "Admin-Passwort (mind. ${MIN_PW_LEN} Zeichen): " PW1 </dev/tty; echo
-  read -rsp "Admin-Passwort bestätigen: " PW2 </dev/tty; echo
+  read -rsp "Admin-Passwort (mind. ${MIN_PW_LEN} Zeichen): " PW1; echo
+  read -rsp "Admin-Passwort bestätigen: " PW2; echo
   if [[ -z "$PW1" ]]; then
     echo "  Passwort darf nicht leer sein."
   elif [[ ${#PW1} -lt $MIN_PW_LEN ]]; then
@@ -85,7 +83,7 @@ step "Lege Systemnutzer '$SERVICE_USER' an..."
 if id "$SERVICE_USER" &>/dev/null; then
   ok "Nutzer '$SERVICE_USER' existiert bereits"
 else
-  useradd --system --create-home --shell /bin/bash "$SERVICE_USER"
+  useradd --create-home --shell /bin/bash "$SERVICE_USER"
   ok "Nutzer '$SERVICE_USER' angelegt"
 fi
 
@@ -114,66 +112,62 @@ hostnamectl set-hostname "$HOSTNAME"
 sed -i "s/\b${OLD_HOSTNAME}\b/$HOSTNAME/g" /etc/hosts
 ok "Hostname gesetzt"
 
-# ── Node.js via nvm (als Service-User) ───────────────────────────────────────
-step "Installiere nvm und Node.js 22 für '$SERVICE_USER'..."
-sudo -u "$SERVICE_USER" bash << 'USERSCRIPT'
+# ── Hilfs-Script für Service-User-Schritte ───────────────────────────────────
+# Alle Schritte die als $SERVICE_USER laufen müssen in ein echtes Script,
+# damit $HOME korrekt auf /home/$SERVICE_USER zeigt und kein Quoting-Problem entsteht.
+USERSCRIPT=$(mktemp /tmp/luxstage-user.XXXXXX.sh)
+chmod 755 "$USERSCRIPT"
+
+cat > "$USERSCRIPT" << SCRIPT
+#!/usr/bin/env bash
 set -e
-export NVM_DIR="$HOME/.nvm"
-if [ ! -d "$NVM_DIR" ]; then
+
+NVM_DIR="\$HOME/.nvm"
+INSTALL_DIR="$INSTALL_DIR"
+REPO_URL="$REPO_URL"
+
+# nvm + Node.js 22
+if [ ! -d "\$NVM_DIR" ]; then
   curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 fi
-# shellcheck source=/dev/null
-[ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
-nvm install 22
+. "\$NVM_DIR/nvm.sh"
+nvm install 22 --no-progress
 nvm use 22
 nvm alias default 22
-USERSCRIPT
-ok "Node.js installiert"
+echo "node_ok:\$(node -v)"
 
-# ── PM2 installieren (als Service-User) ───────────────────────────────────────
-step "Installiere PM2..."
-sudo -u "$SERVICE_USER" bash << 'USERSCRIPT'
-set -e
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+# PM2
 npm install -g pm2 --silent
-USERSCRIPT
-ok "PM2 installiert"
+echo "pm2_ok"
 
-# ── Repo klonen (als Service-User) ────────────────────────────────────────────
-step "Klone Repository nach $INSTALL_DIR..."
-sudo -u "$SERVICE_USER" bash << USERSCRIPT
-set -e
-if [ -d "$INSTALL_DIR/.git" ]; then
-  git -C "$INSTALL_DIR" pull
+# Repository
+if [ -d "\$INSTALL_DIR/.git" ]; then
+  git -C "\$INSTALL_DIR" pull
 else
-  git clone "$REPO_URL" "$INSTALL_DIR"
+  git clone "\$REPO_URL" "\$INSTALL_DIR"
 fi
-USERSCRIPT
-ok "Repository aktuell"
+echo "repo_ok"
 
-# ── Web-App bauen (als Service-User) ─────────────────────────────────────────
-step "Installiere Web-App-Abhängigkeiten und baue Web-App..."
-sudo -u "$SERVICE_USER" bash << USERSCRIPT
-set -e
-export NVM_DIR="\$HOME/.nvm"
-[ -s "\$NVM_DIR/nvm.sh" ] && source "\$NVM_DIR/nvm.sh"
-cd "$INSTALL_DIR/web-app"
+# Web-App bauen
+cd "\$INSTALL_DIR/web-app"
 npm install --silent
 npm run build
-USERSCRIPT
-ok "Web-App gebaut"
+echo "webapp_ok"
 
-# ── Server-Abhängigkeiten (als Service-User) ──────────────────────────────────
-step "Installiere Server-Abhängigkeiten..."
-sudo -u "$SERVICE_USER" bash << USERSCRIPT
-set -e
-export NVM_DIR="\$HOME/.nvm"
-[ -s "\$NVM_DIR/nvm.sh" ] && source "\$NVM_DIR/nvm.sh"
-cd "$INSTALL_DIR/server"
+# Server-Abhängigkeiten
+cd "\$INSTALL_DIR/server"
 npm install --silent
-USERSCRIPT
-ok "Server-Abhängigkeiten installiert"
+echo "server_ok"
+
+echo "setup_ok"
+SCRIPT
+
+# ── Alle User-Schritte als Service-User ausführen ────────────────────────────
+step "Installiere nvm, Node.js 22, PM2 und Repository für '$SERVICE_USER'..."
+sudo -u "$SERVICE_USER" bash "$USERSCRIPT"
+ok "Node.js, PM2, Repository und Web-App bereit"
+
+rm -f "$USERSCRIPT"
 
 # ── Data-Verzeichnis ──────────────────────────────────────────────────────────
 mkdir -p "$DATA_DIR"
@@ -204,23 +198,12 @@ chown "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/ecosystem.config.cjs"
 chmod 600 "$INSTALL_DIR/ecosystem.config.cjs"
 ok "PM2-Konfiguration erstellt"
 
-# ── PM2 starten und autostart einrichten (als Service-User) ───────────────────
+# ── PM2 starten und autostart einrichten ─────────────────────────────────────
 step "Starte LuxStage mit PM2..."
-sudo -u "$SERVICE_USER" bash << USERSCRIPT
-set -e
-export NVM_DIR="\$HOME/.nvm"
-[ -s "\$NVM_DIR/nvm.sh" ] && source "\$NVM_DIR/nvm.sh"
-pm2 start "$INSTALL_DIR/ecosystem.config.cjs"
-pm2 save
-USERSCRIPT
+sudo -u "$SERVICE_USER" bash -c ". \$HOME/.nvm/nvm.sh && pm2 start '$INSTALL_DIR/ecosystem.config.cjs' && pm2 save"
 
-# PM2-Startup für den Service-User einrichten
-PM2_STARTUP=$(sudo -u "$SERVICE_USER" bash -c '
-  export NVM_DIR="$HOME/.nvm"
-  [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
-  pm2 startup | grep "sudo"
-' | tail -1)
-eval "$PM2_STARTUP"
+PM2_STARTUP=$(sudo -u "$SERVICE_USER" bash -c ". \$HOME/.nvm/nvm.sh && pm2 startup systemd -u $SERVICE_USER --hp $SERVICE_HOME" | grep "sudo env" || true)
+[ -n "$PM2_STARTUP" ] && eval "$PM2_STARTUP"
 ok "LuxStage läuft und startet automatisch beim Booten"
 
 # ── Caddy konfigurieren ───────────────────────────────────────────────────────

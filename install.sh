@@ -129,10 +129,12 @@ module.exports = {
       ADMIN_PASSWORD: '$ADMIN_PASSWORD',
       TECH_PASSWORD: '$TECH_PASSWORD',
       DATA_PATH: '$DATA_DIR',
+      CORS_ORIGIN: 'http://$HOSTNAME.local',
     }
   }]
 }
 EOF
+chmod 600 "$INSTALL_DIR/ecosystem.config.cjs"
 ok "PM2-Konfiguration erstellt"
 
 # ── PM2 starten und autostart einrichten ──────────────────────────────────────

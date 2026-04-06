@@ -165,12 +165,14 @@ import {
 } from '@heroicons/vue/24/outline'
 import { useLocale } from './composables/useLocale.js'
 import { logout, api } from './api/client.js'
+import { useTokenRefresh } from './composables/useTokenRefresh.js'
 import { jwtDecode } from './api/jwtDecode.js'
 import { updateAvailable } from './composables/useUpdateCheck.js'
 import ConfirmDialog from './components/ConfirmDialog.vue'
 import { useConfirmDialog, resolveConfirm } from './composables/useConfirm.js'
 
 const confirmState = useConfirmDialog()
+useTokenRefresh()
 
 const { t } = useLocale()
 const appVersion = __APP_VERSION__

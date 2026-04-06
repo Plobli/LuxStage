@@ -18,6 +18,10 @@ async function verifyPassword(plain, stored) {
   return bcrypt.compare(plain, stored)
 }
 
+export function signToken(username, role) {
+  return jwt.sign({ username, role }, config.jwtSecret, { expiresIn: '72h' })
+}
+
 export async function login(username, password) {
   // DB-User (dynamisch angelegt) haben Vorrang vor Env-Usern
   const dbRow = db.prepare('SELECT * FROM users WHERE username = ?').get(username)
@@ -29,13 +33,20 @@ export async function login(username, password) {
       const hash = await hashPassword(password)
       db.prepare('UPDATE users SET password = ? WHERE username = ?').run(hash, dbRow.username)
     }
-    return jwt.sign({ username: dbRow.username, role: dbRow.role }, config.jwtSecret, { expiresIn: '7d' })
+    return signToken(dbRow.username, dbRow.role)
   }
   // Fallback: Env-User
   const user = config.users.find(u => u.username === username)
   if (!user) return null
-  if (user.password !== password) return null
-  return jwt.sign({ username: user.username, role: user.role }, config.jwtSecret, { expiresIn: '7d' })
+  const envOk = await verifyPassword(password, user.password)
+  if (!envOk) return null
+  // Klartext-Migration: Env-User-Passwort beim ersten Login in DB hashen
+  if (!user.password.startsWith('$2')) {
+    const hash = await hashPassword(password)
+    db.prepare('INSERT INTO users (username, password, role) VALUES (?, ?, ?) ON CONFLICT(username) DO UPDATE SET password = excluded.password, role = excluded.role')
+      .run(user.username, hash, user.role)
+  }
+  return signToken(user.username, user.role)
 }
 
 export function authenticate(req) {

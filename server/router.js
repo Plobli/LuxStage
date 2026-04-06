@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { readBody, readJsonBody, json, send, notFound, parseUrl } from './helpers.js'
 const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url)))
-import { login, requireAuth, requireAdmin } from './auth.js'
+import { login, signToken, requireAuth, requireAdmin } from './auth.js'
 import * as db from './db.js'
 import { randomBytes } from 'node:crypto'
 import { listHistory, getHistoryEntry, restoreHistoryEntry } from './history.js'
@@ -22,11 +22,20 @@ const LOGIN_WINDOW_MS = 15 * 60 * 1000
 
 function isRateLimited(ip) {
   const now = Date.now()
-  const entry = loginAttempts.get(ip) ?? { count: 0, firstAt: now }
+  const entry = loginAttempts.get(ip)
+  if (!entry) return false
   if (now - entry.firstAt > LOGIN_WINDOW_MS) { loginAttempts.delete(ip); return false }
-  if (entry.count >= MAX_LOGIN_ATTEMPTS) return true
-  loginAttempts.set(ip, { ...entry, count: entry.count + 1 })
-  return false
+  return entry.count >= MAX_LOGIN_ATTEMPTS
+}
+
+function recordFailedLogin(ip) {
+  const now = Date.now()
+  const entry = loginAttempts.get(ip)
+  if (!entry || now - entry.firstAt > LOGIN_WINDOW_MS) {
+    loginAttempts.set(ip, { count: 1, firstAt: now })
+  } else {
+    loginAttempts.set(ip, { ...entry, count: entry.count + 1 })
+  }
 }
 
 export async function router(req, res) {
@@ -46,8 +55,14 @@ export async function router(req, res) {
       const body = await readJsonBody(req, res); if (body === null) return
       const { username, password } = body
       const token = await login(username, password)
-      if (!token) return json(res, 401, { error: 'Ungültige Anmeldedaten' })
+      if (!token) { recordFailedLogin(ip); return json(res, 401, { error: 'Ungültige Anmeldedaten' }) }
       return json(res, 200, { token })
+    }
+
+    // ── Auth — Token erneuern ─────────────────────────────────────────────
+    if (method === 'POST' && pathname === '/api/auth/refresh') {
+      const user = requireAuth(req, res); if (!user) return
+      return json(res, 200, { token: signToken(user.username, user.role) })
     }
 
     // ── Auth — Passwort ändern ─────────────────────────────────────────────
@@ -217,7 +232,7 @@ export async function router(req, res) {
     }
 
     if (method === 'DELETE' && pathname.match(/^\/api\/shows\/([^/]+)\/permanent$/)) {
-      const user = requireAuth(req, res); if (!user) return
+      const user = requireAdmin(req, res); if (!user) return
       const slug = pathname.split('/')[3]
       db.deleteShow(slug)
       return json(res, 200, { ok: true })
@@ -404,7 +419,7 @@ export async function router(req, res) {
     }
 
     if (method === 'PUT' && pathname.match(/^\/api\/shows\/([^/]+)\/section-defs$/)) {
-      const user = requireAuth(req, res); if (!user) return
+      const user = requireAdmin(req, res); if (!user) return
       const slug = pathname.split('/')[3]
       const body = await readJsonBody(req, res); if (body === null) return
       const { sections } = body

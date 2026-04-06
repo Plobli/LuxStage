@@ -6,9 +6,9 @@
 
 ## Was LuxStage kann
 
-- ✅ **Kanallisten verwalten** — CSV-Import, Gerätetypen, DMX-Adressen, Gel-Filter
-- ✅ **Einleuchten** — Checklisten-Ansicht mit OSC-Steuerung direkt ans EOS-Pult
-- ✅ **Aufbaunotizen** — Markdown-Sektionen und Felder pro Produktion
+- ✅ **Kanallisten verwalten** — CSV-Import oder direkt aus EOS importieren, Gerätetypen, DMX-Adressen, Gel-Filter
+- ✅ **Einleuchten** — Checklisten-Ansicht nach Positionen gruppiert, mit OSC-Steuerung direkt ans EOS-Pult
+- ✅ **Aufbaunotizen** — Freitext-Sektionen mit Markdown und strukturierten Feldern pro Produktion
 - ✅ **Fotos** — Dokumentation direkt aus der iOS-App, mit Lightbox
 - ✅ **Spielstätten-Vorlagen** — Kanallisten einmal anlegen, für jede Produktion wiederverwenden
 
@@ -60,6 +60,15 @@ http://luxstage.local
 ```
 
 Login: Benutzername `admin`, Passwort wie bei der Installation vergeben.
+
+Es gibt zwei Benutzerrollen:
+
+| Benutzername | Rolle | Rechte |
+|---|---|---|
+| `admin` | Administrator | Alles, inkl. Vorlagen, Backup, Updates |
+| `tech` | Techniker | Produktionen lesen und bearbeiten, keine Vorlagen/Backup |
+
+Das `tech`-Passwort wird am Ende der Installation angezeigt.
 
 ---
 
@@ -127,7 +136,7 @@ Im Einleuchten-Modus sendet jeder Kanal-Button `Full` beim ersten Tippen und `Ou
 
 Per SSH:
 ```bash
-sudo systemctl restart luxstage
+sudo -i -u luxstage bash -c '. $HOME/.nvm/nvm.sh && pm2 restart luxstage'
 ```
 
 ---

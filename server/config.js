@@ -9,14 +9,22 @@ if (!jwtSecret || jwtSecret.length < 32) {
   process.exit(1)
 }
 
-const adminPassword = process.env.ADMIN_PASSWORD || 'admin'
-const techPassword = process.env.TECH_PASSWORD || 'techniker'
-
-if (!process.env.ADMIN_PASSWORD || adminPassword === 'admin') {
-  console.warn('WARNUNG: Standard-Admin-Passwort aktiv! Bitte ADMIN_PASSWORD setzen.')
+const usersEnv = process.env.USERS
+if (!usersEnv) {
+  console.error('FEHLER: USERS fehlt. Bitte USERS als JSON-Array setzen, z.B.: \'[{"username":"admin","password":"...","role":"admin"}]\'')
+  process.exit(1)
 }
-if (!process.env.TECH_PASSWORD || techPassword === 'techniker') {
-  console.warn('WARNUNG: Standard-Techniker-Passwort aktiv! Bitte TECH_PASSWORD setzen.')
+
+let users
+try {
+  users = JSON.parse(usersEnv)
+  if (!Array.isArray(users) || users.length === 0) throw new Error('USERS muss ein nicht-leeres Array sein')
+  for (const u of users) {
+    if (!u.username || !u.password || !u.role) throw new Error(`Ungültiger Eintrag in USERS: ${JSON.stringify(u)}`)
+  }
+} catch (e) {
+  console.error('FEHLER: USERS konnte nicht geparst werden:', e.message)
+  process.exit(1)
 }
 
 export const config = {
@@ -24,10 +32,7 @@ export const config = {
   dataPath: process.env.DATA_PATH || path.join(__dirname, '..', 'data'),
   jwtSecret,
   // Rollen: admin (alles), techniker (shows lesen/schreiben, keine templates/backup/update)
-  users: JSON.parse(process.env.USERS || JSON.stringify([
-    { username: 'admin', password: adminPassword, role: 'admin' },
-    { username: 'techniker', password: techPassword, role: 'techniker' }
-  ])),
+  users,
   lockTimeout: 10 * 60 * 1000, // 10 Minuten in ms
   photoMaxWidth: 1600,
   photoQuality: 82,

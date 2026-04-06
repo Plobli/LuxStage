@@ -298,7 +298,7 @@ export async function router(req, res) {
     if (method === 'DELETE' && pathname.match(/^\/api\/shows\/([^/]+)\/photos\/(.+)$/)) {
       const user = requireAdmin(req, res); if (!user) return
       const parts = pathname.split('/')
-      const id = parts[3], filename = parts[5]
+      const id = parts[3], filename = path.basename(parts[5])
       await photos.deletePhoto(id, filename)
       db.deletePhotoDescription(id, filename)
       return json(res, 200, { ok: true })
@@ -316,6 +316,9 @@ export async function router(req, res) {
       const user = requireAuth(req, res); if (!user) return
       const parts = pathname.split('/')
       const id = parts[3], filename = decodeURIComponent(parts[5])
+      if (filename !== path.basename(filename) || filename.includes('..')) {
+        return json(res, 400, { error: 'Ungültiger Dateiname' })
+      }
       const body = await readJsonBody(req, res); if (body === null) return
       const { caption } = body
       db.writePhotoDescription(id, filename, caption ?? '')
@@ -372,14 +375,16 @@ export async function router(req, res) {
 
     if (method === 'GET' && pathname.match(/^\/api\/templates\/(.+)$/)) {
       const user = requireAuth(req, res); if (!user) return
-      const name = pathname.slice('/api/templates/'.length)
+      const name = decodeURIComponent(pathname.slice('/api/templates/'.length))
+      if (!/^[a-zA-Z0-9_\- ]{1,100}$/.test(name)) return json(res, 400, { error: 'Ungültiger Template-Name' })
       const channels = db.readTemplate(name).map(({ template_id: _, sort_order: __, ...ch }) => ch)
       return json(res, 200, channels)
     }
 
     if (method === 'PUT' && pathname.match(/^\/api\/templates\/(.+)$/)) {
       const user = requireAdmin(req, res); if (!user) return
-      const name = pathname.slice('/api/templates/'.length)
+      const name = decodeURIComponent(pathname.slice('/api/templates/'.length))
+      if (!/^[a-zA-Z0-9_\- ]{1,100}$/.test(name)) return json(res, 400, { error: 'Ungültiger Template-Name' })
       const channels = await readJsonBody(req, res); if (channels === null) return
       db.writeTemplate(name, channels)
       const existing = db.readTemplateSections(name)
@@ -394,7 +399,8 @@ export async function router(req, res) {
 
     if (method === 'DELETE' && pathname.match(/^\/api\/templates\/(.+)$/)) {
       const user = requireAdmin(req, res); if (!user) return
-      const name = pathname.slice('/api/templates/'.length)
+      const name = decodeURIComponent(pathname.slice('/api/templates/'.length))
+      if (!/^[a-zA-Z0-9_\- ]{1,100}$/.test(name)) return json(res, 400, { error: 'Ungültiger Template-Name' })
       db.deleteTemplate(name)
       db.deleteTemplateSections(name)
       return json(res, 200, { ok: true })
@@ -555,7 +561,7 @@ export async function router(req, res) {
       if (!/^[a-zA-Z0-9_./-]+$/.test(branch)) return json(res, 400, { error: 'Ungültiger Branch-Name' })
       try {
         await run(`git -C "${repoDir}" fetch --no-tags origin "${branch}" --quiet`)
-        const behind = await run(`git -C "${repoDir}" rev-list HEAD..origin/${branch} --count`)
+        const behind = await run(`git -C "${repoDir}" rev-list "HEAD..origin/${branch}" --count`)
         const commits = parseInt(behind, 10)
         if (commits === 0) return json(res, 200, { available: false, branch })
         const log = await run(`git -C "${repoDir}" log HEAD..origin/${branch} --oneline --no-decorate`)

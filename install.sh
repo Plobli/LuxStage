@@ -87,6 +87,11 @@ else
   ok "Nutzer '$SERVICE_USER' angelegt"
 fi
 
+# ── Build-Tools für native Node-Module (bcrypt, sharp) ───────────────────────
+step "Installiere Build-Tools..."
+apt-get install -y build-essential python3
+ok "Build-Tools installiert"
+
 # ── Caddy installieren ────────────────────────────────────────────────────────
 step "Installiere Caddy..."
 apt-get install -y debian-keyring debian-archive-keyring apt-transport-https curl gnupg
@@ -122,6 +127,7 @@ cat > "$USERSCRIPT" << SCRIPT
 #!/usr/bin/env bash
 set -e
 
+cd "\$HOME"
 NVM_DIR="\$HOME/.nvm"
 INSTALL_DIR="$INSTALL_DIR"
 REPO_URL="$REPO_URL"

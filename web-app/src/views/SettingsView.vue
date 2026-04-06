@@ -153,7 +153,7 @@
               </div>
               <div>
                 <label class="block text-sm font-medium text-white mb-1">{{ t('settings.users.password') }}</label>
-                <input v-model="newPassword" type="password" required minlength="4"
+                <input v-model="newPassword" type="password" required minlength="8"
                   class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent" />
               </div>
               <div>
@@ -364,7 +364,7 @@ const pwLoading = ref(false)
 
 async function doChangePassword() {
   pwMsg.value = ''
-  if (pwNew.value.length < 4) { pwMsg.value = t('settings.account.change_password.error.short'); return }
+  if (pwNew.value.length < 8) { pwMsg.value = t('settings.account.change_password.error.short'); return }
   if (pwNew.value !== pwConfirm.value) { pwMsg.value = t('settings.account.change_password.error.mismatch'); return }
   pwLoading.value = true
   try {

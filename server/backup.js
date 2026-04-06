@@ -40,10 +40,17 @@ export async function restoreBackup(req, res) {
   const restorePath = path.join(config.dataPath, 'luxstage-restore.zip')
   const photosPath = path.join(config.dataPath, 'photos')
 
+  const MAX_BACKUP_BYTES = 500 * 1024 * 1024 // 500 MB
+
   // Rohen Request-Body als ZIP-Datei speichern
   try {
     const writeStream = createWriteStream(restorePath)
     await new Promise((resolve, reject) => {
+      let received = 0
+      req.on('data', chunk => {
+        received += chunk.length
+        if (received > MAX_BACKUP_BYTES) { req.destroy(); writeStream.destroy(); reject(new Error('Upload zu groß')) }
+      })
       req.pipe(writeStream)
       writeStream.on('finish', resolve)
       writeStream.on('error', reject)
@@ -74,7 +81,8 @@ export async function restoreBackup(req, res) {
       } else if (fileName.startsWith('photos/')) {
         const relPath = fileName.slice('photos/'.length)
         if (!relPath || relPath.endsWith('/') || entry.type === 'Directory') { entry.autodrain(); continue }
-        const destPath = path.join(photosPath, relPath)
+        const destPath = path.resolve(photosPath, relPath)
+        if (!destPath.startsWith(photosPath + path.sep)) { entry.autodrain(); continue }
         await fs.mkdir(path.dirname(destPath), { recursive: true })
         await new Promise((resolve, reject) => {
           const out = createWriteStream(destPath)

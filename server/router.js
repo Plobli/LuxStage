@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { readBody, json, send, notFound, parseUrl } from './helpers.js'
+import { readBody, readJsonBody, json, send, notFound, parseUrl } from './helpers.js'
 const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url)))
 import { login, requireAuth, requireAdmin } from './auth.js'
 import * as db from './db.js'
@@ -15,6 +15,20 @@ import { fileURLToPath } from 'node:url'
 import { randomUUID } from 'node:crypto'
 import { config } from './config.js'
 
+// ── Rate Limiter (Login) ────────────────────────────────────────────────────
+const loginAttempts = new Map()
+const MAX_LOGIN_ATTEMPTS = 10
+const LOGIN_WINDOW_MS = 15 * 60 * 1000
+
+function isRateLimited(ip) {
+  const now = Date.now()
+  const entry = loginAttempts.get(ip) ?? { count: 0, firstAt: now }
+  if (now - entry.firstAt > LOGIN_WINDOW_MS) { loginAttempts.delete(ip); return false }
+  if (entry.count >= MAX_LOGIN_ATTEMPTS) return true
+  loginAttempts.set(ip, { ...entry, count: entry.count + 1 })
+  return false
+}
+
 export async function router(req, res) {
   const { method } = req
   const { pathname, params } = parseUrl(req.url)
@@ -27,9 +41,11 @@ export async function router(req, res) {
 
     // ── Auth ───────────────────────────────────────────────────────────────
     if (method === 'POST' && pathname === '/api/auth/login') {
-      const body = await readBody(req)
-      const { username, password } = JSON.parse(body)
-      const token = login(username, password)
+      const ip = req.socket.remoteAddress || 'unknown'
+      if (isRateLimited(ip)) return json(res, 429, { error: 'Zu viele Versuche. Bitte warten.' })
+      const body = await readJsonBody(req, res); if (body === null) return
+      const { username, password } = body
+      const token = await login(username, password)
       if (!token) return json(res, 401, { error: 'Ungültige Anmeldedaten' })
       return json(res, 200, { token })
     }
@@ -37,26 +53,29 @@ export async function router(req, res) {
     // ── Auth — Passwort ändern ─────────────────────────────────────────────
     if (method === 'POST' && pathname === '/api/auth/change-password') {
       const user = requireAuth(req, res); if (!user) return
-      const body = await readBody(req)
-      const { currentPassword, newPassword } = JSON.parse(body)
-      if (!newPassword || newPassword.length < 4) return json(res, 400, { error: 'Passwort zu kurz' })
+      const body = await readJsonBody(req, res); if (body === null) return
+      const { currentPassword, newPassword } = body
+      if (!newPassword || newPassword.length < 8) return json(res, 400, { error: 'Passwort zu kurz (min. 8 Zeichen)' })
       // Aktuelles Passwort prüfen
       const configUser = config.users.find(u => u.username === user.username)
-      const effectivePassword = db.getDbPassword(user.username) ?? configUser?.password
-      if (effectivePassword !== currentPassword) return json(res, 403, { error: 'Aktuelles Passwort falsch' })
-      db.changePassword(user.username, newPassword)
+      const storedPassword = db.getDbPassword(user.username) ?? configUser?.password
+      const pwOk = storedPassword?.startsWith('$2')
+        ? await (await import('bcrypt')).compare(currentPassword, storedPassword)
+        : currentPassword === storedPassword
+      if (!pwOk) return json(res, 403, { error: 'Aktuelles Passwort falsch' })
+      await db.changePassword(user.username, newPassword)
       return json(res, 200, { ok: true })
     }
 
     // ── Auth — Passwort zurücksetzen (nur Admin) ───────────────────────────
     if (method === 'POST' && pathname === '/api/auth/reset-password') {
       const admin = requireAdmin(req, res); if (!admin) return
-      const body = await readBody(req)
-      const { username } = JSON.parse(body)
+      const body = await readJsonBody(req, res); if (body === null) return
+      const { username } = body
       const allUsers = db.listUsers(config.users)
       if (!allUsers.find(u => u.username === username)) return json(res, 404, { error: 'Benutzer nicht gefunden' })
       const newPassword = randomBytes(6).toString('hex')
-      db.changePassword(username, newPassword)
+      await db.changePassword(username, newPassword)
       return json(res, 200, { newPassword })
     }
 
@@ -69,12 +88,12 @@ export async function router(req, res) {
     // ── Benutzer — Anlegen ─────────────────────────────────────────────────
     if (method === 'POST' && pathname === '/api/users') {
       const admin = requireAdmin(req, res); if (!admin) return
-      const body = await readBody(req)
-      const { username, password, role } = JSON.parse(body)
+      const body = await readJsonBody(req, res); if (body === null) return
+      const { username, password, role } = body
       if (!username || !/^[a-zA-Z0-9_-]+$/.test(username)) return json(res, 400, { error: 'Ungültiger Benutzername' })
-      if (!password || password.length < 4) return json(res, 400, { error: 'Passwort zu kurz' })
+      if (!password || password.length < 8) return json(res, 400, { error: 'Passwort zu kurz (min. 8 Zeichen)' })
       if (!['admin', 'techniker'].includes(role)) return json(res, 400, { error: 'Ungültige Rolle' })
-      db.createUser(username, password, role)
+      await db.createUser(username, password, role)
       return json(res, 201, { ok: true })
     }
 
@@ -126,8 +145,8 @@ export async function router(req, res) {
     // ── Shows — Erstellen ──────────────────────────────────────────────────
     if (method === 'POST' && pathname === '/api/shows') {
       const user = requireAuth(req, res); if (!user) return
-      const body = await readBody(req)
-      const { id, name, datum, template, untertitel, spielzeit, channels } = JSON.parse(body)
+      const body = await readJsonBody(req, res); if (body === null) return
+      const { id, name, datum, template, untertitel, spielzeit, channels } = body
       if (!id || !/^[a-z0-9_-]+$/i.test(id)) return json(res, 400, { error: 'Ungültige ID' })
       db.createShow(id, { name, datum, template, untertitel, spielzeit })
       if (Array.isArray(channels) && channels.length) db.writeChannels(id, channels)
@@ -138,8 +157,8 @@ export async function router(req, res) {
     if (method === 'PUT' && pathname.match(/^\/api\/shows\/([^/]+)\/meta$/)) {
       const user = requireAuth(req, res); if (!user) return
       const slug = pathname.split('/')[3]
-      const body = await readBody(req)
-      const { setupMarkdown, eosActiveChannels, ...rest } = JSON.parse(body)
+      const body = await readJsonBody(req, res); if (body === null) return
+      const { setupMarkdown, eosActiveChannels, ...rest } = body
       const fields = { ...rest }
       if (setupMarkdown !== undefined) fields.setup_markdown = setupMarkdown
       if (eosActiveChannels !== undefined) fields.eos_active_channels = JSON.stringify(eosActiveChannels)
@@ -159,8 +178,7 @@ export async function router(req, res) {
     if (method === 'PUT' && pathname.match(/^\/api\/shows\/([^/]+)\/channels$/)) {
       const user = requireAuth(req, res); if (!user) return
       const slug = pathname.split('/')[3]
-      const body = await readBody(req)
-      const channels = JSON.parse(body)
+      const channels = await readJsonBody(req, res); if (channels === null) return
       db.writeChannels(slug, channels)
       broadcast(slug, 'channels-updated', { updatedBy: user.username })
       return json(res, 200, { ok: true })
@@ -254,7 +272,7 @@ export async function router(req, res) {
 
     // ── Fotos — Löschen ────────────────────────────────────────────────────
     if (method === 'DELETE' && pathname.match(/^\/api\/shows\/([^/]+)\/photos\/(.+)$/)) {
-      const user = requireAuth(req, res); if (!user) return
+      const user = requireAdmin(req, res); if (!user) return
       const parts = pathname.split('/')
       const id = parts[3], filename = parts[5]
       await photos.deletePhoto(id, filename)
@@ -274,8 +292,8 @@ export async function router(req, res) {
       const user = requireAuth(req, res); if (!user) return
       const parts = pathname.split('/')
       const id = parts[3], filename = decodeURIComponent(parts[5])
-      const body = await readBody(req)
-      const { caption } = JSON.parse(body)
+      const body = await readJsonBody(req, res); if (body === null) return
+      const { caption } = body
       db.writePhotoDescription(id, filename, caption ?? '')
       return json(res, 200, { ok: true })
     }
@@ -322,8 +340,8 @@ export async function router(req, res) {
     if (method === 'PUT' && pathname.match(/^\/api\/templates\/([^/]+)\/sections$/)) {
       const user = requireAdmin(req, res); if (!user) return
       const name = pathname.split('/')[3]
-      const body = await readBody(req)
-      const { sections } = JSON.parse(body)
+      const body = await readJsonBody(req, res); if (body === null) return
+      const { sections } = body
       db.writeTemplateSections(name, sections)
       return json(res, 200, { ok: true })
     }
@@ -338,8 +356,7 @@ export async function router(req, res) {
     if (method === 'PUT' && pathname.match(/^\/api\/templates\/(.+)$/)) {
       const user = requireAdmin(req, res); if (!user) return
       const name = pathname.slice('/api/templates/'.length)
-      const body = await readBody(req)
-      const channels = JSON.parse(body)
+      const channels = await readJsonBody(req, res); if (channels === null) return
       db.writeTemplate(name, channels)
       const existing = db.readTemplateSections(name)
       if (!existing.length) {
@@ -371,8 +388,7 @@ export async function router(req, res) {
     if (method === 'PUT' && pathname.match(/^\/api\/shows\/([^/]+)\/sections$/)) {
       const user = requireAuth(req, res); if (!user) return
       const slug = pathname.split('/')[3]
-      const body = await readBody(req)
-      const sections = JSON.parse(body) // [{ id, content }]
+      const sections = await readJsonBody(req, res); if (sections === null) return
       const map = new Map(sections.map(s => [s.id, s.content]))
       db.writeShowSections(slug, map)
       broadcast(slug, 'sections-updated', { updatedBy: user.username })
@@ -390,8 +406,8 @@ export async function router(req, res) {
     if (method === 'PUT' && pathname.match(/^\/api\/shows\/([^/]+)\/section-defs$/)) {
       const user = requireAuth(req, res); if (!user) return
       const slug = pathname.split('/')[3]
-      const body = await readBody(req)
-      const { sections } = JSON.parse(body)
+      const body = await readJsonBody(req, res); if (body === null) return
+      const { sections } = body
       db.writeShowSectionDefs(slug, sections)
       return json(res, 200, { ok: true })
     }
@@ -512,8 +528,9 @@ export async function router(req, res) {
         })
       })
       const branch = params.branch || 'main'
+      if (!/^[a-zA-Z0-9_./-]+$/.test(branch)) return json(res, 400, { error: 'Ungültiger Branch-Name' })
       try {
-        await run(`git -C "${repoDir}" fetch origin "${branch}" --quiet`)
+        await run(`git -C "${repoDir}" fetch --no-tags origin "${branch}" --quiet`)
         const behind = await run(`git -C "${repoDir}" rev-list HEAD..origin/${branch} --count`)
         const commits = parseInt(behind, 10)
         if (commits === 0) return json(res, 200, { available: false, branch })
@@ -536,9 +553,9 @@ export async function router(req, res) {
       const dbPath  = path.join(config.dataPath, 'luxstage.db')
       const dbSnap  = path.join(config.dataPath, 'luxstage-preupdate.db')
 
-      const body = await readBody(req)
-      const bodyJson = body ? JSON.parse(body) : {}
+      const bodyJson = await readJsonBody(req, res); if (bodyJson === null) return
       const branch = bodyJson.branch || 'main'
+      if (!/^[a-zA-Z0-9_./-]+$/.test(branch)) return json(res, 400, { error: 'Ungültiger Branch-Name' })
 
       // nvm-Pfad ermitteln damit npm in non-login shells verfügbar ist
       const nvmDir = process.env.NVM_DIR || path.join(process.env.HOME, '.nvm')
@@ -570,17 +587,25 @@ export async function router(req, res) {
       }
 
       try {
-        // 1. Aktuellen Commit merken
+        // 1. Git-Konfiguration sicherstellen (einmalig, Pi hat ggf. keine Identität)
+        await run(`git -C "${repoDir}" config pull.ff only`).catch(() => {})
+        await run(`git -C "${repoDir}" config user.email "luxstage@localhost"`).catch(() => {})
+        await run(`git -C "${repoDir}" config user.name "LuxStage"`).catch(() => {})
+
+        // 2. Aktuellen Commit merken
         oldCommit = (await run(`git -C "${repoDir}" rev-parse HEAD`)).trim()
         step(`Aktueller Commit: ${oldCommit.slice(0, 8)}`)
 
-        // 2. DB-Snapshot (non-blocking, WAL-sicher)
+        // 3. DB-Snapshot (non-blocking, WAL-sicher)
         await run(`cp "${dbPath}" "${dbSnap}"`)
         step('DB-Snapshot erstellt')
 
-        // 3. Git pull (gewählter Branch)
-        const pullOut = await run(`git -C "${repoDir}" pull origin "${branch}"`)
-        step(`git pull (${branch}): ${pullOut.trim().split('\n').pop()}`)
+        // 4. Lokalen Branch auf Remote zurücksetzen (verhindert Divergenz durch Cherry-picks etc.)
+        await run(`git -C "${repoDir}" fetch --no-tags origin "${branch}"`)
+        await run(`git -C "${repoDir}" reset --hard "origin/${branch}"`)
+        step(`git reset --hard origin/${branch}`)
+        const pullOut = 'Reset auf Remote-Stand'
+        step(`git pull (${branch}): ${pullOut}`)
 
         const newCommit = (await run(`git -C "${repoDir}" rev-parse HEAD`)).trim()
         if (newCommit === oldCommit) {

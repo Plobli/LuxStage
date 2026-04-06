@@ -1,10 +1,25 @@
-export function readBody(req) {
+export function readBody(req, maxBytes = 1_048_576) {
   return new Promise((resolve, reject) => {
-    const chunks = []
-    req.on('data', c => chunks.push(c))
+    const chunks = []; let size = 0
+    req.on('data', c => {
+      size += c.length
+      if (size > maxBytes) { req.destroy(); return reject(new Error('Body zu groß')) }
+      chunks.push(c)
+    })
     req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
     req.on('error', reject)
   })
+}
+
+export async function readJsonBody(req, res, maxBytes) {
+  let raw
+  try { raw = await readBody(req, maxBytes) } catch {
+    json(res, 413, { error: 'Request zu groß' }); return null
+  }
+  if (!raw.trim()) return {}
+  try { return JSON.parse(raw) } catch {
+    json(res, 400, { error: 'Ungültiger JSON-Body' }); return null
+  }
 }
 
 export function json(res, status, data) {

@@ -7,6 +7,14 @@ ok()   { echo -e "  ${GREEN}✓${RESET}  $1"; }
 step() { echo -e "  →  $1"; }
 fail() { echo -e "  ${RED}✗${RESET}  Fehler: $1"; exit 1; }
 
+# ── Neustart mit TTY wenn via curl|bash aufgerufen (kein interaktives stdin) ───
+if [ ! -t 0 ]; then
+  TMPSCRIPT=$(mktemp /tmp/luxstage-install.XXXXXX.sh)
+  curl -fsSL https://raw.githubusercontent.com/Plobli/LuxStage/main/install.sh -o "$TMPSCRIPT"
+  chmod +x "$TMPSCRIPT"
+  exec sudo bash "$TMPSCRIPT" < /dev/tty
+fi
+
 # ── Root-Check ────────────────────────────────────────────────────────────────
 [ "$(id -u)" -eq 0 ] || fail "Bitte als root ausführen: sudo bash install.sh"
 

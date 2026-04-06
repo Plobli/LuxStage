@@ -56,6 +56,7 @@ function takeSnapshots() {
 
 export function startHistoryJob() {
   initHashes()
+  // Automatische Snapshots laufen weiter als Fallback (z.B. für Änderungen via API ohne Browser)
   setInterval(takeSnapshots, INTERVAL_MS)
 }
 

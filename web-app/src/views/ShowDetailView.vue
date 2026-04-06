@@ -1188,6 +1188,7 @@ function hasFieldsType() {
 
 // ── Laden ──────────────────────────────────────────────────────────────────
 let unsubscribeSSE = null
+let snapshotInterval = null
 const presence = ref([]) // [{ username, devices }]
 
 onMounted(async () => {
@@ -1219,8 +1220,9 @@ onMounted(async () => {
   // Initialer Snapshot: sauberer Ausgangspunkt für Undo, löscht alte sessionStorage-History
   // Außerhalb des try-Blocks damit er immer ausgeführt wird (auch bei teilweisem Ladefehler)
   initSnapshot()
-  // Server-seitiger Snapshot beim Öffnen (fire-and-forget)
+  // Server-seitiger Snapshot beim Öffnen + alle 10 Minuten (fire-and-forget)
   createSnapshot(props.id).catch(() => {})
+  snapshotInterval = setInterval(() => createSnapshot(props.id).catch(() => {}), 10 * 60 * 1000)
 
   // SSE — gemeinsame Verbindung für Channels, Sections und Presence
   unsubscribeSSE = subscribeShow(props.id, {
@@ -1260,6 +1262,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onUndoRedoKeydown)
   unsubscribeSSE?.()
+  clearInterval(snapshotInterval)
   if (saveSetupTimer) { clearTimeout(saveSetupTimer); persistSetup(pendingSetupMd) }
   if (channelsSaveTimer) { clearTimeout(channelsSaveTimer); persistChannels() }
   if (saveSectionsTimer) { clearTimeout(saveSectionsTimer); persistSections() }

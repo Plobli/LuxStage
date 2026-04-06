@@ -174,7 +174,7 @@ SCRIPT
 
 # ── Alle User-Schritte als Service-User ausführen ────────────────────────────
 step "Installiere nvm, Node.js 22, PM2 und Repository für '$SERVICE_USER'..."
-sudo -u "$SERVICE_USER" bash "$USERSCRIPT"
+sudo -i -u "$SERVICE_USER" bash "$USERSCRIPT"
 ok "Node.js, PM2, Repository und Web-App bereit"
 
 rm -f "$USERSCRIPT"
@@ -211,16 +211,9 @@ ok "PM2-Konfiguration erstellt"
 # ── PM2 starten und autostart einrichten ─────────────────────────────────────
 step "Starte LuxStage mit PM2..."
 
-# Absoluten Node- und PM2-Pfad ermitteln
-NODE_BIN=$(sudo -u "$SERVICE_USER" bash -c '. $HOME/.nvm/nvm.sh && which node')
-PM2_BIN=$(sudo -u "$SERVICE_USER" bash -c '. $HOME/.nvm/nvm.sh && which pm2')
+sudo -i -u "$SERVICE_USER" bash -c '. $HOME/.nvm/nvm.sh && pm2 start '"'$INSTALL_DIR/ecosystem.config.cjs'"' && pm2 save'
 
-# Node systemweit verfügbar machen damit PM2-Daemon es findet
-ln -sf "$NODE_BIN" /usr/local/bin/node
-
-sudo -u "$SERVICE_USER" bash -c "HOME=$SERVICE_HOME $PM2_BIN start '$INSTALL_DIR/ecosystem.config.cjs' && $PM2_BIN save"
-
-PM2_STARTUP=$(sudo -u "$SERVICE_USER" bash -c "HOME=$SERVICE_HOME $PM2_BIN startup systemd -u $SERVICE_USER --hp $SERVICE_HOME" | grep "sudo env" || true)
+PM2_STARTUP=$(sudo -i -u "$SERVICE_USER" bash -c ". \$HOME/.nvm/nvm.sh && pm2 startup systemd -u $SERVICE_USER --hp $SERVICE_HOME" | grep "sudo env" || true)
 [ -n "$PM2_STARTUP" ] && eval "$PM2_STARTUP"
 ok "LuxStage läuft und startet automatisch beim Booten"
 

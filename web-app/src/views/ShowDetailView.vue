@@ -185,7 +185,8 @@
                       >
                         <input
                           :value="ch.channel"
-                          @change="pushSnapshot(); ch.channel = $event.target.value; persistChannels()"
+                          @input="pushSnapshotDebounced()"
+                          @change="ch.channel = $event.target.value; persistChannels()"
                           :data-nav-row="rowIndexOf(ch)"
                           data-nav-col="0"
                           @keydown="onKeydown($event, rowIndexOf(ch), 0, 4, () => startAdd(ch.position))"
@@ -194,7 +195,8 @@
                         />
                         <input
                           :value="ch.address"
-                          @change="pushSnapshot(); ch.address = $event.target.value; persistChannels()"
+                          @input="pushSnapshotDebounced()"
+                          @change="ch.address = $event.target.value; persistChannels()"
                           class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-xs text-gray-500 px-0 border-0 w-[5ch] text-center"
                         />
                       </div>
@@ -202,15 +204,15 @@
                     <td class="px-3 py-2 align-middle">
                       <ColorAutocomplete
                         :modelValue="ch.color"
-                        @update:modelValue="ch.color = $event"
-                        @change="pushSnapshot(); persistChannels()"
+                        @update:modelValue="pushSnapshot(); ch.color = $event; persistChannels()"
                         :placeholder="t('field.color')"
                       />
                     </td>
                     <td class="px-3 py-0 align-middle">
                       <textarea
                         :value="ch.device"
-                        @change="pushSnapshot(); ch.device = $event.target.value; persistChannels()"
+                        @input="pushSnapshotDebounced()"
+                        @change="ch.device = $event.target.value; persistChannels()"
                         :data-nav-row="rowIndexOf(ch)"
                         data-nav-col="2"
                         @keydown="onKeydown($event, rowIndexOf(ch), 2, 4, null)"
@@ -220,7 +222,8 @@
                     <td class="px-3 py-0 align-middle">
                       <textarea
                         :value="ch.notes"
-                        @change="pushSnapshot(); ch.notes = $event.target.value; persistChannels()"
+                        @input="pushSnapshotDebounced()"
+                        @change="ch.notes = $event.target.value; persistChannels()"
                         :data-nav-row="rowIndexOf(ch)"
                         data-nav-col="3"
                         @keydown="onKeydown($event, rowIndexOf(ch), 3, 4, () => startAdd(ch.position))"

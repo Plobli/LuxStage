@@ -530,7 +530,7 @@ export async function router(req, res) {
       const branch = params.branch || 'main'
       if (!/^[a-zA-Z0-9_./-]+$/.test(branch)) return json(res, 400, { error: 'Ungültiger Branch-Name' })
       try {
-        await run(`git -C "${repoDir}" fetch origin "${branch}" --quiet`)
+        await run(`git -C "${repoDir}" fetch --no-tags origin "${branch}" --quiet`)
         const behind = await run(`git -C "${repoDir}" rev-list HEAD..origin/${branch} --count`)
         const commits = parseInt(behind, 10)
         if (commits === 0) return json(res, 200, { available: false, branch })
@@ -596,7 +596,7 @@ export async function router(req, res) {
         step('DB-Snapshot erstellt')
 
         // 3. Git pull (gewählter Branch)
-        const pullOut = await run(`git -C "${repoDir}" pull origin "${branch}"`)
+        const pullOut = await run(`git -C "${repoDir}" pull --no-rebase origin "${branch}"`)
         step(`git pull (${branch}): ${pullOut.trim().split('\n').pop()}`)
 
         const newCommit = (await run(`git -C "${repoDir}" rev-parse HEAD`)).trim()

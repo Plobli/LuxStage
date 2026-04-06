@@ -79,8 +79,9 @@ export async function restoreBackup(req, res) {
           out.on('error', reject)
         })
       } else if (fileName.startsWith('photos/')) {
-        const relPath = fileName.slice('photos/'.length)
+        const relPath = fileName.slice('photos/'.length).replace(/\\/g, '/')
         if (!relPath || relPath.endsWith('/') || entry.type === 'Directory') { entry.autodrain(); continue }
+        if (relPath.includes('..') || path.isAbsolute(relPath)) { entry.autodrain(); continue }
         if (!/\.(jpg|jpeg|png|gif|webp)$/i.test(relPath)) { entry.autodrain(); continue }
         const destPath = path.resolve(photosPath, relPath)
         if (!destPath.startsWith(photosPath + path.sep)) { entry.autodrain(); continue }

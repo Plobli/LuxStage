@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { readBody, readJsonBody, json, send, notFound, parseUrl } from './helpers.js'
 const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url)))
-import { login, signToken, requireAuth, requireAdmin } from './auth.js'
+import { login, signToken, requireAuth, requireAdmin, issueDownloadToken } from './auth.js'
 import * as db from './db.js'
 import { randomBytes } from 'node:crypto'
 import { listHistory, getHistoryEntry, restoreHistoryEntry } from './history.js'
@@ -64,6 +64,12 @@ export async function router(req, res) {
     if (method === 'POST' && pathname === '/api/auth/refresh') {
       const user = requireAuth(req, res); if (!user) return
       return json(res, 200, { token: signToken(user.username, user.role) })
+    }
+
+    // ── Auth — Einmal-Download-Token (für PDF, Fotos, Backup) ─────────────
+    if (method === 'POST' && pathname === '/api/auth/download-token') {
+      const user = requireAuth(req, res); if (!user) return
+      return json(res, 200, { token: issueDownloadToken(user.username, user.role) })
     }
 
     // ── Auth — Passwort ändern ─────────────────────────────────────────────

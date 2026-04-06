@@ -2,6 +2,26 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
 import { config } from './config.js'
 import { db } from './db-init.js'
+import { randomBytes } from 'node:crypto'
+
+// ── Kurzlebige Einmal-Token für URL-basierte Ressourcen (PDF, Fotos, Backup) ──
+// Speichert: token → { username, role, expiresAt }
+const downloadTokens = new Map()
+const DOWNLOAD_TOKEN_TTL_MS = 60 * 1000 // 60 Sekunden
+
+export function issueDownloadToken(username, role) {
+  const token = randomBytes(24).toString('hex')
+  downloadTokens.set(token, { username, role, expiresAt: Date.now() + DOWNLOAD_TOKEN_TTL_MS })
+  return token
+}
+
+function redeemDownloadToken(token) {
+  const entry = downloadTokens.get(token)
+  if (!entry) return null
+  downloadTokens.delete(token) // Einmalnutzung
+  if (Date.now() > entry.expiresAt) return null
+  return { username: entry.username, role: entry.role }
+}
 
 const BCRYPT_COST = 12
 
@@ -45,6 +65,8 @@ export async function login(username, password) {
     const hash = await hashPassword(password)
     db.prepare('INSERT INTO users (username, password, role) VALUES (?, ?, ?) ON CONFLICT(username) DO UPDATE SET password = excluded.password, role = excluded.role')
       .run(user.username, hash, user.role)
+    // Klartext aus dem In-Memory-Config-Objekt entfernen
+    user.password = null
   }
   return signToken(user.username, user.role)
 }
@@ -58,6 +80,9 @@ export function authenticate(req) {
     token = url.searchParams.get('token')
   }
   if (!token) return null
+  // Einmal-Download-Token zuerst prüfen
+  const dtUser = redeemDownloadToken(token)
+  if (dtUser) return dtUser
   try {
     return jwt.verify(token, config.jwtSecret)
   } catch {

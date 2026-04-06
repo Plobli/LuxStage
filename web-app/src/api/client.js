@@ -40,8 +40,21 @@ export const api = {
   put:    (path, body)  => request('PUT', path, body),
   delete: (path)        => request('DELETE', path),
 
-  /** Datei-URL für direkten Browser-Zugriff (Fotos, PDF, Backup) */
+  /** Synchrone URL mit langlebigem JWT — nur für Inline-Ressourcen (img src, SSE).
+   *  Für einmalige Downloads (PDF, Backup) stattdessen downloadUrl() nutzen. */
   url: (path) => BASE() + path + '?token=' + (getToken() || ''),
+
+  /** Async URL mit kurzlebigem Einmal-Token (60s TTL) für Downloads (PDF, Backup).
+   *  Verhindert, dass der langlebige JWT in Server-Logs landet. */
+  downloadUrl: async (path) => {
+    const res = await fetch(BASE() + '/api/auth/download-token', {
+      method: 'POST',
+      headers: headers(),
+    })
+    if (!res.ok) throw new Error('Download-Token konnte nicht ausgestellt werden')
+    const { token } = await res.json()
+    return BASE() + path + '?token=' + token
+  },
 }
 
 export async function login(username, password) {

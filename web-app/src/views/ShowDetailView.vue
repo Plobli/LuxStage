@@ -90,7 +90,7 @@
           <button class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/5" @click="downloadChannelsCsv(props.id, channels)">{{ t('channel.export') }}</button>
           <button class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/5" @click="csvImportInput?.click()">{{ t('channel.import') }}</button>
           <button class="w-full text-left px-4 py-2 text-sm text-amber-400 hover:bg-white/5" @click="eosFileInput?.click()">{{ t('eos.import.button') }}</button>
-          <a :href="pdfUrl" target="_blank" class="block px-4 py-2 text-sm text-gray-300 hover:bg-white/5">{{ t('show.pdf') }}</a>
+          <button class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/5" @click="openPdf">{{ t('show.pdf') }}</button>
         </div>
       </div>
       <!-- Normale Buttons (xl+) -->
@@ -99,7 +99,7 @@
         <button type="button" class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @click="downloadChannelsCsv(props.id, channels)">{{ t('channel.export') }}</button>
         <button type="button" class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @click="csvImportInput?.click()">{{ t('channel.import') }}</button>
         <button type="button" class="rounded-md px-2 py-1.5 text-sm font-semibold text-amber-400 ring-1 ring-amber-400/30 hover:ring-amber-400/60" @click="eosFileInput?.click()">{{ t('eos.import.button') }}</button>
-        <a :href="pdfUrl" target="_blank" class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20">{{ t('show.pdf') }}</a>
+        <button type="button" class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @click="openPdf">{{ t('show.pdf') }}</button>
       </div>
       <input ref="csvImportInput" type="file" accept=".csv" class="hidden" @change="onCsvImportSelected" />
       <input ref="eosFileInput" type="file" accept=".csv" class="hidden" @change="onEosFileSelected" />
@@ -866,7 +866,10 @@ function parseEosCsv(text) {
 }
 
 // ── PDF ────────────────────────────────────────────────────────────────────
-const pdfUrl = computed(() => api.url(`/api/shows/${props.id}/pdf`))
+async function openPdf() {
+  const url = await api.downloadUrl(`/api/shows/${props.id}/pdf`)
+  window.open(url, '_blank')
+}
 
 // ── Kanal-Duplikat-Warnung ─────────────────────────────────────────────────
 const dupWarning = computed(() => {

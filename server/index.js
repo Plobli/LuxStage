@@ -6,8 +6,8 @@ import { startHistoryJob } from './history.js'
 const corsOrigin = process.env.CORS_ORIGIN || ''
 
 const server = http.createServer((req, res) => {
-  // CORS
-  if (corsOrigin) res.setHeader('Access-Control-Allow-Origin', corsOrigin)
+  // CORS — Wildcard explizit verboten (würde CSRF via ?token= ermöglichen)
+  if (corsOrigin && corsOrigin !== '*') res.setHeader('Access-Control-Allow-Origin', corsOrigin)
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return }

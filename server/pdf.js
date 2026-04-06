@@ -345,7 +345,8 @@ function renderFieldsSection(doc, fields, raw, margin, usableW) {
   const rowH = mm(5.5)
   let y = doc.y
   for (const field of fields) {
-    const re = new RegExp(`^${field.key}:\\s*(.*)$`, 'm')
+    const escapedKey = field.key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const re = new RegExp(`^${escapedKey}:\\s*(.*)$`, 'm')
     const match = raw.match(re)
     const value = match ? match[1].trim() : ''
     if (!value) continue

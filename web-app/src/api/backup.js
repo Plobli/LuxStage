@@ -3,8 +3,9 @@
  */
 import { api, getToken } from './client.js'
 
-export function downloadBackup() {
-  window.location.href = api.url('/api/backup')
+export async function downloadBackup() {
+  const url = await api.downloadUrl('/api/backup')
+  window.location.href = url
 }
 
 export async function uploadRestore(file) {

@@ -505,10 +505,10 @@ export async function router(req, res) {
       })
       try {
         await run(`git -C "${repoDir}" fetch --prune --quiet`)
-        const out = await run(`git -C "${repoDir}" branch -r --format=%(refname:short)`)
+        const out = await run(`git -C "${repoDir}" branch -r`)
         const branches = out.split('\n')
           .map(b => b.trim().replace(/^origin\//, ''))
-          .filter(b => b && b !== 'HEAD')
+          .filter(b => b && !b.startsWith('HEAD'))
         return json(res, 200, { branches })
       } catch (err) {
         return json(res, 200, { branches: ['main'], error: err.message })

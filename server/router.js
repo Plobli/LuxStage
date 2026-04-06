@@ -587,17 +587,25 @@ export async function router(req, res) {
       }
 
       try {
-        // 1. Aktuellen Commit merken
+        // 1. Git-Konfiguration sicherstellen (einmalig, Pi hat ggf. keine Identität)
+        await run(`git -C "${repoDir}" config pull.ff only`).catch(() => {})
+        await run(`git -C "${repoDir}" config user.email "luxstage@localhost"`).catch(() => {})
+        await run(`git -C "${repoDir}" config user.name "LuxStage"`).catch(() => {})
+
+        // 2. Aktuellen Commit merken
         oldCommit = (await run(`git -C "${repoDir}" rev-parse HEAD`)).trim()
         step(`Aktueller Commit: ${oldCommit.slice(0, 8)}`)
 
-        // 2. DB-Snapshot (non-blocking, WAL-sicher)
+        // 3. DB-Snapshot (non-blocking, WAL-sicher)
         await run(`cp "${dbPath}" "${dbSnap}"`)
         step('DB-Snapshot erstellt')
 
-        // 3. Git pull (gewählter Branch)
-        const pullOut = await run(`git -C "${repoDir}" pull --ff-only origin "${branch}"`)
-        step(`git pull (${branch}): ${pullOut.trim().split('\n').pop()}`)
+        // 4. Lokalen Branch auf Remote zurücksetzen (verhindert Divergenz durch Cherry-picks etc.)
+        await run(`git -C "${repoDir}" fetch --no-tags origin "${branch}"`)
+        await run(`git -C "${repoDir}" reset --hard "origin/${branch}"`)
+        step(`git reset --hard origin/${branch}`)
+        const pullOut = 'Reset auf Remote-Stand'
+        step(`git pull (${branch}): ${pullOut}`)
 
         const newCommit = (await run(`git -C "${repoDir}" rev-parse HEAD`)).trim()
         if (newCommit === oldCommit) {

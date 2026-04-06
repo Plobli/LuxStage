@@ -65,7 +65,12 @@ export function useUndoRedo(getState, applyState, cancelPendingSaves, saveNow = 
   function initSnapshot() {
     cancelDebounce()
     _clearStorage()
-    past.value = [_cloneState()]
+    try {
+      past.value = [_cloneState()]
+    } catch (e) {
+      console.error('[useUndoRedo] initSnapshot fehlgeschlagen:', e)
+      past.value = []
+    }
     future.value = []
     _saveToStorage()
   }
@@ -73,7 +78,8 @@ export function useUndoRedo(getState, applyState, cancelPendingSaves, saveNow = 
   /** Sofortiger Snapshot — für destruktive Aktionen. */
   function pushSnapshot() {
     cancelDebounce()
-    _push(_cloneState())
+    try { _push(_cloneState()) }
+    catch (e) { console.error('[useUndoRedo] pushSnapshot fehlgeschlagen:', e) }
   }
 
   /** Debounced Snapshot — für Texteingaben (500ms).
@@ -82,7 +88,8 @@ export function useUndoRedo(getState, applyState, cancelPendingSaves, saveNow = 
   function pushSnapshotDebounced() {
     if (!debounceTimer) {
       // Erster Aufruf dieser Sequenz: Zustand VOR der Änderung sichern
-      pendingSnapshot = _cloneState()
+      try { pendingSnapshot = _cloneState() }
+      catch (e) { console.error('[useUndoRedo] pushSnapshotDebounced fehlgeschlagen:', e) }
     }
     clearTimeout(debounceTimer)
     debounceTimer = setTimeout(() => {

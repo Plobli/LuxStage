@@ -1212,14 +1212,15 @@ onMounted(async () => {
 
     sectionContents.value = new Map((Array.isArray(sections) ? sections : []).map(s => [s.id, s.content]))
     sectionDefs.value = Array.isArray(defs) ? defs : []
-
-    // Initialer Snapshot: sauberer Ausgangspunkt für Undo, löscht alte sessionStorage-History
-    initSnapshot()
   } catch (e) {
     console.error('Ladefehler:', e)
   } finally {
     loading.value = false
   }
+
+  // Initialer Snapshot: sauberer Ausgangspunkt für Undo, löscht alte sessionStorage-History
+  // Außerhalb des try-Blocks damit er immer ausgeführt wird (auch bei teilweisem Ladefehler)
+  initSnapshot()
 
   // SSE — gemeinsame Verbindung für Channels, Sections und Presence
   unsubscribeSSE = subscribeShow(props.id, {

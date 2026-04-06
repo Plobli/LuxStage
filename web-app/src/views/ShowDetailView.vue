@@ -587,7 +587,7 @@ const sortableSections = ref(null)
 let saveSectionsTimer = null
 
 // ── Undo/Redo ──────────────────────────────────────────────────────────────
-const { pushSnapshot, pushSnapshotDebounced, cancelDebounce, undo, redo, canUndo, canRedo } =
+const { initSnapshot, pushSnapshot, pushSnapshotDebounced, cancelDebounce, undo, redo, canUndo, canRedo } =
   useUndoRedo(
     // getState
     () => ({
@@ -1212,6 +1212,9 @@ onMounted(async () => {
 
     sectionContents.value = new Map((Array.isArray(sections) ? sections : []).map(s => [s.id, s.content]))
     sectionDefs.value = Array.isArray(defs) ? defs : []
+
+    // Initialer Snapshot: sauberer Ausgangspunkt für Undo, löscht alte sessionStorage-History
+    initSnapshot()
   } catch (e) {
     console.error('Ladefehler:', e)
   } finally {

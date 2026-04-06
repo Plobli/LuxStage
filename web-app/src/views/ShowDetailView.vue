@@ -184,9 +184,9 @@
                         @click.stop="toggleChannelStatus(ch)"
                       >
                         <input
-                          :value="ch.channel"
-                          @input="pushSnapshotDebounced()"
-                          @change="ch.channel = $event.target.value; persistChannels()"
+                          v-model="ch.channel"
+                          @input="persistChannels()"
+                          @blur="pushSnapshotIfChanged()"
                           :data-nav-row="rowIndexOf(ch)"
                           data-nav-col="0"
                           @keydown="onKeydown($event, rowIndexOf(ch), 0, 4, () => startAdd(ch.position))"
@@ -194,9 +194,9 @@
                           class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-2xl font-bold font-mono px-0 border-0 leading-none w-[4ch] text-center"
                         />
                         <input
-                          :value="ch.address"
-                          @input="pushSnapshotDebounced()"
-                          @change="ch.address = $event.target.value; persistChannels()"
+                          v-model="ch.address"
+                          @input="persistChannels()"
+                          @blur="pushSnapshotIfChanged()"
                           class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-xs text-gray-500 px-0 border-0 w-[5ch] text-center"
                         />
                       </div>
@@ -210,9 +210,9 @@
                     </td>
                     <td class="px-3 py-0 align-middle">
                       <textarea
-                        :value="ch.device"
-                        @input="pushSnapshotDebounced()"
-                        @change="ch.device = $event.target.value; persistChannels()"
+                        v-model="ch.device"
+                        @input="persistChannels()"
+                        @blur="pushSnapshotIfChanged()"
                         :data-nav-row="rowIndexOf(ch)"
                         data-nav-col="2"
                         @keydown="onKeydown($event, rowIndexOf(ch), 2, 4, null)"
@@ -221,9 +221,9 @@
                     </td>
                     <td class="px-3 py-0 align-middle">
                       <textarea
-                        :value="ch.notes"
-                        @input="pushSnapshotDebounced()"
-                        @change="ch.notes = $event.target.value; persistChannels()"
+                        v-model="ch.notes"
+                        @input="persistChannels()"
+                        @blur="pushSnapshotIfChanged()"
                         :data-nav-row="rowIndexOf(ch)"
                         data-nav-col="3"
                         @keydown="onKeydown($event, rowIndexOf(ch), 3, 4, () => startAdd(ch.position))"
@@ -585,7 +585,7 @@ const sortableSections = ref(null)
 let saveSectionsTimer = null
 
 // ── Undo/Redo ──────────────────────────────────────────────────────────────
-const { initSnapshot, pushSnapshot, pushSnapshotDebounced, cancelDebounce, undo, redo, canUndo, canRedo } =
+const { initSnapshot, pushSnapshot, pushSnapshotIfChanged, undo, redo, canUndo, canRedo } =
   useUndoRedo(
     // getState
     () => ({
@@ -675,10 +675,10 @@ let saveSetupTimer = null
 let pendingSetupMd = null
 
 function onSetupChange(md) {
-  pushSnapshotDebounced()
   pendingSetupMd = md
   clearTimeout(saveSetupTimer)
   saveSetupTimer = setTimeout(() => { persistSetup(md); saveSetupTimer = null }, 50)
+  pushSnapshotIfChanged()
 }
 
 async function persistSetup(md) {
@@ -1107,9 +1107,9 @@ function openLightbox(filename) {
 function onSectionChange(id, value) {
   sectionContents.value = new Map(sectionContents.value)
   sectionContents.value.set(id, value)
-  pushSnapshotDebounced()
   clearTimeout(saveSectionsTimer)
   saveSectionsTimer = setTimeout(() => { persistSections(); saveSectionsTimer = null }, 50)
+  pushSnapshotIfChanged()
 }
 
 let ignoreSectionsSseCount = 0
@@ -1258,7 +1258,6 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
-  cancelDebounce()
   window.removeEventListener('keydown', onUndoRedoKeydown)
   unsubscribeSSE?.()
   if (saveSetupTimer) { clearTimeout(saveSetupTimer); persistSetup(pendingSetupMd) }

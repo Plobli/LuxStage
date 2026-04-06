@@ -4,6 +4,9 @@ import { ref, computed, toRaw } from 'vue'
 const MAX_HISTORY = 50
 
 /**
+ * Undo/Redo wie in Word: jede abgeschlossene Aktion (blur, destruktive Aktion)
+ * wird als Schritt gesichert. Undo/Redo setzt den gesamten App-Zustand zurück.
+ *
  * @param {() => object} getState          – gibt aktuellen Zustand zurück
  * @param {(snapshot: object) => void} applyState – stellt Zustand wieder her
  * @param {() => void} cancelPendingSaves  – bricht laufende debounced Saves ab
@@ -11,11 +14,8 @@ const MAX_HISTORY = 50
  * @param {string|null} storageKey         – sessionStorage-Schlüssel für Persistenz (optional)
  */
 export function useUndoRedo(getState, applyState, cancelPendingSaves, saveNow = () => {}, storageKey = null) {
-  const past = ref([])    // älteste zuerst
+  const past = ref([])    // älteste zuerst; past[last] = aktueller Stand
   const future = ref([])  // neueste zuerst (future[0] = nächster Redo-Schritt)
-
-  let debounceTimer = null
-  let pendingSnapshot = null   // Snapshot vor der ersten Änderung einer Debounce-Sequenz
 
   // ── sessionStorage ────────────────────────────────────────────────────────
 
@@ -23,9 +23,7 @@ export function useUndoRedo(getState, applyState, cancelPendingSaves, saveNow = 
     if (!storageKey) return
     try {
       sessionStorage.setItem(storageKey, JSON.stringify({ past: past.value, future: future.value }))
-    } catch {
-      // QuotaExceededError — still ohne Persistenz weiterarbeiten
-    }
+    } catch { /* QuotaExceededError — ignorieren */ }
   }
 
   function _clearStorage() {
@@ -33,7 +31,7 @@ export function useUndoRedo(getState, applyState, cancelPendingSaves, saveNow = 
     sessionStorage.removeItem(storageKey)
   }
 
-  // ── Snapshots ─────────────────────────────────────────────────────────────
+  // ── Hilfsfunktionen ───────────────────────────────────────────────────────
 
   function _deepRaw(val) {
     if (Array.isArray(val)) return val.map(item => _deepRaw(toRaw(item)))
@@ -46,24 +44,21 @@ export function useUndoRedo(getState, applyState, cancelPendingSaves, saveNow = 
     return val
   }
 
-  /** Tiefer Clone des aktuellen Zustands (reaktive Proxies entfernt). */
   function _cloneState() {
     return structuredClone(_deepRaw(getState()))
   }
 
   function _push(snapshot) {
-    future.value = []                          // Neue Änderung → Redo-Stack leeren
+    future.value = []
     past.value.push(snapshot)
-    if (past.value.length > MAX_HISTORY) {
-      past.value.shift()                       // Ältesten Eintrag verwerfen
-    }
+    if (past.value.length > MAX_HISTORY) past.value.shift()
     _saveToStorage()
   }
 
-  /** Initialer Snapshot beim Öffnen einer Show.
-   *  Löscht vorhandene sessionStorage-History und setzt einen sauberen Ausgangspunkt. */
+  // ── Öffentliche API ───────────────────────────────────────────────────────
+
+  /** Beim Öffnen einer Show: löscht alte History, setzt sauberen Ausgangspunkt. */
   function initSnapshot() {
-    cancelDebounce()
     _clearStorage()
     try {
       past.value = [_cloneState()]
@@ -75,39 +70,28 @@ export function useUndoRedo(getState, applyState, cancelPendingSaves, saveNow = 
     _saveToStorage()
   }
 
-  /** Sofortiger Snapshot — für destruktive Aktionen. */
+  /** Snapshot des aktuellen Zustands sichern — für destruktive Aktionen
+   *  (Kanal löschen, Drag&Drop, CSV-Import etc.) VOR der Änderung aufrufen. */
   function pushSnapshot() {
-    cancelDebounce()
     try { _push(_cloneState()) }
     catch (e) { console.error('[useUndoRedo] pushSnapshot fehlgeschlagen:', e) }
   }
 
-  /** Debounced Snapshot — für Texteingaben (500ms).
-   *  Snapshot wird sofort beim ersten Aufruf aufgezeichnet (Zustand vor der Änderung),
-   *  und erst nach 500ms ohne weitere Eingabe in den Stack gepusht. */
-  function pushSnapshotDebounced() {
-    if (!debounceTimer) {
-      // Erster Aufruf dieser Sequenz: Zustand VOR der Änderung sichern
-      try { pendingSnapshot = _cloneState() }
-      catch (e) { console.error('[useUndoRedo] pushSnapshotDebounced fehlgeschlagen:', e) }
+  /** Snapshot nach einer Texteingabe sichern — bei @blur aufrufen.
+   *  Speichert den aktuellen Zustand nur wenn er sich vom letzten Snapshot unterscheidet. */
+  function pushSnapshotIfChanged() {
+    try {
+      const current = _cloneState()
+      const last = past.value[past.value.length - 1]
+      if (last && JSON.stringify(current) === JSON.stringify(last)) return
+      _push(current)
+    } catch (e) {
+      console.error('[useUndoRedo] pushSnapshotIfChanged fehlgeschlagen:', e)
     }
-    clearTimeout(debounceTimer)
-    debounceTimer = setTimeout(() => {
-      debounceTimer = null
-      _push(pendingSnapshot)
-      pendingSnapshot = null
-    }, 500)
-  }
-
-  /** Debounce abbrechen — in onBeforeUnmount aufrufen */
-  function cancelDebounce() {
-    clearTimeout(debounceTimer)
-    debounceTimer = null
-    pendingSnapshot = null
   }
 
   function undo() {
-    if (past.value.length <= 1) return   // mind. 1 Eintrag bleibt (der initiale Snapshot)
+    if (past.value.length <= 1) return
     const current = _cloneState()
     future.value.unshift(current)
     const prev = past.value.pop()
@@ -128,8 +112,8 @@ export function useUndoRedo(getState, applyState, cancelPendingSaves, saveNow = 
     _saveToStorage()
   }
 
-  const canUndo = computed(() => past.value.length > 1)  // > 1: initialer Snapshot zählt nicht
+  const canUndo = computed(() => past.value.length > 1)
   const canRedo = computed(() => future.value.length > 0)
 
-  return { initSnapshot, pushSnapshot, pushSnapshotDebounced, cancelDebounce, undo, redo, canUndo, canRedo }
+  return { initSnapshot, pushSnapshot, pushSnapshotIfChanged, undo, redo, canUndo, canRedo }
 }

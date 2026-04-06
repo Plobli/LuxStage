@@ -18,7 +18,7 @@ if (!usersEnv) {
 let users
 try {
   users = JSON.parse(usersEnv)
-  if (!Array.isArray(users) || users.length === 0) throw new Error('USERS muss ein nicht-leeres Array sein')
+  if (!Array.isArray(users)) throw new Error('USERS muss ein JSON-Array sein')
   for (const u of users) {
     if (!u.username || !u.password || !u.role) throw new Error(`Ungültiger Eintrag in USERS: ${JSON.stringify(u)}`)
   }

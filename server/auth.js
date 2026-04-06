@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
 import { config } from './config.js'
 import { db } from './db-init.js'
-import { randomBytes } from 'node:crypto'
+import { randomBytes, timingSafeEqual } from 'node:crypto'
 
 // ── Kurzlebige Einmal-Token für URL-basierte Ressourcen (PDF, Fotos, Backup) ──
 // Speichert: token → { username, role, expiresAt }
@@ -40,7 +40,9 @@ export async function hashPassword(plain) {
 async function verifyPassword(plain, stored) {
   // Klartext-Migration: gespeichertes Passwort ist noch kein bcrypt-Hash
   if (!stored.startsWith('$2')) {
-    if (plain !== stored) return false
+    const a = Buffer.from(plain)
+    const b = Buffer.from(stored)
+    if (a.length !== b.length || !timingSafeEqual(a, b)) return false
     return true // caller must rehash
   }
   return bcrypt.compare(plain, stored)

@@ -1,13 +1,13 @@
 <template>
   <!-- Trigger-Button — Klassen kommen vom Elternelement via $attrs -->
-  <label v-bind="$attrs" class="cursor-pointer">
+  <button v-bind="$attrs" type="button" @click="fileInput.click()">
     {{ t('ocr.trigger') }}
-    <input ref="fileInput" type="file" accept="image/*" multiple class="sr-only" @change="onFileSelected" />
-  </label>
+  </button>
+  <input ref="fileInput" type="file" accept="image/*" multiple class="sr-only" @change="onFileSelected" />
 
   <!-- Datenschutz-Hinweis + Vorschau-Dialog -->
   <Teleport to="body">
-    <div v-if="state !== 'idle'" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/70">
+    <div v-if="state !== 'idle'" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/70" @click.stop>
       <div class="w-full max-w-lg bg-gray-900 rounded-xl shadow-2xl ring-1 ring-white/10 overflow-hidden">
 
         <!-- Datenschutz-Warnung -->

@@ -35,6 +35,23 @@
       </form>
     </div>
 
+    <!-- Fotos pro Druckseite -->
+    <div class="grid max-w-7xl grid-cols-1 gap-x-8 gap-y-10 px-4 py-16 sm:px-6 md:grid-cols-3 lg:px-8">
+      <div>
+        <h2 class="text-base/7 font-semibold text-white">{{ t('settings.photos_per_page') }}</h2>
+        <p class="mt-1 text-sm/6 text-gray-400">{{ t('settings.photos_per_page.hint') }}</p>
+      </div>
+      <div class="md:col-span-2 sm:max-w-xl">
+        <select
+          :value="photosPerPage"
+          @change="photosPerPage = Number($event.target.value)"
+          class="rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent w-32"
+        >
+          <option v-for="n in VALID" :key="n" :value="n">{{ n }}</option>
+        </select>
+      </div>
+    </div>
+
     <!-- Abmelden -->
     <div class="grid max-w-7xl grid-cols-1 gap-x-8 gap-y-10 px-4 py-16 sm:px-6 md:grid-cols-3 lg:px-8">
       <div>
@@ -56,9 +73,11 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLocale } from '../../composables/useLocale.js'
+import { usePhotoSettings } from '../../composables/usePhotoSettings.js'
 import { logout, changePassword } from '../../api/client.js'
 
 const { t } = useLocale()
+const { photosPerPage, VALID } = usePhotoSettings()
 const router = useRouter()
 
 const pwCurrent = ref('')

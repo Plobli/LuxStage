@@ -172,7 +172,6 @@ export async function router(req, res) {
       const body = await readJsonBody(req, res); if (body === null) return
       const { id, name, datum, template, untertitel, spielzeit, channels } = body
       if (!id || !/^[a-z0-9_-]+$/i.test(id)) return json(res, 400, { error: 'Ungültige ID' })
-      console.log(`[createShow] id=${id} template="${template}"`)
       db.createShow(id, { name, datum, template, untertitel, spielzeit })
       if (Array.isArray(channels) && channels.length) db.writeChannels(id, channels)
       return json(res, 201, { id })

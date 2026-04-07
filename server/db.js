@@ -52,7 +52,6 @@ export function createShow(slug, fields) {
   // Template-Sections kopieren wenn Template angegeben
   if (fields.template) {
     const tpl = db.prepare('SELECT * FROM templates WHERE name = ?').get(fields.template)
-    console.log(`[createShow] template lookup: name="${fields.template}" found=${!!tpl}`)
     if (tpl) {
       _copyTemplateToShow(tpl.id, id)
     }
@@ -113,7 +112,7 @@ export function writeChannels(slug, channels) {
         INSERT INTO channels (id, show_id, channel, address, device, position, color, notes, sort_order)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
-        ch.id ?? randomUUID(),
+        randomUUID(),
         show.id,
         ch.channel ?? '', ch.address ?? '', ch.device ?? '',
         ch.position ?? '', ch.color ?? '', ch.notes ?? '',

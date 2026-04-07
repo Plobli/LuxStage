@@ -93,7 +93,7 @@
             class="absolute right-0 top-full mt-1 z-50 w-56 rounded-lg bg-gray-950 ring-1 ring-white/15 shadow-2xl overflow-hidden"
             @click="menuOpen = null"
           >
-            <OcrImport class="w-full text-left px-4 py-2.5 text-sm text-gray-200 hover:bg-white/8 block" @import="onOcrImport" />
+            <OcrImport class="w-full text-left px-4 py-2.5 text-sm text-gray-200 hover:bg-white/8 block" @click.stop @import="onOcrImport" />
             <button class="w-full text-left px-4 py-2.5 text-sm text-gray-200 hover:bg-white/8" @click="eosFileInput?.click()">{{ t('eos.import.button') }}</button>
             <div class="border-t border-white/10" />
             <button class="w-full text-left px-4 py-2.5 text-sm text-gray-500 hover:bg-white/8" @click="csvImportInput?.click()">{{ t('channel.import') }}</button>

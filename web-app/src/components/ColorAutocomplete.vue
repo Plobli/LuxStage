@@ -70,7 +70,24 @@ const filtered = computed(() => {
   // Prefer Rosco order only when user explicitly types "R" prefix
   const preferRosco = q.startsWith('R')
 
+  function matchScore(f) {
+    // Exakter Code-Match (z.B. "L200" oder "200" → L200)
+    if (f.code.toUpperCase() === q) return 0
+    if (f.code.slice(1) === q) return 1
+    if (f.altCode && f.altCode.toUpperCase() === q) return 0
+    if (f.altCode && f.altCode.slice(1) === q) return 1
+    // Code enthält Query am Anfang der Nummer (z.B. "20" → L200 vor L2001)
+    if (f.code.slice(1).startsWith(q)) return 2
+    if (f.altCode && f.altCode.slice(1).startsWith(q)) return 2
+    // Sonstiger Partial-Match (Mitte des Codes oder Name)
+    return 3
+  }
+
   results.sort((a, b) => {
+    const sa = matchScore(a)
+    const sb = matchScore(b)
+    if (sa !== sb) return sa - sb
+    // Bei gleichem Score: LEE vor Rosco (außer explizit R-Prefix)
     const aIsLee = a.code.startsWith('L')
     const bIsLee = b.code.startsWith('L')
     if (!preferRosco) {

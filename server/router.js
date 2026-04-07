@@ -618,6 +618,15 @@ export async function router(req, res) {
       const branch = bodyJson.branch || 'main'
       if (!/^[a-zA-Z0-9_./-]+$/.test(branch)) return json(res, 400, { error: 'Ungültiger Branch-Name' })
 
+      // SSE-Stream öffnen
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+      })
+      const send = (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+
       // nvm-Pfad ermitteln damit npm in non-login shells verfügbar ist
       const nvmDir = process.env.NVM_DIR || path.join(process.env.HOME, '.nvm')
       const nvmInit = `export NVM_DIR="${nvmDir}" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"`
@@ -629,14 +638,12 @@ export async function router(req, res) {
 
       let oldCommit = ''
       const log = []
-      const step = (msg) => { log.push(msg); console.log('[update]', msg) }
+      const step = (msg) => { log.push(msg); console.log('[update]', msg); send('log', { msg }) }
 
       const rollback = async (reason) => {
         step(`Rollback: ${reason}`)
         try { await run(`git -C "${repoDir}" reset --hard "${oldCommit}"`) } catch {}
-        // dist-new aufräumen falls vorhanden
         try { await fsp.rm(distNew, { recursive: true, force: true }) } catch {}
-        // dist-old zurückspielen falls dist durch den Update-Prozess bereits verschoben wurde
         try {
           const distOldExists = await fsp.access(distOld).then(() => true).catch(() => false)
           if (distOldExists) {
@@ -644,7 +651,8 @@ export async function router(req, res) {
             await fsp.rename(distOld, distDir)
           }
         } catch {}
-        json(res, 500, { error: reason, log })
+        send('done', { error: reason, log })
+        res.end()
       }
 
       try {
@@ -707,10 +715,11 @@ export async function router(req, res) {
         fsp.rm(distOld, { recursive: true, force: true }).catch(() => {})
         fsp.unlink(dbSnap).catch(() => {})
 
-        // 8. Antwort senden, dann Neustart (erfordert PM2)
+        // 8. Erfolg senden, dann Neustart
         if (!process.env.pm_id) step('WARNUNG: Kein PM2 erkannt — manueller Neustart erforderlich!')
-        json(res, 200, { log })
         step('Neustart...')
+        send('done', { log })
+        res.end()
         setTimeout(() => process.exit(0), 500)
 
       } catch (err) {

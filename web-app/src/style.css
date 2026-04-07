@@ -11,6 +11,17 @@
   color-scheme: dark;
 }
 
+/* Indeterminate Fortschrittsbalken */
+@keyframes progress-indeterminate {
+  0%   { transform: translateX(-100%) scaleX(0.4); }
+  50%  { transform: translateX(50%)   scaleX(0.6); }
+  100% { transform: translateX(200%)  scaleX(0.4); }
+}
+.animate-progress-indeterminate {
+  animation: progress-indeterminate 1.6s ease-in-out infinite;
+  transform-origin: left center;
+}
+
 /* Foto-Druckseiten: im Browser unsichtbar */
 .photo-print-pages { display: none; }
 

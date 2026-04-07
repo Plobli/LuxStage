@@ -1,6 +1,6 @@
 {
   "name": "luxstage-web",
-  "version": "1.5.28",
+  "version": "1.5.30",
   "private": true,
   "scripts": {
     "dev": "vite",

@@ -267,5 +267,6 @@
   "ocr.loading": "Claude is reading the show plan …",
   "ocr.result.title": "Recognised content",
   "ocr.result.hint": "Please review the result before applying. The setup text will be appended. Recognised channels are only filled in if the notes field is still empty.",
-  "ocr.result.apply": "Apply"
+  "ocr.result.apply": "Apply",
+  "offline.banner": "No connection to server – changes will not be saved"
 }

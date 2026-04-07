@@ -130,7 +130,7 @@
 
     <div v-if="loading" class="flex items-center justify-center h-64 text-sm text-gray-400">…</div>
 
-    <template v-else>
+    <div v-else :inert="!isOnline || undefined" :class="{ 'opacity-40 pointer-events-none select-none': !isOnline }">
       <!-- Two-column layout: aside + main -->
       <div :class="mobileTab !== 'channels' ? 'hidden xl:block' : ''" class="xl:pl-[28rem] xl:ml-0">
         <!-- Main: Kanaltabelle -->
@@ -457,7 +457,7 @@
           </div>
         </section>
       </aside>
-    </template>
+    </div>
 
     <!-- Lightbox -->
     <div v-if="lightboxPhoto" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80" @click="lightboxPhoto = null">
@@ -570,7 +570,7 @@ import { useUndoRedo } from '../composables/useUndoRedo.js'
 import { fetchShow, updateMeta, fetchHistory, fetchHistoryEntry, restoreHistory, createSnapshot } from '../api/shows.js'
 import { fetchChannels, saveChannels, downloadChannelsCsv, parseChannelsCsv, mergeChannels } from '../api/channels.js'
 import { fetchPhotos, uploadPhoto, deletePhoto, getPhotoUrl, fetchPhotoCaptions, savePhotoCaption } from '../api/photos.js'
-import { subscribeShow } from '../api/client.js'
+import { subscribeShow, isOnline } from '../api/client.js'
 import { api } from '../api/client.js'
 import { fetchShowSections, saveShowSections, fetchShowSectionDefs, saveShowSectionDefs } from '../api/sections.js'
 import { uuid } from '../utils/uuid.js'

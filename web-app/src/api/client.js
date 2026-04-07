@@ -2,6 +2,10 @@
  * client.js — schlanker HTTP-Client für den LuxStage-Server
  * Ersetzt pocketbase.js
  */
+import { ref } from 'vue'
+
+/** Reaktiver Online-Status — wird von App.vue gesetzt und kann überall importiert werden */
+export const isOnline = ref(navigator.onLine)
 
 const DEV_SERVER = import.meta.env.VITE_SERVER_URL || null
 const BASE = () => localStorage.getItem('server_url') || DEV_SERVER || window.location.origin

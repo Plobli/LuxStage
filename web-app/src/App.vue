@@ -133,6 +133,11 @@
 
       <!-- Main Content -->
       <main class="lg:pl-20 bg-gray-950 min-h-screen">
+        <!-- Offline-Banner -->
+        <div v-if="!isOnline" class="sticky top-0 z-50 flex items-center justify-center gap-2 bg-red-600 px-4 py-2 text-sm font-medium text-white">
+          <svg class="size-4 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2z" clip-rule="evenodd" /></svg>
+          {{ t('offline.banner') }}
+        </div>
         <RouterView />
 
       </main>
@@ -164,7 +169,7 @@ import {
   Cog6ToothIcon,
 } from '@heroicons/vue/24/outline'
 import { useLocale } from './composables/useLocale.js'
-import { logout, api } from './api/client.js'
+import { logout, api, isOnline } from './api/client.js'
 import { useTokenRefresh } from './composables/useTokenRefresh.js'
 import { jwtDecode } from './api/jwtDecode.js'
 import { updateAvailable } from './composables/useUpdateCheck.js'
@@ -177,6 +182,9 @@ useTokenRefresh()
 const { t } = useLocale()
 const appVersion = __APP_VERSION__
 const serverVersion = ref(null)
+
+function handleOnline() { isOnline.value = true }
+function handleOffline() { isOnline.value = false }
 
 async function checkForUpdate() {
   try {
@@ -191,6 +199,9 @@ async function checkForUpdate() {
 let updateCheckInterval = null
 
 onMounted(async () => {
+  window.addEventListener('online', handleOnline)
+  window.addEventListener('offline', handleOffline)
+
   try {
     const status = await api.get('/api/status')
     serverVersion.value = status.version
@@ -202,6 +213,8 @@ onMounted(async () => {
 
 onUnmounted(() => {
   clearInterval(updateCheckInterval)
+  window.removeEventListener('online', handleOnline)
+  window.removeEventListener('offline', handleOffline)
 })
 const route = useRoute()
 const router = useRouter()

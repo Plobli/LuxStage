@@ -6,17 +6,21 @@ import { config } from './config.js'
 const MAX_BYTES = 4.5 * 1024 * 1024 // 4,5 MB — Puffer unter dem 5 MB Limit
 
 async function resizeForClaude(buffer) {
-  const img = sharp(buffer).rotate() // EXIF-Rotation korrigieren
-  const meta = await img.metadata()
+  // Immer durch sharp schicken: EXIF-Rotation korrigieren + auf JPEG normalisieren
+  const meta = await sharp(buffer).metadata()
   const bytes = buffer.length
 
-  if (bytes <= MAX_BYTES) return { buffer, mimeType: 'image/jpeg' }
+  if (bytes <= MAX_BYTES) {
+    const normalized = await sharp(buffer).rotate().jpeg({ quality: 82 }).toBuffer()
+    return { buffer: normalized, mimeType: 'image/jpeg' }
+  }
 
   // Skalierungsfaktor: Fläche proportional zur Bytezahl reduzieren
   const scale = Math.sqrt(MAX_BYTES / bytes)
   const width = Math.round((meta.width || 2000) * scale)
 
-  const resized = await img
+  const resized = await sharp(buffer)
+    .rotate()
     .resize({ width, withoutEnlargement: true })
     .jpeg({ quality: 82 })
     .toBuffer()

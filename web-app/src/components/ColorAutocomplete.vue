@@ -59,12 +59,29 @@ const badgeStyle = computed(() => filterBadgeStyle(props.modelValue))
 const filtered = computed(() => {
   const q = (props.modelValue || '').toUpperCase()
   if (!q) return ALL_FILTERS.slice(0, 12)
-  return ALL_FILTERS.filter(f =>
+
+  const results = ALL_FILTERS.filter(f =>
     f.code.includes(q) ||
     f.code.slice(1).includes(q) ||
     (f.altCode && (f.altCode.includes(q) || f.altCode.slice(1).includes(q))) ||
     f.name.toUpperCase().includes(q)
-  ).slice(0, 12)
+  )
+
+  // Prefer Rosco order only when user explicitly types "R" prefix
+  const preferRosco = q.startsWith('R')
+
+  results.sort((a, b) => {
+    const aIsLee = a.code.startsWith('L')
+    const bIsLee = b.code.startsWith('L')
+    if (!preferRosco) {
+      if (aIsLee !== bIsLee) return aIsLee ? -1 : 1
+    } else {
+      if (aIsLee !== bIsLee) return aIsLee ? 1 : -1
+    }
+    return 0
+  })
+
+  return results.slice(0, 12)
 })
 
 function onInput(e) {

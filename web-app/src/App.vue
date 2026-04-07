@@ -169,7 +169,7 @@ import {
   Cog6ToothIcon,
 } from '@heroicons/vue/24/outline'
 import { useLocale } from './composables/useLocale.js'
-import { logout, api, isOnline } from './api/client.js'
+import { logout, api, isOnline, BASE } from './api/client.js'
 import { useTokenRefresh } from './composables/useTokenRefresh.js'
 import { jwtDecode } from './api/jwtDecode.js'
 import { updateAvailable } from './composables/useUpdateCheck.js'
@@ -183,8 +183,14 @@ const { t } = useLocale()
 const appVersion = __APP_VERSION__
 const serverVersion = ref(null)
 
-function handleOnline() { isOnline.value = true }
-function handleOffline() { isOnline.value = false }
+async function pingServer() {
+  try {
+    const res = await fetch(BASE() + '/api/status', { cache: 'no-store' })
+    isOnline.value = res.ok || res.status === 401
+  } catch {
+    isOnline.value = false
+  }
+}
 
 async function checkForUpdate() {
   try {
@@ -197,10 +203,11 @@ async function checkForUpdate() {
 }
 
 let updateCheckInterval = null
+let pingInterval = null
 
 onMounted(async () => {
-  window.addEventListener('online', handleOnline)
-  window.addEventListener('offline', handleOffline)
+  await pingServer()
+  pingInterval = setInterval(pingServer, 10_000)
 
   try {
     const status = await api.get('/api/status')
@@ -213,8 +220,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   clearInterval(updateCheckInterval)
-  window.removeEventListener('online', handleOnline)
-  window.removeEventListener('offline', handleOffline)
+  clearInterval(pingInterval)
 })
 const route = useRoute()
 const router = useRouter()

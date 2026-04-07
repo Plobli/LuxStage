@@ -4,11 +4,11 @@
  */
 import { ref } from 'vue'
 
-/** Reaktiver Online-Status — wird von App.vue gesetzt und kann überall importiert werden */
-export const isOnline = ref(navigator.onLine)
+/** Reaktiver Online-Status — true wenn der LuxStage-Server erreichbar ist */
+export const isOnline = ref(true)
 
 const DEV_SERVER = import.meta.env.VITE_SERVER_URL || null
-const BASE = () => localStorage.getItem('server_url') || DEV_SERVER || window.location.origin
+export const BASE = () => localStorage.getItem('server_url') || DEV_SERVER || window.location.origin
 const TOKEN_KEY = 'luxstage_token'
 
 export function getToken() { return localStorage.getItem(TOKEN_KEY) }

@@ -76,7 +76,7 @@ import { ref, computed } from 'vue'
 import { useLocale } from '../composables/useLocale.js'
 import { ocrShowplan } from '../api/ocr.js'
 
-const emit = defineEmits(['import'])
+const emit = defineEmits(['import', 'dialog-open', 'dialog-close'])
 const { t } = useLocale()
 
 const fileInput = ref(null)
@@ -98,6 +98,7 @@ function onFileSelected(e) {
   previewUrls.value = files.map(f => URL.createObjectURL(f))
   state.value = 'confirm'
   e.target.value = ''
+  emit('dialog-open')
 }
 
 async function upload() {
@@ -123,5 +124,6 @@ function cancel() {
   selectedFiles.value = []
   result.value = null
   errorMsg.value = ''
+  emit('dialog-close')
 }
 </script>

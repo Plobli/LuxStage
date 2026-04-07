@@ -1,9 +1,9 @@
 <template>
   <!-- Trigger-Button — Klassen kommen vom Elternelement via $attrs -->
-  <button v-bind="$attrs" type="button" @click="fileInput.click()">
+  <label v-bind="$attrs" class="cursor-pointer">
     {{ t('ocr.trigger') }}
-  </button>
-  <input ref="fileInput" type="file" accept="image/*" multiple class="sr-only" @change="onFileSelected" />
+    <input ref="fileInput" type="file" accept="image/*" multiple class="sr-only" @click.stop @change="onFileSelected" />
+  </label>
 
   <!-- Datenschutz-Hinweis + Vorschau-Dialog -->
   <Teleport to="body">

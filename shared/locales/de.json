@@ -209,6 +209,8 @@
   "settings.update.branch": "Branch",
   "settings.server_url.label": "Server-URL",
   "settings.language.hint": "Wähle die Anzeigesprache der App.",
+  "settings.photos_per_page": "Fotos pro Druckseite",
+  "settings.photos_per_page.hint": "Wie viele Fotos sollen beim Drucken auf eine A4-Seite passen.",
   "settings.backup.hint": "Lade alle Show-Daten als ZIP-Archiv herunter.",
 
   "settings.account": "Konto",

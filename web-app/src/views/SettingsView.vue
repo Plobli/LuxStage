@@ -27,7 +27,7 @@
     <main class="px-4 py-10 sm:px-6 lg:flex-auto lg:px-0 lg:py-12">
       <div class="mx-auto max-w-2xl space-y-16 lg:mx-0 lg:max-w-none">
 
-        <!-- Sprache -->
+        <!-- Sprache & Anzeige -->
         <section v-show="activeSection === 'general'">
           <h2 class="text-base/7 font-semibold text-white">{{ t('settings.language') }}</h2>
           <p class="mt-1 text-sm/6 text-gray-400">{{ t('settings.language.hint') }}</p>
@@ -44,6 +44,21 @@
                     <input type="radio" :checked="locale === 'en'" value="en" @change="setLocale('en')" class="accent-accent" />
                     {{ t('settings.language.en') }}
                   </label>
+                </div>
+              </dd>
+            </div>
+            <div class="py-6 sm:flex sm:items-center">
+              <dt class="font-medium text-white sm:w-64 sm:flex-none sm:pr-6">{{ t('settings.photos_per_page') }}</dt>
+              <dd class="mt-1 sm:mt-0 sm:flex-auto">
+                <div class="flex flex-col gap-1">
+                  <select
+                    :value="photosPerPage"
+                    @change="photosPerPage = Number($event.target.value)"
+                    class="rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent w-32"
+                  >
+                    <option v-for="n in VALID" :key="n" :value="n">{{ n }}</option>
+                  </select>
+                  <p class="text-xs text-gray-500">{{ t('settings.photos_per_page.hint') }}</p>
                 </div>
               </dd>
             </div>
@@ -291,6 +306,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLocale } from '../composables/useLocale.js'
+import { usePhotoSettings } from '../composables/usePhotoSettings.js'
 import { logout, setServerUrl, api, changePassword, resetPassword, listUsers, createUser, deleteUser } from '../api/client.js'
 import { downloadBackup, uploadRestore } from '../api/backup.js'
 import { jwtDecode } from '../api/jwtDecode.js'
@@ -305,6 +321,7 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const { t, locale, setLocale } = useLocale()
+const { photosPerPage, VALID } = usePhotoSettings()
 const router = useRouter()
 
 /* global __APP_VERSION__ */

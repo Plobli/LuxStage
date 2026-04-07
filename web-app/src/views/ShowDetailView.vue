@@ -461,6 +461,22 @@
       </aside>
     </div>
 
+    <!-- Foto-Druckseiten (nur beim Drucken sichtbar) -->
+    <div v-if="photos.length > 0" class="photo-print-pages">
+      <div
+        v-for="(page, pageIdx) in photoPages"
+        :key="pageIdx"
+        class="photo-print-page"
+      >
+        <div class="photo-print-grid" :data-cols="photoCols">
+          <div v-for="filename in page" :key="filename" class="photo-print-item">
+            <img :src="getPhotoUrl(props.id, filename)" :alt="photoCaptions[filename] || filename" />
+            <p v-if="photoCaptions[filename]" class="photo-print-caption">{{ photoCaptions[filename] }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Lightbox -->
     <div v-if="lightboxPhoto" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80" @click="lightboxPhoto = null">
       <img :src="getPhotoUrl(props.id, lightboxPhoto)" class="max-h-[85vh] max-w-screen-lg object-contain" @click.stop />
@@ -576,6 +592,7 @@ import { subscribeShow, isOnline } from '../api/client.js'
 import { api } from '../api/client.js'
 import { fetchShowSections, saveShowSections, fetchShowSectionDefs, saveShowSectionDefs } from '../api/sections.js'
 import { uuid } from '../utils/uuid.js'
+import { usePhotoSettings } from '../composables/usePhotoSettings.js'
 import ColorAutocomplete from '../components/ColorAutocomplete.vue'
 import OcrImport from '../components/OcrImport.vue'
 import Sortable from 'sortablejs'
@@ -585,6 +602,27 @@ const router = useRouter()
 const { t } = useLocale()
 const { confirm } = useConfirm()
 const { onKeydown } = useKeyboardNav()
+const { photosPerPage } = usePhotoSettings()
+
+// Fotos gruppiert nach Seiten für den Druck
+const photoPages = computed(() => {
+  const n = photosPerPage.value
+  const pages = []
+  for (let i = 0; i < photos.value.length; i += n) {
+    pages.push(photos.value.slice(i, i + n))
+  }
+  return pages
+})
+
+// Grid-Spalten je nach Anzahl Fotos pro Seite
+const photoCols = computed(() => {
+  const n = photosPerPage.value
+  if (n === 1) return 1
+  if (n === 2) return 2
+  if (n <= 4) return 2
+  if (n <= 6) return 3
+  return 3 // 8, 9, 12
+})
 
 // ── State ──────────────────────────────────────────────────────────────────
 const loading = ref(true)

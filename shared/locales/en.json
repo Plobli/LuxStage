@@ -209,6 +209,8 @@
   "settings.update.branch": "Branch",
   "settings.server_url.label": "Server URL",
   "settings.language.hint": "Choose the display language of the app.",
+  "settings.photos_per_page": "Photos per print page",
+  "settings.photos_per_page.hint": "How many photos fit on one A4 page when printing.",
   "settings.backup.hint": "Download all show data as a ZIP archive.",
 
   "settings.account": "Account",

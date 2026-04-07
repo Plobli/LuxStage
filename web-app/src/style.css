@@ -11,9 +11,49 @@
   color-scheme: dark;
 }
 
+/* Foto-Druckseiten: im Browser unsichtbar */
+.photo-print-pages { display: none; }
+
 @media print {
   /* Sidebar, Navbar, Aside, Buttons ausblenden */
   nav, aside, header, .no-print { display: none !important; }
+
+  /* Foto-Druckseiten anzeigen */
+  .photo-print-pages { display: block; }
+
+  .photo-print-page {
+    break-after: page;
+    padding: 1cm;
+  }
+  .photo-print-page:last-child { break-after: auto; }
+
+  .photo-print-grid {
+    display: grid;
+    gap: 0.5cm;
+    height: calc(297mm - 2cm); /* A4 minus Padding */
+  }
+  .photo-print-grid[data-cols="1"] { grid-template-columns: 1fr; }
+  .photo-print-grid[data-cols="2"] { grid-template-columns: repeat(2, 1fr); }
+  .photo-print-grid[data-cols="3"] { grid-template-columns: repeat(3, 1fr); }
+
+  .photo-print-item {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .photo-print-item img {
+    width: 100%;
+    flex: 1;
+    object-fit: cover;
+    min-height: 0;
+  }
+  .photo-print-caption {
+    font-size: 8pt;
+    color: #444;
+    text-align: center;
+    margin-top: 2pt;
+    padding: 0;
+  }
 
   /* Hauptinhalt volle Breite */
   main { padding: 0 !important; margin: 0 !important; }

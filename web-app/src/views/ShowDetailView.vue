@@ -91,6 +91,7 @@
           <button class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/5" @click="csvImportInput?.click()">{{ t('channel.import') }}</button>
           <button class="w-full text-left px-4 py-2 text-sm text-amber-400 hover:bg-white/5" @click="eosFileInput?.click()">{{ t('eos.import.button') }}</button>
           <button class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/5" @click="openPdf">{{ t('show.pdf') }}</button>
+          <OcrImport class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/5" @import="onOcrImport" />
         </div>
       </div>
       <!-- Normale Buttons (xl+) -->
@@ -100,6 +101,7 @@
         <button type="button" class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @click="csvImportInput?.click()">{{ t('channel.import') }}</button>
         <button type="button" class="rounded-md px-2 py-1.5 text-sm font-semibold text-amber-400 ring-1 ring-amber-400/30 hover:ring-amber-400/60" @click="eosFileInput?.click()">{{ t('eos.import.button') }}</button>
         <button type="button" class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @click="openPdf">{{ t('show.pdf') }}</button>
+        <OcrImport class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @import="onOcrImport" />
       </div>
       <input ref="csvImportInput" type="file" accept=".csv" class="hidden" @change="onCsvImportSelected" />
       <input ref="eosFileInput" type="file" accept=".csv" class="hidden" @change="onEosFileSelected" />
@@ -380,7 +382,6 @@
         <div class="flex items-center gap-2 mb-6 py-2 border-t border-white/10">
           <button class="cursor-pointer text-sm text-gray-500 hover:text-white px-2 py-1 rounded hover:bg-white/5 transition-colors" @click="addMarkdownSection">{{ t('sections.add.markdown') }}</button>
           <button v-if="!hasFieldsType()" class="cursor-pointer text-sm text-gray-500 hover:text-white px-2 py-1 rounded hover:bg-white/5 transition-colors" @click="addFieldsSection">{{ t('sections.add.fields') }}</button>
-          <OcrImport class="ml-auto text-gray-500 hover:text-white px-2 py-1 rounded hover:bg-white/5 transition-colors" @import="onOcrImport" />
         </div>
 
         <!-- Foto-Galerie -->

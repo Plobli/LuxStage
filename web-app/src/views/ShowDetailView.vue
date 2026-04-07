@@ -185,8 +185,9 @@
                       >
                         <input
                           v-model="ch.channel"
+                          @focus="recordFocus()"
                           @input="persistChannels()"
-                          @blur="pushSnapshotIfChanged()"
+                          @blur="commitFocus()"
                           :data-nav-row="rowIndexOf(ch)"
                           data-nav-col="0"
                           @keydown="onKeydown($event, rowIndexOf(ch), 0, 4, () => startAdd(ch.position))"
@@ -195,8 +196,9 @@
                         />
                         <input
                           v-model="ch.address"
+                          @focus="recordFocus()"
                           @input="persistChannels()"
-                          @blur="pushSnapshotIfChanged()"
+                          @blur="commitFocus()"
                           class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-xs text-gray-500 px-0 border-0 w-[5ch] text-center"
                         />
                       </div>
@@ -211,8 +213,9 @@
                     <td class="px-3 py-0 align-middle">
                       <textarea
                         v-model="ch.device"
+                        @focus="recordFocus()"
                         @input="persistChannels()"
-                        @blur="pushSnapshotIfChanged()"
+                        @blur="commitFocus()"
                         :data-nav-row="rowIndexOf(ch)"
                         data-nav-col="2"
                         @keydown="onKeydown($event, rowIndexOf(ch), 2, 4, null)"
@@ -222,8 +225,9 @@
                     <td class="px-3 py-0 align-middle">
                       <textarea
                         v-model="ch.notes"
+                        @focus="recordFocus()"
                         @input="persistChannels()"
-                        @blur="pushSnapshotIfChanged()"
+                        @blur="commitFocus()"
                         :data-nav-row="rowIndexOf(ch)"
                         data-nav-col="3"
                         @keydown="onKeydown($event, rowIndexOf(ch), 3, 4, () => startAdd(ch.position))"
@@ -585,7 +589,7 @@ const sortableSections = ref(null)
 let saveSectionsTimer = null
 
 // ── Undo/Redo ──────────────────────────────────────────────────────────────
-const { initSnapshot, pushSnapshot, pushSnapshotIfChanged, undo, redo, canUndo, canRedo } =
+const { initSnapshot, recordFocus, commitFocus, pushSnapshot, undo, redo, canUndo, canRedo } =
   useUndoRedo(
     // getState
     () => ({
@@ -675,10 +679,11 @@ let saveSetupTimer = null
 let pendingSetupMd = null
 
 function onSetupChange(md) {
+  recordFocus()             // Zustand VOR der Änderung merken (setupMarkdown noch alter Wert)
   pendingSetupMd = md
   clearTimeout(saveSetupTimer)
   saveSetupTimer = setTimeout(() => { persistSetup(md); saveSetupTimer = null }, 50)
-  pushSnapshotIfChanged()
+  nextTick(() => commitFocus()) // nach v-model-Update: pusht Snapshot wenn sich etwas geändert hat
 }
 
 async function persistSetup(md) {
@@ -1105,11 +1110,12 @@ function openLightbox(filename) {
 // ── Sections ───────────────────────────────────────────────────────────────
 
 function onSectionChange(id, value) {
+  recordFocus()             // Zustand VOR der Änderung (sectionContents noch nicht aktualisiert)
   sectionContents.value = new Map(sectionContents.value)
   sectionContents.value.set(id, value)
   clearTimeout(saveSectionsTimer)
   saveSectionsTimer = setTimeout(() => { persistSections(); saveSectionsTimer = null }, 50)
-  pushSnapshotIfChanged()
+  nextTick(() => commitFocus())
 }
 
 let ignoreSectionsSseCount = 0

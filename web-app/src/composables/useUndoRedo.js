@@ -4,18 +4,29 @@ import { ref, computed, toRaw } from 'vue'
 const MAX_HISTORY = 50
 
 /**
- * Undo/Redo wie in Word: jede abgeschlossene Aktion (blur, destruktive Aktion)
- * wird als Schritt gesichert. Undo/Redo setzt den gesamten App-Zustand zurück.
+ * Undo/Redo wie in Word.
  *
- * @param {() => object} getState          – gibt aktuellen Zustand zurück
- * @param {(snapshot: object) => void} applyState – stellt Zustand wieder her
- * @param {() => void} cancelPendingSaves  – bricht laufende debounced Saves ab
- * @param {() => void} saveNow             – speichert sofort nach undo/redo
- * @param {string|null} storageKey         – sessionStorage-Schlüssel für Persistenz (optional)
+ * Invariante: past[i] ist der Zustand VOR der i-ten Änderung.
+ * Undo stellt past[last] wieder her (= Zustand vor letzter Änderung).
+ *
+ * Für Texteingaben:
+ *   1. @focus  → recordFocus()   speichert Zustand vor der Eingabe
+ *   2. @blur   → commitFocus()   pusht den gespeicherten Snapshot falls sich etwas geändert hat
+ *
+ * Für destruktive Aktionen (löschen, drag&drop, import):
+ *   → pushSnapshot() direkt VOR der Änderung aufrufen
+ *
+ * @param {() => object} getState
+ * @param {(snapshot: object) => void} applyState
+ * @param {() => void} cancelPendingSaves
+ * @param {() => void} saveNow
+ * @param {string|null} storageKey
  */
 export function useUndoRedo(getState, applyState, cancelPendingSaves, saveNow = () => {}, storageKey = null) {
-  const past = ref([])    // älteste zuerst; past[last] = aktueller Stand
-  const future = ref([])  // neueste zuerst (future[0] = nächster Redo-Schritt)
+  const past = ref([])    // älteste zuerst; past[0] = initialer Stand
+  const future = ref([])
+
+  let focusSnapshot = null  // Zustand beim letzten @focus
 
   // ── sessionStorage ────────────────────────────────────────────────────────
 
@@ -57,9 +68,10 @@ export function useUndoRedo(getState, applyState, cancelPendingSaves, saveNow = 
 
   // ── Öffentliche API ───────────────────────────────────────────────────────
 
-  /** Beim Öffnen einer Show: löscht alte History, setzt sauberen Ausgangspunkt. */
+  /** Beim Öffnen einer Show: sauberer Ausgangspunkt. */
   function initSnapshot() {
     _clearStorage()
+    focusSnapshot = null
     try {
       past.value = [_cloneState()]
     } catch (e) {
@@ -70,27 +82,39 @@ export function useUndoRedo(getState, applyState, cancelPendingSaves, saveNow = 
     _saveToStorage()
   }
 
-  /** Snapshot des aktuellen Zustands sichern — für destruktive Aktionen
-   *  (Kanal löschen, Drag&Drop, CSV-Import etc.) VOR der Änderung aufrufen. */
+  /** @focus auf einem Textfeld — merkt sich den Zustand VOR der Eingabe. */
+  function recordFocus() {
+    try {
+      focusSnapshot = _cloneState()
+    } catch (e) {
+      console.error('[useUndoRedo] recordFocus fehlgeschlagen:', e)
+      focusSnapshot = null
+    }
+  }
+
+  /** @blur auf einem Textfeld — pusht focusSnapshot falls sich etwas geändert hat. */
+  function commitFocus() {
+    if (!focusSnapshot) return
+    try {
+      const current = _cloneState()
+      if (JSON.stringify(current) !== JSON.stringify(focusSnapshot)) {
+        _push(focusSnapshot)
+      }
+    } catch (e) {
+      console.error('[useUndoRedo] commitFocus fehlgeschlagen:', e)
+    }
+    focusSnapshot = null
+  }
+
+  /** VOR einer destruktiven Aktion aufrufen (löschen, drag&drop, import etc.). */
   function pushSnapshot() {
+    focusSnapshot = null
     try { _push(_cloneState()) }
     catch (e) { console.error('[useUndoRedo] pushSnapshot fehlgeschlagen:', e) }
   }
 
-  /** Snapshot nach einer Texteingabe sichern — bei @blur aufrufen.
-   *  Speichert den aktuellen Zustand nur wenn er sich vom letzten Snapshot unterscheidet. */
-  function pushSnapshotIfChanged() {
-    try {
-      const current = _cloneState()
-      const last = past.value[past.value.length - 1]
-      if (last && JSON.stringify(current) === JSON.stringify(last)) return
-      _push(current)
-    } catch (e) {
-      console.error('[useUndoRedo] pushSnapshotIfChanged fehlgeschlagen:', e)
-    }
-  }
-
   function undo() {
+    focusSnapshot = null
     if (past.value.length <= 1) return
     const current = _cloneState()
     future.value.unshift(current)
@@ -102,6 +126,7 @@ export function useUndoRedo(getState, applyState, cancelPendingSaves, saveNow = 
   }
 
   function redo() {
+    focusSnapshot = null
     if (!future.value.length) return
     const current = _cloneState()
     past.value.push(current)
@@ -115,5 +140,5 @@ export function useUndoRedo(getState, applyState, cancelPendingSaves, saveNow = 
   const canUndo = computed(() => past.value.length > 1)
   const canRedo = computed(() => future.value.length > 0)
 
-  return { initSnapshot, pushSnapshot, pushSnapshotIfChanged, undo, redo, canUndo, canRedo }
+  return { initSnapshot, recordFocus, commitFocus, pushSnapshot, undo, redo, canUndo, canRedo }
 }

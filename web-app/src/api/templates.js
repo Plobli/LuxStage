@@ -4,7 +4,7 @@ export const fetchTemplates = ()     => api.get('/api/templates')
 export const deleteTemplate = (name) => api.delete(`/api/templates/${name}`)
 
 export async function fetchTemplateChannels(name) {
-  return api.get(`/api/templates/${name}`)  // returns array directly
+  return api.get(`/api/templates/${encodeURIComponent(name)}/channels`)
 }
 
 export async function saveTemplate(name, channels) {

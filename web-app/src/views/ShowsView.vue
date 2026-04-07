@@ -230,27 +230,27 @@ onMounted(async () => {
 async function handleCreate() {
   creating.value = true
   const id = generateId(form.value.name, form.value.datum)
-  let created = false
   try {
     const content = `---\nid: ${id}\nname: ${form.value.name || id}\ndatum: ${form.value.datum || new Date().toISOString().slice(0, 10)}\n${form.value.template ? `template: ${form.value.template}\n` : ''}---\n\n`
     await createShow({ id, name: form.value.name || id, datum: form.value.datum || new Date().toISOString().slice(0, 10), content, template: form.value.template || undefined })
-    if (form.value.template) {
-      const channels = await fetchTemplateChannels(form.value.template)
-      if (channels.length) await saveChannels(id, channels)
-      const secs = await fetchTemplateSections(form.value.template)
-      if (secs.length) await saveShowSectionDefs(id, secs)
-    }
     const newShow = { id, name: form.value.name || id, datum: form.value.datum || new Date().toISOString().slice(0, 10), template: form.value.template || '' }
     shows.value.push(newShow)
-    created = true
+    if (form.value.template) {
+      try {
+        const channels = await fetchTemplateChannels(form.value.template)
+        if (channels.length) await saveChannels(id, channels)
+        const secs = await fetchTemplateSections(form.value.template)
+        if (secs.length) await saveShowSectionDefs(id, secs)
+      } catch (e) {
+        console.error('Failed to apply template:', e)
+      }
+    }
+    drawerOpen.value = false
+    router.push(`/shows/${id}`)
   } catch (e) {
     console.error('Failed to create show:', e)
   } finally {
     creating.value = false
-  }
-  if (created) {
-    drawerOpen.value = false
-    router.push(`/shows/${id}`)
   }
 }
 

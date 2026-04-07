@@ -33,6 +33,7 @@
   "show.channels": "Channels",
   "show.photos": "Photos",
   "show.create": "Create show",
+  "show.creating": "Creating…",
   "show.edit": "Edit show",
   "show.list.empty": "No shows yet.",
   "show.list.archived_empty": "No archived shows.",

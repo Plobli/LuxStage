@@ -146,9 +146,13 @@
                           <button
                             type="submit"
                             :disabled="creating"
-                            class="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-50"
+                            class="inline-flex items-center gap-2 rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-50"
                           >
-                            {{ creating ? '…' : t('show.create') }}
+                            <svg v-if="creating" class="size-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                            </svg>
+                            {{ creating ? t('show.creating') : t('show.create') }}
                           </button>
                         </div>
                       </form>
@@ -173,7 +177,6 @@ import { useLocale } from '../composables/useLocale.js'
 import { fetchShows, createShow, archiveShow } from '../api/shows.js'
 import { fetchTemplates, fetchTemplateChannels } from '../api/templates.js'
 import { saveChannels } from '../api/channels.js'
-import { fetchTemplateSections, saveShowSectionDefs } from '../api/sections.js'
 import { templateDisplayName } from '../utils/templateName.js'
 
 const router = useRouter()
@@ -239,10 +242,8 @@ async function handleCreate() {
       try {
         const channels = await fetchTemplateChannels(form.value.template)
         if (channels.length) await saveChannels(id, channels)
-        const secs = await fetchTemplateSections(form.value.template)
-        if (secs.length) await saveShowSectionDefs(id, secs)
       } catch (e) {
-        console.error('Failed to apply template:', e)
+        console.error('Failed to apply template channels:', e)
       }
     }
     drawerOpen.value = false

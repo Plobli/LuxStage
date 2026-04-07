@@ -71,37 +71,55 @@
         </div>
       </div>
       <div class="h-6 w-px bg-white/10 shrink-0" aria-hidden="true"></div>
-      <!-- Hamburger (< xl) -->
-      <div class="no-print relative xl:hidden">
-        <button
-          type="button"
-          class="rounded-md p-1.5 text-gray-400 hover:text-white ring-1 ring-white/10 hover:ring-white/20"
-          @click="menuOpen = !menuOpen"
-        >
-          <Bars3Icon class="size-5" />
-        </button>
-        <!-- Dropdown -->
-        <div
-          v-if="menuOpen"
-          class="absolute right-0 top-full mt-1 z-50 w-52 rounded-md bg-gray-900 ring-1 ring-white/10 shadow-xl py-1"
-          @click="menuOpen = false"
-        >
-          <button class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/5" @click="openHistory">{{ t('history.btn') }}</button>
-          <button class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/5" @click="downloadChannelsCsv(props.id, channels)">{{ t('channel.export') }}</button>
-          <button class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/5" @click="csvImportInput?.click()">{{ t('channel.import') }}</button>
-          <button class="w-full text-left px-4 py-2 text-sm text-amber-400 hover:bg-white/5" @click="eosFileInput?.click()">{{ t('eos.import.button') }}</button>
-          <button class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/5" @click="openPdf">{{ t('show.pdf') }}</button>
-          <OcrImport class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/5" @import="onOcrImport" />
-        </div>
-      </div>
-      <!-- Normale Buttons (xl+) -->
-      <div class="no-print hidden xl:flex items-center gap-x-2 shrink-0">
+      <!-- Buttons -->
+      <div class="no-print flex items-center gap-x-2 shrink-0">
+
+        <!-- Verlauf -->
         <button type="button" class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @click="openHistory">{{ t('history.btn') }}</button>
-        <button type="button" class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @click="downloadChannelsCsv(props.id, channels)">{{ t('channel.export') }}</button>
-        <button type="button" class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @click="csvImportInput?.click()">{{ t('channel.import') }}</button>
-        <button type="button" class="rounded-md px-2 py-1.5 text-sm font-semibold text-amber-400 ring-1 ring-amber-400/30 hover:ring-amber-400/60" @click="eosFileInput?.click()">{{ t('eos.import.button') }}</button>
-        <button type="button" class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @click="openPdf">{{ t('show.pdf') }}</button>
-        <OcrImport class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @import="onOcrImport" />
+
+        <!-- Importieren Dropdown -->
+        <div class="relative">
+          <button
+            type="button"
+            class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20 flex items-center gap-1"
+            @click="menuOpen = menuOpen === 'import' ? null : 'import'"
+          >
+            {{ t('nav.import') }}
+            <svg class="size-3 opacity-60" viewBox="0 0 12 12" fill="currentColor"><path d="M6 8L1 3h10z"/></svg>
+          </button>
+          <div
+            v-if="menuOpen === 'import'"
+            class="absolute right-0 top-full mt-1 z-50 w-52 rounded-md bg-gray-900 ring-1 ring-white/10 shadow-xl py-1"
+            @click="menuOpen = null"
+          >
+            <OcrImport class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/5 block" @import="onOcrImport" />
+            <button class="w-full text-left px-4 py-2 text-sm text-amber-400 hover:bg-white/5" @click="eosFileInput?.click()">{{ t('eos.import.button') }}</button>
+            <div class="my-1 border-t border-white/10" />
+            <button class="w-full text-left px-4 py-2 text-sm text-gray-500 hover:bg-white/5" @click="csvImportInput?.click()">{{ t('channel.import') }}</button>
+          </div>
+        </div>
+
+        <!-- Exportieren Dropdown -->
+        <div class="relative">
+          <button
+            type="button"
+            class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20 flex items-center gap-1"
+            @click="menuOpen = menuOpen === 'export' ? null : 'export'"
+          >
+            {{ t('nav.export') }}
+            <svg class="size-3 opacity-60" viewBox="0 0 12 12" fill="currentColor"><path d="M6 8L1 3h10z"/></svg>
+          </button>
+          <div
+            v-if="menuOpen === 'export'"
+            class="absolute right-0 top-full mt-1 z-50 w-52 rounded-md bg-gray-900 ring-1 ring-white/10 shadow-xl py-1"
+            @click="menuOpen = null"
+          >
+            <button class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/5" @click="openPdf">{{ t('show.pdf') }}</button>
+            <div class="my-1 border-t border-white/10" />
+            <button class="w-full text-left px-4 py-2 text-sm text-gray-500 hover:bg-white/5" @click="downloadChannelsCsv(props.id, channels)">{{ t('channel.export') }}</button>
+          </div>
+        </div>
+
       </div>
       <input ref="csvImportInput" type="file" accept=".csv" class="hidden" @change="onCsvImportSelected" />
       <input ref="eosFileInput" type="file" accept=".csv" class="hidden" @change="onEosFileSelected" />
@@ -544,7 +562,7 @@ import { useKeyboardNav } from '../composables/useKeyboardNav.js'
 import MarkdownEditor from '../components/MarkdownEditor.vue'
 import SectionHeading from '../components/SectionHeading.vue'
 import { MagnifyingGlassIcon } from '@heroicons/vue/20/solid'
-import { ArrowUturnLeftIcon, ArrowUturnRightIcon, Bars3Icon } from '@heroicons/vue/24/outline'
+import { ArrowUturnLeftIcon, ArrowUturnRightIcon } from '@heroicons/vue/24/outline'
 import { useUndoRedo } from '../composables/useUndoRedo.js'
 import { fetchShow, updateMeta, fetchHistory, fetchHistoryEntry, restoreHistory, createSnapshot } from '../api/shows.js'
 import { fetchChannels, saveChannels, downloadChannelsCsv, parseChannelsCsv, mergeChannels } from '../api/channels.js'
@@ -583,7 +601,7 @@ const setupSaving = ref(false)
 const channelsSaving = ref(false)
 
 const mobileTab = ref('channels') // 'channels' | 'info'
-const menuOpen = ref(false)
+const menuOpen = ref(null) // 'import' | 'export' | null
 
 const sectionDefs = ref([])
 const sectionContents = ref(new Map())

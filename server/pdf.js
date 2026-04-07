@@ -106,7 +106,7 @@ export function generatePDF(show, channels, sectionsMap, templateSections, photo
   doc.font(FONT_BOLD).fontSize(16).fillColor('black')
     .text(`Einleuchtplan — ${fm.name || ''}`, PAGE_MARGIN, PAGE_MARGIN)
   doc.font(FONT_NORMAL).fontSize(10)
-    .text(`${fm.venue || ''}   |   ${fmt(fm.datum)}`, PAGE_MARGIN, PAGE_MARGIN + mm(8))
+    .text(fm.venue ? `${fm.venue}   |   ${fmt(fm.datum)}` : fmt(fm.datum), PAGE_MARGIN, PAGE_MARGIN + mm(8))
   doc.moveDown(1.5)
 
   // ── Sections ─────────────────────────────────────────────────────────────

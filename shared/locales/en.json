@@ -257,6 +257,8 @@
   "tab.channels": "Channels",
   "tab.info": "Info & Photos",
 
+  "nav.import": "Import",
+  "nav.export": "Export",
   "ocr.trigger": "Scan show plan",
   "ocr.confirm.title": "Image will be sent to Claude (Anthropic)",
   "ocr.confirm.body": "The photo will be transmitted to Anthropic's Claude API for text recognition. Make sure the image does not contain confidential information that must not be shared with external services.",

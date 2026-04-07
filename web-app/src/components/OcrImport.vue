@@ -32,8 +32,8 @@
           </div>
           <p class="text-xs text-gray-500">{{ t('ocr.confirm.pages', { n: selectedFiles.length }) }}</p>
           <div class="flex gap-3 justify-end pt-2">
-            <button class="text-sm text-gray-400 hover:text-white px-4 py-2 rounded-lg hover:bg-white/5" @click="cancel">{{ t('action.cancel') }}</button>
-            <button class="text-sm font-medium bg-accent text-white px-4 py-2 rounded-lg hover:opacity-90" @click="upload">{{ t('ocr.confirm.send') }}</button>
+            <button class="text-sm text-gray-400 hover:text-white px-4 py-2 rounded-lg hover:bg-white/5" @click.stop="cancel">{{ t('action.cancel') }}</button>
+            <button class="text-sm font-medium bg-accent text-white px-4 py-2 rounded-lg hover:opacity-90" @click.stop="upload">{{ t('ocr.confirm.send') }}</button>
           </div>
         </div>
 

@@ -255,5 +255,15 @@
   "editor.list.ordered": "1. List",
 
   "tab.channels": "Channels",
-  "tab.info": "Info & Photos"
+  "tab.info": "Info & Photos",
+
+  "ocr.trigger": "Scan show plan",
+  "ocr.confirm.title": "Image will be sent to Claude (Anthropic)",
+  "ocr.confirm.body": "The photo will be transmitted to Anthropic's Claude API for text recognition. Make sure the image does not contain confidential information that must not be shared with external services.",
+  "ocr.confirm.pages": "{n} page(s) selected",
+  "ocr.confirm.send": "Send anyway",
+  "ocr.loading": "Claude is reading the show plan …",
+  "ocr.result.title": "Recognised content",
+  "ocr.result.hint": "Please review the result before applying. The setup text will be appended. Recognised channels are only filled in if the notes field is still empty.",
+  "ocr.result.apply": "Apply"
 }

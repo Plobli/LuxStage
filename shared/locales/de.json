@@ -255,5 +255,15 @@
   "editor.list.ordered": "1. Liste",
 
   "tab.channels": "Kanäle",
-  "tab.info": "Info & Fotos"
+  "tab.info": "Info & Fotos",
+
+  "ocr.trigger": "Showplan scannen",
+  "ocr.confirm.title": "Bild wird an Claude (Anthropic) gesendet",
+  "ocr.confirm.body": "Das Foto wird zur Texterkennung an die Claude API von Anthropic übertragen. Stelle sicher, dass keine vertraulichen Informationen im Bild enthalten sind, die nicht an externe Dienste gesendet werden dürfen.",
+  "ocr.confirm.pages": "{n} Seite(n) ausgewählt",
+  "ocr.confirm.send": "Trotzdem senden",
+  "ocr.loading": "Claude liest den Showplan …",
+  "ocr.result.title": "Erkannter Inhalt",
+  "ocr.result.hint": "Bitte prüfe das Ergebnis vor dem Übernehmen. Der Aufbau-Text wird angehängt. Erkannte Kanäle werden nur befüllt, wenn das Notiz-Feld noch leer ist.",
+  "ocr.result.apply": "Übernehmen"
 }

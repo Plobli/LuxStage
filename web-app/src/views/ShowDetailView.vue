@@ -380,6 +380,7 @@
         <div class="flex items-center gap-2 mb-6 py-2 border-t border-white/10">
           <button class="cursor-pointer text-sm text-gray-500 hover:text-white px-2 py-1 rounded hover:bg-white/5 transition-colors" @click="addMarkdownSection">{{ t('sections.add.markdown') }}</button>
           <button v-if="!hasFieldsType()" class="cursor-pointer text-sm text-gray-500 hover:text-white px-2 py-1 rounded hover:bg-white/5 transition-colors" @click="addFieldsSection">{{ t('sections.add.fields') }}</button>
+          <OcrImport class="ml-auto text-gray-500 hover:text-white px-2 py-1 rounded hover:bg-white/5 transition-colors" @import="onOcrImport" />
         </div>
 
         <!-- Foto-Galerie -->
@@ -552,6 +553,7 @@ import { api } from '../api/client.js'
 import { fetchShowSections, saveShowSections, fetchShowSectionDefs, saveShowSectionDefs } from '../api/sections.js'
 import { uuid } from '../utils/uuid.js'
 import ColorAutocomplete from '../components/ColorAutocomplete.vue'
+import OcrImport from '../components/OcrImport.vue'
 import Sortable from 'sortablejs'
 
 const props = defineProps({ id: { type: String, required: true } })
@@ -684,6 +686,38 @@ function onSetupChange(md) {
   clearTimeout(saveSetupTimer)
   saveSetupTimer = setTimeout(() => { persistSetup(md); saveSetupTimer = null }, 50)
   nextTick(() => commitFocus()) // nach v-model-Update: pusht Snapshot wenn sich etwas geändert hat
+}
+
+function onOcrImport(data) {
+  // 1. Aufbau-Text anhängen
+  if (data.aufbau) {
+    const appended = setupMarkdown.value ? `${setupMarkdown.value}\n\n---\n\n${data.aufbau}` : data.aufbau
+    setupMarkdown.value = appended
+    onSetupChange(appended)
+  }
+
+  // 2. Kanäle befüllen — nur leere Felder werden befüllt, befüllte bleiben unberührt
+  if (data.kanaele?.length) {
+    const updated = channels.value.map(ch => {
+      // Passenden OCR-Eintrag suchen nach Kanalnummer (primär) oder Position (fallback)
+      const match = data.kanaele.find(k =>
+        (k.channel && Number(k.channel) === Number(ch.channel)) ||
+        (k.position && ch.position && k.position.toLowerCase() === ch.position.toLowerCase())
+      )
+      if (!match) return ch
+
+      return {
+        ...ch,
+        device:  ch.device?.trim()  ? ch.device  : (match.device  || ch.device),
+        color:   ch.color?.trim()   ? ch.color   : (match.color   || ch.color),
+        address: ch.address?.trim() ? ch.address : (match.address || ch.address),
+        notes:   ch.notes?.trim()   ? ch.notes   : (match.notes   || ch.notes),
+      }
+    })
+    channels.value = updated
+    persistChannels()
+    pushSnapshot()
+  }
 }
 
 async function persistSetup(md) {

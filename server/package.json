@@ -1,13 +1,14 @@
 {
   "name": "luxstage-server",
-  "version": "1.5.17",
+  "version": "1.5.19",
   "private": true,
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "dev": "node --watch-path=index.js --watch-path=router.js --watch-path=auth.js --watch-path=config.js --watch-path=helpers.js --watch-path=db-init.js --watch-path=db.js --watch-path=history.js --watch-path=pdf.js --watch-path=photos.js --watch-path=backup.js --watch-path=sse.js --watch index.js"
+    "dev": "node --watch-path=index.js --watch-path=router.js --watch-path=auth.js --watch-path=config.js --watch-path=helpers.js --watch-path=db-init.js --watch-path=db.js --watch-path=history.js --watch-path=pdf.js --watch-path=photos.js --watch-path=backup.js --watch-path=sse.js --watch-path=ocr.js --watch index.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.82.0",
     "archiver": "^7.0.1",
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^9.0.0",

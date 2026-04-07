@@ -9,10 +9,12 @@
       @keydown.up.prevent="moveUp"
       @keydown.enter.prevent="selectActive"
       @keydown.escape="open = false"
+      @keydown="$emit('keydown', $event)"
       :placeholder="placeholder"
       :style="badgeStyle || {}"
       :class="badgeStyle ? 'font-semibold' : 'bg-white/10 text-gray-400 placeholder:text-gray-600'"
       class="focus:outline-none text-xs rounded-full px-2 py-0.5 border-0 w-16 text-center"
+      v-bind="inputAttrs"
     />
     <ul
       v-if="open && filtered.length > 0"
@@ -45,8 +47,9 @@ import { ALL_FILTERS, filterBadgeStyle } from '../utils/filterColors.js'
 const props = defineProps({
   modelValue: { type: String, default: '' },
   placeholder: { type: String, default: '' },
+  inputAttrs: { type: Object, default: () => ({}) },
 })
-const emit = defineEmits(['update:modelValue', 'change'])
+const emit = defineEmits(['update:modelValue', 'change', 'keydown'])
 
 const open = ref(false)
 const activeIdx = ref(0)

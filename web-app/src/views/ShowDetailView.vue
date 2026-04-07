@@ -231,6 +231,8 @@
                         :modelValue="ch.color"
                         @update:modelValue="pushSnapshot(); ch.color = $event; persistChannels()"
                         :placeholder="t('field.color')"
+                        :inputAttrs="{ 'data-nav-row': rowIndexOf(ch), 'data-nav-col': 1 }"
+                        @keydown="onKeydown($event, rowIndexOf(ch), 1, 4, null)"
                       />
                     </td>
                     <td class="px-3 py-0 align-middle">

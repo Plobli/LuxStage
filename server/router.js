@@ -352,21 +352,21 @@ export async function router(req, res) {
 
     if (method === 'GET' && pathname.match(/^\/api\/templates\/([^/]+)\/channels$/)) {
       const user = requireAuth(req, res); if (!user) return
-      const name = pathname.split('/')[3]
+      const name = decodeURIComponent(pathname.split('/')[3])
       const channels = db.readTemplate(name).map(({ template_id: _, sort_order: __, ...ch }) => ch)
       return json(res, 200, channels)
     }
 
     if (method === 'GET' && pathname.match(/^\/api\/templates\/([^/]+)\/sections$/)) {
       const user = requireAuth(req, res); if (!user) return
-      const name = pathname.split('/')[3]
+      const name = decodeURIComponent(pathname.split('/')[3])
       const sections = db.readTemplateSections(name)
       return json(res, 200, sections)
     }
 
     if (method === 'PUT' && pathname.match(/^\/api\/templates\/([^/]+)\/sections$/)) {
       const user = requireAdmin(req, res); if (!user) return
-      const name = pathname.split('/')[3]
+      const name = decodeURIComponent(pathname.split('/')[3])
       const body = await readJsonBody(req, res); if (body === null) return
       const { sections } = body
       db.writeTemplateSections(name, sections)

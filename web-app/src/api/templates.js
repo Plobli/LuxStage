@@ -13,6 +13,7 @@ export async function saveTemplate(name, channels) {
 
 export async function uploadTemplate({ name, text }) {
   // CSV-Text von Datei-Upload: parsen und als Array senden
+  const cleanName = name.replace(/\.csv$/i, '')
   const lines = text.trim().split('\n').filter(Boolean)
   const headerIdx = lines.findIndex(l => l.startsWith('channel'))
   if (headerIdx === -1) return
@@ -21,5 +22,5 @@ export async function uploadTemplate({ name, text }) {
     const vals = line.split(';')
     return Object.fromEntries(headers.map((h, i) => [h, (vals[i] ?? '').trim()]))
   })
-  return api.put(`/api/templates/${name}`, channels)
+  return api.put(`/api/templates/${encodeURIComponent(cleanName)}`, channels)
 }

@@ -52,6 +52,7 @@ export function createShow(slug, fields) {
   // Template-Sections kopieren wenn Template angegeben
   if (fields.template) {
     const tpl = db.prepare('SELECT * FROM templates WHERE name = ?').get(fields.template)
+    console.log(`[createShow] template lookup: name="${fields.template}" found=${!!tpl}`)
     if (tpl) {
       _copyTemplateToShow(tpl.id, id)
     }

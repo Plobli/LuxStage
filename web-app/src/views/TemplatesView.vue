@@ -402,9 +402,8 @@ async function handleImport() {
   importing.value = true
   importError.value = ''
   try {
-    const name = importName.value.trim()
-    const filename = name.endsWith('.csv') ? name : name + '.csv'
-    await uploadTemplate({ name: filename, text: csvText.value })
+    const name = importName.value.trim().replace(/\.csv$/i, '')
+    await uploadTemplate({ name, text: csvText.value })
     templates.value = await fetchTemplates()
     step.value = 'done'
   } catch (e) {

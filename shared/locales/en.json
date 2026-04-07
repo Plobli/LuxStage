@@ -177,7 +177,7 @@
   "show.id.placeholder": "northern-2026",
   "show.venue": "Venue",
   "show.template.optional": "Template (optional)",
-  "show.pdf": "⎙ PDF",
+  "show.pdf": "PDF",
   "show.channel.nr": "No.",
   "show.channel.address.example": "1/001",
   "show.channel.delete.confirm": "Delete channel {channel}?",

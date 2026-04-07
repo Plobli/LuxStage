@@ -81,21 +81,22 @@
         <div class="relative">
           <button
             type="button"
-            class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20 flex items-center gap-1"
+            :class="menuOpen === 'import' ? 'ring-white/30 text-white' : 'ring-white/10 text-gray-400'"
+            class="rounded-md px-2 py-1.5 text-sm font-semibold ring-1 hover:ring-white/30 flex items-center gap-1"
             @click="menuOpen = menuOpen === 'import' ? null : 'import'"
           >
             {{ t('nav.import') }}
-            <svg class="size-3 opacity-60" viewBox="0 0 12 12" fill="currentColor"><path d="M6 8L1 3h10z"/></svg>
+            <svg class="size-3 opacity-50" viewBox="0 0 12 12" fill="currentColor"><path d="M6 8L1 3h10z"/></svg>
           </button>
           <div
             v-if="menuOpen === 'import'"
-            class="absolute right-0 top-full mt-1 z-50 w-52 rounded-md bg-gray-900 ring-1 ring-white/10 shadow-xl py-1"
+            class="absolute right-0 top-full mt-1 z-50 w-56 rounded-lg bg-gray-950 ring-1 ring-white/15 shadow-2xl overflow-hidden"
             @click="menuOpen = null"
           >
-            <OcrImport class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/5 block" @import="onOcrImport" />
-            <button class="w-full text-left px-4 py-2 text-sm text-amber-400 hover:bg-white/5" @click="eosFileInput?.click()">{{ t('eos.import.button') }}</button>
-            <div class="my-1 border-t border-white/10" />
-            <button class="w-full text-left px-4 py-2 text-sm text-gray-500 hover:bg-white/5" @click="csvImportInput?.click()">{{ t('channel.import') }}</button>
+            <OcrImport class="w-full text-left px-4 py-2.5 text-sm text-gray-200 hover:bg-white/8 block" @import="onOcrImport" />
+            <button class="w-full text-left px-4 py-2.5 text-sm text-gray-200 hover:bg-white/8" @click="eosFileInput?.click()">{{ t('eos.import.button') }}</button>
+            <div class="border-t border-white/10" />
+            <button class="w-full text-left px-4 py-2.5 text-sm text-gray-500 hover:bg-white/8" @click="csvImportInput?.click()">{{ t('channel.import') }}</button>
           </div>
         </div>
 
@@ -103,24 +104,27 @@
         <div class="relative">
           <button
             type="button"
-            class="rounded-md px-2 py-1.5 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20 flex items-center gap-1"
+            :class="menuOpen === 'export' ? 'ring-white/30 text-white' : 'ring-white/10 text-gray-400'"
+            class="rounded-md px-2 py-1.5 text-sm font-semibold ring-1 hover:ring-white/30 flex items-center gap-1"
             @click="menuOpen = menuOpen === 'export' ? null : 'export'"
           >
             {{ t('nav.export') }}
-            <svg class="size-3 opacity-60" viewBox="0 0 12 12" fill="currentColor"><path d="M6 8L1 3h10z"/></svg>
+            <svg class="size-3 opacity-50" viewBox="0 0 12 12" fill="currentColor"><path d="M6 8L1 3h10z"/></svg>
           </button>
           <div
             v-if="menuOpen === 'export'"
-            class="absolute right-0 top-full mt-1 z-50 w-52 rounded-md bg-gray-900 ring-1 ring-white/10 shadow-xl py-1"
+            class="absolute right-0 top-full mt-1 z-50 w-56 rounded-lg bg-gray-950 ring-1 ring-white/15 shadow-2xl overflow-hidden"
             @click="menuOpen = null"
           >
-            <button class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/5" @click="openPdf">{{ t('show.pdf') }}</button>
-            <div class="my-1 border-t border-white/10" />
-            <button class="w-full text-left px-4 py-2 text-sm text-gray-500 hover:bg-white/5" @click="downloadChannelsCsv(props.id, channels)">{{ t('channel.export') }}</button>
+            <button class="w-full text-left px-4 py-2.5 text-sm text-gray-200 hover:bg-white/8" @click="openPdf">{{ t('show.pdf') }}</button>
+            <div class="border-t border-white/10" />
+            <button class="w-full text-left px-4 py-2.5 text-sm text-gray-500 hover:bg-white/8" @click="downloadChannelsCsv(props.id, channels)">{{ t('channel.export') }}</button>
           </div>
         </div>
 
       </div>
+      <!-- Klick außerhalb schließt Dropdown -->
+      <div v-if="menuOpen" class="fixed inset-0 z-40" @click="menuOpen = null" />
       <input ref="csvImportInput" type="file" accept=".csv" class="hidden" @change="onCsvImportSelected" />
       <input ref="eosFileInput" type="file" accept=".csv" class="hidden" @change="onEosFileSelected" />
     </div>

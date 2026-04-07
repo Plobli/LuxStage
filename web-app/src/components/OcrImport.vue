@@ -1,6 +1,6 @@
 <template>
-  <!-- Trigger-Button -->
-  <label class="cursor-pointer text-sm text-gray-400 hover:text-white shrink-0">
+  <!-- Trigger-Button — Klassen kommen vom Elternelement via $attrs -->
+  <label v-bind="$attrs" class="cursor-pointer">
     {{ t('ocr.trigger') }}
     <input ref="fileInput" type="file" accept="image/*" multiple class="sr-only" @change="onFileSelected" />
   </label>
@@ -66,6 +66,10 @@
     </div>
   </Teleport>
 </template>
+
+<script>
+export default { inheritAttrs: false }
+</script>
 
 <script setup>
 import { ref, computed } from 'vue'

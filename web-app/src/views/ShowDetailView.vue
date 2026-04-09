@@ -448,10 +448,18 @@
                 >✕</button>
                 <input
                   type="text"
-                  :value="photoCaptions[filename] ?? ''"
+                  :value="photoCaptions[filename]?.caption ?? ''"
                   :placeholder="t('photo.caption.placeholder')"
                   class="w-full rounded bg-white/5 px-2 py-1 text-xs text-gray-300 placeholder-gray-600 border border-transparent focus:border-white/20 focus:outline-none"
                   @blur="onCaptionBlur(filename, $event)"
+                  @keydown.enter="$event.target.blur()"
+                />
+                <input
+                  type="text"
+                  :value="photoCaptions[filename]?.channelNumber ?? ''"
+                  placeholder="Kanal (z. B. 42)"
+                  class="w-full rounded bg-white/5 px-2 py-1 text-xs text-gray-300 placeholder-gray-600 border border-transparent focus:border-white/20 focus:outline-none mt-1"
+                  @blur="onChannelNumberBlur(filename, $event)"
                   @keydown.enter="$event.target.blur()"
                 />
               </li>
@@ -470,8 +478,8 @@
       >
         <div class="photo-print-grid" :data-cols="photoCols">
           <div v-for="filename in page" :key="filename" class="photo-print-item">
-            <img :src="getPhotoUrl(props.id, filename)" :alt="photoCaptions[filename] || filename" />
-            <p v-if="photoCaptions[filename]" class="photo-print-caption">{{ photoCaptions[filename] }}</p>
+            <img :src="getPhotoUrl(props.id, filename)" :alt="photoCaptions[filename]?.caption || filename" />
+            <p v-if="photoCaptions[filename]?.caption" class="photo-print-caption">{{ photoCaptions[filename].caption }}</p>
           </div>
         </div>
       </div>
@@ -480,7 +488,7 @@
     <!-- Lightbox -->
     <div v-if="lightboxPhoto" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80" @click="lightboxPhoto = null">
       <img :src="getPhotoUrl(props.id, lightboxPhoto)" class="max-h-[85vh] max-w-screen-lg object-contain" @click.stop />
-      <p v-if="photoCaptions[lightboxPhoto]" class="mt-3 text-sm text-gray-300 max-w-lg text-center px-4" @click.stop>{{ photoCaptions[lightboxPhoto] }}</p>
+      <p v-if="photoCaptions[lightboxPhoto]?.caption" class="mt-3 text-sm text-gray-300 max-w-lg text-center px-4" @click.stop>{{ photoCaptions[lightboxPhoto].caption }}</p>
     </div>
 
     <!-- History Slide-Over -->
@@ -1161,12 +1169,18 @@ function persistChannels() {
 const dragging = ref(false)
 const lightboxPhoto = ref(null)
 const uploadQueue = ref([]) // [{ name, progress, done, error }]
-const photoCaptions = ref({}) // { filename: caption }
+const photoCaptions = ref({}) // { filename: { caption, channelNumber } }
 
 async function onCaptionBlur(filename, event) {
   const caption = event.target.value
-  photoCaptions.value[filename] = caption
-  await savePhotoCaption(props.id, filename, caption)
+  photoCaptions.value[filename] = { ...(photoCaptions.value[filename] ?? {}), caption }
+  await savePhotoCaption(props.id, filename, caption, photoCaptions.value[filename]?.channelNumber ?? '')
+}
+
+async function onChannelNumberBlur(filename, event) {
+  const channelNumber = event.target.value
+  photoCaptions.value[filename] = { ...(photoCaptions.value[filename] ?? {}), channelNumber }
+  await savePhotoCaption(props.id, filename, photoCaptions.value[filename]?.caption ?? '', channelNumber)
 }
 
 async function uploadFiles(files) {

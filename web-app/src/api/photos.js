@@ -37,8 +37,8 @@ export async function fetchPhotoCaptions(showId) {
   return api.get(`/api/shows/${showId}/photo-captions`)
 }
 
-export async function savePhotoCaption(showId, filename, caption) {
-  return api.put(`/api/shows/${showId}/photo-captions/${encodeURIComponent(filename)}`, { caption })
+export async function savePhotoCaption(showId, filename, caption, channelNumber = '') {
+  return api.put(`/api/shows/${showId}/photo-captions/${encodeURIComponent(filename)}`, { caption, channelNumber })
 }
 
 export function getPhotoUrl(showId, filename) {

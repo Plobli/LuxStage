@@ -323,18 +323,20 @@ export function deleteTemplateSections(name) {
 export function readPhotoDescriptions(slug) {
   const show = readShow(slug)
   if (!show) return {}
-  const rows = db.prepare('SELECT filename, caption FROM photo_descriptions WHERE show_id = ?').all(show.id)
-  return Object.fromEntries(rows.map(r => [r.filename, r.caption]))
+  const rows = db.prepare('SELECT filename, caption, channel_number FROM photo_descriptions WHERE show_id = ?').all(show.id)
+  return Object.fromEntries(rows.map(r => [r.filename, { caption: r.caption, channelNumber: r.channel_number ?? '' }]))
 }
 
-export function writePhotoDescription(slug, filename, caption) {
+export function writePhotoDescription(slug, filename, caption, channelNumber = '') {
   const show = readShow(slug)
   if (!show) throw new Error(`Show not found: ${slug}`)
   db.prepare(`
-    INSERT INTO photo_descriptions (show_id, filename, caption)
-    VALUES (?, ?, ?)
-    ON CONFLICT(show_id, filename) DO UPDATE SET caption = excluded.caption
-  `).run(show.id, filename, caption)
+    INSERT INTO photo_descriptions (show_id, filename, caption, channel_number)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(show_id, filename) DO UPDATE SET
+      caption = excluded.caption,
+      channel_number = excluded.channel_number
+  `).run(show.id, filename, caption, channelNumber)
 }
 
 export function deletePhotoDescription(slug, filename) {

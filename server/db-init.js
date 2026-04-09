@@ -98,9 +98,10 @@ db.exec(`
   );
 
   CREATE TABLE IF NOT EXISTS photo_descriptions (
-    show_id  TEXT NOT NULL REFERENCES shows(id) ON DELETE CASCADE,
-    filename TEXT NOT NULL,
-    caption  TEXT NOT NULL DEFAULT '',
+    show_id        TEXT NOT NULL REFERENCES shows(id) ON DELETE CASCADE,
+    filename       TEXT NOT NULL,
+    caption        TEXT NOT NULL DEFAULT '',
+    channel_number TEXT NOT NULL DEFAULT '',
     PRIMARY KEY (show_id, filename)
   );
 
@@ -133,4 +134,8 @@ if (!showCols.includes('eos_active_channels')) {
 const userCols = db.pragma('table_info(users)').map(c => c.name)
 if (!userCols.includes('role')) {
   db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'techniker'")
+}
+const photoCols = db.pragma('table_info(photo_descriptions)').map(c => c.name)
+if (!photoCols.includes('channel_number')) {
+  db.exec("ALTER TABLE photo_descriptions ADD COLUMN channel_number TEXT NOT NULL DEFAULT ''")
 }

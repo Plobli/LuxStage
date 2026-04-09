@@ -330,8 +330,8 @@ export async function router(req, res) {
         return json(res, 400, { error: 'Ungültiger Dateiname' })
       }
       const body = await readJsonBody(req, res); if (body === null) return
-      const { caption } = body
-      db.writePhotoDescription(id, filename, caption ?? '')
+      const { caption, channelNumber } = body
+      db.writePhotoDescription(id, filename, caption ?? '', channelNumber ?? '')
       return json(res, 200, { ok: true })
     }
 
@@ -488,7 +488,7 @@ export async function router(req, res) {
       const captionsMap = db.readPhotoDescriptions(slug)
       const photoEntries = photoFilenames.map(f => ({
         path: photos.getPhotoPath(slug, f),
-        caption: captionsMap[f] ?? '',
+        caption: captionsMap[f]?.caption ?? '',
       }))
       generatePDF(
         show,

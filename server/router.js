@@ -305,6 +305,15 @@ export async function router(req, res) {
       return json(res, 200, { ok: true })
     }
 
+    // ── Foto-Reihenfolge — Speichern ──────────────────────────────────────
+    if (method === 'PUT' && pathname.match(/^\/api\/shows\/([^/]+)\/photo-order$/)) {
+      const user = requireAdmin(req, res); if (!user) return
+      const id = pathname.split('/')[3]
+      const body = JSON.parse(await readBody(req))
+      await photos.savePhotoOrder(id, body.order)
+      return json(res, 200, { ok: true })
+    }
+
     // ── Foto-Beschreibungen — Alle lesen ───────────────────────────────────
     if (method === 'GET' && pathname.match(/^\/api\/shows\/([^/]+)\/photo-captions$/)) {
       const user = requireAuth(req, res); if (!user) return

@@ -37,9 +37,24 @@ export async function savePhoto(slug, filename, buffer) {
 export async function listPhotos(slug) {
   const dir = photosDir(slug)
   try {
-    const files = await fs.readdir(dir)
-    return files.filter(f => /\.(jpg|jpeg|png|gif|webp)$/i.test(f))
+    const files = (await fs.readdir(dir)).filter(f => /\.(jpg|jpeg|png|gif|webp)$/i.test(f))
+    const orderPath = path.join(dir, 'photo-order.json')
+    try {
+      const raw = await fs.readFile(orderPath, 'utf8')
+      const order = JSON.parse(raw)
+      const orderSet = new Set(order)
+      const ordered = order.filter(f => files.includes(f))
+      const rest = files.filter(f => !orderSet.has(f))
+      return [...ordered, ...rest]
+    } catch { return files }
   } catch { return [] }
+}
+
+export async function savePhotoOrder(slug, order) {
+  const dir = photosDir(slug)
+  await ensureDir(dir)
+  const safenames = order.map(f => path.basename(f).replace(/[^a-zA-Z0-9._-]/g, '_'))
+  await fs.writeFile(path.join(dir, 'photo-order.json'), JSON.stringify(safenames))
 }
 
 export async function deletePhoto(slug, filename) {

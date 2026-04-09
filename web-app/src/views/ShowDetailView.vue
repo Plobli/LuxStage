@@ -454,14 +454,17 @@
                   @blur="onCaptionBlur(filename, $event)"
                   @keydown.enter="$event.target.blur()"
                 />
-                <input
-                  type="text"
-                  :value="photoCaptions[filename]?.channelNumber ?? ''"
-                  placeholder="Kanal (z. B. 42)"
-                  class="w-full rounded bg-white/5 px-2 py-1 text-xs text-gray-300 placeholder-gray-600 border border-transparent focus:border-white/20 focus:outline-none mt-1"
-                  @blur="onChannelNumberBlur(filename, $event)"
-                  @keydown.enter="$event.target.blur()"
-                />
+                <div class="flex items-center gap-1 mt-1">
+                  <span class="text-xs text-gray-600 shrink-0">Kanal:</span>
+                  <input
+                    type="text"
+                    :value="photoCaptions[filename]?.channelNumber ?? ''"
+                    placeholder="z. B. 42"
+                    class="w-full rounded bg-white/5 px-2 py-1 text-xs text-gray-300 placeholder-gray-600 border border-transparent focus:border-white/20 focus:outline-none"
+                    @blur="onChannelNumberBlur(filename, $event)"
+                    @keydown.enter="$event.target.blur()"
+                  />
+                </div>
               </li>
             </ul>
           </div>
@@ -486,10 +489,64 @@
     </div>
 
     <!-- Lightbox -->
-    <div v-if="lightboxPhoto" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80" @click="lightboxPhoto = null">
-      <img :src="getPhotoUrl(props.id, lightboxPhoto)" class="max-h-[85vh] max-w-screen-lg object-contain" @click.stop />
-      <p v-if="photoCaptions[lightboxPhoto]?.caption" class="mt-3 text-sm text-gray-300 max-w-lg text-center px-4" @click.stop>{{ photoCaptions[lightboxPhoto].caption }}</p>
-    </div>
+    <Transition
+      enter-active-class="transition-opacity duration-200"
+      leave-active-class="transition-opacity duration-150"
+      enter-from-class="opacity-0"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="lightboxPhoto"
+        class="fixed inset-0 z-50 flex flex-col items-center justify-center"
+        @click="lightboxPhoto = null"
+      >
+        <!-- Blurred background -->
+        <div class="absolute inset-0 backdrop-blur-xl bg-black/70" />
+
+        <!-- Prev button -->
+        <button
+          v-if="lightboxIndex > 0"
+          class="absolute left-3 top-1/2 -translate-y-1/2 z-10 text-white/70 hover:text-white bg-black/40 hover:bg-black/60 rounded-full p-2 transition-colors"
+          @click.stop="lightboxStep(-1)"
+          aria-label="Vorheriges Foto"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+        </button>
+
+        <!-- Image -->
+        <img
+          :src="getPhotoUrl(props.id, lightboxPhoto)"
+          class="relative max-h-[85vh] max-w-[90vw] object-contain drop-shadow-2xl"
+          @click.stop
+        />
+
+        <!-- Caption -->
+        <p
+          v-if="photoCaptions[lightboxPhoto]?.caption"
+          class="relative mt-3 text-sm text-gray-300 max-w-lg text-center px-4"
+          @click.stop
+        >{{ photoCaptions[lightboxPhoto].caption }}</p>
+
+        <!-- Next button -->
+        <button
+          v-if="lightboxIndex < photos.length - 1"
+          class="absolute right-3 top-1/2 -translate-y-1/2 z-10 text-white/70 hover:text-white bg-black/40 hover:bg-black/60 rounded-full p-2 transition-colors"
+          @click.stop="lightboxStep(1)"
+          aria-label="Nächstes Foto"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </button>
+
+        <!-- Close button -->
+        <button
+          class="absolute top-3 right-3 z-10 text-white/70 hover:text-white bg-black/40 hover:bg-black/60 rounded-full p-1.5 transition-colors"
+          @click.stop="lightboxPhoto = null"
+          aria-label="Schließen"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </Transition>
 
     <!-- History Slide-Over -->
     <Transition
@@ -1214,8 +1271,24 @@ async function onDeletePhoto(filename) {
   delete photoCaptions.value[filename]
 }
 
+const lightboxIndex = computed(() => photos.value.indexOf(lightboxPhoto.value))
+
 function openLightbox(filename) {
   lightboxPhoto.value = filename
+}
+
+function lightboxStep(dir) {
+  const idx = lightboxIndex.value + dir
+  if (idx >= 0 && idx < photos.value.length) {
+    lightboxPhoto.value = photos.value[idx]
+  }
+}
+
+function onLightboxKey(e) {
+  if (!lightboxPhoto.value) return
+  if (e.key === 'ArrowRight') lightboxStep(1)
+  else if (e.key === 'ArrowLeft') lightboxStep(-1)
+  else if (e.key === 'Escape') lightboxPhoto.value = null
 }
 
 // ── Sections ───────────────────────────────────────────────────────────────
@@ -1373,7 +1446,11 @@ onMounted(async () => {
   const onScroll = () => sessionStorage.setItem(scrollKey, window.scrollY)
   window.addEventListener('scroll', onScroll, { passive: true })
   window.addEventListener('keydown', onUndoRedoKeydown)
-  onBeforeUnmount(() => window.removeEventListener('scroll', onScroll))
+  window.addEventListener('keydown', onLightboxKey)
+  onBeforeUnmount(() => {
+    window.removeEventListener('scroll', onScroll)
+    window.removeEventListener('keydown', onLightboxKey)
+  })
 })
 
 onBeforeUnmount(() => {

@@ -391,16 +391,10 @@ export async function changePassword(username, newPassword) {
     .run(username, hash)
 }
 
-/** Alle Benutzer aus DB + Env zusammengeführt (DB hat Vorrang). */
-export function listUsers(configUsers) {
-  const dbUsers = db.prepare('SELECT username, role FROM users').all()
-  const dbMap = new Map(dbUsers.map(u => [u.username, u]))
-  // Env-User, die nicht in DB sind
-  const envOnly = configUsers
-    .filter(u => !dbMap.has(u.username))
-    .map(u => ({ username: u.username, role: u.role, source: 'env' }))
-  const dbList = dbUsers.map(u => ({ username: u.username, role: u.role, source: 'db' }))
-  return [...dbList, ...envOnly]
+/** Alle Benutzer aus der DB. */
+export function listUsers() {
+  return db.prepare('SELECT username, role FROM users').all()
+    .map(u => ({ username: u.username, role: u.role, source: 'db' }))
 }
 
 /** Legt einen neuen Benutzer in der DB an (oder überschreibt bestehenden). */

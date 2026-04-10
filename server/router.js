@@ -80,8 +80,7 @@ export async function router(req, res) {
       const { currentPassword, newPassword } = body
       if (!newPassword || newPassword.length < 8) return json(res, 400, { error: 'Passwort zu kurz (min. 8 Zeichen)' })
       // Aktuelles Passwort prüfen
-      const configUser = config.users.find(u => u.username === user.username)
-      const storedPassword = db.getDbPassword(user.username) ?? configUser?.password
+      const storedPassword = db.getDbPassword(user.username)
       const pwOk = storedPassword?.startsWith('$2')
         ? await (await import('bcrypt')).compare(currentPassword, storedPassword)
         : currentPassword === storedPassword
@@ -95,7 +94,7 @@ export async function router(req, res) {
       const admin = requireAdmin(req, res); if (!admin) return
       const body = await readJsonBody(req, res); if (body === null) return
       const { username } = body
-      const allUsers = db.listUsers(config.users)
+      const allUsers = db.listUsers()
       if (!allUsers.find(u => u.username === username)) return json(res, 404, { error: 'Benutzer nicht gefunden' })
       const newPassword = randomBytes(6).toString('hex')
       await db.changePassword(username, newPassword)
@@ -105,7 +104,7 @@ export async function router(req, res) {
     // ── Benutzer — Liste ───────────────────────────────────────────────────
     if (method === 'GET' && pathname === '/api/users') {
       const admin = requireAdmin(req, res); if (!admin) return
-      return json(res, 200, db.listUsers(config.users))
+      return json(res, 200, db.listUsers())
     }
 
     // ── Benutzer — Anlegen ─────────────────────────────────────────────────
@@ -125,8 +124,6 @@ export async function router(req, res) {
       const admin = requireAdmin(req, res); if (!admin) return
       const username = pathname.split('/')[3]
       if (username === admin.username) return json(res, 400, { error: 'Eigenen Account kann man nicht löschen' })
-      const isEnvOnly = !db.getDbPassword(username) && config.users.find(u => u.username === username)
-      if (isEnvOnly) return json(res, 422, { error: 'Env-User können nur über die Serverkonfiguration entfernt werden' })
       db.deleteUser(username)
       return json(res, 200, { ok: true })
     }

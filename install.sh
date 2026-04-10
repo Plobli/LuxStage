@@ -184,10 +184,15 @@ mkdir -p "$DATA_DIR"
 chown "$SERVICE_USER:$SERVICE_USER" "$DATA_DIR"
 ok "Datenverzeichnis bereit: $DATA_DIR"
 
+# ── Nutzer in DB anlegen ──────────────────────────────────────────────────────
+step "Lege Nutzer in Datenbank an..."
+sudo -i -u "$SERVICE_USER" bash -c \
+  "ADMIN_PASSWORD='$ADMIN_PASSWORD' TECH_PASSWORD='$TECH_PASSWORD' JWT_SECRET='$JWT_SECRET' DATA_PATH='$DATA_DIR' \
+   . \$HOME/.nvm/nvm.sh && node '$INSTALL_DIR/server/bootstrap.js'"
+ok "Nutzer angelegt"
+
 # ── PM2 Ecosystem-Datei ───────────────────────────────────────────────────────
 step "Erstelle PM2-Konfiguration..."
-# USERS als JavaScript-Array-Literal direkt in die config schreiben
-# (kein JSON-String in Heredoc, vermeidet Anführungszeichen-Probleme)
 cat > "$INSTALL_DIR/ecosystem.config.cjs" << EOF
 module.exports = {
   apps: [{
@@ -198,7 +203,6 @@ module.exports = {
       NODE_ENV: 'production',
       PORT: 3000,
       JWT_SECRET: '$JWT_SECRET',
-      USERS: '[{"username":"admin","password":"$ADMIN_PASSWORD","role":"admin"},{"username":"tech","password":"$TECH_PASSWORD","role":"techniker"}]',
       DATA_PATH: '$DATA_DIR',
       CORS_ORIGIN: 'http://$HOSTNAME.local',
     }

@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
-import { config } from './config.js'
 import { db } from './db-init.js'
+import { config } from './config.js'
 import { randomBytes, timingSafeEqual } from 'node:crypto'
 
 // ── Kurzlebige Einmal-Token für URL-basierte Ressourcen (PDF, Fotos, Backup) ──
@@ -53,32 +53,15 @@ export function signToken(username, role) {
 }
 
 export async function login(username, password) {
-  // DB-User (dynamisch angelegt) haben Vorrang vor Env-Usern
-  const dbRow = db.prepare('SELECT * FROM users WHERE username = ?').get(username)
-  if (dbRow) {
-    const ok = await verifyPassword(password, dbRow.password)
-    if (!ok) return null
-    // Klartext-Migration: bei Erfolg sofort hashen
-    if (!dbRow.password.startsWith('$2')) {
-      const hash = await hashPassword(password)
-      db.prepare('UPDATE users SET password = ? WHERE username = ?').run(hash, dbRow.username)
-    }
-    return signToken(dbRow.username, dbRow.role)
-  }
-  // Fallback: Env-User
-  const user = config.users.find(u => u.username === username)
-  if (!user) return null
-  const envOk = await verifyPassword(password, user.password)
-  if (!envOk) return null
-  // Klartext-Migration: Env-User-Passwort beim ersten Login in DB hashen
-  if (!user.password.startsWith('$2')) {
+  const row = db.prepare('SELECT * FROM users WHERE username = ?').get(username)
+  if (!row) return null
+  const ok = await verifyPassword(password, row.password)
+  if (!ok) return null
+  if (!row.password.startsWith('$2')) {
     const hash = await hashPassword(password)
-    db.prepare('INSERT INTO users (username, password, role) VALUES (?, ?, ?) ON CONFLICT(username) DO UPDATE SET password = excluded.password, role = excluded.role')
-      .run(user.username, hash, user.role)
-    // Klartext aus dem In-Memory-Config-Objekt entfernen
-    user.password = null
+    db.prepare('UPDATE users SET password = ? WHERE username = ?').run(hash, row.username)
   }
-  return signToken(user.username, user.role)
+  return signToken(row.username, row.role)
 }
 
 export function authenticate(req) {

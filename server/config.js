@@ -9,30 +9,11 @@ if (!jwtSecret || jwtSecret.length < 32) {
   process.exit(1)
 }
 
-const usersEnv = process.env.USERS
-if (!usersEnv) {
-  console.error('FEHLER: USERS fehlt. Bitte USERS als JSON-Array setzen, z.B.: \'[{"username":"admin","password":"...","role":"admin"}]\'')
-  process.exit(1)
-}
-
-let users
-try {
-  users = JSON.parse(usersEnv)
-  if (!Array.isArray(users)) throw new Error('USERS muss ein JSON-Array sein')
-  for (const u of users) {
-    if (!u.username || !u.password || !u.role) throw new Error(`Ungültiger Eintrag in USERS: ${JSON.stringify(u)}`)
-  }
-} catch (e) {
-  console.error('FEHLER: USERS konnte nicht geparst werden:', e.message)
-  process.exit(1)
-}
-
 export const config = {
   port: parseInt(process.env.PORT || '3000'),
   dataPath: process.env.DATA_PATH || path.join(__dirname, '..', 'data'),
   jwtSecret,
   // Rollen: admin (alles), techniker (shows lesen/schreiben, keine templates/backup/update)
-  users,
   lockTimeout: 10 * 60 * 1000, // 10 Minuten in ms
   photoMaxWidth: 1600,
   photoQuality: 82,

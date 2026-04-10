@@ -20,6 +20,7 @@ ios-app/.build/
 .claude/
 .superpowers/
 docs/superpowers/
+.worktrees/
 
 # Design-Dateien
 *.af

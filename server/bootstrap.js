@@ -9,7 +9,7 @@
 //   ADMIN_PASSWORD="..." TECH_PASSWORD="..." JWT_SECRET="..." node bootstrap.js
 
 import bcrypt from 'bcrypt'
-import { db } from './db-init.js'
+import { dbContainer } from './db-init.js'
 
 const BCRYPT_COST = 12
 
@@ -25,7 +25,7 @@ if (!techPassword) {
   process.exit(1)
 }
 
-const insert = db.prepare(
+const insert = dbContainer.db.prepare(
   'INSERT OR IGNORE INTO users (username, password, role) VALUES (?, ?, ?)'
 )
 
@@ -49,4 +49,4 @@ if (techResult.changes > 0) {
   console.log('  –  Nutzer "tech" existiert bereits, wird nicht überschrieben')
 }
 
-db.close()
+dbContainer.db.close()

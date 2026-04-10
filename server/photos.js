@@ -3,6 +3,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import sharp from 'sharp'
 import { config } from './config.js'
+import * as db from './db.js'
 
 function photosDir(slug) {
   const base = path.join(config.dataPath, 'photos')
@@ -36,31 +37,40 @@ export async function savePhoto(slug, filename, buffer) {
 
 export async function listPhotos(slug) {
   const dir = photosDir(slug)
+
+  // Migration: vorhandene photo-order.json einmalig in DB übertragen
+  const jsonPath = path.join(dir, 'photo-order.json')
   try {
-    const files = (await fs.readdir(dir)).filter(f => /\.(jpg|jpeg|png|gif|webp)$/i.test(f))
-    const orderPath = path.join(dir, 'photo-order.json')
-    try {
-      const raw = await fs.readFile(orderPath, 'utf8')
-      const order = JSON.parse(raw)
-      const orderSet = new Set(order)
-      const ordered = order.filter(f => files.includes(f))
-      const rest = files.filter(f => !orderSet.has(f))
-      return [...ordered, ...rest]
-    } catch { return files }
+    const raw = await fs.readFile(jsonPath, 'utf8')
+    const jsonOrder = JSON.parse(raw)
+    if (Array.isArray(jsonOrder) && jsonOrder.length > 0) {
+      db.writePhotoOrder(slug, jsonOrder)
+      await fs.unlink(jsonPath).catch(() => {})
+    }
+  } catch { /* Datei existiert nicht oder ungültig — ignorieren */ }
+
+  // Alle vorhandenen Dateien im Verzeichnis
+  let files
+  try {
+    files = (await fs.readdir(dir)).filter(f => /\.(jpg|jpeg|png|gif|webp)$/i.test(f))
   } catch { return [] }
+
+  // Reihenfolge aus DB
+  const ordered = db.readPhotoOrder(slug).filter(f => files.includes(f))
+  const rest = files.filter(f => !ordered.includes(f)).sort()
+  return [...ordered, ...rest]
 }
 
 export async function savePhotoOrder(slug, order) {
-  const dir = photosDir(slug)
-  await ensureDir(dir)
   const safenames = order.map(f => path.basename(f).replace(/[^a-zA-Z0-9._-]/g, '_'))
-  await fs.writeFile(path.join(dir, 'photo-order.json'), JSON.stringify(safenames))
+  db.writePhotoOrder(slug, safenames)
 }
 
 export async function deletePhoto(slug, filename) {
   const dir = photosDir(slug)
   const safeName = path.basename(filename)
   await fs.unlink(path.join(dir, safeName))
+  db.deletePhotoOrderEntry(slug, safeName)
 }
 
 export function getPhotoPath(slug, filename) {

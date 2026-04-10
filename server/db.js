@@ -34,28 +34,31 @@ export function writeShow(slug, fields) {
 }
 
 export function createShow(slug, fields) {
-  const id = randomUUID()
-  const ts = now()
-  db.prepare(`
-    INSERT INTO shows (id, slug, name, datum, template, untertitel, spielzeit, archived, created_at, updated_at)
-    VALUES (@id, @slug, @name, @datum, @template, @untertitel, @spielzeit, 0, @ts, @ts)
-  `).run({
-    id, slug,
-    name: fields.name ?? slug,
-    datum: fields.datum ?? new Date().toISOString().slice(0, 10),
-    template: fields.template ?? null,
-    untertitel: fields.untertitel ?? null,
-    spielzeit: fields.spielzeit ?? null,
-    ts,
-  })
+  const tx = db.transaction(() => {
+    const id = randomUUID()
+    const ts = now()
+    db.prepare(`
+      INSERT INTO shows (id, slug, name, datum, template, untertitel, spielzeit, archived, created_at, updated_at)
+      VALUES (@id, @slug, @name, @datum, @template, @untertitel, @spielzeit, 0, @ts, @ts)
+    `).run({
+      id, slug,
+      name: fields.name ?? slug,
+      datum: fields.datum ?? new Date().toISOString().slice(0, 10),
+      template: fields.template ?? null,
+      untertitel: fields.untertitel ?? null,
+      spielzeit: fields.spielzeit ?? null,
+      ts,
+    })
 
-  // Template-Sections kopieren wenn Template angegeben
-  if (fields.template) {
-    const tpl = db.prepare('SELECT * FROM templates WHERE name = ?').get(fields.template)
-    if (tpl) {
-      _copyTemplateToShow(tpl.id, id)
+    // Template-Sections kopieren wenn Template angegeben
+    if (fields.template) {
+      const tpl = db.prepare('SELECT * FROM templates WHERE name = ?').get(fields.template)
+      if (tpl) {
+        _copyTemplateToShow(tpl.id, id)
+      }
     }
-  }
+  })
+  tx()
 }
 
 function _copyTemplateToShow(templateId, showId) {
@@ -343,6 +346,33 @@ export function deletePhotoDescription(slug, filename) {
   const show = readShow(slug)
   if (!show) return
   db.prepare('DELETE FROM photo_descriptions WHERE show_id = ? AND filename = ?').run(show.id, filename)
+}
+
+export function readPhotoOrder(slug) {
+  const show = readShow(slug)
+  if (!show) return []
+  return db.prepare('SELECT filename FROM photo_order WHERE show_id = ? ORDER BY sort_order')
+    .all(show.id)
+    .map(r => r.filename)
+}
+
+export function writePhotoOrder(slug, order) {
+  const show = readShow(slug)
+  if (!show) throw new Error(`Show not found: ${slug}`)
+  const tx = db.transaction(() => {
+    db.prepare('DELETE FROM photo_order WHERE show_id = ?').run(show.id)
+    for (let i = 0; i < order.length; i++) {
+      db.prepare('INSERT INTO photo_order (show_id, filename, sort_order) VALUES (?, ?, ?)')
+        .run(show.id, order[i], i)
+    }
+  })
+  tx()
+}
+
+export function deletePhotoOrderEntry(slug, filename) {
+  const show = readShow(slug)
+  if (!show) return
+  db.prepare('DELETE FROM photo_order WHERE show_id = ? AND filename = ?').run(show.id, filename)
 }
 
 // ── Benutzer-Passwörter ────────────────────────────────────────────────────

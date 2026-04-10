@@ -45,8 +45,8 @@ export async function listPhotos(slug) {
     const jsonOrder = JSON.parse(raw)
     if (Array.isArray(jsonOrder) && jsonOrder.length > 0) {
       db.writePhotoOrder(slug, jsonOrder)
-      await fs.unlink(jsonPath).catch(() => {})
     }
+    await fs.unlink(jsonPath).catch(() => {})
   } catch { /* Datei existiert nicht oder ungültig — ignorieren */ }
 
   // Alle vorhandenen Dateien im Verzeichnis

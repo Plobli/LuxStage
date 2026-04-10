@@ -365,6 +365,7 @@ export function writePhotoOrder(slug, order) {
       db.prepare('INSERT INTO photo_order (show_id, filename, sort_order) VALUES (?, ?, ?)')
         .run(show.id, order[i], i)
     }
+    db.prepare('UPDATE shows SET updated_at = ? WHERE id = ?').run(now(), show.id)
   })
   tx()
 }

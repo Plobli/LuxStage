@@ -1,11 +1,12 @@
 {
   "name": "luxstage-server",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "private": true,
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "dev": "node --watch-path=index.js --watch-path=router.js --watch-path=auth.js --watch-path=config.js --watch-path=helpers.js --watch-path=db-init.js --watch-path=db.js --watch-path=history.js --watch-path=pdf.js --watch-path=photos.js --watch-path=backup.js --watch-path=sse.js --watch-path=ocr.js --watch index.js"
+    "dev": "node --watch-path=index.js --watch-path=router.js --watch-path=auth.js --watch-path=config.js --watch-path=helpers.js --watch-path=db-init.js --watch-path=db.js --watch-path=history.js --watch-path=pdf.js --watch-path=photos.js --watch-path=backup.js --watch-path=sse.js --watch-path=ocr.js --watch index.js",
+    "test": "node --env-file=.env.test --test --test-reporter=spec test/db.test.js test/history.test.js test/photos.test.js test/backup.test.js test/api.test.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.82.0",

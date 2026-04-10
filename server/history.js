@@ -30,27 +30,30 @@ function initHashes() {
 function takeSnapshots() {
   const shows = sqliteDb.prepare('SELECT id, slug FROM shows WHERE archived = 0').all()
   for (const show of shows) {
-    const channels = db.readChannels(show.slug)
-    const sections = db.readShowSections(show.slug)
-    const currentHash = computeHash(channels, sections)
-    if (currentHash === snapshotHashes.get(show.id)) continue
+    let newHash = null
+    const tx = sqliteDb.transaction(() => {
+      const channels = db.readChannels(show.slug)
+      const sections = db.readShowSections(show.slug)
+      const currentHash = computeHash(channels, sections)
+      if (currentHash === snapshotHashes.get(show.id)) return  // early return from transaction
 
-    // Snapshot speichern
-    const id = randomUUID()
-    const sectionsObj = Object.fromEntries(sections)
-    sqliteDb.prepare(`
-      INSERT INTO history (id, show_id, created_at, channels, sections)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(id, show.id, Date.now(), JSON.stringify(channels), JSON.stringify(sectionsObj))
+      const id = randomUUID()
+      const sectionsObj = Object.fromEntries(sections)
+      sqliteDb.prepare(`
+        INSERT INTO history (id, show_id, created_at, channels, sections)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(id, show.id, Date.now(), JSON.stringify(channels), JSON.stringify(sectionsObj))
 
-    // Älteste über MAX_HISTORY löschen
-    sqliteDb.prepare(`
-      DELETE FROM history WHERE show_id = ? AND id NOT IN (
-        SELECT id FROM history WHERE show_id = ? ORDER BY created_at DESC LIMIT ?
-      )
-    `).run(show.id, show.id, MAX_HISTORY)
+      sqliteDb.prepare(`
+        DELETE FROM history WHERE show_id = ? AND id NOT IN (
+          SELECT id FROM history WHERE show_id = ? ORDER BY created_at DESC LIMIT ?
+        )
+      `).run(show.id, show.id, MAX_HISTORY)
 
-    snapshotHashes.set(show.id, currentHash)
+      newHash = currentHash
+    })
+    tx()
+    if (newHash) snapshotHashes.set(show.id, newHash)
   }
 }
 
@@ -66,35 +69,40 @@ export function takeSnapshotNow(slug) {
   const show = sqliteDb.prepare('SELECT id, slug FROM shows WHERE slug = ? AND archived = 0').get(slug)
   if (!show) return false
 
-  const channels = db.readChannels(slug)
-  const sections = db.readShowSections(slug)
-  const currentHash = computeHash(channels, sections)
+  let newHash = null
+  const tx = sqliteDb.transaction(() => {
+    const channels = db.readChannels(slug)
+    const sections = db.readShowSections(slug)
+    const currentHash = computeHash(channels, sections)
 
-  // Keinen doppelten Snapshot erstellen wenn sich seit dem letzten nichts geändert hat
-  const lastEntry = sqliteDb.prepare(
-    'SELECT id FROM history WHERE show_id = ? ORDER BY created_at DESC LIMIT 1'
-  ).get(show.id)
-  if (lastEntry) {
-    const lastFull = sqliteDb.prepare('SELECT channels, sections FROM history WHERE id = ?').get(lastEntry.id)
-    const lastChannels = JSON.parse(lastFull.channels)
-    const lastSections = new Map(Object.entries(JSON.parse(lastFull.sections)))
-    if (computeHash(lastChannels, lastSections) === currentHash) return true
-  }
+    // Keinen doppelten Snapshot erstellen wenn sich seit dem letzten nichts geändert hat
+    const lastEntry = sqliteDb.prepare(
+      'SELECT id FROM history WHERE show_id = ? ORDER BY created_at DESC LIMIT 1'
+    ).get(show.id)
+    if (lastEntry) {
+      const lastFull = sqliteDb.prepare('SELECT channels, sections FROM history WHERE id = ?').get(lastEntry.id)
+      const lastChannels = JSON.parse(lastFull.channels)
+      const lastSections = new Map(Object.entries(JSON.parse(lastFull.sections)))
+      if (computeHash(lastChannels, lastSections) === currentHash) return  // early return, no snapshot needed
+    }
 
-  const id = randomUUID()
-  const sectionsObj = Object.fromEntries(sections)
-  sqliteDb.prepare(`
-    INSERT INTO history (id, show_id, created_at, channels, sections)
-    VALUES (?, ?, ?, ?, ?)
-  `).run(id, show.id, Date.now(), JSON.stringify(channels), JSON.stringify(sectionsObj))
+    const id = randomUUID()
+    const sectionsObj = Object.fromEntries(sections)
+    sqliteDb.prepare(`
+      INSERT INTO history (id, show_id, created_at, channels, sections)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(id, show.id, Date.now(), JSON.stringify(channels), JSON.stringify(sectionsObj))
 
-  sqliteDb.prepare(`
-    DELETE FROM history WHERE show_id = ? AND id NOT IN (
-      SELECT id FROM history WHERE show_id = ? ORDER BY created_at DESC LIMIT ?
-    )
-  `).run(show.id, show.id, MAX_HISTORY)
+    sqliteDb.prepare(`
+      DELETE FROM history WHERE show_id = ? AND id NOT IN (
+        SELECT id FROM history WHERE show_id = ? ORDER BY created_at DESC LIMIT ?
+      )
+    `).run(show.id, show.id, MAX_HISTORY)
 
-  snapshotHashes.set(show.id, currentHash)
+    newHash = currentHash
+  })
+  tx()
+  if (newHash) snapshotHashes.set(show.id, newHash)
   return true
 }
 
@@ -119,8 +127,13 @@ export function restoreHistoryEntry(slug, historyId) {
 
   const channels = JSON.parse(entry.channels)
   const sections = new Map(Object.entries(JSON.parse(entry.sections)))
-  db.writeChannels(slug, channels)
-  db.writeShowSections(slug, sections)
+
+  const tx = sqliteDb.transaction(() => {
+    db.writeChannels(slug, channels)
+    db.writeShowSections(slug, sections)
+  })
+  tx()
+
   snapshotHashes.set(show.id, computeHash(channels, sections))
   return true
 }

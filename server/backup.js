@@ -4,6 +4,7 @@ import { createWriteStream, createReadStream } from 'node:fs'
 import archiver from 'archiver'
 import unzipper from 'unzipper'
 import path from 'node:path'
+import Database from 'better-sqlite3'
 import { config } from './config.js'
 import { db } from './db-init.js'
 
@@ -38,11 +39,13 @@ export async function streamBackup(res) {
 
 export async function restoreBackup(req, res) {
   const restorePath = path.join(config.dataPath, 'luxstage-restore.zip')
+  const dbRestorePath = path.join(config.dataPath, 'luxstage-restore.db')
+  const dbPath = path.join(config.dataPath, 'luxstage.db')
   const photosPath = path.join(config.dataPath, 'photos')
 
   const MAX_BACKUP_BYTES = 500 * 1024 * 1024 // 500 MB
 
-  // Rohen Request-Body als ZIP-Datei speichern
+  // Step 1: Receive and write ZIP to disk
   try {
     const writeStream = createWriteStream(restorePath)
     await new Promise((resolve, reject) => {
@@ -63,7 +66,7 @@ export async function restoreBackup(req, res) {
     return
   }
 
-  // ZIP entpacken und Inhalte prüfen
+  // Step 2: Extract DB file only from ZIP into luxstage-restore.db
   let hasDb = false
   try {
     const zip = createReadStream(restorePath).pipe(unzipper.Parse({ forceStream: true }))
@@ -71,14 +74,67 @@ export async function restoreBackup(req, res) {
       const fileName = entry.path
       if (fileName === 'luxstage.db') {
         hasDb = true
-        const dbRestorePath = path.join(config.dataPath, 'luxstage-restore.db')
         await new Promise((resolve, reject) => {
           const out = createWriteStream(dbRestorePath)
           entry.pipe(out)
           out.on('finish', resolve)
           out.on('error', reject)
         })
-      } else if (fileName.startsWith('photos/')) {
+      } else {
+        // Skip everything else during this pass
+        entry.autodrain()
+      }
+    }
+  } catch (err) {
+    console.error('Restore: ZIP-Verarbeitung fehlgeschlagen:', err)
+    await fs.unlink(restorePath).catch(() => {})
+    await fs.unlink(dbRestorePath).catch(() => {})
+    res.writeHead(400, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({ error: 'Ungültiges ZIP-Archiv' }))
+    return
+  }
+
+  if (!hasDb) {
+    await fs.unlink(restorePath).catch(() => {})
+    res.writeHead(400, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({ error: 'ZIP enthält keine luxstage.db' }))
+    return
+  }
+
+  // Step 3: Run PRAGMA integrity_check on temporary connection
+  let integrityCheckOk = false
+  let tempDb = null
+  try {
+    tempDb = new Database(dbRestorePath, { readonly: true })
+    const integrityResult = tempDb.prepare('PRAGMA integrity_check').all()
+    // If result is single row with 'ok', integrity is good. Otherwise, it failed.
+    integrityCheckOk = integrityResult.length === 1 && integrityResult[0]['integrity_check'] === 'ok'
+    tempDb.close()
+  } catch (err) {
+    console.error('Restore: DB-Integritätsprüfung fehlgeschlagen:', err)
+    if (tempDb) tempDb.close()
+    await fs.unlink(restorePath).catch(() => {})
+    await fs.unlink(dbRestorePath).catch(() => {})
+    res.writeHead(400, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({ error: 'Datenbank-Integritätsprüfung fehlgeschlagen' }))
+    return
+  }
+
+  if (!integrityCheckOk) {
+    console.error('Restore: Integritätsprüfung fehlgeschlagen — DB ist beschädigt')
+    await fs.unlink(restorePath).catch(() => {})
+    await fs.unlink(dbRestorePath).catch(() => {})
+    res.writeHead(400, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({ error: 'Datenbank ist beschädigt oder ungültig' }))
+    return
+  }
+
+  // Step 4: Extract photos from ZIP (now that DB is valid)
+  try {
+    const zip = createReadStream(restorePath).pipe(unzipper.Parse({ forceStream: true }))
+    for await (const entry of zip) {
+      const fileName = entry.path
+      if (fileName.startsWith('photos/')) {
         const relPath = fileName.slice('photos/'.length).replace(/\\/g, '/')
         if (!relPath || relPath.endsWith('/') || entry.type === 'Directory') { entry.autodrain(); continue }
         if (relPath.includes('..') || path.isAbsolute(relPath)) { entry.autodrain(); continue }
@@ -97,35 +153,27 @@ export async function restoreBackup(req, res) {
       }
     }
   } catch (err) {
-    console.error('Restore: ZIP-Verarbeitung fehlgeschlagen:', err)
-    fs.unlink(restorePath).catch(() => {})
+    console.error('Restore: Foto-Extraktion fehlgeschlagen:', err)
+    await fs.unlink(restorePath).catch(() => {})
+    await fs.unlink(dbRestorePath).catch(() => {})
     res.writeHead(400, { 'Content-Type': 'application/json' })
-    res.end(JSON.stringify({ error: 'Ungültiges ZIP-Archiv' }))
+    res.end(JSON.stringify({ error: 'Foto-Extraktion fehlgeschlagen' }))
     return
   }
 
-  fs.unlink(restorePath).catch(() => {})
+  await fs.unlink(restorePath).catch(() => {})
 
-  if (!hasDb) {
-    res.writeHead(400, { 'Content-Type': 'application/json' })
-    res.end(JSON.stringify({ error: 'ZIP enthält keine luxstage.db' }))
-    return
-  }
-
-  // Datenbank ersetzen: aktuelle DB schließen, Datei ersetzen, neu öffnen
-  const dbRestorePath = path.join(config.dataPath, 'luxstage-restore.db')
-  const dbPath = path.join(config.dataPath, 'luxstage.db')
+  // Step 5: Atomic DB swap
   try {
     db.close()
     await fs.rename(dbRestorePath, dbPath)
-    // Prozess neu starten damit die DB frisch eingelesen wird (erfordert PM2)
-    if (!process.env.pm_id) console.warn('WARNUNG: Kein PM2 erkannt — manueller Neustart nach Restore erforderlich!')
     res.writeHead(200, { 'Content-Type': 'application/json' })
     res.end(JSON.stringify({ ok: true, restart: true }))
+    // Step 6: Exit process
     setTimeout(() => process.exit(0), 500)
   } catch (err) {
     console.error('Restore: DB-Austausch fehlgeschlagen:', err)
-    fs.unlink(dbRestorePath).catch(() => {})
+    await fs.unlink(dbRestorePath).catch(() => {})
     res.writeHead(500, { 'Content-Type': 'application/json' })
     res.end(JSON.stringify({ error: 'Datenbank konnte nicht ersetzt werden' }))
   }

@@ -9,7 +9,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { config } from './config.js'
-import { db as sqliteDb } from './db-init.js'
+import { dbContainer } from './db-init.js'
 import * as db from './db.js'
 
 const dataPath = config.dataPath
@@ -68,7 +68,7 @@ function parseFieldsContent(rawContent) {
 
 async function migrateShow(slug, archived = false) {
   // Idempotenz-Check
-  const existing = sqliteDb.prepare('SELECT id FROM shows WHERE slug = ?').get(slug)
+  const existing = dbContainer.db.prepare('SELECT id FROM shows WHERE slug = ?').get(slug)
   if (existing) return false  // bereits migriert
 
   const dir = archived
@@ -84,7 +84,7 @@ async function migrateShow(slug, archived = false) {
 
   const id = randomUUID()
   const ts = Date.now()
-  sqliteDb.prepare(`
+  dbContainer.db.prepare(`
     INSERT INTO shows (id, slug, name, datum, template, untertitel, spielzeit, archived, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(id, slug, fm.name ?? slug, fm.datum ?? null, fm.template ?? null,
@@ -95,7 +95,7 @@ async function migrateShow(slug, archived = false) {
     const csv = await fs.readFile(path.join(dir, 'channels.csv'), 'utf8')
     const channels = parseCsv(csv)
     for (const ch of channels) {
-      sqliteDb.prepare(`
+      dbContainer.db.prepare(`
         INSERT INTO channels (id, show_id, channel, address, device, position, color, notes, sort_order)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(ch.id, id, ch.channel, ch.address, ch.device, ch.position, ch.color, ch.notes, ch.sort_order)
@@ -117,17 +117,17 @@ async function migrateShow(slug, archived = false) {
 
   for (const def of sectionDefs) {
     const newDefId = randomUUID()  // immer neue UUID, nie def.id (Kollision bei gleichem Template)
-    sqliteDb.prepare('INSERT INTO section_defs (id, show_id, title, type, sort_order) VALUES (?, ?, ?, ?, ?)')
+    dbContainer.db.prepare('INSERT INTO section_defs (id, show_id, title, type, sort_order) VALUES (?, ?, ?, ?, ?)')
       .run(newDefId, id, def.title, def.type, def.order ?? 0)
     for (let j = 0; j < (def.fields ?? []).length; j++) {
       const f = def.fields[j]
-      sqliteDb.prepare('INSERT INTO section_fields (id, section_id, key, label, unit, sort_order) VALUES (?, ?, ?, ?, ?, ?)')
+      dbContainer.db.prepare('INSERT INTO section_fields (id, section_id, key, label, unit, sort_order) VALUES (?, ?, ?, ?, ?, ?)')
         .run(randomUUID(), newDefId, f.key, f.label ?? '', f.unit ?? '', j)
     }
     // Content: alte ID aus sections.md → neue ID in DB
     const rawContent = contentMap.get(def.id) ?? ''
     const content = def.type === 'fields' ? parseFieldsContent(rawContent) : rawContent
-    sqliteDb.prepare('INSERT INTO section_contents (section_id, show_id, content) VALUES (?, ?, ?)')
+    dbContainer.db.prepare('INSERT INTO section_contents (section_id, show_id, content) VALUES (?, ?, ?)')
       .run(newDefId, id, content)
   }
 }
@@ -136,18 +136,18 @@ async function migrateShow(slug, archived = false) {
 
 async function migrateTemplate(csvFilename) {
   const templateName = csvFilename.replace(/\.csv$/, '')
-  const existing = sqliteDb.prepare('SELECT id FROM templates WHERE name = ?').get(templateName)
+  const existing = dbContainer.db.prepare('SELECT id FROM templates WHERE name = ?').get(templateName)
   if (existing) return
 
   const tplId = randomUUID()
-  sqliteDb.prepare('INSERT INTO templates (id, name) VALUES (?, ?)').run(tplId, templateName)
+  dbContainer.db.prepare('INSERT INTO templates (id, name) VALUES (?, ?)').run(tplId, templateName)
 
   // Channels
   try {
     const csv = await fs.readFile(path.join(templatesPath, csvFilename), 'utf8')
     const channels = parseCsv(csv)
     for (const ch of channels) {
-      sqliteDb.prepare(`
+      dbContainer.db.prepare(`
         INSERT INTO template_channels (id, template_id, channel, address, device, position, color, notes, sort_order)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(randomUUID(), tplId, ch.channel, ch.address, ch.device, ch.position, ch.color, ch.notes, ch.sort_order)
@@ -162,11 +162,11 @@ async function migrateTemplate(csvFilename) {
     for (let i = 0; i < defs.length; i++) {
       const def = defs[i]
       const defId = def.id ?? randomUUID()
-      sqliteDb.prepare('INSERT INTO template_section_defs (id, template_id, title, type, sort_order) VALUES (?, ?, ?, ?, ?)')
+      dbContainer.db.prepare('INSERT INTO template_section_defs (id, template_id, title, type, sort_order) VALUES (?, ?, ?, ?, ?)')
         .run(defId, tplId, def.title, def.type, def.order ?? i)
       for (let j = 0; j < (def.fields ?? []).length; j++) {
         const f = def.fields[j]
-        sqliteDb.prepare('INSERT INTO template_section_fields (id, section_id, key, label, unit, sort_order) VALUES (?, ?, ?, ?, ?, ?)')
+        dbContainer.db.prepare('INSERT INTO template_section_fields (id, section_id, key, label, unit, sort_order) VALUES (?, ?, ?, ?, ?, ?)')
           .run(f.id ?? randomUUID(), defId, f.key, f.label ?? '', f.unit ?? '', j)
       }
     }

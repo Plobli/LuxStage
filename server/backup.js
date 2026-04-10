@@ -6,13 +6,13 @@ import unzipper from 'unzipper'
 import path from 'node:path'
 import Database from 'better-sqlite3'
 import { config } from './config.js'
-import { db } from './db-init.js'
+import { dbContainer } from './db-init.js'
 
 export async function streamBackup(res) {
   const backupPath = path.join(config.dataPath, 'luxstage-backup.db')
 
   try {
-    await db.backup(backupPath)
+    await dbContainer.db.backup(backupPath)
   } catch (err) {
     console.error('Backup fehlgeschlagen:', err)
     res.writeHead(500, { 'Content-Type': 'application/json' })
@@ -165,7 +165,7 @@ export async function restoreBackup(req, res) {
 
   // Step 5: Atomic DB swap
   try {
-    db.close()
+    dbContainer.db.close()
     await fs.rename(dbRestorePath, dbPath)
     res.writeHead(200, { 'Content-Type': 'application/json' })
     res.end(JSON.stringify({ ok: true, restart: true }))

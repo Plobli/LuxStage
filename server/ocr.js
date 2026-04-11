@@ -2,9 +2,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import sharp from 'sharp'
 import { config } from './config.js'
-import { createRequire } from 'node:module'
-const require = createRequire(import.meta.url)
-const pdfParse = require('pdf-parse')
+import { PDFParse } from 'pdf-parse'
 import mammoth from 'mammoth'
 
 const MAX_BYTES = 4.5 * 1024 * 1024 // 4,5 MB — Puffer unter dem 5 MB Limit
@@ -101,7 +99,8 @@ export async function ocrShowplanDocument(buffer, mimeType) {
 
   let text
   if (mimeType === 'application/pdf') {
-    const parsed = await pdfParse(buffer)
+    const parser = new PDFParse({ data: buffer })
+    const parsed = await parser.getText()
     text = parsed.text
   } else {
     // Docx

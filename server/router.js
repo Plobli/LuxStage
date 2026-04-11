@@ -741,7 +741,6 @@ export async function router(req, res) {
         fsp.unlink(dbSnap).catch(() => {})
 
         // 8. Erfolg senden, dann Neustart
-        if (!process.env.pm_id) step('WARNUNG: Kein PM2 erkannt — manueller Neustart erforderlich!')
         step('Neustart...')
         send('done', { log })
         res.end()

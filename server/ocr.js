@@ -2,7 +2,9 @@
 import Anthropic from '@anthropic-ai/sdk'
 import sharp from 'sharp'
 import { config } from './config.js'
-import pdfParse from 'pdf-parse'
+import { createRequire } from 'node:module'
+const require = createRequire(import.meta.url)
+const pdfParse = require('pdf-parse')
 import mammoth from 'mammoth'
 
 const MAX_BYTES = 4.5 * 1024 * 1024 // 4,5 MB — Puffer unter dem 5 MB Limit

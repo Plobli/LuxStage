@@ -370,7 +370,7 @@ export async function router(req, res) {
         return json(res, 200, result)
       } catch (err) {
         console.error('OCR-Fehler:', err.message)
-        return json(res, 500, { error: err.message })
+        return json(res, 500, { error: err.message, rawOutput: err.rawOutput ?? null })
       }
     }
 

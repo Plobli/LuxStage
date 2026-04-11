@@ -22,7 +22,9 @@ export async function ocrShowplan(files) {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw new Error(err.error || `HTTP ${res.status}`)
+    const error = new Error(err.error || `HTTP ${res.status}`)
+    error.rawOutput = err.rawOutput ?? null
+    throw error
   }
 
   return res.json()

@@ -117,7 +117,7 @@ export async function ocrShowplanDocument(buffer, mimeType) {
   const client = new Anthropic({ apiKey: config.anthropicApiKey })
   const message = await client.messages.create({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 4096,
+    max_tokens: 8192,
     messages: [{ role: 'user', content: DOC_PROMPT(text) }],
   })
 
@@ -130,8 +130,10 @@ export async function ocrShowplanDocument(buffer, mimeType) {
       return JSON.parse(cleaned)
     } catch (e) {
       console.error('[ocr] JSON-Parse-Fehler:', e.message)
-      console.error('[ocr] Rohausgabe:', raw.slice(0, 500))
-      throw new Error('Claude hat kein valides JSON zurückgegeben: ' + e.message)
+      console.error('[ocr] Rohausgabe:', raw)
+      const err = new Error('Claude hat kein valides JSON zurückgegeben: ' + e.message)
+      err.rawOutput = raw
+      throw err
     }
   }
 }
@@ -174,8 +176,10 @@ export async function ocrShowplan(images) {
       return JSON.parse(cleaned)
     } catch (e) {
       console.error('[ocr] JSON-Parse-Fehler:', e.message)
-      console.error('[ocr] Rohausgabe:', text.slice(0, 500))
-      throw new Error('Claude hat kein valides JSON zurückgegeben: ' + e.message)
+      console.error('[ocr] Rohausgabe:', text)
+      const err = new Error('Claude hat kein valides JSON zurückgegeben: ' + e.message)
+      err.rawOutput = text
+      throw err
     }
   }
 }

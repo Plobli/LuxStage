@@ -67,6 +67,10 @@
         <!-- Fehler -->
         <div v-else-if="state === 'error'" class="p-6 space-y-4">
           <p class="text-sm text-red-400">{{ errorMsg }}</p>
+          <div v-if="rawOutput" class="space-y-1">
+            <p class="text-xs text-gray-500">Claude-Rohausgabe:</p>
+            <pre class="text-xs text-gray-300 bg-black/30 rounded-lg p-3 overflow-auto max-h-64 whitespace-pre-wrap break-all">{{ rawOutput }}</pre>
+          </div>
           <div class="flex justify-end">
             <button class="text-sm text-gray-400 hover:text-white px-4 py-2 rounded-lg hover:bg-white/5" @click="cancel">{{ t('action.close') }}</button>
           </div>
@@ -95,6 +99,7 @@ const previewUrls = ref([])
 const selectedFiles = ref([])
 const result = ref(null)
 const errorMsg = ref('')
+const rawOutput = ref('')
 
 const DOC_TYPES = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
 function isDocument(file) {
@@ -123,6 +128,7 @@ async function upload() {
     state.value = 'result'
   } catch (err) {
     errorMsg.value = err.message
+    rawOutput.value = err.rawOutput || ''
     state.value = 'error'
   }
 }
@@ -139,6 +145,7 @@ function cancel() {
   selectedFiles.value = []
   result.value = null
   errorMsg.value = ''
+  rawOutput.value = ''
   emit('dialog-close')
 }
 </script>

@@ -7,6 +7,37 @@ import mammoth from 'mammoth'
 
 const MAX_BYTES = 4.5 * 1024 * 1024 // 4,5 MB — Puffer unter dem 5 MB Limit
 
+/**
+ * Parst die Claude-Antwort zu JSON — toleriert Code-Fences, BOM und
+ * sonstige unsichtbare Zeichen am Anfang/Ende.
+ */
+function parseClaudeJson(raw) {
+  // BOM + unsichtbare Zeichen entfernen
+  const stripped = raw.replace(/^\uFEFF/, '').trim()
+
+  // Versuch 1: direkt
+  try { return JSON.parse(stripped) } catch {}
+
+  // Versuch 2: Code-Fence entfernen (```json ... ``` mit beliebigem Whitespace)
+  const fenceRemoved = stripped.replace(/^```[a-z]*\s*/i, '').replace(/\s*```\s*$/, '').trim()
+  try { return JSON.parse(fenceRemoved) } catch {}
+
+  // Versuch 3: Alles vor dem ersten { und nach dem letzten } abschneiden
+  const start = stripped.indexOf('{')
+  const end = stripped.lastIndexOf('}')
+  if (start !== -1 && end !== -1 && end > start) {
+    try { return JSON.parse(stripped.slice(start, end + 1)) } catch {}
+  }
+
+  // Alle Versuche fehlgeschlagen — Fehler mit Rohausgabe
+  console.error('[ocr] JSON-Parse-Fehler — erste 200 Zeichen hex:',
+    Buffer.from(stripped.slice(0, 200)).toString('hex'))
+  console.error('[ocr] Rohausgabe:', stripped)
+  const err = new Error('Claude hat kein valides JSON zurückgegeben')
+  err.rawOutput = stripped
+  throw err
+}
+
 async function resizeForClaude(buffer) {
   // Immer durch sharp schicken: EXIF-Rotation korrigieren + auf JPEG normalisieren
   const meta = await sharp(buffer).metadata()
@@ -121,21 +152,7 @@ export async function ocrShowplanDocument(buffer, mimeType) {
     messages: [{ role: 'user', content: DOC_PROMPT(text) }],
   })
 
-  const raw = message.content[0].text.trim()
-  try {
-    return JSON.parse(raw)
-  } catch {
-    const cleaned = raw.replace(/^```[a-z]*\s*/i, '').replace(/\s*```\s*$/, '').trim()
-    try {
-      return JSON.parse(cleaned)
-    } catch (e) {
-      console.error('[ocr] JSON-Parse-Fehler:', e.message)
-      console.error('[ocr] Rohausgabe:', raw)
-      const err = new Error('Claude hat kein valides JSON zurückgegeben: ' + e.message)
-      err.rawOutput = raw
-      throw err
-    }
-  }
+  return parseClaudeJson(message.content[0].text)
 }
 
 /**
@@ -166,20 +183,5 @@ export async function ocrShowplan(images) {
     messages: [{ role: 'user', content }],
   })
 
-  const text = message.content[0].text.trim()
-
-  try {
-    return JSON.parse(text)
-  } catch {
-    const cleaned = text.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/, '').trim()
-    try {
-      return JSON.parse(cleaned)
-    } catch (e) {
-      console.error('[ocr] JSON-Parse-Fehler:', e.message)
-      console.error('[ocr] Rohausgabe:', text)
-      const err = new Error('Claude hat kein valides JSON zurückgegeben: ' + e.message)
-      err.rawOutput = text
-      throw err
-    }
-  }
+  return parseClaudeJson(message.content[0].text)
 }

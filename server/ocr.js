@@ -55,6 +55,7 @@ Wichtige Hinweise:
 - Farben wie "w", "20l", "201", "R27" etc. in der Farbe-Spalte exakt übernehmen.
 - Leere Felder als leeren String oder weglassen — niemals erfinden.
 - Bei mehreren Seiten: alle erkannten Zeilen in ein gemeinsames "kanaele"-Array.
+- WICHTIG: Alle Strings müssen korrekt JSON-escaped sein. Anführungszeichen innerhalb von Strings als \" escapen, Zeilenumbrüche als \n.
 
 Gib ausschließlich valides JSON zurück, ohne Markdown-Codeblock.`
 
@@ -81,6 +82,7 @@ Extrahiere alle relevanten Informationen und gib ein JSON-Objekt mit genau zwei 
 Wichtige Hinweise:
 - Farben wie "w", "20l", "201", "R27" etc. in der Farbe-Spalte exakt übernehmen.
 - Leere Felder als leeren String oder weglassen — niemals erfinden.
+- WICHTIG: Alle Strings müssen korrekt JSON-escaped sein. Anführungszeichen innerhalb von Strings als \" escapen, Zeilenumbrüche als \n.
 
 Gib ausschließlich valides JSON zurück, ohne Markdown-Codeblock.
 
@@ -124,7 +126,13 @@ export async function ocrShowplanDocument(buffer, mimeType) {
     return JSON.parse(raw)
   } catch {
     const cleaned = raw.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/, '').trim()
-    return JSON.parse(cleaned)
+    try {
+      return JSON.parse(cleaned)
+    } catch (e) {
+      console.error('[ocr] JSON-Parse-Fehler:', e.message)
+      console.error('[ocr] Rohausgabe:', raw.slice(0, 500))
+      throw new Error('Claude hat kein valides JSON zurückgegeben: ' + e.message)
+    }
   }
 }
 
@@ -162,6 +170,12 @@ export async function ocrShowplan(images) {
     return JSON.parse(text)
   } catch {
     const cleaned = text.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/, '').trim()
-    return JSON.parse(cleaned)
+    try {
+      return JSON.parse(cleaned)
+    } catch (e) {
+      console.error('[ocr] JSON-Parse-Fehler:', e.message)
+      console.error('[ocr] Rohausgabe:', text.slice(0, 500))
+      throw new Error('Claude hat kein valides JSON zurückgegeben: ' + e.message)
+    }
   }
 }

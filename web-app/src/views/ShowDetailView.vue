@@ -886,9 +886,12 @@ async function onEosFileSelected(e) {
     if (!ok) return
   }
 
-  // Re-Import: prüfe ob bisher aktive Kanäle wegfallen
+  // Re-Import: prüfe ob bisher aktive Kanäle (ohne Beschreibung) wegfallen
   if (eosActiveChannels.value !== null) {
-    const currentActive = eosActiveChannels.value.filter(ch => !ch.startsWith('-'))
+    const channelsWithNotesSet = new Set(
+      channels.value.filter(ch => (ch.notes ?? '').trim().length > 0).map(ch => String(ch.channel))
+    )
+    const currentActive = eosActiveChannels.value.filter(ch => !ch.startsWith('-') && !channelsWithNotesSet.has(ch))
     const removed = currentActive.filter(ch => !activeChannels.includes(ch))
     if (removed.length > 0) {
       const ok = await confirm({
@@ -906,22 +909,27 @@ async function onEosFileSelected(e) {
     }
   }
 
-  // Import durchführen.
-  // Regel: Import ist autoritativ — überschreibt manuelle Overrides.
-  // Kanäle im neuen CSV            → immer aktiv (grün)
-  // Kanäle vorher aktiv, jetzt weg → werden rot
-  // Kanäle vorher manuell rot, jetzt weg → bleiben rot
-  // Kanäle vorher manuell rot, jetzt im CSV → werden grün (import wins)
-  const prev = eosActiveChannels.value ?? []
-  const prevActive   = prev.filter(ch => !ch.startsWith('-'))
-  const prevInactive = prev.filter(ch => ch.startsWith('-')).map(ch => ch.slice(1))
+  // Import durchführen — Merge-Logik:
+  // Kanäle mit Beschreibung (notes) → komplett ignorieren, nie in eosActiveChannels aufnehmen
+  // Kanäle im CSV, ohne Beschreibung → EOS-aktiv (gelb)
+  // Kanäle vorher EOS-bekannt, ohne Beschreibung, nicht mehr im CSV → EOS-inaktiv (grau, `-`-Prefix)
+  const channelsWithNotes = new Set(
+    channels.value.filter(ch => (ch.notes ?? '').trim().length > 0).map(ch => String(ch.channel))
+  )
 
-  // Alle Kanäle die vorher bekannt waren, aber nicht im neuen CSV → rot
-  const nowGone = [...prevActive, ...prevInactive].filter(ch => !activeChannels.includes(ch))
+  const prev = eosActiveChannels.value ?? []
+  const prevTracked = prev.map(ch => ch.startsWith('-') ? ch.slice(1) : ch)
+    .filter(nr => !channelsWithNotes.has(nr))
+
+  // Kanäle im CSV die keine Beschreibung haben → aktiv
+  const newActive = activeChannels.filter(nr => !channelsWithNotes.has(nr))
+
+  // Vorher bekannte (ohne Beschreibung), nicht mehr im CSV → inaktiv
+  const nowGone = prevTracked.filter(nr => !activeChannels.includes(nr))
 
   eosActiveChannels.value = [
-    ...activeChannels,                // alle neuen: grün
-    ...nowGone.map(ch => `-${ch}`),   // weggefallene: rot
+    ...newActive,
+    ...nowGone.map(nr => `-${nr}`),
   ]
   await persistEosChannels()
 }

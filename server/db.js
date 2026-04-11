@@ -23,7 +23,7 @@ export function readShow(slug) {
 }
 
 export function writeShow(slug, fields) {
-  const allowed = ['name', 'datum', 'template', 'untertitel', 'spielzeit', 'setup_markdown', 'eos_active_channels']
+  const allowed = ['name', 'datum', 'template', 'untertitel', 'spielzeit', 'setup_markdown', 'eos_active_channels', 'last_edited_by', 'last_edited_at']
   const updates = Object.fromEntries(
     Object.entries(fields).filter(([k]) => allowed.includes(k))
   )
@@ -31,6 +31,11 @@ export function writeShow(slug, fields) {
   const sets = Object.keys(updates).map(k => `${k} = @${k}`).join(', ')
   dbContainer.db.prepare(`UPDATE shows SET ${sets}, updated_at = @updated_at WHERE slug = @slug`)
     .run({ ...updates, updated_at: now(), slug })
+}
+
+function touchLastEdited(showId, username) {
+  dbContainer.db.prepare('UPDATE shows SET last_edited_by = ?, last_edited_at = ? WHERE id = ?')
+    .run(username, now(), showId)
 }
 
 export function createShow(slug, fields) {
@@ -104,7 +109,7 @@ export function readChannels(slug) {
   return dbContainer.db.prepare('SELECT * FROM channels WHERE show_id = ? ORDER BY sort_order').all(show.id)
 }
 
-export function writeChannels(slug, channels) {
+export function writeChannels(slug, channels, editedBy = null) {
   const show = readShow(slug)
   if (!show) throw new Error(`Show not found: ${slug}`)
   const tx = dbContainer.db.transaction(() => {
@@ -122,7 +127,9 @@ export function writeChannels(slug, channels) {
         i
       )
     }
-    dbContainer.db.prepare('UPDATE shows SET updated_at = ? WHERE id = ?').run(now(), show.id)
+    const ts = now()
+    dbContainer.db.prepare('UPDATE shows SET updated_at = ? WHERE id = ?').run(ts, show.id)
+    if (editedBy) touchLastEdited(show.id, editedBy)
   })
   tx()
 }
@@ -189,7 +196,7 @@ export function readShowSectionDefs(slug) {
   }))
 }
 
-export function writeShowSectionDefs(slug, defs) {
+export function writeShowSectionDefs(slug, defs, editedBy = null) {
   const show = readShow(slug)
   if (!show) throw new Error(`Show not found: ${slug}`)
   const tx = dbContainer.db.transaction(() => {
@@ -208,6 +215,7 @@ export function writeShowSectionDefs(slug, defs) {
         .run(def.id, show.id, def.type === 'fields' ? '{}' : '')
     }
     dbContainer.db.prepare('UPDATE shows SET updated_at = ? WHERE id = ?').run(now(), show.id)
+    if (editedBy) touchLastEdited(show.id, editedBy)
   })
   tx()
 }
@@ -222,7 +230,7 @@ export function readShowSections(slug) {
   return new Map(rows.map(r => [r.section_id, r.content ?? '']))
 }
 
-export function writeShowSections(slug, map) {
+export function writeShowSections(slug, map, editedBy = null) {
   const show = readShow(slug)
   if (!show) throw new Error(`Show not found: ${slug}`)
   const tx = dbContainer.db.transaction(() => {
@@ -231,6 +239,7 @@ export function writeShowSections(slug, map) {
         .run(sectionId, show.id, content)
     }
     dbContainer.db.prepare('UPDATE shows SET updated_at = ? WHERE id = ?').run(now(), show.id)
+    if (editedBy) touchLastEdited(show.id, editedBy)
   })
   tx()
 }

@@ -144,6 +144,12 @@ const showCols = dbContainer.db.pragma('table_info(shows)').map(c => c.name)
 if (!showCols.includes('eos_active_channels')) {
   dbContainer.db.exec('ALTER TABLE shows ADD COLUMN eos_active_channels TEXT')
 }
+if (!showCols.includes('last_edited_by')) {
+  dbContainer.db.exec('ALTER TABLE shows ADD COLUMN last_edited_by TEXT')
+}
+if (!showCols.includes('last_edited_at')) {
+  dbContainer.db.exec('ALTER TABLE shows ADD COLUMN last_edited_at INTEGER')
+}
 const userCols = dbContainer.db.pragma('table_info(users)').map(c => c.name)
 if (!userCols.includes('role')) {
   dbContainer.db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'techniker'")

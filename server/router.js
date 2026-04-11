@@ -184,6 +184,8 @@ export async function router(req, res) {
       const fields = { ...rest }
       if (setupMarkdown !== undefined) fields.setup_markdown = setupMarkdown
       if (eosActiveChannels !== undefined) fields.eos_active_channels = JSON.stringify(eosActiveChannels)
+      fields.last_edited_by = user.username
+      fields.last_edited_at = Date.now()
       db.writeShow(slug, fields)
       return json(res, 200, { ok: true })
     }
@@ -201,7 +203,7 @@ export async function router(req, res) {
       const user = requireAuth(req, res); if (!user) return
       const slug = pathname.split('/')[3]
       const channels = await readJsonBody(req, res); if (channels === null) return
-      db.writeChannels(slug, channels)
+      db.writeChannels(slug, channels, user.username)
       broadcast(slug, 'channels-updated', { updatedBy: user.username })
       return json(res, 200, { ok: true })
     }
@@ -450,7 +452,7 @@ export async function router(req, res) {
       const slug = pathname.split('/')[3]
       const sections = await readJsonBody(req, res); if (sections === null) return
       const map = new Map(sections.map(s => [s.id, s.content]))
-      db.writeShowSections(slug, map)
+      db.writeShowSections(slug, map, user.username)
       broadcast(slug, 'sections-updated', { updatedBy: user.username })
       return json(res, 200, { ok: true })
     }
@@ -468,7 +470,7 @@ export async function router(req, res) {
       const slug = pathname.split('/')[3]
       const body = await readJsonBody(req, res); if (body === null) return
       const { sections } = body
-      db.writeShowSectionDefs(slug, sections)
+      db.writeShowSectionDefs(slug, sections, user.username)
       return json(res, 200, { ok: true })
     }
 

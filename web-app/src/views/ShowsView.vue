@@ -42,6 +42,9 @@
               <div class="flex-1 truncate px-4 py-2 text-sm">
                 <span class="font-medium text-white">{{ show.name || show.id }}</span>
                 <p class="text-gray-400">{{ show.datum }}</p>
+                <p v-if="show.last_edited_by" class="text-gray-500 text-xs mt-0.5 truncate">
+                  {{ show.last_edited_by }}, {{ formatEditedAt(show.last_edited_at) }}
+                </p>
               </div>
               <div class="shrink-0 pr-2" @click.stop>
                 <button
@@ -188,6 +191,13 @@ const loading = ref(true)
 const creating = ref(false)
 const drawerOpen = ref(false)
 const form = ref({ name: '', datum: new Date().toISOString().slice(0, 10), template: '' })
+
+function formatEditedAt(ts) {
+  if (!ts) return ''
+  const d = new Date(ts)
+  return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    + ', ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+}
 
 function initials(name) {
   return name.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase()

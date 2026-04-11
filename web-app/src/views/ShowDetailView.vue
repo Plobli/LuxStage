@@ -920,6 +920,16 @@ async function onEosFileSelected(e) {
   eosMergePreview.value.open = false
   if (!ok) return
 
+  // Option 1: fehlende Kanäle automatisch anlegen
+  const existingNrs = new Set(channels.value.map(ch => String(ch.channel)))
+  const missingNrs = newActiveNrs.filter(nr => !existingNrs.has(nr))
+  if (missingNrs.length > 0) {
+    const newChannels = missingNrs.map(nr => ({ channel: nr, address: '', device: '', position: '', color: '', notes: '' }))
+    channels.value = [...channels.value, ...newChannels]
+      .sort((a, b) => parseInt(a.channel) - parseInt(b.channel))
+    await saveChannels(props.id, channels.value)
+  }
+
   // Import durchführen
   eosActiveChannels.value = [
     ...newActiveNrs,

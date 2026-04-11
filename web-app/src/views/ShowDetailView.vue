@@ -636,6 +636,16 @@
       class="fixed inset-0 z-40 bg-black/40 no-print"
       @click="historyOpen = false"
     />
+
+    <!-- EOS Merge Vorschau -->
+    <EosMergePreviewDialog
+      :open="eosMergePreview.open"
+      :newActive="eosMergePreview.newActive"
+      :nowGone="eosMergePreview.nowGone"
+      :untouched="eosMergePreview.untouched"
+      @confirm="resolveEosMergePreview(true)"
+      @cancel="resolveEosMergePreview(false)"
+    />
   </div>
 </template>
 
@@ -660,6 +670,7 @@ import { uuid } from '../utils/uuid.js'
 import { usePhotoSettings } from '../composables/usePhotoSettings.js'
 import ColorAutocomplete from '../components/ColorAutocomplete.vue'
 import OcrImport from '../components/OcrImport.vue'
+import EosMergePreviewDialog from '../components/EosMergePreviewDialog.vue'
 import Sortable from 'sortablejs'
 
 const props = defineProps({ id: { type: String, required: true } })
@@ -694,6 +705,7 @@ const loading = ref(true)
 const meta = ref({})          // frontmatter: name, datum, venue, …
 const setupMarkdown = ref('') // Aufbau-Abschnitt aus .md-Datei
 const eosActiveChannels = ref(null) // null = noch kein Import; Array<string> (neg. Prefix = inaktiv)
+const eosMergePreview = ref({ open: false, newActive: [], nowGone: [], untouched: [], _resolve: null })
 const channels = ref([])
 const photos = ref([])
 
@@ -874,64 +886,49 @@ async function onEosFileSelected(e) {
     return
   }
 
-  // Warnung bei 0 aktiven Kanälen
-  if (activeChannels.length === 0) {
-    const ok = await confirm({
-      t,
-      titleKey: 'eos.import.confirm_empty.title',
-      messageKey: 'eos.import.confirm_empty.message',
-      confirmKey: 'eos.import.confirm_empty.confirm',
-      cancelKey: 'action.cancel',
-    })
-    if (!ok) return
-  }
-
-  // Re-Import: prüfe ob bisher aktive Kanäle (ohne Beschreibung) wegfallen
-  if (eosActiveChannels.value !== null) {
-    const channelsWithNotesSet = new Set(
-      channels.value.filter(ch => (ch.notes ?? '').trim().length > 0).map(ch => String(ch.channel))
-    )
-    const currentActive = eosActiveChannels.value.filter(ch => !ch.startsWith('-') && !channelsWithNotesSet.has(ch))
-    const removed = currentActive.filter(ch => !activeChannels.includes(ch))
-    if (removed.length > 0) {
-      const ok = await confirm({
-        t,
-        titleKey: 'eos.reimport.title',
-        messageKey: 'eos.reimport.message',
-        messageParams: {
-          n: removed.length,
-          channels: removed.join(', '),
-        },
-        confirmKey: 'eos.reimport.confirm',
-        cancelKey: 'action.cancel',
-      })
-      if (!ok) return
-    }
-  }
-
-  // Import durchführen — Merge-Logik:
-  // Kanäle mit Beschreibung (notes) → komplett ignorieren, nie in eosActiveChannels aufnehmen
-  // Kanäle im CSV, ohne Beschreibung → EOS-aktiv (gelb)
-  // Kanäle vorher EOS-bekannt, ohne Beschreibung, nicht mehr im CSV → EOS-inaktiv (grau, `-`-Prefix)
+  // Merge-Vorschau berechnen
   const channelsWithNotes = new Set(
     channels.value.filter(ch => (ch.notes ?? '').trim().length > 0).map(ch => String(ch.channel))
   )
+
+  // Hilfsfunktion: Kanal-Nr → Label (device oder position, falls vorhanden)
+  function chLabel(nr) {
+    const ch = channels.value.find(c => String(c.channel) === nr)
+    if (!ch) return ''
+    return [ch.device, ch.position].filter(Boolean).join(' / ')
+  }
 
   const prev = eosActiveChannels.value ?? []
   const prevTracked = prev.map(ch => ch.startsWith('-') ? ch.slice(1) : ch)
     .filter(nr => !channelsWithNotes.has(nr))
 
-  // Kanäle im CSV die keine Beschreibung haben → aktiv
-  const newActive = activeChannels.filter(nr => !channelsWithNotes.has(nr))
+  const newActiveNrs  = activeChannels.filter(nr => !channelsWithNotes.has(nr))
+  const nowGoneNrs    = prevTracked.filter(nr => !activeChannels.includes(nr))
+  const untouchedNrs  = activeChannels.filter(nr => channelsWithNotes.has(nr))
 
-  // Vorher bekannte (ohne Beschreibung), nicht mehr im CSV → inaktiv
-  const nowGone = prevTracked.filter(nr => !activeChannels.includes(nr))
+  // Preview-Dialog öffnen und auf Bestätigung warten
+  const ok = await new Promise(resolve => {
+    eosMergePreview.value = {
+      open: true,
+      newActive:  newActiveNrs.map(nr => ({ nr, label: chLabel(nr) })),
+      nowGone:    nowGoneNrs.map(nr => ({ nr, label: chLabel(nr) })),
+      untouched:  untouchedNrs.map(nr => ({ nr, label: chLabel(nr) })),
+      _resolve: resolve,
+    }
+  })
+  eosMergePreview.value.open = false
+  if (!ok) return
 
+  // Import durchführen
   eosActiveChannels.value = [
-    ...newActive,
-    ...nowGone.map(nr => `-${nr}`),
+    ...newActiveNrs,
+    ...nowGoneNrs.map(nr => `-${nr}`),
   ]
   await persistEosChannels()
+}
+
+function resolveEosMergePreview(value) {
+  eosMergePreview.value._resolve?.(value)
 }
 
 function channelStatus(ch) {

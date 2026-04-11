@@ -153,6 +153,12 @@
   "eos.reimport.confirm": "Import",
   "eos.status.active": "● active",
   "eos.status.inactive": "● inactive",
+  "eos.preview.title": "Merge Preview",
+  "eos.preview.new_active": "Newly active ({n})",
+  "eos.preview.now_gone": "No longer active ({n})",
+  "eos.preview.untouched": "Untouched – has description ({n})",
+  "eos.preview.empty": "No changes.",
+  "eos.preview.confirm": "Import",
 
   "history.btn": "History",
   "history.title": "Version History",

@@ -2,7 +2,7 @@
   <!-- Trigger-Button — Klassen kommen vom Elternelement via $attrs -->
   <label v-bind="$attrs" class="cursor-pointer">
     {{ t('ocr.trigger') }}
-    <input ref="fileInput" type="file" accept="image/*" multiple class="sr-only" @click.stop @change="onFileSelected" />
+    <input ref="fileInput" type="file" accept="image/*,.pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple class="sr-only" @click.stop @change="onFileSelected" />
   </label>
 
   <!-- Datenschutz-Hinweis + Vorschau-Dialog -->
@@ -23,12 +23,22 @@
               <p class="mt-1 text-sm text-gray-400">{{ t('ocr.confirm.body') }}</p>
             </div>
           </div>
-          <!-- Bildvorschauen -->
+          <!-- Vorschauen -->
           <div class="flex gap-2 overflow-x-auto">
-            <div v-for="(url, i) in previewUrls" :key="i" class="relative shrink-0">
-              <img :src="url" class="h-24 w-24 rounded-lg object-cover bg-black" />
-              <span class="absolute bottom-1 right-1 text-[10px] bg-black/60 text-white rounded px-1">{{ i + 1 }}</span>
-            </div>
+            <template v-for="(file, i) in selectedFiles" :key="i">
+              <!-- Dokument (PDF/Docx) -->
+              <div v-if="isDocument(file)" class="relative shrink-0 h-24 w-24 rounded-lg bg-white/5 flex flex-col items-center justify-center gap-1 ring-1 ring-white/10 px-2">
+                <svg class="size-8 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                </svg>
+                <span class="text-[10px] text-gray-400 text-center break-all leading-tight">{{ file.name }}</span>
+              </div>
+              <!-- Bild -->
+              <div v-else class="relative shrink-0">
+                <img :src="previewUrls[i]" class="h-24 w-24 rounded-lg object-cover bg-black" />
+                <span class="absolute bottom-1 right-1 text-[10px] bg-black/60 text-white rounded px-1">{{ i + 1 }}</span>
+              </div>
+            </template>
           </div>
           <p class="text-xs text-gray-500">{{ t('ocr.confirm.pages', { n: selectedFiles.length }) }}</p>
           <div class="flex gap-3 justify-end pt-2">
@@ -86,6 +96,11 @@ const selectedFiles = ref([])
 const result = ref(null)
 const errorMsg = ref('')
 
+const DOC_TYPES = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+function isDocument(file) {
+  return DOC_TYPES.includes(file.type) || /\.(pdf|docx)$/i.test(file.name)
+}
+
 const resultPreview = computed(() => {
   if (!result.value) return ''
   return JSON.stringify(result.value, null, 2)
@@ -95,7 +110,7 @@ function onFileSelected(e) {
   const files = Array.from(e.target.files || [])
   if (!files.length) return
   selectedFiles.value = files
-  previewUrls.value = files.map(f => URL.createObjectURL(f))
+  previewUrls.value = files.map(f => isDocument(f) ? null : URL.createObjectURL(f))
   state.value = 'confirm'
   e.target.value = ''
   emit('dialog-open')
@@ -118,7 +133,7 @@ function apply() {
 }
 
 function cancel() {
-  previewUrls.value.forEach(url => URL.revokeObjectURL(url))
+  previewUrls.value.forEach(url => url && URL.revokeObjectURL(url))
   state.value = 'idle'
   previewUrls.value = []
   selectedFiles.value = []

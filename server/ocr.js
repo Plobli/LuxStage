@@ -2,6 +2,8 @@
 import Anthropic from '@anthropic-ai/sdk'
 import sharp from 'sharp'
 import { config } from './config.js'
+import pdfParse from 'pdf-parse'
+import mammoth from 'mammoth'
 
 const MAX_BYTES = 4.5 * 1024 * 1024 // 4,5 MB — Puffer unter dem 5 MB Limit
 
@@ -55,6 +57,75 @@ Wichtige Hinweise:
 - Bei mehreren Seiten: alle erkannten Zeilen in ein gemeinsames "kanaele"-Array.
 
 Gib ausschließlich valides JSON zurück, ohne Markdown-Codeblock.`
+
+const DOC_PROMPT = (text) => `Du bist ein Assistent für Theatertechnik. Der folgende Text stammt aus einem Showplan / Leuchtplan (extrahiert aus einem PDF oder Word-Dokument).
+
+Extrahiere alle relevanten Informationen und gib ein JSON-Objekt mit genau zwei Feldern zurück:
+
+1. "aufbau": String in Markdown. Enthält alle allgemeinen Angaben außerhalb der Kanal-Tabelle:
+   - Stückname / Titel
+   - Datum
+   - Aufbau-Freitext (z.B. Requisitenaufbau, Bühnenbild-Hinweise)
+   - Sonstige Kopf- oder Fußzeilen-Infos
+   Wenn kein solcher Text vorhanden ist, gib einen leeren String zurück.
+
+2. "kanaele": Array aller Zeilen aus der Kanal-Tabelle. Jedes Objekt:
+   - "channel": Kanalnummer als Zahl (Spalte "Kreis" oder "Kanal" oder erste Spalte)
+   - "color": Farbfilter als String (Spalte "Farbe"), z.B. "w", "20l", "R27" — leer lassen wenn keine Angabe
+   - "device": Gerät/Scheinwerfer (Spalte "Gerät"), z.B. "PAR64", "Stufenlinse 1,2 kW"
+   - "notes": Notizen in einer Notizen-Spalte, exakt so wie im Text
+   - "address": DMX-Adresse falls vorhanden, sonst weglassen
+   - "position": Positionsbezeichnung falls vorhanden (z.B. "SD", "MZ1"), sonst weglassen
+   Zeilen ohne erkennbare Kanalnummer und ohne Gerät weglassen.
+
+Wichtige Hinweise:
+- Farben wie "w", "20l", "201", "R27" etc. in der Farbe-Spalte exakt übernehmen.
+- Leere Felder als leeren String oder weglassen — niemals erfinden.
+
+Gib ausschließlich valides JSON zurück, ohne Markdown-Codeblock.
+
+Hier ist der Text:
+${text}`
+
+/**
+ * @param {Buffer} buffer — Inhalt der PDF- oder Docx-Datei
+ * @param {string} mimeType — MIME-Typ der Datei
+ * @returns {Promise<{aufbau: string, kanaele: Array}>}
+ */
+export async function ocrShowplanDocument(buffer, mimeType) {
+  if (!config.anthropicApiKey) {
+    throw new Error('ANTHROPIC_API_KEY nicht konfiguriert')
+  }
+
+  let text
+  if (mimeType === 'application/pdf') {
+    const parsed = await pdfParse(buffer)
+    text = parsed.text
+  } else {
+    // Docx
+    const result = await mammoth.extractRawText({ buffer })
+    text = result.value
+  }
+
+  if (!text || text.trim().length < 10) {
+    throw new Error('Kein lesbarer Text im Dokument gefunden')
+  }
+
+  const client = new Anthropic({ apiKey: config.anthropicApiKey })
+  const message = await client.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 4096,
+    messages: [{ role: 'user', content: DOC_PROMPT(text) }],
+  })
+
+  const raw = message.content[0].text.trim()
+  try {
+    return JSON.parse(raw)
+  } catch {
+    const cleaned = raw.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/, '').trim()
+    return JSON.parse(cleaned)
+  }
+}
 
 /**
  * @param {Array<{buffer: Buffer, mimeType: string}>} images — ein oder mehrere Fotos

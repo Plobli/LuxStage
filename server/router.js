@@ -6,7 +6,7 @@ import * as db from './db.js'
 import { randomBytes } from 'node:crypto'
 import { listHistory, getHistoryEntry, restoreHistoryEntry, takeSnapshotNow } from './history.js'
 import * as photos from './photos.js'
-import { ocrShowplan } from './ocr.js'
+import { ocrShowplan, ocrShowplanDocument } from './ocr.js'
 import { subscribe, broadcast, getPresence } from './sse.js'
 import { streamBackup, restoreBackup } from './backup.js'
 import { generatePDF } from './pdf.js'
@@ -334,7 +334,7 @@ export async function router(req, res) {
       return json(res, 200, { ok: true })
     }
 
-    // ── OCR — Showplan aus einem oder mehreren Fotos erkennen ────────────
+    // ── OCR — Showplan aus Fotos, PDF oder Docx erkennen ─────────────────
     if (method === 'POST' && pathname === '/api/ocr/showplan') {
       const user = requireAuth(req, res); if (!user) return
       const ct = req.headers['content-type'] || ''
@@ -342,14 +342,31 @@ export async function router(req, res) {
       if (!boundaryMatch) return json(res, 400, { error: 'Kein Boundary' })
       const body = await photos.parseMultipart(req)
       const parts = photos.extractFileFromMultipart(body, boundaryMatch[1])
-      if (!parts.length) return json(res, 400, { error: 'Kein Bild gefunden' })
-      const mimeMap = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif' }
-      const images = parts.map(({ data, filename }) => {
-        const ext = filename.split('.').pop().toLowerCase()
-        return { buffer: data, mimeType: mimeMap[ext] || 'image/jpeg' }
-      })
+      if (!parts.length) return json(res, 400, { error: 'Keine Datei gefunden' })
+
+      const docMimeMap = {
+        pdf: 'application/pdf',
+        docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      }
+      const imgMimeMap = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif' }
+
+      // Prüfen ob erstes File ein Dokument (PDF/Docx) ist
+      const firstExt = parts[0].filename.split('.').pop().toLowerCase()
+      const docMime = docMimeMap[firstExt]
+
       try {
-        const result = await ocrShowplan(images)
+        let result
+        if (docMime) {
+          // PDF oder Docx — nur erste Datei verwenden
+          result = await ocrShowplanDocument(parts[0].data, docMime)
+        } else {
+          // Bilder
+          const images = parts.map(({ data, filename }) => {
+            const ext = filename.split('.').pop().toLowerCase()
+            return { buffer: data, mimeType: imgMimeMap[ext] || 'image/jpeg' }
+          })
+          result = await ocrShowplan(images)
+        }
         return json(res, 200, result)
       } catch (err) {
         console.error('OCR-Fehler:', err.message)

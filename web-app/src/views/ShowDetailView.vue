@@ -705,7 +705,8 @@ const loading = ref(true)
 const meta = ref({})          // frontmatter: name, datum, venue, …
 const setupMarkdown = ref('') // Aufbau-Abschnitt aus .md-Datei
 const eosActiveChannels = ref(null) // null = noch kein Import; Array<string> (neg. Prefix = inaktiv)
-const eosMergePreview = ref({ open: false, newActive: [], nowGone: [], untouched: [], _resolve: null })
+const eosMergePreview = ref({ open: false, newActive: [], nowGone: [], untouched: [] })
+let _eosMergeResolve = null
 const channels = ref([])
 const photos = ref([])
 
@@ -908,12 +909,12 @@ async function onEosFileSelected(e) {
 
   // Preview-Dialog öffnen und auf Bestätigung warten
   const ok = await new Promise(resolve => {
+    _eosMergeResolve = resolve
     eosMergePreview.value = {
       open: true,
       newActive:  newActiveNrs.map(nr => ({ nr, label: chLabel(nr) })),
       nowGone:    nowGoneNrs.map(nr => ({ nr, label: chLabel(nr) })),
       untouched:  untouchedNrs.map(nr => ({ nr, label: chLabel(nr) })),
-      _resolve: resolve,
     }
   })
   eosMergePreview.value.open = false
@@ -928,7 +929,8 @@ async function onEosFileSelected(e) {
 }
 
 function resolveEosMergePreview(value) {
-  eosMergePreview.value._resolve?.(value)
+  _eosMergeResolve?.(value)
+  _eosMergeResolve = null
 }
 
 function channelStatus(ch) {

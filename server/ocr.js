@@ -125,7 +125,7 @@ export async function ocrShowplanDocument(buffer, mimeType) {
   try {
     return JSON.parse(raw)
   } catch {
-    const cleaned = raw.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/, '').trim()
+    const cleaned = raw.replace(/^```[a-z]*\s*/i, '').replace(/\s*```\s*$/, '').trim()
     try {
       return JSON.parse(cleaned)
     } catch (e) {

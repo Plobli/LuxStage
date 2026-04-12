@@ -17,6 +17,11 @@ import { fileURLToPath } from 'node:url'
 import { randomUUID } from 'node:crypto'
 import { config } from './config.js'
 
+function mimeFromFilename(filename) {
+  const ext = (filename || '').split('.').pop().toLowerCase()
+  return { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', svg: 'image/svg+xml', webp: 'image/webp' }[ext] || 'application/octet-stream'
+}
+
 // ── Rate Limiter (Login) ────────────────────────────────────────────────────
 const loginAttempts = new Map()
 const MAX_LOGIN_ATTEMPTS = 10
@@ -787,9 +792,11 @@ export async function router(req, res) {
       const ct = req.headers['content-type'] || ''
       const boundaryMatch = ct.match(/boundary=(.+)/)
       if (!boundaryMatch) return json(res, 400, { error: 'Kein Boundary' })
-      const part = photos.extractFileFromMultipart(body, boundaryMatch[1])
-      if (!part || !part.buffer) return json(res, 400, { error: 'Kein Bild gefunden' })
-      const imgPath = await floorplan.saveFloorplanImage(tpl.id, part.filename, part.buffer, part.mimeType)
+      const parts = photos.extractFileFromMultipart(body, boundaryMatch[1])
+      const part = parts?.[0]
+      if (!part?.data) return json(res, 400, { error: 'Kein Bild gefunden' })
+      const mimeType = mimeFromFilename(part.filename)
+      const imgPath = await floorplan.saveFloorplanImage(tpl.id, part.filename, part.data, mimeType)
       db.upsertTemplateFloorplan(tpl.id, imgPath)
       return json(res, 200, { image_url: floorplan.floorplanUrl(imgPath) })
     }
@@ -821,9 +828,11 @@ export async function router(req, res) {
       const ct = req.headers['content-type'] || ''
       const boundaryMatch = ct.match(/boundary=(.+)/)
       if (!boundaryMatch) return json(res, 400, { error: 'Kein Boundary' })
-      const part = photos.extractFileFromMultipart(body, boundaryMatch[1])
-      if (!part || !part.buffer) return json(res, 400, { error: 'Kein Bild gefunden' })
-      const imgPath = await floorplan.saveFloorplanImage(showId, part.filename, part.buffer, part.mimeType)
+      const parts = photos.extractFileFromMultipart(body, boundaryMatch[1])
+      const part = parts?.[0]
+      if (!part?.data) return json(res, 400, { error: 'Kein Bild gefunden' })
+      const mimeType = mimeFromFilename(part.filename)
+      const imgPath = await floorplan.saveFloorplanImage(showId, part.filename, part.data, mimeType)
       db.upsertShowFloorplanImage(showId, imgPath)
       return json(res, 200, { image_url: floorplan.floorplanUrl(imgPath) })
     }

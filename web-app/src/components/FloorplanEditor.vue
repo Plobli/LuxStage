@@ -748,8 +748,10 @@ function parseSvgData(svgString) {
 
 function pushHistory() {
   const snap = exportSvg()
-  history.value = history.value.slice(0, historyIndex.value + 1)
-  history.value.push(snap)
+  let h = history.value.slice(0, historyIndex.value + 1)
+  h.push(snap)
+  if (h.length > 50) h = h.slice(-50)
+  history.value = h
   historyIndex.value = history.value.length - 1
 }
 

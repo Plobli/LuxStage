@@ -129,6 +129,20 @@ function _initSchema(database) {
       sections   TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS template_floorplans (
+      id          TEXT PRIMARY KEY,
+      template_id TEXT NOT NULL REFERENCES templates(id) ON DELETE CASCADE,
+      image_path  TEXT,
+      created_at  INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS show_floorplan_layers (
+      id         TEXT PRIMARY KEY,
+      show_id    TEXT NOT NULL REFERENCES shows(id) ON DELETE CASCADE,
+      svg_data   TEXT,
+      updated_at INTEGER NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS users (
       username TEXT PRIMARY KEY,
       password TEXT NOT NULL,
@@ -157,6 +171,27 @@ if (!userCols.includes('role')) {
 const photoCols = dbContainer.db.pragma('table_info(photo_descriptions)').map(c => c.name)
 if (!photoCols.includes('channel_number')) {
   dbContainer.db.exec("ALTER TABLE photo_descriptions ADD COLUMN channel_number TEXT NOT NULL DEFAULT ''")
+}
+
+// template_floorplans and show_floorplan_layers
+const tplFloorplanTables = dbContainer.db.prepare(
+  "SELECT name FROM sqlite_master WHERE type='table' AND name='template_floorplans'"
+).get()
+if (!tplFloorplanTables) {
+  dbContainer.db.exec(`
+    CREATE TABLE template_floorplans (
+      id          TEXT PRIMARY KEY,
+      template_id TEXT NOT NULL REFERENCES templates(id) ON DELETE CASCADE,
+      image_path  TEXT,
+      created_at  INTEGER NOT NULL
+    );
+    CREATE TABLE show_floorplan_layers (
+      id         TEXT PRIMARY KEY,
+      show_id    TEXT NOT NULL REFERENCES shows(id) ON DELETE CASCADE,
+      svg_data   TEXT,
+      updated_at INTEGER NOT NULL
+    );
+  `)
 }
 
 export function resetDb() {

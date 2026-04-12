@@ -837,8 +837,8 @@ export async function router(req, res) {
       if (!part?.data) return json(res, 400, { error: 'Kein Bild gefunden' })
       const mimeType = part.mimeType || mimeFromFilename(part.filename)
       try {
-        const imgPath = await floorplan.saveFloorplanImage(showId, part.filename, part.data, mimeType)
-        db.upsertShowFloorplanImage(showId, imgPath)
+        const imgPath = await floorplan.saveFloorplanImage(show.id, part.filename, part.data, mimeType)
+        db.upsertShowFloorplanImage(show.id, imgPath)
         return json(res, 200, { image_url: floorplan.floorplanUrl(imgPath) })
       } catch (e) {
         return json(res, 400, { error: e.message })
@@ -851,7 +851,7 @@ export async function router(req, res) {
       const showId = pathname.split('/')[3]
       const show = db.readShow(showId)
       if (!show) return notFound(res)
-      const layer = db.getShowFloorplan(showId)
+      const layer = db.getShowFloorplan(show.id)
       let imageUrl = null
       // Show-specific image takes priority over template image
       if (layer?.image_path) {
@@ -875,7 +875,7 @@ export async function router(req, res) {
       const body = await readJsonBody(req, res); if (body === null) return
       const { svg_data } = body
       if (typeof svg_data !== 'string') return json(res, 400, { error: 'svg_data fehlt' })
-      db.upsertShowFloorplanSvg(showId, svg_data)
+      db.upsertShowFloorplanSvg(show.id, svg_data)
       return json(res, 200, { ok: true })
     }
 

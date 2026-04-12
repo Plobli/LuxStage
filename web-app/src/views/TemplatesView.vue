@@ -475,25 +475,19 @@ async function persist() {
 
 async function loadFloorplan() {
   if (!editingName.value) return
-  const tpl = templates.value.find(t => t.name === editingName.value)
-  if (!tpl) return
-  const data = await fetchTemplateFloorplan(tpl.id).catch(() => null)
+  const data = await fetchTemplateFloorplan(editingName.value).catch(() => null)
   floorplanImageUrl.value = data?.image_url ? api.url(data.image_url) : null
 }
 
 async function onFloorplanImageUpload(e) {
   const file = e.target.files[0]
   if (!file) return
-  const tpl = templates.value.find(t => t.name === editingName.value)
-  if (!tpl) return
-  const result = await uploadTemplateFloorplanImage(tpl.id, file)
+  const result = await uploadTemplateFloorplanImage(editingName.value, file)
   floorplanImageUrl.value = result.image_url ? api.url(result.image_url) : null
 }
 
 async function removeFloorplanImage() {
-  const tpl = templates.value.find(t => t.name === editingName.value)
-  if (!tpl) return
-  await deleteTemplateFloorplanImage(tpl.id)
+  await deleteTemplateFloorplanImage(editingName.value)
   floorplanImageUrl.value = null
 }
 

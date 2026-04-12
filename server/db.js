@@ -251,6 +251,10 @@ export function listTemplates() {
   return dbContainer.db.prepare('SELECT name FROM templates ORDER BY name').all().map(r => r.name)
 }
 
+export function getTemplateByName(name) {
+  return dbContainer.db.prepare('SELECT * FROM templates WHERE name = ?').get(name) ?? null
+}
+
 export function readTemplate(name) {
   const tpl = dbContainer.db.prepare('SELECT * FROM templates WHERE name = ?').get(name)
   if (!tpl) return []

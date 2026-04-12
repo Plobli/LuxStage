@@ -765,18 +765,18 @@ export async function router(req, res) {
     // ── Template — Grundriss-Bild abrufen ─────────────────────────────────────
     if (method === 'GET' && pathname.match(/^\/api\/templates\/([^/]+)\/floorplan$/)) {
       const user = requireAuth(req, res); if (!user) return
-      const templateId = pathname.split('/')[3]
-      const tpl = db.listTemplates().find(t => t.id === templateId)
+      const templateName = decodeURIComponent(pathname.split('/')[3])
+      const tpl = db.getTemplateByName(templateName)
       if (!tpl) return notFound(res)
-      const fp = db.getTemplateFloorplan(templateId)
+      const fp = db.getTemplateFloorplan(tpl.id)
       return json(res, 200, { image_url: fp ? floorplan.floorplanUrl(fp.image_path) : null })
     }
 
     // ── Template — Grundriss-Bild hochladen ───────────────────────────────────
     if (method === 'POST' && pathname.match(/^\/api\/templates\/([^/]+)\/floorplan\/image$/)) {
       const user = requireAuth(req, res); if (!user) return
-      const templateId = pathname.split('/')[3]
-      const tpl = db.listTemplates().find(t => t.id === templateId)
+      const templateName = decodeURIComponent(pathname.split('/')[3])
+      const tpl = db.getTemplateByName(templateName)
       if (!tpl) return notFound(res)
       const body = await new Promise((resolve, reject) => {
         const chunks = []
@@ -789,18 +789,20 @@ export async function router(req, res) {
       if (!boundaryMatch) return json(res, 400, { error: 'Kein Boundary' })
       const part = photos.extractFileFromMultipart(body, boundaryMatch[1])
       if (!part || !part.buffer) return json(res, 400, { error: 'Kein Bild gefunden' })
-      const imgPath = await floorplan.saveFloorplanImage(templateId, part.filename, part.buffer, part.mimeType)
-      db.upsertTemplateFloorplan(templateId, imgPath)
+      const imgPath = await floorplan.saveFloorplanImage(tpl.id, part.filename, part.buffer, part.mimeType)
+      db.upsertTemplateFloorplan(tpl.id, imgPath)
       return json(res, 200, { image_url: floorplan.floorplanUrl(imgPath) })
     }
 
     // ── Template — Grundriss-Bild löschen ─────────────────────────────────────
     if (method === 'DELETE' && pathname.match(/^\/api\/templates\/([^/]+)\/floorplan\/image$/)) {
       const user = requireAuth(req, res); if (!user) return
-      const templateId = pathname.split('/')[3]
-      const fp = db.getTemplateFloorplan(templateId)
+      const templateName = decodeURIComponent(pathname.split('/')[3])
+      const tpl = db.getTemplateByName(templateName)
+      if (!tpl) return notFound(res)
+      const fp = db.getTemplateFloorplan(tpl.id)
       if (fp?.image_path) await floorplan.deleteFloorplanImage(fp.image_path)
-      db.upsertTemplateFloorplan(templateId, null)
+      db.upsertTemplateFloorplan(tpl.id, null)
       return json(res, 200, { ok: true })
     }
 
@@ -813,8 +815,7 @@ export async function router(req, res) {
       const layer = db.getShowFloorplan(showId)
       let imageUrl = null
       if (show.template) {
-        const templates = db.listTemplates()
-        const tpl = templates.find(t => t.name === show.template)
+        const tpl = db.getTemplateByName(show.template)
         if (tpl) {
           const fp = db.getTemplateFloorplan(tpl.id)
           if (fp?.image_path) imageUrl = floorplan.floorplanUrl(fp.image_path)

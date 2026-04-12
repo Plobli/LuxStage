@@ -185,8 +185,9 @@ const serverVersion = ref(null)
 
 async function pingServer() {
   try {
-    const res = await fetch(BASE() + '/api/status', { cache: 'no-store' })
-    isOnline.value = res.ok || res.status === 401
+    const status = await api.get('/api/status')
+    isOnline.value = true
+    serverVersion.value = status.version
   } catch {
     isOnline.value = false
   }
@@ -208,11 +209,6 @@ let pingInterval = null
 onMounted(async () => {
   await pingServer()
   pingInterval = setInterval(pingServer, 10_000)
-
-  try {
-    const status = await api.get('/api/status')
-    serverVersion.value = status.version
-  } catch {}
 
   await checkForUpdate()
   updateCheckInterval = setInterval(checkForUpdate, 60 * 60 * 1000)

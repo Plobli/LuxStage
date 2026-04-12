@@ -3,6 +3,7 @@ import { readBody, readJsonBody, json, send, notFound, parseUrl } from './helper
 const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url)))
 import { login, signToken, requireAuth, requireAdmin, issueDownloadToken } from './auth.js'
 import * as db from './db.js'
+import * as floorplan from './floorplan.js'
 import { randomBytes } from 'node:crypto'
 import { listHistory, getHistoryEntry, restoreHistoryEntry, takeSnapshotNow } from './history.js'
 import * as photos from './photos.js'
@@ -750,6 +751,89 @@ export async function router(req, res) {
         await rollback(err.message + (err.stderr ? '\n' + err.stderr : ''))
       }
       return
+    }
+
+    // ── Grundriss — Bild-Serving (öffentlich mit Token) ───────────────────────
+    if (method === 'GET' && pathname.startsWith('/api/floorplans/images/')) {
+      const user = requireAuth(req, res); if (!user) return
+      const imgPath = pathname.replace('/api/floorplans/images/', '')
+      const served = await floorplan.serveFloorplanImage(imgPath, res)
+      if (!served) return notFound(res)
+      return
+    }
+
+    // ── Template — Grundriss-Bild abrufen ─────────────────────────────────────
+    if (method === 'GET' && pathname.match(/^\/api\/templates\/([^/]+)\/floorplan$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const templateId = pathname.split('/')[3]
+      const tpl = db.listTemplates().find(t => t.id === templateId)
+      if (!tpl) return notFound(res)
+      const fp = db.getTemplateFloorplan(templateId)
+      return json(res, 200, { image_url: fp ? floorplan.floorplanUrl(fp.image_path) : null })
+    }
+
+    // ── Template — Grundriss-Bild hochladen ───────────────────────────────────
+    if (method === 'POST' && pathname.match(/^\/api\/templates\/([^/]+)\/floorplan\/image$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const templateId = pathname.split('/')[3]
+      const tpl = db.listTemplates().find(t => t.id === templateId)
+      if (!tpl) return notFound(res)
+      const body = await new Promise((resolve, reject) => {
+        const chunks = []
+        req.on('data', c => chunks.push(c))
+        req.on('end', () => resolve(Buffer.concat(chunks)))
+        req.on('error', reject)
+      })
+      const ct = req.headers['content-type'] || ''
+      const boundaryMatch = ct.match(/boundary=(.+)/)
+      if (!boundaryMatch) return json(res, 400, { error: 'Kein Boundary' })
+      const part = photos.extractFileFromMultipart(body, boundaryMatch[1])
+      if (!part || !part.buffer) return json(res, 400, { error: 'Kein Bild gefunden' })
+      const imgPath = await floorplan.saveFloorplanImage(templateId, part.filename, part.buffer, part.mimeType)
+      db.upsertTemplateFloorplan(templateId, imgPath)
+      return json(res, 200, { image_url: floorplan.floorplanUrl(imgPath) })
+    }
+
+    // ── Template — Grundriss-Bild löschen ─────────────────────────────────────
+    if (method === 'DELETE' && pathname.match(/^\/api\/templates\/([^/]+)\/floorplan\/image$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const templateId = pathname.split('/')[3]
+      const fp = db.getTemplateFloorplan(templateId)
+      if (fp?.image_path) await floorplan.deleteFloorplanImage(fp.image_path)
+      db.upsertTemplateFloorplan(templateId, null)
+      return json(res, 200, { ok: true })
+    }
+
+    // ── Show — Grundriss abrufen ───────────────────────────────────────────────
+    if (method === 'GET' && pathname.match(/^\/api\/shows\/([^/]+)\/floorplan$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const showId = pathname.split('/')[3]
+      const show = db.readShow(showId)
+      if (!show) return notFound(res)
+      const layer = db.getShowFloorplan(showId)
+      let imageUrl = null
+      if (show.template) {
+        const templates = db.listTemplates()
+        const tpl = templates.find(t => t.name === show.template)
+        if (tpl) {
+          const fp = db.getTemplateFloorplan(tpl.id)
+          if (fp?.image_path) imageUrl = floorplan.floorplanUrl(fp.image_path)
+        }
+      }
+      return json(res, 200, { image_url: imageUrl, svg_data: layer?.svg_data ?? null })
+    }
+
+    // ── Show — Grundriss-SVG speichern ────────────────────────────────────────
+    if (method === 'PUT' && pathname.match(/^\/api\/shows\/([^/]+)\/floorplan$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const showId = pathname.split('/')[3]
+      const show = db.readShow(showId)
+      if (!show) return notFound(res)
+      const body = await readJsonBody(req, res); if (body === null) return
+      const { svg_data } = body
+      if (typeof svg_data !== 'string') return json(res, 400, { error: 'svg_data fehlt' })
+      db.upsertShowFloorplanSvg(showId, svg_data)
+      return json(res, 200, { ok: true })
     }
 
     // ── Static (Web-App) ───────────────────────────────────────────────────

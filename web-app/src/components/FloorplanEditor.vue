@@ -69,8 +69,8 @@
       <!-- Delete button -->
       <button
         @click="deleteSelected"
-        :disabled="!selectedId"
-        :class="['p-2 rounded hover:bg-gray-800', selectedId ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-700 text-gray-500 cursor-not-allowed']"
+        :disabled="selectedIds.size === 0"
+        :class="['p-2 rounded hover:bg-gray-800', selectedIds.size > 0 ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-700 text-gray-500 cursor-not-allowed']"
         title="Delete (Delete/Backspace)"
       >
         ✕
@@ -109,8 +109,8 @@
           :y1="el.y1"
           :x2="el.x2"
           :y2="el.y2"
-          :stroke="selectedId === el.id ? '#f59e0b' : '#6b7280'"
-          :stroke-width="selectedId === el.id ? 3 : 2"
+          :stroke="selectedIds.has(el.id) ? '#f59e0b' : '#6b7280'"
+          :stroke-width="selectedIds.has(el.id) ? 3 : 2"
           :transform="rotateTransformComputed(el)"
           @mousedown.stop="onElementMouseDown(el.id, $event)"
         />
@@ -123,8 +123,8 @@
           :y="el.y"
           :width="el.w"
           :height="el.h"
-          :stroke="selectedId === el.id ? '#f59e0b' : '#6b7280'"
-          :stroke-width="selectedId === el.id ? 3 : 2"
+          :stroke="selectedIds.has(el.id) ? '#f59e0b' : '#6b7280'"
+          :stroke-width="selectedIds.has(el.id) ? 3 : 2"
           fill="none"
           :transform="rotateTransformComputed(el)"
           @mousedown.stop="onElementMouseDown(el.id, $event)"
@@ -136,7 +136,7 @@
           :key="el.id"
           :x="el.x"
           :y="el.y"
-          :fill="selectedId === el.id ? '#f59e0b' : '#9ca3af'"
+          :fill="selectedIds.has(el.id) ? '#f59e0b' : '#9ca3af'"
           font-size="14"
           :transform="rotateTransformComputed(el)"
           @mousedown.stop="onElementMouseDown(el.id, $event)"
@@ -156,15 +156,15 @@
             :cx="el.x"
             :cy="el.y"
             r="14"
-            :stroke="selectedId === el.id ? '#f59e0b' : '#2563eb'"
-            :stroke-width="selectedId === el.id ? 3 : 2"
+            :stroke="selectedIds.has(el.id) ? '#f59e0b' : '#2563eb'"
+            :stroke-width="selectedIds.has(el.id) ? 2.5 : 2"
             fill="#1e3a5f"
           />
           <text
             :x="el.x"
             :y="el.y + 5"
             text-anchor="middle"
-            :fill="selectedId === el.id ? '#f59e0b' : '#60a5fa'"
+            :fill="selectedIds.has(el.id) ? '#f59e0b' : '#60a5fa'"
             font-size="10"
             font-weight="bold"
           >
@@ -194,12 +194,19 @@
           stroke-dasharray="4 4"
           fill="none"
         />
+
+        <!-- Lasso selection rect -->
+        <rect v-if="lassoRect"
+          :x="lassoRect.x" :y="lassoRect.y" :width="lassoRect.w" :height="lassoRect.h"
+          fill="rgba(59,130,246,0.1)" stroke="#3b82f6" stroke-width="1" stroke-dasharray="4 4"
+          pointer-events="none"
+        />
       </svg>
     </div>
 
     <!-- Right Properties Panel -->
     <div
-      v-if="selectedId"
+      v-if="selectedIds.size === 1"
       class="w-[180px] bg-gray-900 border-l border-white/10 overflow-y-auto p-4 flex flex-col gap-4"
     >
       <!-- Channel properties -->
@@ -317,7 +324,7 @@ const emit = defineEmits(['change', 'jump-to-channel'])
 // State
 const activeTool = ref('select')
 const elements = ref([])
-const selectedId = ref(null)
+const selectedIds = ref(new Set())
 const preview = ref(null)
 const drawStart = ref(null)
 const showChannelPicker = ref(false)
@@ -327,6 +334,7 @@ const svgEl = ref(null)
 const canvasEl = ref(null)
 const history = ref([])
 const historyIndex = ref(-1)
+const lassoRect = ref(null)
 
 // Drag state
 const dragging = ref(false)
@@ -338,7 +346,9 @@ const svgWidth = 1920
 const svgHeight = 1080
 
 // Computed
+const selectedId = computed(() => selectedIds.value.size === 1 ? [...selectedIds.value][0] : null)
 const selectedElement = computed(() => elements.value.find(e => e.id === selectedId.value))
+const selectedElements = computed(() => elements.value.filter(e => selectedIds.value.has(e.id)))
 const usedChannels = computed(() =>
   elements.value
     .filter(e => e.type === 'channel')
@@ -370,20 +380,27 @@ function getSvgCoords(e) {
 }
 
 // Element interaction
-function selectElement(id) {
-  selectedId.value = id
+function selectElement(id, e) {
+  if (activeTool.value !== 'select') return
+  if (e?.shiftKey) {
+    const s = new Set(selectedIds.value)
+    s.has(id) ? s.delete(id) : s.add(id)
+    selectedIds.value = s
+  } else {
+    selectedIds.value = new Set([id])
+  }
 }
 
 function onElementMouseDown(id, e) {
   e.stopPropagation()
   if (activeTool.value !== 'select') return
-  selectElement(id)
+  selectElement(id, e)
   startDrag(e)
 }
 
 // Drag handling
 function startDrag(e) {
-  if (activeTool.value !== 'select' || !selectedId.value) return
+  if (activeTool.value !== 'select' || selectedIds.value.size === 0) return
   dragging.value = true
   dragStart.value = getSvgCoords(e)
   const el = selectedElement.value
@@ -393,24 +410,16 @@ function startDrag(e) {
 }
 
 function onDragMove(e) {
-  if (!dragging.value || !dragStart.value || !selectedElement.value) return
-  const current = getSvgCoords(e)
-  const dx = current.x - dragStart.value.x
-  const dy = current.y - dragStart.value.y
-
-  const el = selectedElement.value
-  if (el.type === 'line') {
-    el.x1 = dragOriginal.value.x + dx
-    el.y1 = dragOriginal.value.y + dy
-    el.x2 += dx
-    el.y2 += dy
-  } else if (el.type === 'rect') {
-    el.x = dragOriginal.value.x + dx
-    el.y = dragOriginal.value.y + dy
-  } else if (el.type === 'text' || el.type === 'channel') {
-    el.x = dragOriginal.value.x + dx
-    el.y = dragOriginal.value.y + dy
-  }
+  if (!dragging.value || !dragStart.value) return
+  const { x, y } = getSvgCoords(e)
+  const dx = x - dragStart.value.x
+  const dy = y - dragStart.value.y
+  dragStart.value = { x, y }
+  elements.value.filter(el => selectedIds.value.has(el.id)).forEach(el => {
+    if (el.type === 'line') { el.x1 += dx; el.y1 += dy; el.x2 += dx; el.y2 += dy }
+    else if (el.type === 'rect') { el.x += dx; el.y += dy }
+    else { el.x += dx; el.y += dy }
+  })
 }
 
 function onDragEnd() {
@@ -424,8 +433,9 @@ function onDragEnd() {
 
 // Canvas mouse handlers
 function onCanvasMouseDown(e) {
-  if (activeTool.value === 'select' && e.target === canvasEl.value) {
-    selectedId.value = null
+  if (activeTool.value === 'select' && (e.target === canvasEl.value || e.target === svgEl.value)) {
+    if (!e.shiftKey) selectedIds.value = new Set()
+    drawStart.value = getSvgCoords(e)
   }
   if ((activeTool.value === 'line' || activeTool.value === 'rect') && e.target === svgEl.value) {
     drawStart.value = getSvgCoords(e)
@@ -434,13 +444,20 @@ function onCanvasMouseDown(e) {
 }
 
 function onCanvasMouseMove(e) {
-  if (!drawStart.value || !preview.value) return
+  if (!drawStart.value) return
 
   const current = getSvgCoords(e)
-  if (activeTool.value === 'line') {
+  if (activeTool.value === 'select') {
+    lassoRect.value = {
+      x: Math.min(current.x, drawStart.value.x),
+      y: Math.min(current.y, drawStart.value.y),
+      w: Math.abs(current.x - drawStart.value.x),
+      h: Math.abs(current.y - drawStart.value.y),
+    }
+  } else if (activeTool.value === 'line' && preview.value) {
     preview.value.x2 = current.x
     preview.value.y2 = current.y
-  } else if (activeTool.value === 'rect') {
+  } else if (activeTool.value === 'rect' && preview.value) {
     preview.value.x = Math.min(drawStart.value.x, current.x)
     preview.value.y = Math.min(drawStart.value.y, current.y)
     preview.value.w = Math.abs(current.x - drawStart.value.x)
@@ -448,8 +465,25 @@ function onCanvasMouseMove(e) {
   }
 }
 
+function elementInRect(el, rx, ry, rw, rh) {
+  let cx, cy
+  if (el.type === 'line') { cx = (el.x1 + el.x2) / 2; cy = (el.y1 + el.y2) / 2 }
+  else if (el.type === 'rect') { cx = el.x + el.w / 2; cy = el.y + el.h / 2 }
+  else { cx = el.x; cy = el.y }
+  return cx >= rx && cx <= rx + rw && cy >= ry && cy <= ry + rh
+}
+
 function onCanvasMouseUp(e) {
   if (!drawStart.value) return
+
+  if (activeTool.value === 'select' && lassoRect.value) {
+    const { x, y, w, h } = lassoRect.value
+    const inLasso = elements.value.filter(el => elementInRect(el, x, y, w, h))
+    selectedIds.value = new Set(inLasso.map(e => e.id))
+    lassoRect.value = null
+    drawStart.value = null
+    return
+  }
 
   const current = getSvgCoords(e)
   const distance = Math.sqrt(
@@ -483,11 +517,13 @@ function onCanvasMouseUp(e) {
 
   drawStart.value = null
   preview.value = null
+  lassoRect.value = null
 }
 
 function onCanvasClick(e) {
   if (e.target !== svgEl.value && e.target !== canvasEl.value) return
 
+  selectedIds.value = new Set()
   const coords = getSvgCoords(e)
 
   if (activeTool.value === 'channel') {
@@ -512,9 +548,9 @@ function addElement(el) {
 }
 
 function deleteSelected() {
-  if (!selectedId.value) return
-  elements.value = elements.value.filter(e => e.id !== selectedId.value)
-  selectedId.value = null
+  if (selectedIds.value.size === 0) return
+  elements.value = elements.value.filter(e => !selectedIds.value.has(e.id))
+  selectedIds.value = new Set()
   emitChange()
 }
 

@@ -220,11 +220,13 @@
           </div>
 
           <!-- Upload -->
-          <label class="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/10 rounded text-sm text-gray-300 transition-colors">
+          <label :class="['cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-white/5 rounded text-sm text-gray-300 transition-colors', floorplanUploading ? 'opacity-50 pointer-events-none' : 'hover:bg-white/10']">
             <svg class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M9.25 13.25a.75.75 0 0 0 1.5 0V4.636l2.955 3.129a.75.75 0 0 0 1.09-1.03l-4.25-4.5a.75.75 0 0 0-1.09 0l-4.25 4.5a.75.75 0 1 0 1.09 1.03L9.25 4.636v8.614Z"/><path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"/></svg>
-            Bild hochladen
-            <input type="file" accept="image/*" class="sr-only" @change="onFloorplanImageUpload" />
+            {{ floorplanUploading ? 'Wird hochgeladen…' : 'Bild hochladen' }}
+            <input type="file" accept="image/*" class="sr-only" @change="onFloorplanImageUpload" :disabled="floorplanUploading" />
           </label>
+
+          <div v-if="floorplanError" class="text-red-400 text-sm">{{ floorplanError }}</div>
         </div>
       </template>
     </template>
@@ -370,6 +372,8 @@ const sectionsSaving = ref(false)
 const addingToPosition = ref(null)
 const addForm = ref({})
 const floorplanImageUrl = ref(null)
+const floorplanUploading = ref(false)
+const floorplanError = ref('')
 
 const groupedChannels = computed(() => {
   const sorted = [...detailChannels.value].sort((a, b) => Number(a.channel) - Number(b.channel))
@@ -481,14 +485,28 @@ async function loadFloorplan() {
 
 async function onFloorplanImageUpload(e) {
   const file = e.target.files[0]
-  if (!file) return
-  const result = await uploadTemplateFloorplanImage(editingName.value, file)
-  floorplanImageUrl.value = result.image_url ? api.url(result.image_url) : null
+  if (!file || floorplanUploading.value) return
+  floorplanUploading.value = true
+  floorplanError.value = ''
+  try {
+    const result = await uploadTemplateFloorplanImage(editingName.value, file)
+    floorplanImageUrl.value = result.image_url ? api.url(result.image_url) : null
+    e.target.value = ''
+  } catch (err) {
+    floorplanError.value = err?.message || 'Upload fehlgeschlagen'
+  } finally {
+    floorplanUploading.value = false
+  }
 }
 
 async function removeFloorplanImage() {
-  await deleteTemplateFloorplanImage(editingName.value)
-  floorplanImageUrl.value = null
+  floorplanError.value = ''
+  try {
+    await deleteTemplateFloorplanImage(editingName.value)
+    floorplanImageUrl.value = null
+  } catch (err) {
+    floorplanError.value = err?.message || 'Löschen fehlgeschlagen'
+  }
 }
 
 async function persistSections() {

@@ -417,3 +417,43 @@ export async function createUser(username, password, role) {
 export function deleteUser(username) {
   dbContainer.db.prepare('DELETE FROM users WHERE username = ?').run(username)
 }
+
+// ── Grundriss ──────────────────────────────────────────────────────────────
+
+export function getTemplateFloorplan(templateId) {
+  return dbContainer.db.prepare(
+    'SELECT * FROM template_floorplans WHERE template_id = ?'
+  ).get(templateId) ?? null
+}
+
+export function upsertTemplateFloorplan(templateId, imagePath) {
+  const existing = getTemplateFloorplan(templateId)
+  if (existing) {
+    dbContainer.db.prepare(
+      'UPDATE template_floorplans SET image_path = ? WHERE template_id = ?'
+    ).run(imagePath, templateId)
+  } else {
+    dbContainer.db.prepare(
+      'INSERT INTO template_floorplans (id, template_id, image_path, created_at) VALUES (?, ?, ?, ?)'
+    ).run(randomUUID(), templateId, imagePath, now())
+  }
+}
+
+export function getShowFloorplan(showId) {
+  return dbContainer.db.prepare(
+    'SELECT * FROM show_floorplan_layers WHERE show_id = ?'
+  ).get(showId) ?? null
+}
+
+export function upsertShowFloorplanSvg(showId, svgData) {
+  const existing = getShowFloorplan(showId)
+  if (existing) {
+    dbContainer.db.prepare(
+      'UPDATE show_floorplan_layers SET svg_data = ?, updated_at = ? WHERE show_id = ?'
+    ).run(svgData, now(), showId)
+  } else {
+    dbContainer.db.prepare(
+      'INSERT INTO show_floorplan_layers (id, show_id, svg_data, updated_at) VALUES (?, ?, ?, ?)'
+    ).run(randomUUID(), showId, svgData, now())
+  }
+}

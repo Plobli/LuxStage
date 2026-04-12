@@ -42,7 +42,9 @@ export function floorplanUrl(imagePath) {
 }
 
 export async function serveFloorplanImage(imagePath, res) {
-  const full = path.join(floorplansDir(), imagePath)
+  const base = floorplansDir()
+  const full = path.resolve(base, imagePath)
+  if (!full.startsWith(base + path.sep) && full !== base) return false
   let buffer
   try {
     buffer = await fs.readFile(full)

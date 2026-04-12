@@ -50,6 +50,22 @@
       <!-- Spacer -->
       <div class="flex-1"></div>
 
+      <!-- Undo button -->
+      <button title="Rückgängig (Ctrl+Z)"
+        :disabled="historyIndex <= 0"
+        :class="['w-8 h-8 rounded flex items-center justify-center text-xs border transition-colors',
+          historyIndex > 0 ? 'text-gray-300 border-white/10 hover:bg-white/10' : 'text-gray-700 border-white/5 cursor-not-allowed']"
+        @click="undo"
+      >↩</button>
+
+      <!-- Redo button -->
+      <button title="Wiederholen (Ctrl+Y)"
+        :disabled="historyIndex >= history.length - 1"
+        :class="['w-8 h-8 rounded flex items-center justify-center text-xs border transition-colors',
+          historyIndex < history.length - 1 ? 'text-gray-300 border-white/10 hover:bg-white/10' : 'text-gray-700 border-white/5 cursor-not-allowed']"
+        @click="redo"
+      >↪</button>
+
       <!-- Delete button -->
       <button
         @click="deleteSelected"
@@ -293,6 +309,8 @@ const channelPickerPos = ref({ x: 0, y: 0 })
 const channelSearch = ref('')
 const svgEl = ref(null)
 const canvasEl = ref(null)
+const history = ref([])
+const historyIndex = ref(-1)
 
 // Drag state
 const dragging = ref(false)
@@ -638,7 +656,29 @@ function parseSvgData(svgString) {
   }
 }
 
+function pushHistory() {
+  const snap = exportSvg()
+  history.value = history.value.slice(0, historyIndex.value + 1)
+  history.value.push(snap)
+  historyIndex.value = history.value.length - 1
+}
+
+function undo() {
+  if (historyIndex.value <= 0) return
+  historyIndex.value--
+  parseSvgData(history.value[historyIndex.value])
+  emit('change', history.value[historyIndex.value])
+}
+
+function redo() {
+  if (historyIndex.value >= history.value.length - 1) return
+  historyIndex.value++
+  parseSvgData(history.value[historyIndex.value])
+  emit('change', history.value[historyIndex.value])
+}
+
 function emitChange() {
+  pushHistory()
   emit('change', exportSvg())
 }
 
@@ -653,6 +693,8 @@ onUnmounted(() => {
 
 watch(() => props.initialSvgData, (newVal) => {
   parseSvgData(newVal)
+  history.value = [exportSvg()]
+  historyIndex.value = 0
 }, { immediate: true })
 
 function isInputFocused() {
@@ -661,8 +703,10 @@ function isInputFocused() {
 
 // Keyboard handlers
 function handleKeyDown(e) {
-  if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId.value && !isInputFocused()) {
+  if ((e.key === 'Delete' || e.key === 'Backspace') && !isInputFocused()) {
     deleteSelected()
   }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo() }
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo() }
 }
 </script>

@@ -173,12 +173,6 @@ if (!photoCols.includes('channel_number')) {
   dbContainer.db.exec("ALTER TABLE photo_descriptions ADD COLUMN channel_number TEXT NOT NULL DEFAULT ''")
 }
 
-// show_floorplan_layers: image_path column (show-specific image)
-const showFloorplanCols = dbContainer.db.pragma('table_info(show_floorplan_layers)').map(c => c.name)
-if (showFloorplanCols.length && !showFloorplanCols.includes('image_path')) {
-  dbContainer.db.exec('ALTER TABLE show_floorplan_layers ADD COLUMN image_path TEXT')
-}
-
 // template_floorplans and show_floorplan_layers
 const tplFloorplanTables = dbContainer.db.prepare(
   "SELECT name FROM sqlite_master WHERE type='table' AND name='template_floorplans'"
@@ -195,9 +189,31 @@ if (!tplFloorplanTables) {
       id         TEXT PRIMARY KEY,
       show_id    TEXT NOT NULL REFERENCES shows(id) ON DELETE CASCADE,
       svg_data   TEXT,
+      image_path TEXT,
       updated_at INTEGER NOT NULL
     );
   `)
+}
+
+// show_floorplan_layers: ensure show_floorplan_layers exists (may have been created without image_path)
+const showFloorplanLayersExists = dbContainer.db.prepare(
+  "SELECT name FROM sqlite_master WHERE type='table' AND name='show_floorplan_layers'"
+).get()
+if (!showFloorplanLayersExists) {
+  dbContainer.db.exec(`
+    CREATE TABLE show_floorplan_layers (
+      id         TEXT PRIMARY KEY,
+      show_id    TEXT NOT NULL REFERENCES shows(id) ON DELETE CASCADE,
+      svg_data   TEXT,
+      image_path TEXT,
+      updated_at INTEGER NOT NULL
+    );
+  `)
+} else {
+  const showFloorplanCols = dbContainer.db.pragma('table_info(show_floorplan_layers)').map(c => c.name)
+  if (!showFloorplanCols.includes('image_path')) {
+    dbContainer.db.exec('ALTER TABLE show_floorplan_layers ADD COLUMN image_path TEXT')
+  }
 }
 
 export function resetDb() {

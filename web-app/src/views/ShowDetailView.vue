@@ -1421,10 +1421,7 @@ async function loadFloorplan() {
 
 function onFloorplanChange(svgData) {
   floorplan.value = { ...floorplan.value, svg_data: svgData }
-  clearTimeout(floorplanSaveTimer)
-  floorplanSaveTimer = setTimeout(async () => {
-    await saveShowFloorplan(props.id, svgData).catch(() => {})
-  }, 1500)
+  saveShowFloorplan(props.id, svgData).catch(() => {})
 }
 
 async function onFloorplanImageUpload(file) {
@@ -1526,7 +1523,7 @@ onBeforeUnmount(() => {
   if (saveSetupTimer) { clearTimeout(saveSetupTimer); persistSetup(pendingSetupMd) }
   if (channelsSaveTimer) { clearTimeout(channelsSaveTimer); persistChannels() }
   if (saveSectionsTimer) { clearTimeout(saveSectionsTimer); persistSections() }
-  if (floorplanSaveTimer) { clearTimeout(floorplanSaveTimer); saveShowFloorplan(props.id, floorplan.value.svg_data).catch(() => {}) }
+  if (floorplanSaveTimer) { clearTimeout(floorplanSaveTimer) }
 })
 
 </script>

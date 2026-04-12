@@ -271,7 +271,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { uuid } from '../utils/uuid.js'
 
 const props = defineProps({
@@ -295,9 +295,9 @@ const svgEl = ref(null)
 const canvasEl = ref(null)
 
 // Drag state
-let dragging = false
-let dragStart = null
-let dragOriginal = null
+const dragging = ref(false)
+const dragStart = ref(null)
+const dragOriginal = ref(null)
 
 // SVG dimensions (assume 1920x1080 standard)
 const svgWidth = 1920
@@ -350,38 +350,38 @@ function onElementMouseDown(id, e) {
 // Drag handling
 function startDrag(e) {
   if (activeTool.value !== 'select' || !selectedId.value) return
-  dragging = true
-  dragStart = getSvgCoords(e)
+  dragging.value = true
+  dragStart.value = getSvgCoords(e)
   const el = selectedElement.value
-  dragOriginal = { x: el.x || el.x1, y: el.y || el.y1 }
+  dragOriginal.value = { x: el.x || el.x1, y: el.y || el.y1 }
   window.addEventListener('mousemove', onDragMove)
   window.addEventListener('mouseup', onDragEnd)
 }
 
 function onDragMove(e) {
-  if (!dragging || !dragStart || !selectedElement.value) return
+  if (!dragging.value || !dragStart.value || !selectedElement.value) return
   const current = getSvgCoords(e)
-  const dx = current.x - dragStart.x
-  const dy = current.y - dragStart.y
+  const dx = current.x - dragStart.value.x
+  const dy = current.y - dragStart.value.y
 
   const el = selectedElement.value
   if (el.type === 'line') {
-    el.x1 = dragOriginal.x + dx
-    el.y1 = dragOriginal.y + dy
+    el.x1 = dragOriginal.value.x + dx
+    el.y1 = dragOriginal.value.y + dy
     el.x2 += dx
     el.y2 += dy
   } else if (el.type === 'rect') {
-    el.x = dragOriginal.x + dx
-    el.y = dragOriginal.y + dy
+    el.x = dragOriginal.value.x + dx
+    el.y = dragOriginal.value.y + dy
   } else if (el.type === 'text' || el.type === 'channel') {
-    el.x = dragOriginal.x + dx
-    el.y = dragOriginal.y + dy
+    el.x = dragOriginal.value.x + dx
+    el.y = dragOriginal.value.y + dy
   }
 }
 
 function onDragEnd() {
-  if (dragging) {
-    dragging = false
+  if (dragging.value) {
+    dragging.value = false
     window.removeEventListener('mousemove', onDragMove)
     window.removeEventListener('mouseup', onDragEnd)
     emitChange()
@@ -644,11 +644,11 @@ function emitChange() {
 
 // Lifecycle
 onMounted(() => {
-  window.addEventListener('keydown', e => {
-    if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId.value && !isInputFocused()) {
-      deleteSelected()
-    }
-  })
+  window.addEventListener('keydown', handleKeyDown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
 })
 
 watch(() => props.initialSvgData, (newVal) => {
@@ -657,5 +657,12 @@ watch(() => props.initialSvgData, (newVal) => {
 
 function isInputFocused() {
   return document.activeElement?.tagName === 'INPUT'
+}
+
+// Keyboard handlers
+function handleKeyDown(e) {
+  if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId.value && !isInputFocused()) {
+    deleteSelected()
+  }
 }
 </script>

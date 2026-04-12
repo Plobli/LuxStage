@@ -19,6 +19,11 @@
           class="rounded px-2 py-1 text-xs font-medium"
           @click="mobileTab = 'info'"
         >{{ t('tab.info') }}</button>
+        <button
+          :class="mobileTab === 'floorplan' ? 'bg-white/10 text-white' : 'text-gray-400'"
+          class="rounded px-2 py-1 text-xs font-medium"
+          @click="mobileTab = 'floorplan'"
+        >Grundriss</button>
       </div>
       <div class="flex min-w-0 flex-1 items-center gap-x-3">
         <h1 class="text-sm font-semibold text-white truncate">{{ meta.name }}</h1>
@@ -318,6 +323,17 @@
             </table>
           </div>
         </main>
+      </div>
+
+      <!-- Grundriss-Tab -->
+      <div v-if="mobileTab === 'floorplan'" class="h-[calc(100vh-4rem)]">
+        <FloorplanEditor
+          :image-url="floorplan.image_url ? api.url(floorplan.image_url) : null"
+          :initial-svg-data="floorplan.svg_data"
+          :channels="channels"
+          @change="onFloorplanChange"
+          @jump-to-channel="jumpToChannel"
+        />
       </div>
 
       <!-- Aside: Sections + Fotos (fixed, left of main) -->
@@ -671,6 +687,8 @@ import { usePhotoSettings } from '../composables/usePhotoSettings.js'
 import ColorAutocomplete from '../components/ColorAutocomplete.vue'
 import OcrImport from '../components/OcrImport.vue'
 import EosMergePreviewDialog from '../components/EosMergePreviewDialog.vue'
+import FloorplanEditor from '../components/FloorplanEditor.vue'
+import { fetchShowFloorplan, saveShowFloorplan } from '../api/floorplan.js'
 import Sortable from 'sortablejs'
 
 const props = defineProps({ id: { type: String, required: true } })
@@ -721,9 +739,12 @@ const search = ref('')
 const setupSaving = ref(false)
 const channelsSaving = ref(false)
 
-const mobileTab = ref('channels') // 'channels' | 'info'
+const mobileTab = ref('channels') // 'channels' | 'info' | 'floorplan'
 const menuOpen = ref(null) // 'import' | 'export' | null
 const ocrDialogOpen = ref(false)
+
+const floorplan = ref({ image_url: null, svg_data: null })
+let floorplanSaveTimer = null
 
 const sectionDefs = ref([])
 const sectionContents = ref(new Map())
@@ -1392,6 +1413,23 @@ function hasFieldsType() {
   return sectionDefs.value.some(s => s.type === 'fields')
 }
 
+async function loadFloorplan() {
+  const data = await fetchShowFloorplan(props.id).catch(() => null)
+  if (data) floorplan.value = data
+}
+
+function onFloorplanChange(svgData) {
+  floorplan.value = { ...floorplan.value, svg_data: svgData }
+  clearTimeout(floorplanSaveTimer)
+  floorplanSaveTimer = setTimeout(async () => {
+    await saveShowFloorplan(props.id, svgData).catch(() => {})
+  }, 1500)
+}
+
+function jumpToChannel(channelNum) {
+  mobileTab.value = 'channels'
+}
+
 
 // ── Laden ──────────────────────────────────────────────────────────────────
 let unsubscribeSSE = null
@@ -1430,6 +1468,9 @@ onMounted(async () => {
   // Server-seitiger Snapshot beim Öffnen + alle 10 Minuten (fire-and-forget)
   createSnapshot(props.id).catch(() => {})
   snapshotInterval = setInterval(() => createSnapshot(props.id).catch(() => {}), 10 * 60 * 1000)
+
+  // Floorplan laden
+  loadFloorplan().catch(() => {})
 
   // SSE — gemeinsame Verbindung für Channels, Sections und Presence
   unsubscribeSSE = subscribeShow(props.id, {

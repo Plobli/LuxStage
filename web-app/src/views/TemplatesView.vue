@@ -21,6 +21,10 @@
             :class="['px-4 py-2 text-sm font-medium border-b-2 -mb-px', activeTab === 'sections' ? 'border-accent text-white' : 'border-transparent text-gray-400 hover:text-white']"
             @click="activeTab = 'sections'"
           >{{ t('sections.btn') }}</button>
+          <button
+            :class="['px-4 py-2 text-sm font-medium border-b-2 -mb-px', activeTab === 'floorplan' ? 'border-accent text-white' : 'border-transparent text-gray-400 hover:text-white']"
+            @click="activeTab = 'floorplan'"
+          >Grundriss</button>
         </div>
       </div>
 
@@ -195,6 +199,33 @@
           </div>
           <button class="text-sm text-gray-400 hover:text-white" @click="addSection">+ {{ t('sections.add') }}</button>
         </div>
+
+        <!-- Grundriss-Bild Upload -->
+        <div v-show="activeTab === 'floorplan'" class="max-w-xl space-y-4">
+          <div class="text-sm text-gray-400">
+            Lade ein Bild des Bühnengrundrisses hoch. Dieses Bild dient als Hintergrund für den Grundriss-Editor in allen Shows mit diesem Template.
+          </div>
+
+          <!-- Aktuelles Bild -->
+          <div v-if="floorplanImageUrl" class="relative">
+            <img :src="floorplanImageUrl" class="w-full rounded border border-white/10 object-contain max-h-64 bg-gray-900" />
+            <button
+              class="absolute top-2 right-2 bg-gray-950/80 text-red-400 hover:text-red-300 rounded px-2 py-1 text-xs"
+              @click="removeFloorplanImage"
+            >Entfernen</button>
+          </div>
+
+          <div v-else class="border-2 border-dashed border-white/10 rounded-lg p-8 text-center text-gray-500 text-sm">
+            Noch kein Grundriss-Bild
+          </div>
+
+          <!-- Upload -->
+          <label class="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/10 rounded text-sm text-gray-300 transition-colors">
+            <svg class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M9.25 13.25a.75.75 0 0 0 1.5 0V4.636l2.955 3.129a.75.75 0 0 0 1.09-1.03l-4.25-4.5a.75.75 0 0 0-1.09 0l-4.25 4.5a.75.75 0 1 0 1.09 1.03L9.25 4.636v8.614Z"/><path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"/></svg>
+            Bild hochladen
+            <input type="file" accept="image/*" class="sr-only" @change="onFloorplanImageUpload" />
+          </label>
+        </div>
       </template>
     </template>
 
@@ -301,7 +332,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useLocale } from '../composables/useLocale.js'
 import { useConfirm } from '../composables/useConfirm.js'
 import { fetchTemplates, fetchTemplateChannels, saveTemplate, uploadTemplate, deleteTemplate } from '../api/templates.js'
@@ -309,6 +340,8 @@ import { fetchTemplateSections, saveTemplateSections } from '../api/sections.js'
 import { templateDisplayName } from '../utils/templateName.js'
 import ColorAutocomplete from '../components/ColorAutocomplete.vue'
 import { uuid } from '../utils/uuid.js'
+import { fetchTemplateFloorplan, uploadTemplateFloorplanImage, deleteTemplateFloorplanImage } from '../api/floorplan.js'
+import { api } from '../api/client.js'
 
 const { t } = useLocale()
 const { confirm } = useConfirm()
@@ -336,6 +369,7 @@ const templateSections = ref([])
 const sectionsSaving = ref(false)
 const addingToPosition = ref(null)
 const addForm = ref({})
+const floorplanImageUrl = ref(null)
 
 const groupedChannels = computed(() => {
   const sorted = [...detailChannels.value].sort((a, b) => Number(a.channel) - Number(b.channel))
@@ -429,10 +463,38 @@ async function openDetail(name) {
   detailLoading.value = false
 }
 
+watch(editingName, () => {
+  loadFloorplan()
+})
+
 async function persist() {
   detailSaving.value = true
   await saveTemplate(editingName.value, detailChannels.value)
   detailSaving.value = false
+}
+
+async function loadFloorplan() {
+  if (!editingName.value) return
+  const tpl = templates.value.find(t => t.name === editingName.value)
+  if (!tpl) return
+  const data = await fetchTemplateFloorplan(tpl.id).catch(() => null)
+  floorplanImageUrl.value = data?.image_url ? api.url(data.image_url) : null
+}
+
+async function onFloorplanImageUpload(e) {
+  const file = e.target.files[0]
+  if (!file) return
+  const tpl = templates.value.find(t => t.name === editingName.value)
+  if (!tpl) return
+  const result = await uploadTemplateFloorplanImage(tpl.id, file)
+  floorplanImageUrl.value = result.image_url ? api.url(result.image_url) : null
+}
+
+async function removeFloorplanImage() {
+  const tpl = templates.value.find(t => t.name === editingName.value)
+  if (!tpl) return
+  await deleteTemplateFloorplanImage(tpl.id)
+  floorplanImageUrl.value = null
 }
 
 async function persistSections() {

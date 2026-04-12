@@ -806,6 +806,28 @@ export async function router(req, res) {
       return json(res, 200, { ok: true })
     }
 
+    // ── Show — Grundriss-Bild hochladen ──────────────────────────────────────
+    if (method === 'POST' && pathname.match(/^\/api\/shows\/([^/]+)\/floorplan\/image$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const showId = pathname.split('/')[3]
+      const show = db.readShow(showId)
+      if (!show) return notFound(res)
+      const body = await new Promise((resolve, reject) => {
+        const chunks = []
+        req.on('data', c => chunks.push(c))
+        req.on('end', () => resolve(Buffer.concat(chunks)))
+        req.on('error', reject)
+      })
+      const ct = req.headers['content-type'] || ''
+      const boundaryMatch = ct.match(/boundary=(.+)/)
+      if (!boundaryMatch) return json(res, 400, { error: 'Kein Boundary' })
+      const part = photos.extractFileFromMultipart(body, boundaryMatch[1])
+      if (!part || !part.buffer) return json(res, 400, { error: 'Kein Bild gefunden' })
+      const imgPath = await floorplan.saveFloorplanImage(showId, part.filename, part.buffer, part.mimeType)
+      db.upsertShowFloorplanImage(showId, imgPath)
+      return json(res, 200, { image_url: floorplan.floorplanUrl(imgPath) })
+    }
+
     // ── Show — Grundriss abrufen ───────────────────────────────────────────────
     if (method === 'GET' && pathname.match(/^\/api\/shows\/([^/]+)\/floorplan$/)) {
       const user = requireAuth(req, res); if (!user) return
@@ -814,7 +836,10 @@ export async function router(req, res) {
       if (!show) return notFound(res)
       const layer = db.getShowFloorplan(showId)
       let imageUrl = null
-      if (show.template) {
+      // Show-specific image takes priority over template image
+      if (layer?.image_path) {
+        imageUrl = floorplan.floorplanUrl(layer.image_path)
+      } else if (show.template) {
         const tpl = db.getTemplateByName(show.template)
         if (tpl) {
           const fp = db.getTemplateFloorplan(tpl.id)

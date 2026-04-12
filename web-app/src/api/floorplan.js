@@ -25,6 +25,22 @@ export function uploadTemplateFloorplanImage(templateId, file) {
   })
 }
 
+export function uploadShowFloorplanImage(showId, file) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', `${BASE()}/api/shows/${showId}/floorplan/image`)
+    xhr.setRequestHeader('Authorization', 'Bearer ' + getToken())
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve(JSON.parse(xhr.responseText))
+      else reject(new Error(`Upload fehlgeschlagen: ${xhr.status}`))
+    }
+    xhr.onerror = () => reject(new Error('Netzwerkfehler'))
+    const formData = new FormData()
+    formData.append('image', file, file.name)
+    xhr.send(formData)
+  })
+}
+
 export function fetchShowFloorplan(showId) {
   return api.get(`/api/shows/${showId}/floorplan`)
 }

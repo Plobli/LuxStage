@@ -449,6 +449,19 @@ export function getShowFloorplan(showId) {
   ).get(showId) ?? null
 }
 
+export function upsertShowFloorplanImage(showId, imagePath) {
+  const existing = getShowFloorplan(showId)
+  if (existing) {
+    dbContainer.db.prepare(
+      'UPDATE show_floorplan_layers SET image_path = ?, updated_at = ? WHERE show_id = ?'
+    ).run(imagePath, now(), showId)
+  } else {
+    dbContainer.db.prepare(
+      'INSERT INTO show_floorplan_layers (id, show_id, image_path, updated_at) VALUES (?, ?, ?, ?)'
+    ).run(randomUUID(), showId, imagePath, now())
+  }
+}
+
 export function upsertShowFloorplanSvg(showId, svgData) {
   const existing = getShowFloorplan(showId)
   if (existing) {

@@ -173,6 +173,12 @@ if (!photoCols.includes('channel_number')) {
   dbContainer.db.exec("ALTER TABLE photo_descriptions ADD COLUMN channel_number TEXT NOT NULL DEFAULT ''")
 }
 
+// show_floorplan_layers: image_path column (show-specific image)
+const showFloorplanCols = dbContainer.db.pragma('table_info(show_floorplan_layers)').map(c => c.name)
+if (showFloorplanCols.length && !showFloorplanCols.includes('image_path')) {
+  dbContainer.db.exec('ALTER TABLE show_floorplan_layers ADD COLUMN image_path TEXT')
+}
+
 // template_floorplans and show_floorplan_layers
 const tplFloorplanTables = dbContainer.db.prepare(
   "SELECT name FROM sqlite_master WHERE type='table' AND name='template_floorplans'"

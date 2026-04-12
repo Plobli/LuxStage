@@ -47,6 +47,22 @@
         ①
       </button>
 
+      <!-- Upload image -->
+      <button
+        @click="imageUploadInput?.click()"
+        :class="['p-2 rounded hover:bg-gray-800 bg-gray-800']"
+        title="Bild hochladen"
+      >
+        ↑
+      </button>
+      <input
+        ref="imageUploadInput"
+        type="file"
+        accept="image/*"
+        class="hidden"
+        @change="onImageFileSelected"
+      />
+
       <!-- Spacer -->
       <div class="flex-1"></div>
 
@@ -319,7 +335,7 @@ const props = defineProps({
   channels: { type: Array, default: () => [] }
 })
 
-const emit = defineEmits(['change', 'jump-to-channel'])
+const emit = defineEmits(['change', 'jump-to-channel', 'upload-image'])
 
 // State
 const activeTool = ref('select')
@@ -332,6 +348,7 @@ const channelPickerPos = ref({ x: 0, y: 0 })
 const channelSearch = ref('')
 const svgEl = ref(null)
 const canvasEl = ref(null)
+const imageUploadInput = ref(null)
 const history = ref([])
 const historyIndex = ref(-1)
 const lassoRect = ref(null)
@@ -567,6 +584,12 @@ function placeChannelCircle(ch) {
   })
   showChannelPicker.value = false
   emitChange()
+}
+
+function onImageFileSelected(e) {
+  const file = e.target.files?.[0]
+  if (file) emit('upload-image', file)
+  e.target.value = ''
 }
 
 function jumpToChannel() {

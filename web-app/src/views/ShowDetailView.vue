@@ -332,6 +332,7 @@
           :initial-svg-data="floorplan.svg_data"
           :channels="channels"
           @change="onFloorplanChange"
+          @upload-image="onFloorplanImageUpload"
           @jump-to-channel="jumpToChannel"
         />
       </div>
@@ -688,7 +689,7 @@ import ColorAutocomplete from '../components/ColorAutocomplete.vue'
 import OcrImport from '../components/OcrImport.vue'
 import EosMergePreviewDialog from '../components/EosMergePreviewDialog.vue'
 import FloorplanEditor from '../components/FloorplanEditor.vue'
-import { fetchShowFloorplan, saveShowFloorplan } from '../api/floorplan.js'
+import { fetchShowFloorplan, saveShowFloorplan, uploadShowFloorplanImage } from '../api/floorplan.js'
 import Sortable from 'sortablejs'
 
 const props = defineProps({ id: { type: String, required: true } })
@@ -1426,6 +1427,13 @@ function onFloorplanChange(svgData) {
   }, 1500)
 }
 
+async function onFloorplanImageUpload(file) {
+  const result = await uploadShowFloorplanImage(props.id, file)
+  if (result?.image_url) {
+    floorplan.value = { ...floorplan.value, image_url: result.image_url }
+  }
+}
+
 function jumpToChannel(channelNum) {
   mobileTab.value = 'channels'
 }
@@ -1518,7 +1526,7 @@ onBeforeUnmount(() => {
   if (saveSetupTimer) { clearTimeout(saveSetupTimer); persistSetup(pendingSetupMd) }
   if (channelsSaveTimer) { clearTimeout(channelsSaveTimer); persistChannels() }
   if (saveSectionsTimer) { clearTimeout(saveSectionsTimer); persistSections() }
-  if (floorplanSaveTimer) { clearTimeout(floorplanSaveTimer) }
+  if (floorplanSaveTimer) { clearTimeout(floorplanSaveTimer); saveShowFloorplan(props.id, floorplan.value.svg_data).catch(() => {}) }
 })
 
 </script>

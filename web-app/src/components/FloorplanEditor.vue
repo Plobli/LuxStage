@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-full overflow-hidden bg-gray-950 text-white">
+  <div class="relative flex h-full overflow-hidden bg-gray-950 text-white">
     <!-- Left Toolbar -->
     <div class="w-[52px] bg-gray-900 border-r border-white/10 flex flex-col items-center py-2 gap-1">
       <!-- Select tool -->
@@ -220,10 +220,10 @@
       </svg>
     </div>
 
-    <!-- Right Properties Panel -->
+    <!-- Right Properties Panel (floating, doesn't affect canvas size) -->
     <div
       v-if="selectedIds.size === 1"
-      class="w-[180px] bg-gray-900 border-l border-white/10 overflow-y-auto p-4 flex flex-col gap-4"
+      class="absolute top-2 right-2 w-[180px] bg-gray-900/95 border border-white/10 rounded-lg overflow-y-auto p-4 flex flex-col gap-4 z-20 shadow-xl"
     >
       <!-- Channel properties -->
       <div v-if="selectedElement && selectedElement.type === 'channel'">

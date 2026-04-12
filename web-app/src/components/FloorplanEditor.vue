@@ -84,13 +84,13 @@
       @mousedown="onCanvasMouseDown"
       @mousemove="onCanvasMouseMove"
       @mouseup="onCanvasMouseUp"
-      @click="onCanvasClick"
     >
       <!-- Background image -->
       <img
         v-if="imageUrl"
         :src="imageUrl"
         class="absolute inset-0 object-contain"
+        style="pointer-events: none;"
         alt="Floor plan"
       />
 
@@ -433,13 +433,18 @@ function onDragEnd() {
 
 // Canvas mouse handlers
 function onCanvasMouseDown(e) {
-  if (activeTool.value === 'select' && (e.target === canvasEl.value || e.target === svgEl.value)) {
+  // Accept clicks on the SVG, the canvas div, or any SVG child that isn't an interactive element
+  const onCanvas = e.target === canvasEl.value || e.target === svgEl.value || e.target.closest('svg') === svgEl.value
+  if (!onCanvas) return
+
+  if (activeTool.value === 'select') {
     if (!e.shiftKey) selectedIds.value = new Set()
     drawStart.value = getSvgCoords(e)
-  }
-  if ((activeTool.value === 'line' || activeTool.value === 'rect') && e.target === svgEl.value) {
+  } else if (activeTool.value === 'line' || activeTool.value === 'rect') {
     drawStart.value = getSvgCoords(e)
     preview.value = { x: drawStart.value.x, y: drawStart.value.y, x2: drawStart.value.x, y2: drawStart.value.y, w: 0, h: 0 }
+  } else if (activeTool.value === 'channel' || activeTool.value === 'text') {
+    drawStart.value = getSvgCoords(e)
   }
 }
 
@@ -501,6 +506,7 @@ function onCanvasMouseUp(e) {
         x2: current.x,
         y2: current.y
       })
+      emitChange()
     } else if (activeTool.value === 'rect') {
       const x = Math.min(drawStart.value.x, current.x)
       const y = Math.min(drawStart.value.y, current.y)
@@ -511,35 +517,32 @@ function onCanvasMouseUp(e) {
         type: 'rect',
         x, y, w, h
       })
+      emitChange()
     }
-    emitChange()
+  } else {
+    // Click (no drag): handle channel/text placement and deselect
+    const coords = getSvgCoords(e)
+    if (activeTool.value === 'select') {
+      selectedIds.value = new Set()
+    } else if (activeTool.value === 'channel') {
+      channelPickerPos.value = coords
+      channelSearch.value = ''
+      showChannelPicker.value = true
+    } else if (activeTool.value === 'text') {
+      addElement({
+        id: uuid(),
+        type: 'text',
+        x: coords.x,
+        y: coords.y,
+        text: 'Text'
+      })
+      emitChange()
+    }
   }
 
   drawStart.value = null
   preview.value = null
   lassoRect.value = null
-}
-
-function onCanvasClick(e) {
-  if (e.target !== svgEl.value && e.target !== canvasEl.value) return
-
-  selectedIds.value = new Set()
-  const coords = getSvgCoords(e)
-
-  if (activeTool.value === 'channel') {
-    channelPickerPos.value = coords
-    channelSearch.value = ''
-    showChannelPicker.value = true
-  } else if (activeTool.value === 'text') {
-    addElement({
-      id: uuid(),
-      type: 'text',
-      x: coords.x,
-      y: coords.y,
-      text: 'Text'
-    })
-    emitChange()
-  }
 }
 
 // Element management

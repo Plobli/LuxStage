@@ -111,6 +111,7 @@
           :y2="el.y2"
           :stroke="selectedId === el.id ? '#f59e0b' : '#6b7280'"
           :stroke-width="selectedId === el.id ? 3 : 2"
+          :transform="rotateTransformComputed(el)"
           @mousedown.stop="onElementMouseDown(el.id, $event)"
         />
 
@@ -125,6 +126,7 @@
           :stroke="selectedId === el.id ? '#f59e0b' : '#6b7280'"
           :stroke-width="selectedId === el.id ? 3 : 2"
           fill="none"
+          :transform="rotateTransformComputed(el)"
           @mousedown.stop="onElementMouseDown(el.id, $event)"
         />
 
@@ -136,6 +138,7 @@
           :y="el.y"
           :fill="selectedId === el.id ? '#f59e0b' : '#9ca3af'"
           font-size="14"
+          :transform="rotateTransformComputed(el)"
           @mousedown.stop="onElementMouseDown(el.id, $event)"
         >
           {{ el.text }}
@@ -241,6 +244,19 @@
           {{ selectedElement.type === 'line' ? 'Linie ausgewählt' : 'Rechteck ausgewählt' }}
         </p>
       </div>
+
+      <!-- Rotation slider (for non-channel elements) -->
+      <template v-if="selectedElement && selectedElement.type !== 'channel'">
+        <div class="mb-2 mt-3">
+          <div class="text-gray-500 uppercase tracking-wide mb-0.5">Rotation</div>
+          <input type="range" min="-180" max="180" step="1"
+            :value="selectedElement.rotation || 0"
+            @input="updateRotation(selectedElement.id, +$event.target.value)"
+            class="w-full accent-blue-500"
+          />
+          <div class="text-gray-400 text-right">{{ selectedElement.rotation || 0 }}°</div>
+        </div>
+      </template>
     </div>
 
     <!-- Channel Picker Modal -->
@@ -520,6 +536,38 @@ function jumpToChannel() {
   }
 }
 
+function updateRotation(id, deg) {
+  const el = elements.value.find(e => e.id === id)
+  if (el) { el.rotation = deg; emitChange() }
+}
+
+// Rotation helpers
+function rotateTransformComputed(el) {
+  const deg = el.rotation || 0
+  if (!deg) return undefined
+  let cx, cy
+  if (el.type === 'line') { cx = (el.x1 + el.x2) / 2; cy = (el.y1 + el.y2) / 2 }
+  else if (el.type === 'rect') { cx = el.x + el.w / 2; cy = el.y + el.h / 2 }
+  else { cx = el.x; cy = el.y }
+  return `rotate(${deg},${cx},${cy})`
+}
+
+function parseRotation(el) {
+  const t = el.getAttribute('transform') || ''
+  const m = t.match(/rotate\(([^,)]+)/)
+  return m ? parseFloat(m[1]) : 0
+}
+
+function rotateAttr(el) {
+  const deg = el.rotation || 0
+  if (!deg) return ''
+  let cx, cy
+  if (el.type === 'line') { cx = (el.x1 + el.x2) / 2; cy = (el.y1 + el.y2) / 2 }
+  else if (el.type === 'rect') { cx = el.x + el.w / 2; cy = el.y + el.h / 2 }
+  else { cx = el.x; cy = el.y }
+  return ` transform="rotate(${deg},${cx},${cy})"`
+}
+
 // SVG export/import
 function exportSvg() {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
@@ -537,6 +585,7 @@ function exportSvg() {
       line.setAttribute('stroke-width', '2')
       line.setAttribute('data-id', el.id)
       line.setAttribute('data-type', 'line')
+      if (el.rotation) line.setAttribute('transform', `rotate(${el.rotation},${(el.x1 + el.x2) / 2},${(el.y1 + el.y2) / 2})`)
       svg.appendChild(line)
     } else if (el.type === 'rect') {
       const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
@@ -549,6 +598,7 @@ function exportSvg() {
       rect.setAttribute('fill', 'none')
       rect.setAttribute('data-id', el.id)
       rect.setAttribute('data-type', 'rect')
+      if (el.rotation) rect.setAttribute('transform', `rotate(${el.rotation},${el.x + el.w / 2},${el.y + el.h / 2})`)
       svg.appendChild(rect)
     } else if (el.type === 'text') {
       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text')
@@ -559,6 +609,7 @@ function exportSvg() {
       text.setAttribute('data-id', el.id)
       text.setAttribute('data-type', 'text')
       text.setAttribute('data-text', el.text)
+      if (el.rotation) text.setAttribute('transform', `rotate(${el.rotation},${el.x},${el.y})`)
       text.appendChild(document.createTextNode(el.text))
       svg.appendChild(text)
     } else if (el.type === 'channel') {
@@ -609,7 +660,8 @@ function parseSvgData(svgString) {
         x1: parseFloat(line.getAttribute('x1')),
         y1: parseFloat(line.getAttribute('y1')),
         x2: parseFloat(line.getAttribute('x2')),
-        y2: parseFloat(line.getAttribute('y2'))
+        y2: parseFloat(line.getAttribute('y2')),
+        rotation: parseRotation(line)
       })
     })
 
@@ -621,7 +673,8 @@ function parseSvgData(svgString) {
         x: parseFloat(rect.getAttribute('x')),
         y: parseFloat(rect.getAttribute('y')),
         w: parseFloat(rect.getAttribute('width')),
-        h: parseFloat(rect.getAttribute('height'))
+        h: parseFloat(rect.getAttribute('height')),
+        rotation: parseRotation(rect)
       })
     })
 
@@ -632,7 +685,8 @@ function parseSvgData(svgString) {
         type: 'text',
         x: parseFloat(text.getAttribute('x')),
         y: parseFloat(text.getAttribute('y')),
-        text: text.getAttribute('data-text') || text.textContent
+        text: text.getAttribute('data-text') || text.textContent,
+        rotation: parseRotation(text)
       })
     })
 

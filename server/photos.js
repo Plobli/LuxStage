@@ -111,7 +111,8 @@ export function extractFileFromMultipart(body, boundary) {
     const nameMatch = header.match(/name="([^"]+)"/)
     const fileMatch = header.match(/filename="([^"]+)"/)
     if (nameMatch && fileMatch) {
-      parts.push({ fieldname: nameMatch[1], filename: fileMatch[1], data: body.slice(dataStart, dataEnd) })
+      const ctMatch = header.match(/content-type:\s*(\S+)/i)
+      parts.push({ fieldname: nameMatch[1], filename: fileMatch[1], data: body.slice(dataStart, dataEnd), mimeType: ctMatch?.[1] || null })
     }
     start = bEnd
   }

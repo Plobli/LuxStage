@@ -795,10 +795,14 @@ export async function router(req, res) {
       const parts = photos.extractFileFromMultipart(body, boundaryMatch[1])
       const part = parts?.[0]
       if (!part?.data) return json(res, 400, { error: 'Kein Bild gefunden' })
-      const mimeType = mimeFromFilename(part.filename)
-      const imgPath = await floorplan.saveFloorplanImage(tpl.id, part.filename, part.data, mimeType)
-      db.upsertTemplateFloorplan(tpl.id, imgPath)
-      return json(res, 200, { image_url: floorplan.floorplanUrl(imgPath) })
+      const mimeType = part.mimeType || mimeFromFilename(part.filename)
+      try {
+        const imgPath = await floorplan.saveFloorplanImage(tpl.id, part.filename, part.data, mimeType)
+        db.upsertTemplateFloorplan(tpl.id, imgPath)
+        return json(res, 200, { image_url: floorplan.floorplanUrl(imgPath) })
+      } catch (e) {
+        return json(res, 400, { error: e.message })
+      }
     }
 
     // ── Template — Grundriss-Bild löschen ─────────────────────────────────────
@@ -831,10 +835,14 @@ export async function router(req, res) {
       const parts = photos.extractFileFromMultipart(body, boundaryMatch[1])
       const part = parts?.[0]
       if (!part?.data) return json(res, 400, { error: 'Kein Bild gefunden' })
-      const mimeType = mimeFromFilename(part.filename)
-      const imgPath = await floorplan.saveFloorplanImage(showId, part.filename, part.data, mimeType)
-      db.upsertShowFloorplanImage(showId, imgPath)
-      return json(res, 200, { image_url: floorplan.floorplanUrl(imgPath) })
+      const mimeType = part.mimeType || mimeFromFilename(part.filename)
+      try {
+        const imgPath = await floorplan.saveFloorplanImage(showId, part.filename, part.data, mimeType)
+        db.upsertShowFloorplanImage(showId, imgPath)
+        return json(res, 200, { image_url: floorplan.floorplanUrl(imgPath) })
+      } catch (e) {
+        return json(res, 400, { error: e.message })
+      }
     }
 
     // ── Show — Grundriss abrufen ───────────────────────────────────────────────

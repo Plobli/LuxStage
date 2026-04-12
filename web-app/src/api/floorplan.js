@@ -16,7 +16,11 @@ export function uploadTemplateFloorplanImage(templateId, file) {
     xhr.setRequestHeader('Authorization', 'Bearer ' + getToken())
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) resolve(JSON.parse(xhr.responseText))
-      else reject(new Error(`Upload fehlgeschlagen: ${xhr.status}`))
+      else {
+        let msg = `Upload fehlgeschlagen: ${xhr.status}`
+        try { msg += ' — ' + JSON.parse(xhr.responseText).error } catch {}
+        reject(new Error(msg))
+      }
     }
     xhr.onerror = () => reject(new Error('Netzwerkfehler'))
     const formData = new FormData()
@@ -32,7 +36,11 @@ export function uploadShowFloorplanImage(showId, file) {
     xhr.setRequestHeader('Authorization', 'Bearer ' + getToken())
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) resolve(JSON.parse(xhr.responseText))
-      else reject(new Error(`Upload fehlgeschlagen: ${xhr.status}`))
+      else {
+        let msg = `Upload fehlgeschlagen: ${xhr.status}`
+        try { msg += ' — ' + JSON.parse(xhr.responseText).error } catch {}
+        reject(new Error(msg))
+      }
     }
     xhr.onerror = () => reject(new Error('Netzwerkfehler'))
     const formData = new FormData()

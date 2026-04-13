@@ -1,72 +1,89 @@
 <template>
-  <div class="relative flex h-full overflow-hidden bg-gray-950 text-white">
+  <div class="relative flex h-full overflow-hidden bg-gray-950 text-white" @keydown.prevent.stop>
     <!-- Left Toolbar -->
-    <div class="w-[52px] bg-gray-900 border-r border-white/10 flex flex-col items-center py-2 gap-1">
-      <button @click="activeTool = 'select'"
-        :class="['p-2 rounded hover:bg-gray-800', activeTool === 'select' ? 'bg-amber-500' : 'bg-gray-800']"
-        title="Select (↖)">↖</button>
+    <div class="w-[52px] bg-gray-900 border-r border-white/10 flex flex-col items-center py-2 gap-1 z-10 shrink-0">
+      <!-- Tools -->
+      <ToolBtn :active="activeTool === 'select'" title="Auswählen (V)" @click="activeTool = 'select'">
+        <svg viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4"><path d="M2 2l5 12 2-4 4-2z"/></svg>
+      </ToolBtn>
+      <ToolBtn :active="activeTool === 'pan'" title="Verschieben (H)" @click="activeTool = 'pan'">
+        <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path d="M10 2a1 1 0 011 1v5h5a1 1 0 010 2h-5v5a1 1 0 01-2 0v-5H4a1 1 0 010-2h5V3a1 1 0 011-1z"/></svg>
+      </ToolBtn>
+      <div class="w-8 h-px bg-white/10 my-1"></div>
+      <ToolBtn :active="activeTool === 'line'" title="Linie (L)" @click="activeTool = 'line'">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" class="w-4 h-4"><line x1="2" y1="14" x2="14" y2="2"/></svg>
+      </ToolBtn>
+      <ToolBtn :active="activeTool === 'rect'" title="Rechteck (R)" @click="activeTool = 'rect'">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" class="w-4 h-4"><rect x="2" y="4" width="12" height="8"/></svg>
+      </ToolBtn>
+      <ToolBtn :active="activeTool === 'ellipse'" title="Ellipse (E)" @click="activeTool = 'ellipse'">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" class="w-4 h-4"><ellipse cx="8" cy="8" rx="6" ry="4"/></svg>
+      </ToolBtn>
+      <ToolBtn :active="activeTool === 'text'" title="Text (T)" @click="activeTool = 'text'">
+        <span class="font-bold text-xs">T</span>
+      </ToolBtn>
+      <ToolBtn :active="activeTool === 'channel'" title="Kanal (C)" @click="activeTool = 'channel'">
+        <span class="font-bold text-xs">①</span>
+      </ToolBtn>
+      <div class="w-8 h-px bg-white/10 my-1"></div>
 
-      <button @click="activeTool = 'line'"
-        :class="['p-2 rounded hover:bg-gray-800', activeTool === 'line' ? 'bg-amber-500' : 'bg-gray-800']"
-        title="Line (╱)">╱</button>
-
-      <button @click="activeTool = 'rect'"
-        :class="['p-2 rounded hover:bg-gray-800', activeTool === 'rect' ? 'bg-amber-500' : 'bg-gray-800']"
-        title="Rectangle (▭)">▭</button>
-
-      <button @click="activeTool = 'text'"
-        :class="['p-2 rounded hover:bg-gray-800', activeTool === 'text' ? 'bg-amber-500' : 'bg-gray-800']"
-        title="Text (T)">T</button>
-
-      <button @click="activeTool = 'channel'"
-        :class="['p-2 rounded hover:bg-gray-800', activeTool === 'channel' ? 'bg-amber-500' : 'bg-gray-800']"
-        title="Channel (①)">①</button>
-
-      <button @click="imageUploadInput?.click()"
-        class="p-2 rounded hover:bg-gray-800 bg-gray-800"
-        title="Bild hochladen">↑</button>
+      <!-- Image Upload -->
+      <ToolBtn title="Bild hochladen" @click="imageUploadInput?.click()">
+        <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path d="M4 16v-1a4 4 0 014-4h4a4 4 0 014 4v1M8 8a3 3 0 100-6 3 3 0 000 6z"/></svg>
+      </ToolBtn>
       <input ref="imageUploadInput" type="file" accept="image/*" class="hidden" @change="onImageFileSelected" />
 
-      <button @click="exportPNG"
-        class="p-2 rounded hover:bg-gray-800 bg-gray-800 text-xs font-bold"
-        title="Als PNG exportieren">PNG</button>
-
-      <button @click="exportPDF"
-        class="p-2 rounded hover:bg-gray-800 bg-gray-800 text-xs font-bold"
-        title="Als PDF exportieren">PDF</button>
+      <!-- Export -->
+      <ToolBtn title="Als PNG exportieren" @click="exportPNG">
+        <span class="font-bold text-[10px]">PNG</span>
+      </ToolBtn>
+      <ToolBtn title="Als PDF exportieren" @click="exportPDF">
+        <span class="font-bold text-[10px]">PDF</span>
+      </ToolBtn>
 
       <div class="flex-1"></div>
 
-      <button title="Rückgängig (Ctrl+Z)"
-        :disabled="historyIndex <= 0"
-        :class="['w-8 h-8 rounded flex items-center justify-center text-xs border transition-colors',
-          historyIndex > 0 ? 'text-gray-300 border-white/10 hover:bg-white/10' : 'text-gray-700 border-white/5 cursor-not-allowed']"
-        @click="undo">↩</button>
-
-      <button title="Wiederholen (Ctrl+Y)"
-        :disabled="historyIndex >= history.length - 1"
-        :class="['w-8 h-8 rounded flex items-center justify-center text-xs border transition-colors',
-          historyIndex < history.length - 1 ? 'text-gray-300 border-white/10 hover:bg-white/10' : 'text-gray-700 border-white/5 cursor-not-allowed']"
-        @click="redo">↪</button>
-
-      <button @click="deleteSelected"
-        :disabled="selectedIds.size === 0"
-        :class="['p-2 rounded hover:bg-gray-800', selectedIds.size > 0 ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-700 text-gray-500 cursor-not-allowed']"
-        title="Delete (Delete/Backspace)">✕</button>
+      <!-- Undo/Redo -->
+      <ToolBtn :disabled="historyIndex <= 0" title="Rückgängig (Ctrl+Z)" @click="undo">
+        <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+      </ToolBtn>
+      <ToolBtn :disabled="historyIndex >= history.length - 1" title="Wiederholen (Ctrl+Y)" @click="redo">
+        <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M12.293 3.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 10H9a5 5 0 00-5 5v2a1 1 0 11-2 0v-2a7 7 0 017-7h5.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+      </ToolBtn>
+      <ToolBtn :disabled="selectedIds.size === 0" variant="danger" title="Löschen (Delete)" @click="deleteSelected">
+        <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+      </ToolBtn>
     </div>
 
     <!-- Center Canvas -->
-    <div ref="containerEl" class="flex-1 relative bg-gray-950 overflow-hidden flex items-center justify-center">
+    <div
+      ref="containerEl"
+      class="flex-1 relative overflow-hidden"
+      :class="activeTool === 'pan' ? 'cursor-grab' : activeTool !== 'select' ? 'cursor-crosshair' : 'cursor-default'"
+      :style="activeTool === 'pan' && isPanning ? 'cursor:grabbing' : ''"
+    >
+      <!-- Grid overlay (behind stage) -->
+      <canvas
+        v-if="showGrid"
+        ref="gridCanvasRef"
+        class="absolute inset-0 pointer-events-none z-0"
+        :width="stageSize.width"
+        :height="stageSize.height"
+      />
+
       <v-stage
         ref="stageRef"
         :config="stageConfig"
+        class="absolute top-0 left-0 z-10"
         @mousedown="onStageMouseDown"
         @mousemove="onStageMouseMove"
         @mouseup="onStageMouseUp"
+        @wheel="onWheel"
+        @dblclick="onStageDblClick"
       >
         <!-- Background image layer -->
-        <v-layer>
-          <v-image v-if="bgImage" :config="{ image: bgImage, width: 1920, height: 1080, listening: false }" />
+        <v-layer :config="{ listening: false }">
+          <v-image v-if="bgImage" :config="{ image: bgImage, width: 1920, height: 1080 }" />
         </v-layer>
 
         <!-- Elements layer -->
@@ -75,21 +92,24 @@
           <v-line
             v-for="el in lines"
             :key="el.id"
+            :ref="el => setNodeRef(el, el?.getNode?.()?.id?.() ?? el?.config?.id)"
             :config="{
+              id: el.id,
               points: [el.x1, el.y1, el.x2, el.y2],
-              stroke: selectedIds.has(el.id) ? '#f59e0b' : '#6b7280',
-              strokeWidth: selectedIds.has(el.id) ? 3 : 2,
+              stroke: el.color || '#6b7280',
+              strokeWidth: el.strokeWidth || 2,
               rotation: el.rotation || 0,
               offsetX: (el.x1 + el.x2) / 2,
               offsetY: (el.y1 + el.y2) / 2,
               x: (el.x1 + el.x2) / 2,
               y: (el.y1 + el.y2) / 2,
               draggable: activeTool === 'select',
-              hitStrokeWidth: 10,
+              hitStrokeWidth: 12,
             }"
             @click="onNodeClick(el.id, $event)"
-            @dragstart="onLineDragStart(el, $event)"
+            @dragstart="e => e.cancelBubble = true"
             @dragend="onLineDragEnd(el, $event)"
+            @transformend="onLineTransformEnd(el, $event)"
           />
 
           <!-- Rectangles -->
@@ -97,22 +117,45 @@
             v-for="el in rects"
             :key="el.id"
             :config="{
-              x: el.x,
-              y: el.y,
+              id: el.id,
+              x: el.x + el.w / 2,
+              y: el.y + el.h / 2,
               width: el.w,
               height: el.h,
-              stroke: selectedIds.has(el.id) ? '#f59e0b' : '#6b7280',
-              strokeWidth: selectedIds.has(el.id) ? 3 : 2,
-              fill: 'transparent',
+              stroke: el.color || '#6b7280',
+              strokeWidth: el.strokeWidth || 2,
+              fill: el.fill || 'transparent',
               rotation: el.rotation || 0,
               offsetX: el.w / 2,
               offsetY: el.h / 2,
-              x: el.x + el.w / 2,
-              y: el.y + el.h / 2,
               draggable: activeTool === 'select',
             }"
             @click="onNodeClick(el.id, $event)"
+            @dragstart="e => e.cancelBubble = true"
             @dragend="onRectDragEnd(el, $event)"
+            @transformend="onRectTransformEnd(el, $event)"
+          />
+
+          <!-- Ellipses -->
+          <v-ellipse
+            v-for="el in ellipses"
+            :key="el.id"
+            :config="{
+              id: el.id,
+              x: el.x,
+              y: el.y,
+              radiusX: el.rx,
+              radiusY: el.ry,
+              stroke: el.color || '#6b7280',
+              strokeWidth: el.strokeWidth || 2,
+              fill: el.fill || 'transparent',
+              rotation: el.rotation || 0,
+              draggable: activeTool === 'select',
+            }"
+            @click="onNodeClick(el.id, $event)"
+            @dragstart="e => e.cancelBubble = true"
+            @dragend="onSimpleDragEnd(el, $event)"
+            @transformend="onEllipseTransformEnd(el, $event)"
           />
 
           <!-- Text elements -->
@@ -120,41 +163,48 @@
             v-for="el in texts"
             :key="el.id"
             :config="{
+              id: el.id,
               x: el.x,
               y: el.y,
               text: el.text,
-              fill: selectedIds.has(el.id) ? '#f59e0b' : '#9ca3af',
-              fontSize: 14,
+              fill: el.color || '#9ca3af',
+              fontSize: el.fontSize || 16,
+              fontStyle: el.fontStyle || 'normal',
               rotation: el.rotation || 0,
               draggable: activeTool === 'select',
             }"
             @click="onNodeClick(el.id, $event)"
+            @dragstart="e => e.cancelBubble = true"
             @dragend="onSimpleDragEnd(el, $event)"
+            @transformend="onTextTransformEnd(el, $event)"
+            @dblclick="startTextEdit(el, $event)"
           />
 
           <!-- Channel markers -->
           <v-group
-            v-for="el in channels"
+            v-for="el in channelEls"
             :key="el.id"
             :config="{
+              id: el.id,
               x: el.x,
               y: el.y,
               draggable: activeTool === 'select',
             }"
             @click="onNodeClick(el.id, $event)"
+            @dragstart="e => e.cancelBubble = true"
             @dragend="onSimpleDragEnd(el, $event)"
           >
             <v-circle :config="{
               radius: 14,
-              stroke: selectedIds.has(el.id) ? '#f59e0b' : '#2563eb',
-              strokeWidth: selectedIds.has(el.id) ? 2.5 : 2,
+              stroke: '#2563eb',
+              strokeWidth: 2,
               fill: '#1e3a5f',
             }" />
             <v-text :config="{
               text: el.channel,
               fontSize: 10,
               fontStyle: 'bold',
-              fill: selectedIds.has(el.id) ? '#f59e0b' : '#60a5fa',
+              fill: '#60a5fa',
               align: 'center',
               verticalAlign: 'middle',
               width: 28,
@@ -164,6 +214,24 @@
               listening: false,
             }" />
           </v-group>
+
+          <!-- Konva Transformer -->
+          <v-transformer
+            ref="transformerRef"
+            :config="{
+              rotateEnabled: true,
+              resizeEnabled: true,
+              borderStroke: '#f59e0b',
+              borderStrokeWidth: 1.5,
+              anchorStroke: '#f59e0b',
+              anchorFill: '#1f2937',
+              anchorSize: 10,
+              anchorCornerRadius: 2,
+              keepRatio: false,
+              rotationSnaps: showGrid ? [0, 45, 90, 135, 180, 225, 270, 315] : [],
+              rotationSnapTolerance: 8,
+            }"
+          />
 
           <!-- Preview shape during draw -->
           <v-line
@@ -190,6 +258,20 @@
               listening: false,
             }"
           />
+          <v-ellipse
+            v-if="preview && activeTool === 'ellipse'"
+            :config="{
+              x: preview.cx,
+              y: preview.cy,
+              radiusX: preview.rx,
+              radiusY: preview.ry,
+              stroke: '#3b82f6',
+              strokeWidth: 2,
+              dash: [4, 4],
+              fill: 'transparent',
+              listening: false,
+            }"
+          />
 
           <!-- Lasso selection rect -->
           <v-rect
@@ -199,7 +281,7 @@
               y: lassoRect.y,
               width: lassoRect.w,
               height: lassoRect.h,
-              fill: 'rgba(59,130,246,0.1)',
+              fill: 'rgba(59,130,246,0.08)',
               stroke: '#3b82f6',
               strokeWidth: 1,
               dash: [4, 4],
@@ -208,68 +290,172 @@
           />
         </v-layer>
       </v-stage>
+
+      <!-- Zoom indicator -->
+      <div class="absolute bottom-2 left-2 z-20 flex items-center gap-1 bg-gray-900/80 rounded px-2 py-1 text-xs text-gray-400 select-none pointer-events-none">
+        {{ Math.round(zoom * 100) }}%
+      </div>
+
+      <!-- Zoom controls -->
+      <div class="absolute bottom-2 right-2 z-20 flex items-center gap-1">
+        <button @click="setZoom(zoom * 1.25)" class="w-7 h-7 rounded bg-gray-800 hover:bg-gray-700 text-white text-lg flex items-center justify-center leading-none">+</button>
+        <button @click="setZoom(1); panOffset.value = { x: 0, y: 0 }" class="px-2 h-7 rounded bg-gray-800 hover:bg-gray-700 text-white text-xs">1:1</button>
+        <button @click="setZoom(zoom * 0.8)" class="w-7 h-7 rounded bg-gray-800 hover:bg-gray-700 text-white text-lg flex items-center justify-center leading-none">−</button>
+      </div>
+
+      <!-- Inline Text Editor -->
+      <textarea
+        v-if="textEditNode"
+        ref="textareaRef"
+        v-model="textEditValue"
+        class="absolute z-30 bg-gray-900/90 border border-amber-500 text-white p-1 resize-none outline-none rounded text-sm"
+        :style="textEditStyle"
+        @blur="commitTextEdit"
+        @keydown.enter.prevent="commitTextEdit"
+        @keydown.escape="cancelTextEdit"
+      />
     </div>
 
     <!-- Right Properties Panel -->
-    <div
-      v-if="selectedIds.size === 1"
-      class="absolute top-2 right-2 w-[180px] bg-gray-900/95 border border-white/10 rounded-lg overflow-y-auto p-4 flex flex-col gap-4 z-20 shadow-xl"
-    >
-      <div v-if="selectedElement && selectedElement.type === 'channel'">
-        <h3 class="text-sm font-semibold text-amber-500 mb-2">Kanal</h3>
-        <div class="text-xs space-y-1 text-gray-400 mb-3">
-          <div v-if="channelInfo">
-            <div>{{ channelInfo.device }}</div>
-            <div>{{ channelInfo.position }}</div>
-            <div>{{ channelInfo.address }}</div>
-            <div v-if="channelInfo.color" class="flex items-center gap-2 mt-1">
-              <div :style="{ backgroundColor: channelInfo.color }" class="w-4 h-4 border border-gray-600"></div>
-              {{ channelInfo.color }}
-            </div>
+    <transition name="slide-panel">
+      <div
+        v-if="selectedIds.size >= 1"
+        class="w-[200px] bg-gray-900 border-l border-white/10 flex flex-col gap-3 p-3 overflow-y-auto shrink-0"
+      >
+        <!-- Multi-select summary -->
+        <div v-if="selectedIds.size > 1" class="text-xs text-gray-400">
+          <div class="text-amber-400 font-semibold text-sm mb-1">{{ selectedIds.size }} Elemente</div>
+          <div class="flex gap-1 flex-wrap mt-2">
+            <PanelBtn @click="bringToFront" title="Ganz nach vorne">⬆ Vorne</PanelBtn>
+            <PanelBtn @click="sendToBack" title="Ganz nach hinten">⬇ Hinten</PanelBtn>
           </div>
         </div>
-        <button @click="jumpToChannel" class="w-full px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 rounded text-white">
-          → Zum Kanal
-        </button>
-      </div>
 
-      <div v-else-if="selectedElement && selectedElement.type === 'text'">
-        <h3 class="text-sm font-semibold text-amber-500 mb-2">Text</h3>
-        <input
-          v-model="selectedElement.text"
-          type="text"
-          class="w-full px-2 py-1 bg-gray-800 border border-gray-700 text-white text-sm rounded"
-          @input="emitChange"
-        />
-      </div>
+        <!-- Single element -->
+        <template v-if="selectedIds.size === 1 && selectedElement">
+          <div class="text-amber-400 font-semibold text-sm capitalize">{{ typeLabel(selectedElement.type) }}</div>
 
-      <div v-else-if="selectedElement && (selectedElement.type === 'line' || selectedElement.type === 'rect')">
-        <p class="text-xs text-gray-400">
-          {{ selectedElement.type === 'line' ? 'Linie ausgewählt' : 'Rechteck ausgewählt' }}
-        </p>
-      </div>
+          <!-- Channel info -->
+          <div v-if="selectedElement.type === 'channel'">
+            <div class="text-xs space-y-1 text-gray-400 mb-2">
+              <template v-if="channelInfo">
+                <div class="font-semibold text-white">{{ channelInfo.channel }}</div>
+                <div>{{ channelInfo.device }}</div>
+                <div>{{ channelInfo.position }}</div>
+                <div>{{ channelInfo.address }}</div>
+                <div v-if="channelInfo.color" class="flex items-center gap-2 mt-1">
+                  <div :style="{ backgroundColor: channelInfo.color }" class="w-4 h-4 rounded border border-gray-600"></div>
+                  {{ channelInfo.color }}
+                </div>
+              </template>
+            </div>
+            <PanelBtn @click="jumpToChannel" class="w-full">→ Zum Kanal</PanelBtn>
+          </div>
 
-      <template v-if="selectedElement && selectedElement.type !== 'channel'">
-        <div class="mb-2 mt-3">
-          <div class="text-gray-500 uppercase tracking-wide mb-0.5 text-xs">Rotation</div>
-          <input type="range" min="-180" max="180" step="1"
-            :value="selectedElement.rotation || 0"
-            @input="updateRotation(selectedElement.id, +$event.target.value)"
-            class="w-full accent-blue-500"
-          />
-          <div class="text-gray-400 text-right text-xs">{{ selectedElement.rotation || 0 }}°</div>
-        </div>
-      </template>
+          <!-- Text editing -->
+          <div v-if="selectedElement.type === 'text'" class="space-y-2">
+            <label class="prop-label">Text</label>
+            <input v-model="selectedElement.text" type="text" class="prop-input" @input="emitChange" />
+            <label class="prop-label">Schriftgröße</label>
+            <input v-model.number="selectedElement.fontSize" type="number" min="6" max="200" class="prop-input w-16" @input="emitChange" />
+            <div class="flex gap-1">
+              <button
+                :class="['px-2 py-1 rounded text-xs font-bold border', selectedElement.fontStyle === 'bold' ? 'bg-amber-500 border-amber-500 text-black' : 'bg-gray-800 border-white/10 text-gray-300']"
+                @click="toggleFontStyle(selectedElement)"
+              >B</button>
+            </div>
+          </div>
+
+          <!-- Stroke color (line/rect/ellipse) -->
+          <div v-if="['line','rect','ellipse'].includes(selectedElement.type)" class="space-y-2">
+            <label class="prop-label">Farbe</label>
+            <div class="flex items-center gap-2">
+              <input type="color" :value="selectedElement.color || '#6b7280'" @input="e => { selectedElement.color = e.target.value; emitChange() }" class="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
+              <span class="text-xs text-gray-400">{{ selectedElement.color || '#6b7280' }}</span>
+            </div>
+            <label class="prop-label">Stärke</label>
+            <input v-model.number="selectedElement.strokeWidth" type="number" min="1" max="20" class="prop-input w-16" @input="emitChange" />
+            <template v-if="selectedElement.type !== 'line'">
+              <label class="prop-label">Füllung</label>
+              <div class="flex items-center gap-2">
+                <input type="color" :value="selectedElement.fill === 'transparent' || !selectedElement.fill ? '#000000' : selectedElement.fill" @input="e => { selectedElement.fill = e.target.value; emitChange() }" class="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
+                <button @click="toggleFill(selectedElement)" class="px-2 py-1 rounded text-xs bg-gray-800 hover:bg-gray-700 border border-white/10">
+                  {{ selectedElement.fill && selectedElement.fill !== 'transparent' ? 'Transparent' : 'Füllen' }}
+                </button>
+              </div>
+            </template>
+          </div>
+
+          <!-- Text color -->
+          <div v-if="selectedElement.type === 'text'" class="space-y-2">
+            <label class="prop-label">Farbe</label>
+            <div class="flex items-center gap-2">
+              <input type="color" :value="selectedElement.color || '#9ca3af'" @input="e => { selectedElement.color = e.target.value; emitChange() }" class="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
+            </div>
+          </div>
+
+          <!-- Position & size -->
+          <template v-if="selectedElement.type !== 'channel'">
+            <label class="prop-label">Rotation</label>
+            <div class="flex items-center gap-2">
+              <input type="range" min="-180" max="180" step="1"
+                :value="selectedElement.rotation || 0"
+                @input="updateRotation(selectedElement.id, +$event.target.value)"
+                class="flex-1 accent-amber-500 h-1"
+              />
+              <span class="text-xs text-gray-400 w-9 text-right">{{ Math.round(selectedElement.rotation || 0) }}°</span>
+            </div>
+          </template>
+
+          <!-- Z-Order -->
+          <div class="flex gap-1 flex-wrap mt-1">
+            <PanelBtn @click="bringToFront">⬆ Vorne</PanelBtn>
+            <PanelBtn @click="bringForward">↑ Vor</PanelBtn>
+            <PanelBtn @click="sendBackward">↓ Zurück</PanelBtn>
+            <PanelBtn @click="sendToBack">⬇ Hinten</PanelBtn>
+          </div>
+
+          <!-- Copy/Duplicate -->
+          <div class="flex gap-1">
+            <PanelBtn @click="duplicateSelected" class="flex-1">⧉ Duplizieren</PanelBtn>
+          </div>
+        </template>
+      </div>
+    </transition>
+
+    <!-- Top bar options -->
+    <div class="absolute top-2 left-[60px] z-20 flex items-center gap-2">
+      <button
+        @click="showGrid = !showGrid"
+        :class="['px-2 py-1 rounded text-xs border transition-colors', showGrid ? 'bg-amber-500/20 border-amber-500/50 text-amber-400' : 'bg-gray-800/80 border-white/10 text-gray-400 hover:text-white']"
+        title="Gitter anzeigen (G)"
+      >
+        Gitter
+      </button>
+      <button
+        @click="snapToGrid = !snapToGrid"
+        :class="['px-2 py-1 rounded text-xs border transition-colors', snapToGrid ? 'bg-amber-500/20 border-amber-500/50 text-amber-400' : 'bg-gray-800/80 border-white/10 text-gray-400 hover:text-white']"
+        title="Am Gitter einrasten"
+      >
+        Einrasten
+      </button>
+      <button
+        @click="resetView"
+        class="px-2 py-1 rounded text-xs border bg-gray-800/80 border-white/10 text-gray-400 hover:text-white"
+        title="Ansicht zurücksetzen (F)"
+      >
+        Ansicht ↺
+      </button>
     </div>
 
     <!-- Channel Picker Modal -->
     <div
       v-if="showChannelPicker"
-      class="fixed inset-0 bg-black/50 flex items-center justify-center z-30"
-      @click="showChannelPicker = false"
+      class="fixed inset-0 bg-black/50 flex items-center justify-center z-40"
+      @click.self="showChannelPicker = false"
     >
-      <div class="bg-gray-800 rounded-lg p-4 w-64 max-h-96 flex flex-col" @click.stop>
-        <h3 class="text-sm font-semibold mb-3">Kanal wählen</h3>
+      <div class="bg-gray-800 rounded-lg p-4 w-72 max-h-[28rem] flex flex-col shadow-2xl border border-white/10">
+        <h3 class="text-sm font-semibold mb-3 text-amber-400">Kanal wählen</h3>
         <input
           v-model="channelSearch"
           type="text"
@@ -284,10 +470,10 @@
             :disabled="usedChannels.includes(ch.channel)"
             @click="placeChannelCircle(ch)"
             :class="[
-              'w-full text-left px-2 py-1 text-sm rounded hover:bg-gray-700',
+              'w-full text-left px-2 py-1.5 text-sm rounded',
               usedChannels.includes(ch.channel)
                 ? 'bg-gray-900 text-gray-500 cursor-not-allowed'
-                : 'text-white'
+                : 'hover:bg-gray-700 text-white'
             ]"
           >
             <div class="font-semibold">{{ ch.channel }}</div>
@@ -303,19 +489,54 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick, defineComponent, h } from 'vue'
 import { uuid } from '../utils/uuid.js'
 import jsPDF from 'jspdf'
 
+// --------------- Sub-components ---------------
+const ToolBtn = defineComponent({
+  props: { active: Boolean, disabled: Boolean, variant: String, title: String },
+  emits: ['click'],
+  setup(props, { slots, emit }) {
+    return () => h('button', {
+      title: props.title,
+      disabled: props.disabled,
+      onClick: () => !props.disabled && emit('click'),
+      class: [
+        'w-9 h-9 rounded flex items-center justify-center transition-colors',
+        props.disabled
+          ? 'text-gray-600 cursor-not-allowed'
+          : props.variant === 'danger'
+            ? 'bg-red-700 hover:bg-red-600 text-white'
+            : props.active
+              ? 'bg-amber-500 text-black'
+              : 'bg-gray-800 hover:bg-gray-700 text-gray-300',
+      ]
+    }, slots.default?.())
+  }
+})
+
+const PanelBtn = defineComponent({
+  props: { title: String },
+  emits: ['click'],
+  setup(props, { slots, emit }) {
+    return () => h('button', {
+      title: props.title,
+      onClick: () => emit('click'),
+      class: 'px-2 py-1 rounded text-xs bg-gray-800 hover:bg-gray-700 border border-white/10 text-gray-300 whitespace-nowrap'
+    }, slots.default?.())
+  }
+})
+
+// --------------- Props / Emits ---------------
 const props = defineProps({
   imageUrl: { type: String, default: null },
   initialCanvasData: { type: String, default: null },
   channels: { type: Array, default: () => [] }
 })
-
 const emit = defineEmits(['change', 'jump-to-channel', 'upload-image'])
 
-// State
+// --------------- State ---------------
 const activeTool = ref('select')
 const elements = ref([])
 const selectedIds = ref(new Set())
@@ -326,29 +547,47 @@ const channelPickerPos = ref({ x: 0, y: 0 })
 const channelSearch = ref('')
 const stageRef = ref(null)
 const elementsLayerRef = ref(null)
+const transformerRef = ref(null)
 const containerEl = ref(null)
+const gridCanvasRef = ref(null)
 const imageUploadInput = ref(null)
 const history = ref([])
 const historyIndex = ref(-1)
 const lassoRect = ref(null)
 const bgImage = ref(null)
-const stageSize = ref({ width: 1920, height: 1080 })
+const stageSize = ref({ width: 1200, height: 800 })
+const showGrid = ref(false)
+const snapToGrid = ref(false)
+const GRID_SIZE = 40
+const zoom = ref(1)
+const panOffset = ref({ x: 0, y: 0 })
+const isPanning = ref(false)
+const panStart = ref(null)
+const clipboard = ref(null)
+// Text editing
+const textEditNode = ref(null)
+const textEditValue = ref('')
+const textEditStyle = ref({})
+const textareaRef = ref(null)
 
-// Computed element groups
+// --------------- Computed element groups ---------------
 const lines = computed(() => elements.value.filter(e => e.type === 'line'))
 const rects = computed(() => elements.value.filter(e => e.type === 'rect'))
+const ellipses = computed(() => elements.value.filter(e => e.type === 'ellipse'))
 const texts = computed(() => elements.value.filter(e => e.type === 'text'))
-const channels = computed(() => elements.value.filter(e => e.type === 'channel'))
+const channelEls = computed(() => elements.value.filter(e => e.type === 'channel'))
 
-// Stage config with responsive scaling
-const stageConfig = computed(() => {
-  const scale = Math.min(stageSize.value.width / 1920, stageSize.value.height / 1080)
-  const w = 1920 * scale
-  const h = 1080 * scale
-  return { width: w, height: h, scaleX: scale, scaleY: scale }
-})
+// --------------- Stage config ---------------
+const stageConfig = computed(() => ({
+  width: stageSize.value.width,
+  height: stageSize.value.height,
+  scaleX: zoom.value,
+  scaleY: zoom.value,
+  x: panOffset.value.x,
+  y: panOffset.value.y,
+}))
 
-// Computed
+// --------------- Computed ---------------
 const selectedId = computed(() => selectedIds.value.size === 1 ? [...selectedIds.value][0] : null)
 const selectedElement = computed(() => elements.value.find(e => e.id === selectedId.value))
 const usedChannels = computed(() => elements.value.filter(e => e.type === 'channel').map(e => e.channel))
@@ -357,14 +596,18 @@ const channelInfo = computed(() => {
   return props.channels.find(ch => ch.channel === selectedElement.value.channel)
 })
 const filteredChannels = computed(() => {
-  const query = channelSearch.value.toLowerCase()
+  const q = channelSearch.value.toLowerCase()
   return props.channels.filter(ch =>
-    ch.channel.toLowerCase().includes(query) ||
-    (ch.device && ch.device.toLowerCase().includes(query))
+    ch.channel.toLowerCase().includes(q) ||
+    (ch.device && ch.device.toLowerCase().includes(q))
   )
 })
 
-// Background image loader
+function typeLabel(type) {
+  return { line: 'Linie', rect: 'Rechteck', ellipse: 'Ellipse', text: 'Text', channel: 'Kanal' }[type] || type
+}
+
+// --------------- Background image ---------------
 watch(() => props.imageUrl, (url) => {
   if (!url) { bgImage.value = null; return }
   const img = new Image()
@@ -372,17 +615,64 @@ watch(() => props.imageUrl, (url) => {
   img.src = url
 }, { immediate: true })
 
-// Get pointer position in logical (1920x1080) coordinates
+// --------------- Grid drawing ---------------
+function drawGrid() {
+  const c = gridCanvasRef.value
+  if (!c) return
+  const ctx = c.getContext('2d')
+  ctx.clearRect(0, 0, c.width, c.height)
+  if (!showGrid.value) return
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)'
+  ctx.lineWidth = 1
+  const gs = GRID_SIZE * zoom.value
+  const ox = panOffset.value.x % gs
+  const oy = panOffset.value.y % gs
+  for (let x = ox; x < c.width; x += gs) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, c.height); ctx.stroke()
+  }
+  for (let y = oy; y < c.height; y += gs) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(c.width, y); ctx.stroke()
+  }
+}
+watch([showGrid, zoom, panOffset, stageSize], () => nextTick(drawGrid), { deep: true, immediate: true })
+
+// --------------- Snap to grid ---------------
+function snap(val) {
+  return snapToGrid.value ? Math.round(val / GRID_SIZE) * GRID_SIZE : val
+}
+
+// --------------- Transformer ---------------
+function updateTransformer() {
+  nextTick(() => {
+    const tr = transformerRef.value?.getNode()
+    const layer = elementsLayerRef.value?.getNode()
+    if (!tr || !layer) return
+    // Only attach transformer for non-channel, single or multi-select
+    const transformable = [...selectedIds.value].map(id => {
+      const el = elements.value.find(e => e.id === id)
+      if (!el || el.type === 'channel') return null
+      return layer.findOne(`#${id}`)
+    }).filter(Boolean)
+    tr.nodes(transformable)
+    tr.getLayer()?.batchDraw()
+  })
+}
+watch(selectedIds, updateTransformer, { deep: true })
+
+// --------------- Pointer position in canvas coordinates ---------------
 function getPointerPos() {
   const stage = stageRef.value?.getNode()
   if (!stage) return { x: 0, y: 0 }
   const pos = stage.getPointerPosition()
   if (!pos) return { x: 0, y: 0 }
-  const scale = stageConfig.value.scaleX
-  return { x: pos.x / scale, y: pos.y / scale }
+  // Convert from screen coords to canvas coords accounting for pan & zoom
+  return {
+    x: (pos.x - panOffset.value.x) / zoom.value,
+    y: (pos.y - panOffset.value.y) / zoom.value,
+  }
 }
 
-// Click on a node
+// --------------- Node click ---------------
 function onNodeClick(id, e) {
   if (activeTool.value !== 'select') return
   e.cancelBubble = true
@@ -395,92 +685,88 @@ function onNodeClick(id, e) {
   }
 }
 
-// Drag handlers for lines (special: need to update x1/y1/x2/y2)
-function onLineDragStart(el, e) {
-  e.cancelBubble = true
-}
-
-function onLineDragEnd(el, e) {
-  e.cancelBubble = true
-  const node = e.target
-  const dx = node.x()
-  const dy = node.y()
-  el.x1 += dx; el.y1 += dy; el.x2 += dx; el.y2 += dy
-  node.position({ x: 0, y: 0 })
-  emitChange()
-}
-
-// Drag handlers for rect (center-anchored)
-function onRectDragEnd(el, e) {
-  e.cancelBubble = true
-  const node = e.target
-  // node x/y is the center point
-  el.x = node.x() - el.w / 2
-  el.y = node.y() - el.h / 2
-  node.position({ x: el.x + el.w / 2, y: el.y + el.h / 2 })
-  emitChange()
-}
-
-// Drag handlers for text and channel (x/y = position)
-function onSimpleDragEnd(el, e) {
-  e.cancelBubble = true
-  const node = e.target
-  el.x = node.x()
-  el.y = node.y()
-  emitChange()
-}
-
-// Stage mouse handlers for drawing
+// --------------- Stage mouse handlers ---------------
 function onStageMouseDown(e) {
-  // Only act on direct stage/layer clicks, not node clicks
   const stage = stageRef.value?.getNode()
   if (!stage) return
   const clickedOnStage = e.target === stage || e.target.getType() === 'Layer'
-  if (!clickedOnStage && activeTool.value !== 'select') return
 
   const pos = getPointerPos()
 
+  if (activeTool.value === 'pan') {
+    isPanning.value = true
+    panStart.value = { mx: e.evt.clientX, my: e.evt.clientY, ox: panOffset.value.x, oy: panOffset.value.y }
+    return
+  }
+
   if (activeTool.value === 'select') {
     if (clickedOnStage && !e.evt.shiftKey) selectedIds.value = new Set()
-    drawStart.value = pos
+    if (clickedOnStage) drawStart.value = pos
     lassoRect.value = null
-  } else if (activeTool.value === 'line' || activeTool.value === 'rect') {
+    return
+  }
+
+  if (!clickedOnStage) return
+
+  if (activeTool.value === 'line' || activeTool.value === 'rect' || activeTool.value === 'ellipse') {
     drawStart.value = pos
-    preview.value = { x1: pos.x, y1: pos.y, x2: pos.x, y2: pos.y, x: pos.x, y: pos.y, w: 0, h: 0 }
+    preview.value = { x1: pos.x, y1: pos.y, x2: pos.x, y2: pos.y, x: pos.x, y: pos.y, w: 0, h: 0, cx: pos.x, cy: pos.y, rx: 0, ry: 0 }
   } else if (activeTool.value === 'channel' || activeTool.value === 'text') {
     drawStart.value = pos
   }
 }
 
 function onStageMouseMove(e) {
+  if (isPanning.value && panStart.value) {
+    const dx = e.evt.clientX - panStart.value.mx
+    const dy = e.evt.clientY - panStart.value.my
+    panOffset.value = { x: panStart.value.ox + dx, y: panStart.value.oy + dy }
+    return
+  }
+
   if (!drawStart.value) return
   const pos = getPointerPos()
 
-  if (activeTool.value === 'select' && drawStart.value) {
+  if (activeTool.value === 'select') {
     lassoRect.value = {
       x: Math.min(pos.x, drawStart.value.x),
       y: Math.min(pos.y, drawStart.value.y),
       w: Math.abs(pos.x - drawStart.value.x),
       h: Math.abs(pos.y - drawStart.value.y),
     }
-  } else if (activeTool.value === 'line' && preview.value) {
+    return
+  }
+  if (activeTool.value === 'line') {
     preview.value = { ...preview.value, x2: pos.x, y2: pos.y }
-  } else if (activeTool.value === 'rect' && preview.value) {
+  } else if (activeTool.value === 'rect') {
     preview.value = {
       x: Math.min(drawStart.value.x, pos.x),
       y: Math.min(drawStart.value.y, pos.y),
       w: Math.abs(pos.x - drawStart.value.x),
       h: Math.abs(pos.y - drawStart.value.y),
     }
+  } else if (activeTool.value === 'ellipse') {
+    preview.value = {
+      cx: (drawStart.value.x + pos.x) / 2,
+      cy: (drawStart.value.y + pos.y) / 2,
+      rx: Math.abs(pos.x - drawStart.value.x) / 2,
+      ry: Math.abs(pos.y - drawStart.value.y) / 2,
+    }
   }
 }
 
 function onStageMouseUp(e) {
+  if (isPanning.value) {
+    isPanning.value = false
+    panStart.value = null
+    return
+  }
+
   if (!drawStart.value) return
   const pos = getPointerPos()
   const dx = pos.x - drawStart.value.x
   const dy = pos.y - drawStart.value.y
-  const distance = Math.sqrt(dx * dx + dy * dy)
+  const dist = Math.sqrt(dx * dx + dy * dy)
 
   if (activeTool.value === 'select' && lassoRect.value) {
     const { x, y, w, h } = lassoRect.value
@@ -497,29 +783,41 @@ function onStageMouseUp(e) {
     return
   }
 
-  if (distance > 5) {
+  if (dist > 5) {
     if (activeTool.value === 'line') {
-      addElement({ id: uuid(), type: 'line', x1: drawStart.value.x, y1: drawStart.value.y, x2: pos.x, y2: pos.y, rotation: 0 })
+      addElement({ id: uuid(), type: 'line', x1: snap(drawStart.value.x), y1: snap(drawStart.value.y), x2: snap(pos.x), y2: snap(pos.y), rotation: 0, color: '#6b7280', strokeWidth: 2 })
       emitChange()
     } else if (activeTool.value === 'rect') {
       addElement({
         id: uuid(), type: 'rect',
-        x: Math.min(drawStart.value.x, pos.x),
-        y: Math.min(drawStart.value.y, pos.y),
-        w: Math.abs(pos.x - drawStart.value.x),
-        h: Math.abs(pos.y - drawStart.value.y),
-        rotation: 0
+        x: snap(Math.min(drawStart.value.x, pos.x)),
+        y: snap(Math.min(drawStart.value.y, pos.y)),
+        w: snap(Math.abs(pos.x - drawStart.value.x)),
+        h: snap(Math.abs(pos.y - drawStart.value.y)),
+        rotation: 0, color: '#6b7280', strokeWidth: 2, fill: 'transparent'
+      })
+      emitChange()
+    } else if (activeTool.value === 'ellipse') {
+      addElement({
+        id: uuid(), type: 'ellipse',
+        x: snap((drawStart.value.x + pos.x) / 2),
+        y: snap((drawStart.value.y + pos.y) / 2),
+        rx: snap(Math.abs(pos.x - drawStart.value.x) / 2),
+        ry: snap(Math.abs(pos.y - drawStart.value.y) / 2),
+        rotation: 0, color: '#6b7280', strokeWidth: 2, fill: 'transparent'
       })
       emitChange()
     }
+    activeTool.value = 'select'
   } else {
     if (activeTool.value === 'channel') {
-      channelPickerPos.value = drawStart.value
+      channelPickerPos.value = { x: snap(drawStart.value.x), y: snap(drawStart.value.y) }
       channelSearch.value = ''
       showChannelPicker.value = true
     } else if (activeTool.value === 'text') {
-      addElement({ id: uuid(), type: 'text', x: drawStart.value.x, y: drawStart.value.y, text: 'Text', rotation: 0 })
+      addElement({ id: uuid(), type: 'text', x: snap(drawStart.value.x), y: snap(drawStart.value.y), text: 'Text', rotation: 0, color: '#9ca3af', fontSize: 16, fontStyle: 'normal' })
       emitChange()
+      activeTool.value = 'select'
     } else if (activeTool.value === 'select') {
       selectedIds.value = new Set()
     }
@@ -530,6 +828,209 @@ function onStageMouseUp(e) {
   lassoRect.value = null
 }
 
+// --------------- Zoom / Pan ---------------
+function onWheel(e) {
+  e.evt.preventDefault()
+  const delta = e.evt.deltaY < 0 ? 1.1 : 0.9
+  const stage = stageRef.value?.getNode()
+  if (!stage) return
+  const pointer = stage.getPointerPosition()
+  const newZoom = Math.max(0.1, Math.min(10, zoom.value * delta))
+  // Zoom towards pointer
+  const ox = pointer.x - (pointer.x - panOffset.value.x) * (newZoom / zoom.value)
+  const oy = pointer.y - (pointer.y - panOffset.value.y) * (newZoom / zoom.value)
+  zoom.value = newZoom
+  panOffset.value = { x: ox, y: oy }
+}
+
+function setZoom(z) {
+  const center = { x: stageSize.value.width / 2, y: stageSize.value.height / 2 }
+  const newZoom = Math.max(0.1, Math.min(10, z))
+  const ox = center.x - (center.x - panOffset.value.x) * (newZoom / zoom.value)
+  const oy = center.y - (center.y - panOffset.value.y) * (newZoom / zoom.value)
+  zoom.value = newZoom
+  panOffset.value = { x: ox, y: oy }
+}
+
+function resetView() {
+  zoom.value = 1
+  panOffset.value = { x: 0, y: 0 }
+}
+
+// --------------- Double-click: text editing ---------------
+function onStageDblClick(e) {
+  if (activeTool.value !== 'select') return
+  const clickedId = e.target?.id?.()
+  if (!clickedId) return
+  const el = elements.value.find(x => x.id === clickedId)
+  if (el?.type === 'text') startTextEdit(el, e)
+}
+
+function startTextEdit(el, e) {
+  e.cancelBubble = true
+  const node = e.target
+  const stage = stageRef.value?.getNode()
+  if (!stage) return
+  const absPos = node.getAbsolutePosition()
+  const stageBox = stage.container().getBoundingClientRect()
+  textEditNode.value = el
+  textEditValue.value = el.text
+  textEditStyle.value = {
+    top: (stageBox.top + absPos.y - containerEl.value.getBoundingClientRect().top) + 'px',
+    left: (stageBox.left + absPos.x - containerEl.value.getBoundingClientRect().left) + 'px',
+    minWidth: '100px',
+    fontSize: ((el.fontSize || 16) * zoom.value) + 'px',
+    transform: `rotate(${el.rotation || 0}deg)`,
+  }
+  nextTick(() => textareaRef.value?.focus())
+}
+
+function commitTextEdit() {
+  if (!textEditNode.value) return
+  const el = elements.value.find(e => e.id === textEditNode.value.id)
+  if (el) { el.text = textEditValue.value; emitChange() }
+  textEditNode.value = null
+}
+
+function cancelTextEdit() {
+  textEditNode.value = null
+}
+
+// --------------- Drag handlers ---------------
+function onLineDragEnd(el, e) {
+  e.cancelBubble = true
+  const node = e.target
+  const dx = node.x(); const dy = node.y()
+  el.x1 = snap(el.x1 + dx); el.y1 = snap(el.y1 + dy)
+  el.x2 = snap(el.x2 + dx); el.y2 = snap(el.y2 + dy)
+  node.position({ x: 0, y: 0 })
+  emitChange()
+}
+
+function onRectDragEnd(el, e) {
+  e.cancelBubble = true
+  const node = e.target
+  el.x = snap(node.x() - el.w / 2)
+  el.y = snap(node.y() - el.h / 2)
+  node.position({ x: el.x + el.w / 2, y: el.y + el.h / 2 })
+  emitChange()
+}
+
+function onSimpleDragEnd(el, e) {
+  e.cancelBubble = true
+  const node = e.target
+  el.x = snap(node.x()); el.y = snap(node.y())
+  emitChange()
+}
+
+// --------------- Transform end handlers ---------------
+function onLineTransformEnd(el, e) {
+  const node = e.target
+  el.rotation = node.rotation()
+  node.rotation(0)
+  emitChange()
+}
+
+function onRectTransformEnd(el, e) {
+  const node = e.target
+  el.x = node.x() - node.width() * node.scaleX() / 2
+  el.y = node.y() - node.height() * node.scaleY() / 2
+  el.w = Math.max(5, node.width() * node.scaleX())
+  el.h = Math.max(5, node.height() * node.scaleY())
+  el.rotation = node.rotation()
+  node.scaleX(1); node.scaleY(1)
+  node.offsetX(el.w / 2); node.offsetY(el.h / 2)
+  node.x(el.x + el.w / 2); node.y(el.y + el.h / 2)
+  emitChange()
+}
+
+function onEllipseTransformEnd(el, e) {
+  const node = e.target
+  el.x = node.x(); el.y = node.y()
+  el.rx = Math.max(3, node.radiusX() * node.scaleX())
+  el.ry = Math.max(3, node.radiusY() * node.scaleY())
+  el.rotation = node.rotation()
+  node.scaleX(1); node.scaleY(1)
+  emitChange()
+}
+
+function onTextTransformEnd(el, e) {
+  const node = e.target
+  el.x = node.x(); el.y = node.y()
+  if (node.scaleX() !== 1) {
+    el.fontSize = Math.max(6, Math.round((el.fontSize || 16) * node.scaleX()))
+    node.scaleX(1); node.scaleY(1)
+  }
+  el.rotation = node.rotation()
+  emitChange()
+}
+
+// --------------- Z-Order ---------------
+function bringToFront() {
+  const ids = selectedIds.value
+  const rest = elements.value.filter(e => !ids.has(e.id))
+  const sel = elements.value.filter(e => ids.has(e.id))
+  elements.value = [...rest, ...sel]
+  emitChange()
+}
+
+function bringForward() {
+  const ids = selectedIds.value
+  const arr = [...elements.value]
+  for (let i = arr.length - 2; i >= 0; i--) {
+    if (ids.has(arr[i].id) && !ids.has(arr[i + 1].id)) {
+      ;[arr[i], arr[i + 1]] = [arr[i + 1], arr[i]]
+    }
+  }
+  elements.value = arr
+  emitChange()
+}
+
+function sendBackward() {
+  const ids = selectedIds.value
+  const arr = [...elements.value]
+  for (let i = 1; i < arr.length; i++) {
+    if (ids.has(arr[i].id) && !ids.has(arr[i - 1].id)) {
+      ;[arr[i], arr[i - 1]] = [arr[i - 1], arr[i]]
+    }
+  }
+  elements.value = arr
+  emitChange()
+}
+
+function sendToBack() {
+  const ids = selectedIds.value
+  const rest = elements.value.filter(e => !ids.has(e.id))
+  const sel = elements.value.filter(e => ids.has(e.id))
+  elements.value = [...sel, ...rest]
+  emitChange()
+}
+
+// --------------- Copy / Paste / Duplicate ---------------
+function copySelected() {
+  if (selectedIds.value.size === 0) return
+  clipboard.value = elements.value.filter(e => selectedIds.value.has(e.id)).map(e => ({ ...e }))
+}
+
+function pasteClipboard() {
+  if (!clipboard.value?.length) return
+  const newIds = new Set()
+  clipboard.value.forEach(el => {
+    const newEl = { ...el, id: uuid(), x: (el.x ?? el.x1 ?? 0) + 20, y: (el.y ?? el.y1 ?? 0) + 20 }
+    if (el.x1 !== undefined) { newEl.x1 = el.x1 + 20; newEl.y1 = el.y1 + 20; newEl.x2 = el.x2 + 20; newEl.y2 = el.y2 + 20 }
+    elements.value.push(newEl)
+    newIds.add(newEl.id)
+  })
+  selectedIds.value = newIds
+  emitChange()
+}
+
+function duplicateSelected() {
+  copySelected()
+  pasteClipboard()
+}
+
+// --------------- Other operations ---------------
 function addElement(el) {
   elements.value.push(el)
 }
@@ -544,6 +1045,7 @@ function deleteSelected() {
 function placeChannelCircle(ch) {
   addElement({ id: uuid(), type: 'channel', x: channelPickerPos.value.x, y: channelPickerPos.value.y, channel: ch.channel })
   showChannelPicker.value = false
+  activeTool.value = 'select'
   emitChange()
 }
 
@@ -554,9 +1056,7 @@ function onImageFileSelected(e) {
 }
 
 function jumpToChannel() {
-  if (selectedElement.value?.type === 'channel') {
-    emit('jump-to-channel', selectedElement.value.channel)
-  }
+  if (selectedElement.value?.type === 'channel') emit('jump-to-channel', selectedElement.value.channel)
 }
 
 function updateRotation(id, deg) {
@@ -564,26 +1064,32 @@ function updateRotation(id, deg) {
   if (el) { el.rotation = deg; emitChange() }
 }
 
-// Export / Import
+function toggleFontStyle(el) {
+  el.fontStyle = el.fontStyle === 'bold' ? 'normal' : 'bold'
+  emitChange()
+}
+
+function toggleFill(el) {
+  el.fill = (el.fill && el.fill !== 'transparent') ? 'transparent' : '#ffffff'
+  emitChange()
+}
+
+// --------------- Export / Import ---------------
 function exportData() {
   return JSON.stringify(elements.value)
 }
 
 function parseData(str) {
   if (!str) return
-  try {
-    elements.value = JSON.parse(str)
-  } catch (err) {
-    console.error('Error parsing canvas data:', err)
-  }
+  try { elements.value = JSON.parse(str) } catch {}
 }
 
-// History
+// --------------- History ---------------
 function pushHistory() {
   const snap = exportData()
   let h = history.value.slice(0, historyIndex.value + 1)
   h.push(snap)
-  if (h.length > 50) h = h.slice(-50)
+  if (h.length > 100) h = h.slice(-100)
   history.value = h
   historyIndex.value = history.value.length - 1
 }
@@ -607,47 +1113,100 @@ function emitChange() {
   emit('change', exportData())
 }
 
-// PNG Export
+// --------------- PNG / PDF Export ---------------
 function exportPNG() {
   const stage = stageRef.value?.getNode()
   if (!stage) return
-  const dataUrl = stage.toDataURL({ pixelRatio: 2 })
-  const a = document.createElement('a')
-  a.href = dataUrl
-  a.download = 'grundriss.png'
-  a.click()
+  const saved = { x: stage.x(), y: stage.y(), scaleX: stage.scaleX(), scaleY: stage.scaleY() }
+  stage.x(0); stage.y(0); stage.scaleX(1); stage.scaleY(1)
+  const dataUrl = stage.toDataURL({ pixelRatio: 2, width: 1920, height: 1080 })
+  stage.x(saved.x); stage.y(saved.y); stage.scaleX(saved.scaleX); stage.scaleY(saved.scaleY)
+  const a = document.createElement('a'); a.href = dataUrl; a.download = 'grundriss.png'; a.click()
 }
 
-// PDF Export
 function exportPDF() {
   const stage = stageRef.value?.getNode()
   if (!stage) return
-  const dataUrl = stage.toDataURL({ pixelRatio: 2 })
+  const saved = { x: stage.x(), y: stage.y(), scaleX: stage.scaleX(), scaleY: stage.scaleY() }
+  stage.x(0); stage.y(0); stage.scaleX(1); stage.scaleY(1)
+  const dataUrl = stage.toDataURL({ pixelRatio: 2, width: 1920, height: 1080 })
+  stage.x(saved.x); stage.y(saved.y); stage.scaleX(saved.scaleX); stage.scaleY(saved.scaleY)
   const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
-  const pageW = pdf.internal.pageSize.getWidth()
-  const pageH = pdf.internal.pageSize.getHeight()
-  pdf.addImage(dataUrl, 'PNG', 0, 0, pageW, pageH)
+  const pw = pdf.internal.pageSize.getWidth()
+  const ph = pdf.internal.pageSize.getHeight()
+  pdf.addImage(dataUrl, 'PNG', 0, 0, pw, ph)
   pdf.save('grundriss.pdf')
 }
 
-// Responsive scaling via ResizeObserver
+// --------------- Keyboard shortcuts ---------------
+function isInputFocused() {
+  const tag = document.activeElement?.tagName
+  return tag === 'INPUT' || tag === 'TEXTAREA'
+}
+
+function handleKeyDown(e) {
+  if (isInputFocused()) return
+
+  // Tool shortcuts
+  if (!e.ctrlKey && !e.metaKey) {
+    if (e.key === 'v' || e.key === 'V') { activeTool.value = 'select'; return }
+    if (e.key === 'h' || e.key === 'H') { activeTool.value = 'pan'; return }
+    if (e.key === 'l' || e.key === 'L') { activeTool.value = 'line'; return }
+    if (e.key === 'r' || e.key === 'R') { activeTool.value = 'rect'; return }
+    if (e.key === 'e' || e.key === 'E') { activeTool.value = 'ellipse'; return }
+    if (e.key === 't' || e.key === 'T') { activeTool.value = 'text'; return }
+    if (e.key === 'c' && activeTool.value !== 'select') { activeTool.value = 'channel'; return }
+    if (e.key === 'g' || e.key === 'G') { showGrid.value = !showGrid.value; return }
+    if (e.key === 'f' || e.key === 'F') { resetView(); return }
+    if (e.key === 'Escape') { activeTool.value = 'select'; selectedIds.value = new Set(); return }
+    if (e.key === 'Delete' || e.key === 'Backspace') { deleteSelected(); return }
+
+    // Nudge with arrow keys
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key) && selectedIds.value.size > 0) {
+      e.preventDefault()
+      const step = e.shiftKey ? 10 : 1
+      const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0
+      const dy = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0
+      elements.value.forEach(el => {
+        if (!selectedIds.value.has(el.id)) return
+        if (el.type === 'line') { el.x1 += dx; el.y1 += dy; el.x2 += dx; el.y2 += dy }
+        else { el.x = (el.x || 0) + dx; el.y = (el.y || 0) + dy }
+      })
+      emitChange()
+      return
+    }
+  }
+
+  if ((e.ctrlKey || e.metaKey)) {
+    if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return }
+    if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); redo(); return }
+    if (e.key === 'c') { e.preventDefault(); copySelected(); return }
+    if (e.key === 'v') { e.preventDefault(); pasteClipboard(); return }
+    if (e.key === 'd') { e.preventDefault(); duplicateSelected(); return }
+    if (e.key === 'a') { e.preventDefault(); selectedIds.value = new Set(elements.value.map(e => e.id)); return }
+    if (e.key === '+' || e.key === '=') { e.preventDefault(); setZoom(zoom.value * 1.25); return }
+    if (e.key === '-') { e.preventDefault(); setZoom(zoom.value * 0.8); return }
+    if (e.key === '0') { e.preventDefault(); resetView(); return }
+  }
+}
+
+// --------------- Lifecycle ---------------
+let resizeObserver = null
+
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
   if (containerEl.value) {
-    const ro = new ResizeObserver(entries => {
+    resizeObserver = new ResizeObserver(entries => {
       const { width, height } = entries[0].contentRect
-      if (width === 0 || height === 0) return
-      stageSize.value = { width, height }
+      if (width > 0 && height > 0) stageSize.value = { width, height }
     })
-    ro.observe(containerEl.value)
-    // Store for cleanup
-    containerEl.value._ro = ro
+    resizeObserver.observe(containerEl.value)
   }
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
-  containerEl.value?._ro?.disconnect()
+  resizeObserver?.disconnect()
 })
 
 watch(() => props.initialCanvasData, (newVal) => {
@@ -655,16 +1214,23 @@ watch(() => props.initialCanvasData, (newVal) => {
   history.value = [exportData()]
   historyIndex.value = 0
 }, { immediate: true })
-
-function isInputFocused() {
-  return document.activeElement?.tagName === 'INPUT'
-}
-
-function handleKeyDown(e) {
-  if ((e.key === 'Delete' || e.key === 'Backspace') && !isInputFocused()) {
-    deleteSelected()
-  }
-  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo() }
-  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo() }
-}
 </script>
+
+<style scoped>
+.prop-label {
+  @apply text-xs text-gray-500 uppercase tracking-wide;
+}
+.prop-input {
+  @apply w-full px-2 py-1 bg-gray-800 border border-gray-700 text-white text-sm rounded focus:outline-none focus:border-amber-500;
+}
+.slide-panel-enter-active,
+.slide-panel-leave-active {
+  transition: width 0.15s ease, opacity 0.15s ease;
+}
+.slide-panel-enter-from,
+.slide-panel-leave-to {
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+</style>

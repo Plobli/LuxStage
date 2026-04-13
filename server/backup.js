@@ -138,6 +138,7 @@ export async function restoreBackup(req, res) {
         const relPath = fileName.slice('photos/'.length).replace(/\\/g, '/')
         if (!relPath || relPath.endsWith('/') || entry.type === 'Directory') { entry.autodrain(); continue }
         if (relPath.includes('..') || path.isAbsolute(relPath)) { entry.autodrain(); continue }
+        if (relPath.length > 255) { entry.autodrain(); continue }
         if (!/\.(jpg|jpeg|png|gif|webp)$/i.test(relPath)) { entry.autodrain(); continue }
         const destPath = path.resolve(photosPath, relPath)
         if (!destPath.startsWith(photosPath + path.sep)) { entry.autodrain(); continue }
@@ -146,7 +147,8 @@ export async function restoreBackup(req, res) {
           const out = createWriteStream(destPath)
           entry.pipe(out)
           out.on('finish', resolve)
-          out.on('error', reject)
+          out.on('error', (err) => { out.destroy(); reject(err) })
+          entry.on('error', (err) => { out.destroy(); reject(err) })
         })
       } else {
         entry.autodrain()

@@ -61,7 +61,7 @@ function contrastColor(hex) {
 // sectionsMap: Map<sectionId, contentString>  (from db.readShowSections)
 // templateSections: [{ id, title, order, type }]
 // photoEntries: [{ path, caption }]  — Fotos mit optionaler Beschreibung
-export function generatePDF(show, channels, sectionsMap, templateSections, photoEntries, res) {
+export async function generatePDF(show, channels, sectionsMap, templateSections, photoEntries, res) {
   const fm = { name: show.name, datum: show.datum, venue: show.untertitel }
   const grouped = groupByPosition(channels)
 
@@ -187,6 +187,7 @@ export function generatePDF(show, channels, sectionsMap, templateSections, photo
         y = drawRow(doc, y, usableW, headerCols, true)
       }
       y = drawRow(doc, y, usableW, rowCols, false)
+      await new Promise(resolve => setImmediate(resolve))
     }
     y += mm(3)
   }

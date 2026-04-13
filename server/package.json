@@ -1,6 +1,6 @@
 {
   "name": "luxstage-server",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,13 +9,10 @@
     "test": "node --env-file=.env.test --test --test-reporter=spec test/db.test.js test/history.test.js test/photos.test.js test/backup.test.js test/api.test.js"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.82.0",
     "archiver": "^7.0.1",
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.8.0",
     "jsonwebtoken": "^9.0.2",
-    "mammoth": "^1.12.0",
-    "pdf-parse": "^2.4.5",
     "pdfkit": "^0.17.2",
     "sharp": "^0.33.5",
     "unzipper": "^0.12.3"

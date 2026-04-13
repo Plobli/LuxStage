@@ -69,3 +69,14 @@ export function getPresence(showId) {
     devices: Array.from(devices),
   }))
 }
+
+// Heartbeat: tote Sockets entfernen, Verbindungsabbrüche durch Reverse-Proxies verhindern
+setInterval(() => {
+  for (const map of clients.values()) {
+    for (const res of map.keys()) {
+      res.write(':\n\n', (err) => {
+        if (err) { map.delete(res); res.end() }
+      })
+    }
+  }
+}, 15_000)

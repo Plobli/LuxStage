@@ -1,7 +1,10 @@
 import http from 'node:http'
+import fs from 'node:fs'
 import { router } from './router.js'
 import { config } from './config.js'
 import { startHistoryJob } from './history.js'
+
+const pkg = JSON.parse(fs.readFileSync(new URL('./package.json', import.meta.url)))
 
 const corsOrigin = process.env.CORS_ORIGIN || ''
 
@@ -24,7 +27,7 @@ const server = http.createServer((req, res) => {
 })
 
 server.listen(config.port, () => {
-  console.log(`LuxStage Server v1.1 läuft auf Port ${config.port}`)
+  console.log(`LuxStage Server v${pkg.version} läuft auf Port ${config.port}`)
   console.log(`Datenpfad: ${config.dataPath}`)
   startHistoryJob()
 })

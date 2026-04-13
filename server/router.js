@@ -58,7 +58,11 @@ export async function router(req, res) {
     // ── Auth ───────────────────────────────────────────────────────────────
     if (method === 'POST' && pathname === '/api/auth/login') {
       // X-Forwarded-For auswerten wenn hinter einem Reverse-Proxy (z.B. Caddy)
-      const ip = (req.headers['x-forwarded-for']?.split(',')[0].trim()) || req.socket.remoteAddress || 'unknown'
+      let ip = req.socket.remoteAddress || 'unknown'
+      // Nur dem X-Forwarded-For vertrauen, wenn die Verbindung vom lokalen Reverse-Proxy kommt
+      if ((ip === '127.0.0.1' || ip === '::1') && req.headers['x-forwarded-for']) {
+        ip = req.headers['x-forwarded-for'].split(',')[0].trim()
+      }
       if (isRateLimited(ip)) return json(res, 429, { error: 'Zu viele Versuche. Bitte warten.' })
       const body = await readJsonBody(req, res); if (body === null) return
       const { username, password } = body
@@ -389,7 +393,7 @@ export async function router(req, res) {
       try {
         const stat = await fs.promises.stat(filePath)
         res.writeHead(200, {
-          'Content-Type': 'image/jpeg',
+          'Content-Type': mimeFromFilename(filename) || 'image/jpeg',
           'Content-Length': stat.size,
           'Cache-Control': 'public, max-age=86400',
         })

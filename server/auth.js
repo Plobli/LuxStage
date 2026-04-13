@@ -65,22 +65,21 @@ export async function login(username, password) {
 }
 
 export function authenticate(req) {
+  // 1. JWT aus Header prüfen (verhindert Token-Leak in Browser-History und Logs)
   const header = req.headers['authorization'] || ''
-  let token = header.startsWith('Bearer ') ? header.slice(7) : null
-  if (!token) {
-    // Fallback: ?token= query param (für SSE, PDF, Foto- und Backup-URLs)
-    const url = new URL(req.url, 'http://localhost')
-    token = url.searchParams.get('token')
+  if (header.startsWith('Bearer ')) {
+    const jwtToken = header.slice(7)
+    try { return jwt.verify(jwtToken, config.jwtSecret) } catch {}
   }
-  if (!token) return null
-  // Einmal-Download-Token zuerst prüfen
-  const dtUser = redeemDownloadToken(token)
-  if (dtUser) return dtUser
-  try {
-    return jwt.verify(token, config.jwtSecret)
-  } catch {
-    return null
+
+  // 2. Kurzlebige Download-Token aus URL prüfen (für SSE, PDF, Foto- und Backup-URLs)
+  const url = new URL(req.url, 'http://localhost')
+  const downloadToken = url.searchParams.get('token')
+  if (downloadToken) {
+    return redeemDownloadToken(downloadToken)
   }
+
+  return null
 }
 
 export function requireAuth(req, res) {

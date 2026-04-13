@@ -10,6 +10,8 @@ dbContainer.db = new Database(dbPath)
 
 function _initSchema(database) {
   database.pragma('journal_mode = WAL')
+  database.pragma('synchronous = NORMAL')
+  database.pragma('busy_timeout = 5000')
   database.pragma('foreign_keys = ON')
 
   database.exec(`

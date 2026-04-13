@@ -24,7 +24,10 @@ export async function saveFloorplanImage(templateId, filename, buffer, mimeType)
 
   const ext = filename.split('.').pop().toLowerCase().replace('jpeg', 'jpg')
   const safeName = `floorplan.${ext}`
-  await fs.writeFile(path.join(dir, safeName), buffer)
+  const finalPath = path.join(dir, safeName)
+  const tmpPath = `${finalPath}.tmp`
+  await fs.writeFile(tmpPath, buffer)
+  await fs.rename(tmpPath, finalPath)
   return path.join(templateId, safeName)
 }
 

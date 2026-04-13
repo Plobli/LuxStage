@@ -49,15 +49,19 @@ export async function restoreBackup(req, res) {
   try {
     const writeStream = createWriteStream(restorePath)
     await new Promise((resolve, reject) => {
+      const cleanupTmp = async () => {
+        writeStream.destroy()
+        await fs.unlink(restorePath).catch(() => {})
+      }
       let received = 0
       req.on('data', chunk => {
         received += chunk.length
-        if (received > MAX_BACKUP_BYTES) { req.destroy(); writeStream.destroy(); reject(new Error('Upload zu groß')) }
+        if (received > MAX_BACKUP_BYTES) { req.destroy(); cleanupTmp(); reject(new Error('Upload zu groß')) }
       })
       req.pipe(writeStream)
       writeStream.on('finish', resolve)
-      writeStream.on('error', reject)
-      req.on('error', reject)
+      writeStream.on('error', (err) => { cleanupTmp(); reject(err) })
+      req.on('error', (err) => { cleanupTmp(); reject(err) })
     })
   } catch (err) {
     console.error('Restore: Datei-Upload fehlgeschlagen:', err)

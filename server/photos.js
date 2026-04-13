@@ -25,13 +25,15 @@ export async function savePhoto(slug, filename, buffer) {
   const safeName = path.basename(filename).replace(/[^a-zA-Z0-9._-]/g, '_')
   const outName = safeName.replace(/\.[^.]+$/, '.jpg')
   const outPath = path.join(dir, outName)
+  const tmpPath = `${outPath}.tmp`
 
   await sharp(buffer)
     .rotate()
     .resize({ width: config.photoMaxWidth, withoutEnlargement: true })
     .jpeg({ quality: config.photoQuality })
-    .toFile(outPath)
+    .toFile(tmpPath)
 
+  await fs.rename(tmpPath, outPath)
   return outName
 }
 

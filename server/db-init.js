@@ -139,7 +139,8 @@ function _initSchema(database) {
     CREATE TABLE IF NOT EXISTS show_floorplan_layers (
       id         TEXT PRIMARY KEY,
       show_id    TEXT NOT NULL REFERENCES shows(id) ON DELETE CASCADE,
-      svg_data   TEXT,
+      canvas_data TEXT,
+      image_path TEXT,
       updated_at INTEGER NOT NULL
     );
 
@@ -179,16 +180,16 @@ const tplFloorplanTables = dbContainer.db.prepare(
 ).get()
 if (!tplFloorplanTables) {
   dbContainer.db.exec(`
-    CREATE TABLE template_floorplans (
+    CREATE TABLE IF NOT EXISTS template_floorplans (
       id          TEXT PRIMARY KEY,
       template_id TEXT NOT NULL REFERENCES templates(id) ON DELETE CASCADE,
       image_path  TEXT,
       created_at  INTEGER NOT NULL
     );
-    CREATE TABLE show_floorplan_layers (
+    CREATE TABLE IF NOT EXISTS show_floorplan_layers (
       id         TEXT PRIMARY KEY,
       show_id    TEXT NOT NULL REFERENCES shows(id) ON DELETE CASCADE,
-      svg_data   TEXT,
+      canvas_data TEXT,
       image_path TEXT,
       updated_at INTEGER NOT NULL
     );
@@ -201,10 +202,10 @@ const showFloorplanLayersExists = dbContainer.db.prepare(
 ).get()
 if (!showFloorplanLayersExists) {
   dbContainer.db.exec(`
-    CREATE TABLE show_floorplan_layers (
+    CREATE TABLE IF NOT EXISTS show_floorplan_layers (
       id         TEXT PRIMARY KEY,
       show_id    TEXT NOT NULL REFERENCES shows(id) ON DELETE CASCADE,
-      svg_data   TEXT,
+      canvas_data TEXT,
       image_path TEXT,
       updated_at INTEGER NOT NULL
     );
@@ -213,6 +214,23 @@ if (!showFloorplanLayersExists) {
   const showFloorplanCols = dbContainer.db.pragma('table_info(show_floorplan_layers)').map(c => c.name)
   if (!showFloorplanCols.includes('image_path')) {
     dbContainer.db.exec('ALTER TABLE show_floorplan_layers ADD COLUMN image_path TEXT')
+  }
+  if (!showFloorplanCols.includes('canvas_data')) {
+    // Rename svg_data → canvas_data via table recreation (SQLite limitation)
+    // WARNING: existing svg_data content is discarded (format incompatible with new JSON format)
+    dbContainer.db.exec(`
+      CREATE TABLE show_floorplan_layers_new (
+        id         TEXT PRIMARY KEY,
+        show_id    TEXT NOT NULL REFERENCES shows(id) ON DELETE CASCADE,
+        canvas_data TEXT,
+        image_path TEXT,
+        updated_at INTEGER NOT NULL
+      );
+      INSERT INTO show_floorplan_layers_new (id, show_id, image_path, updated_at)
+        SELECT id, show_id, image_path, updated_at FROM show_floorplan_layers;
+      DROP TABLE show_floorplan_layers;
+      ALTER TABLE show_floorplan_layers_new RENAME TO show_floorplan_layers;
+    `)
   }
 }
 

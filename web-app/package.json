@@ -1,6 +1,6 @@
 {
   "name": "luxstage-web",
-  "version": "1.7.11",
+  "version": "1.7.12",
   "private": true,
   "scripts": {
     "dev": "vite",
@@ -14,11 +14,14 @@
     "@tiptap/extension-placeholder": "^3.22.2",
     "@tiptap/starter-kit": "^3.22.2",
     "@tiptap/vue-3": "^3.22.2",
+    "jspdf": "^4.2.1",
+    "konva": "^10.2.5",
     "sortablejs": "^1.15.7",
     "tailwindcss": "^4.2.2",
     "tiptap-markdown": "^0.9.0",
     "vue": "^3.5.32",
     "vue-draggable-plus": "^0.6.1",
+    "vue-konva": "^3.4.0",
     "vue-router": "^4.3.0"
   },
   "devDependencies": {

@@ -53,6 +53,6 @@ export function fetchShowFloorplan(showId) {
   return api.get(`/api/shows/${showId}/floorplan`)
 }
 
-export function saveShowFloorplan(showId, svgData) {
-  return api.put(`/api/shows/${showId}/floorplan`, { svg_data: svgData })
+export function saveShowFloorplan(showId, canvasData) {
+  return api.put(`/api/shows/${showId}/floorplan`, { canvas_data: canvasData })
 }

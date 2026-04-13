@@ -462,15 +462,15 @@ export function upsertShowFloorplanImage(showId, imagePath) {
   }
 }
 
-export function upsertShowFloorplanSvg(showId, svgData) {
+export function upsertShowFloorplanData(showId, canvasData) {
   const existing = getShowFloorplan(showId)
   if (existing) {
     dbContainer.db.prepare(
-      'UPDATE show_floorplan_layers SET svg_data = ?, updated_at = ? WHERE show_id = ?'
-    ).run(svgData, now(), showId)
+      'UPDATE show_floorplan_layers SET canvas_data = ?, updated_at = ? WHERE show_id = ?'
+    ).run(canvasData, now(), showId)
   } else {
     dbContainer.db.prepare(
-      'INSERT INTO show_floorplan_layers (id, show_id, svg_data, updated_at) VALUES (?, ?, ?, ?)'
-    ).run(randomUUID(), showId, svgData, now())
+      'INSERT INTO show_floorplan_layers (id, show_id, canvas_data, updated_at) VALUES (?, ?, ?, ?)'
+    ).run(randomUUID(), showId, canvasData, now())
   }
 }

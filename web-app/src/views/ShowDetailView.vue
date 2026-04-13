@@ -329,7 +329,7 @@
       <div v-if="mobileTab === 'floorplan'" class="h-[calc(100vh-4rem)]">
         <FloorplanEditor
           :image-url="floorplan.image_url ? api.url(floorplan.image_url) : null"
-          :initial-svg-data="floorplan.svg_data"
+          :initial-canvas-data="floorplan.canvas_data"
           :channels="channels"
           @change="onFloorplanChange"
           @upload-image="onFloorplanImageUpload"
@@ -744,7 +744,7 @@ const mobileTab = ref('channels') // 'channels' | 'info' | 'floorplan'
 const menuOpen = ref(null) // 'import' | 'export' | null
 const ocrDialogOpen = ref(false)
 
-const floorplan = ref({ image_url: null, svg_data: null })
+const floorplan = ref({ image_url: null, canvas_data: null })
 let floorplanSaveTimer = null
 
 const sectionDefs = ref([])
@@ -1419,9 +1419,9 @@ async function loadFloorplan() {
   if (data) floorplan.value = data
 }
 
-function onFloorplanChange(svgData) {
-  floorplan.value = { ...floorplan.value, svg_data: svgData }
-  saveShowFloorplan(props.id, svgData).catch(() => {})
+function onFloorplanChange(canvasData) {
+  floorplan.value = { ...floorplan.value, canvas_data: canvasData }
+  saveShowFloorplan(props.id, canvasData).catch(() => {})
 }
 
 async function onFloorplanImageUpload(file) {

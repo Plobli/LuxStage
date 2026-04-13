@@ -863,19 +863,19 @@ export async function router(req, res) {
           if (fp?.image_path) imageUrl = floorplan.floorplanUrl(fp.image_path)
         }
       }
-      return json(res, 200, { image_url: imageUrl, svg_data: layer?.svg_data ?? null })
+      return json(res, 200, { image_url: imageUrl, canvas_data: layer?.canvas_data ?? null })
     }
 
-    // ── Show — Grundriss-SVG speichern ────────────────────────────────────────
+    // ── Show — Grundriss-Canvas speichern ────────────────────────────────────
     if (method === 'PUT' && pathname.match(/^\/api\/shows\/([^/]+)\/floorplan$/)) {
       const user = requireAuth(req, res); if (!user) return
       const showId = pathname.split('/')[3]
       const show = db.readShow(showId)
       if (!show) return notFound(res)
       const body = await readJsonBody(req, res); if (body === null) return
-      const { svg_data } = body
-      if (typeof svg_data !== 'string') return json(res, 400, { error: 'svg_data fehlt' })
-      db.upsertShowFloorplanSvg(show.id, svg_data)
+      const { canvas_data } = body
+      if (typeof canvas_data !== 'string') return json(res, 400, { error: 'canvas_data fehlt' })
+      db.upsertShowFloorplanData(show.id, canvas_data)
       return json(res, 200, { ok: true })
     }
 

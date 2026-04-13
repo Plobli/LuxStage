@@ -169,6 +169,9 @@ const userCols = dbContainer.db.pragma('table_info(users)').map(c => c.name)
 if (!userCols.includes('role')) {
   dbContainer.db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'techniker'")
 }
+if (!userCols.includes('requires_password_change')) {
+  dbContainer.db.exec("ALTER TABLE users ADD COLUMN requires_password_change INTEGER NOT NULL DEFAULT 0")
+}
 const photoCols = dbContainer.db.pragma('table_info(photo_descriptions)').map(c => c.name)
 if (!photoCols.includes('channel_number')) {
   dbContainer.db.exec("ALTER TABLE photo_descriptions ADD COLUMN channel_number TEXT NOT NULL DEFAULT ''")

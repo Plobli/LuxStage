@@ -61,7 +61,10 @@ export async function login(username, password) {
     const hash = await hashPassword(password)
     dbContainer.db.prepare('UPDATE users SET password = ? WHERE username = ?').run(hash, row.username)
   }
-  return signToken(row.username, row.role)
+  return {
+    token: signToken(row.username, row.role),
+    requiresPasswordChange: row.requires_password_change === 1,
+  }
 }
 
 export function authenticate(req) {

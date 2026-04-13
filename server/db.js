@@ -398,10 +398,15 @@ export function getDbPassword(username) {
 }
 
 /** Setzt das Passwort eines Benutzers in der DB (überschreibt Env-Passwort). */
-export async function changePassword(username, newPassword) {
+export async function changePassword(username, newPassword, requiresChange = 0) {
   const hash = await hashPassword(newPassword)
-  dbContainer.db.prepare('INSERT INTO users (username, password) VALUES (?, ?) ON CONFLICT(username) DO UPDATE SET password = excluded.password')
-    .run(username, hash)
+  dbContainer.db.prepare(`
+    INSERT INTO users (username, password, requires_password_change)
+    VALUES (?, ?, ?)
+    ON CONFLICT(username) DO UPDATE SET
+      password = excluded.password,
+      requires_password_change = excluded.requires_password_change
+  `).run(username, hash, requiresChange ? 1 : 0)
 }
 
 /** Alle Benutzer aus der DB. */

@@ -66,9 +66,9 @@ export async function router(req, res) {
       if (isRateLimited(ip)) return json(res, 429, { error: 'Zu viele Versuche. Bitte warten.' })
       const body = await readJsonBody(req, res); if (body === null) return
       const { username, password } = body
-      const token = await login(username, password)
-      if (!token) { recordFailedLogin(ip); return json(res, 401, { error: 'Ungültige Anmeldedaten' }) }
-      return json(res, 200, { token })
+      const loginResult = await login(username, password)
+      if (!loginResult) { recordFailedLogin(ip); return json(res, 401, { error: 'Ungültige Anmeldedaten' }) }
+      return json(res, 200, loginResult)
     }
 
     // ── Auth — Token erneuern ─────────────────────────────────────────────
@@ -95,7 +95,7 @@ export async function router(req, res) {
         ? await (await import('bcrypt')).compare(currentPassword, storedPassword)
         : currentPassword === storedPassword
       if (!pwOk) return json(res, 403, { error: 'Aktuelles Passwort falsch' })
-      await db.changePassword(user.username, newPassword)
+      await db.changePassword(user.username, newPassword, 0)
       return json(res, 200, { ok: true })
     }
 
@@ -107,7 +107,7 @@ export async function router(req, res) {
       const allUsers = db.listUsers()
       if (!allUsers.find(u => u.username === username)) return json(res, 404, { error: 'Benutzer nicht gefunden' })
       const newPassword = randomBytes(6).toString('hex')
-      await db.changePassword(username, newPassword)
+      await db.changePassword(username, newPassword, 1)
       return json(res, 200, { newPassword })
     }
 
@@ -594,14 +594,14 @@ export async function router(req, res) {
       const repoDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
       const nvmDir = process.env.NVM_DIR || path.join(process.env.HOME, '.nvm')
       const nvmInit = `export NVM_DIR="${nvmDir}" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"`
-      const run = (cmd) => new Promise((resolve, reject) => {
-        execFile('/bin/bash', ['-c', `${nvmInit} && ${cmd}`], { maxBuffer: 1024 * 1024 }, (err, stdout) => {
+      const run = (cmd, env = {}) => new Promise((resolve, reject) => {
+        execFile('/bin/bash', ['-c', `${nvmInit} && ${cmd}`], { maxBuffer: 1024 * 1024, env: { ...process.env, ...env } }, (err, stdout) => {
           if (err) { reject(err) } else { resolve(stdout.trim()) }
         })
       })
       try {
-        await run(`git -C "${repoDir}" fetch --prune --quiet`)
-        const out = await run(`git -C "${repoDir}" branch -r`)
+        await run('git -C "$REPO_DIR" fetch --prune --quiet', { REPO_DIR: repoDir })
+        const out = await run('git -C "$REPO_DIR" branch -r', { REPO_DIR: repoDir })
         const branches = out.split('\n')
           .map(b => b.trim().replace(/^origin\//, ''))
           .filter(b => b && !b.startsWith('HEAD'))
@@ -618,19 +618,19 @@ export async function router(req, res) {
       const repoDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
       const nvmDir = process.env.NVM_DIR || path.join(process.env.HOME, '.nvm')
       const nvmInit = `export NVM_DIR="${nvmDir}" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"`
-      const run = (cmd) => new Promise((resolve, reject) => {
-        execFile('/bin/bash', ['-c', `${nvmInit} && ${cmd}`], { maxBuffer: 1024 * 1024 }, (err, stdout) => {
+      const run = (cmd, env = {}) => new Promise((resolve, reject) => {
+        execFile('/bin/bash', ['-c', `${nvmInit} && ${cmd}`], { maxBuffer: 1024 * 1024, env: { ...process.env, ...env } }, (err, stdout) => {
           if (err) { reject(err) } else { resolve(stdout.trim()) }
         })
       })
       const branch = params.branch || 'main'
       if (!/^[a-zA-Z0-9_./-]+$/.test(branch)) return json(res, 400, { error: 'Ungültiger Branch-Name' })
       try {
-        await run(`git -C "${repoDir}" fetch --no-tags origin "${branch}" --quiet`)
-        const behind = await run(`git -C "${repoDir}" rev-list "HEAD..origin/${branch}" --count`)
+        await run('git -C "$REPO_DIR" fetch --no-tags origin "$TARGET_BRANCH" --quiet', { REPO_DIR: repoDir, TARGET_BRANCH: branch })
+        const behind = await run('git -C "$REPO_DIR" rev-list "HEAD..origin/$TARGET_BRANCH" --count', { REPO_DIR: repoDir, TARGET_BRANCH: branch })
         const commits = parseInt(behind, 10)
         if (commits === 0) return json(res, 200, { available: false, branch })
-        const log = await run(`git -C "${repoDir}" log HEAD..origin/${branch} --oneline --no-decorate`)
+        const log = await run('git -C "$REPO_DIR" log HEAD..origin/"$TARGET_BRANCH" --oneline --no-decorate', { REPO_DIR: repoDir, TARGET_BRANCH: branch })
         return json(res, 200, { available: true, commits, log, branch })
       } catch (err) {
         return json(res, 200, { available: false, branch, error: err.message })
@@ -665,8 +665,8 @@ export async function router(req, res) {
       // nvm-Pfad ermitteln damit npm in non-login shells verfügbar ist
       const nvmDir = process.env.NVM_DIR || path.join(process.env.HOME, '.nvm')
       const nvmInit = `export NVM_DIR="${nvmDir}" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"`
-      const run = (cmd) => new Promise((resolve, reject) => {
-        execFile('/bin/bash', ['-c', `${nvmInit} && ${cmd}`], { maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
+      const run = (cmd, env = {}) => new Promise((resolve, reject) => {
+        execFile('/bin/bash', ['-c', `${nvmInit} && ${cmd}`], { maxBuffer: 10 * 1024 * 1024, env: { ...process.env, ...env } }, (err, stdout, stderr) => {
           if (err) { err.stderr = stderr; reject(err) } else { resolve(stdout) }
         })
       })
@@ -677,7 +677,7 @@ export async function router(req, res) {
 
       const rollback = async (reason) => {
         step(`Rollback: ${reason}`)
-        try { await run(`git -C "${repoDir}" reset --hard "${oldCommit}"`) } catch {}
+        try { await run('git -C "$REPO_DIR" reset --hard "$OLD_COMMIT"', { REPO_DIR: repoDir, OLD_COMMIT: oldCommit }) } catch {}
         try { await fsp.rm(distNew, { recursive: true, force: true }) } catch {}
         try {
           const distOldExists = await fsp.access(distOld).then(() => true).catch(() => false)
@@ -690,49 +690,43 @@ export async function router(req, res) {
         res.end()
       }
 
+      const baseEnv = { REPO_DIR: repoDir, TARGET_BRANCH: branch }
       try {
         // 1. Git-Konfiguration sicherstellen (einmalig, Pi hat ggf. keine Identität)
-        await run(`git -C "${repoDir}" config pull.ff only`).catch(() => {})
-        await run(`git -C "${repoDir}" config user.email "luxstage@localhost"`).catch(() => {})
-        await run(`git -C "${repoDir}" config user.name "LuxStage"`).catch(() => {})
+        await run('git -C "$REPO_DIR" config pull.ff only', baseEnv).catch(() => {})
+        await run('git -C "$REPO_DIR" config user.email "luxstage@localhost"', baseEnv).catch(() => {})
+        await run('git -C "$REPO_DIR" config user.name "LuxStage"', baseEnv).catch(() => {})
 
         // 2. Aktuellen Commit merken
-        oldCommit = (await run(`git -C "${repoDir}" rev-parse HEAD`)).trim()
+        oldCommit = (await run('git -C "$REPO_DIR" rev-parse HEAD', baseEnv)).trim()
         step(`Aktueller Commit: ${oldCommit.slice(0, 8)}`)
 
         // 3. DB-Snapshot (non-blocking, WAL-sicher)
-        await run(`cp "${dbPath}" "${dbSnap}"`)
+        await run('cp "$DB_PATH" "$DB_SNAP"', { DB_PATH: dbPath, DB_SNAP: dbSnap })
         step('DB-Snapshot erstellt')
 
         // 4. Lokalen Branch auf Remote zurücksetzen (verhindert Divergenz durch Cherry-picks etc.)
-        await run(`git -C "${repoDir}" fetch --no-tags origin "${branch}"`)
-        await run(`git -C "${repoDir}" reset --hard "origin/${branch}"`)
+        await run('git -C "$REPO_DIR" fetch --no-tags origin "$TARGET_BRANCH"', baseEnv)
+        await run('git -C "$REPO_DIR" reset --hard "origin/$TARGET_BRANCH"', baseEnv)
         step(`git reset --hard origin/${branch}`)
         const pullOut = 'Reset auf Remote-Stand'
         step(`git pull (${branch}): ${pullOut}`)
 
-        const newCommit = (await run(`git -C "${repoDir}" rev-parse HEAD`)).trim()
+        const newCommit = (await run('git -C "$REPO_DIR" rev-parse HEAD', baseEnv)).trim()
         if (newCommit === oldCommit) {
           step('Bereits aktuell')
         }
 
         // 4. Abhängigkeiten installieren
-        await run(`npm install --prefix "${repoDir}/server"`)
+        await run('npm install --prefix "$REPO_DIR/server"', baseEnv)
         step('Server-Abhängigkeiten installiert')
 
-        await run(`npm install --include=dev --prefix "${repoDir}/web-app"`)
+        await run('npm install --include=dev --prefix "$REPO_DIR/web-app"', baseEnv)
         step('Web-App-Abhängigkeiten installiert')
 
         // 5. Build in dist-new (laufende dist/ bleibt unangetastet)
         await fsp.rm(distNew, { recursive: true, force: true }).catch(() => {})
-        const buildEnv = { ...process.env, VITE_OUTDIR: 'dist-new' }
-        await new Promise((resolve, reject) => {
-          execFile('/bin/bash', ['-c',
-            `${nvmInit} && cd "${repoDir}/web-app" && npm run build -- --outDir dist-new`
-          ], { env: buildEnv, maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
-            if (err) { err.stderr = stderr; reject(err) } else { resolve(stdout) }
-          })
-        })
+        await run('cd "$REPO_DIR/web-app" && npm run build -- --outDir dist-new', { ...baseEnv, VITE_OUTDIR: 'dist-new' })
         step('Web-App gebaut')
 
         // Prüfen ob index.html im Build vorhanden (Minimalcheck)

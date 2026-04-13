@@ -817,6 +817,18 @@ export async function router(req, res) {
       return json(res, 200, { ok: true })
     }
 
+    // ── Show — Grundriss-Bild löschen ────────────────────────────────────────
+    if (method === 'DELETE' && pathname.match(/^\/api\/shows\/([^/]+)\/floorplan\/image$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const showId = pathname.split('/')[3]
+      const show = db.readShow(showId)
+      if (!show) return notFound(res)
+      const layer = db.getShowFloorplan(show.id)
+      if (layer?.image_path) await floorplan.deleteFloorplanImage(layer.image_path)
+      db.upsertShowFloorplanImage(show.id, null)
+      return json(res, 200, { ok: true })
+    }
+
     // ── Show — Grundriss-Bild hochladen ──────────────────────────────────────
     if (method === 'POST' && pathname.match(/^\/api\/shows\/([^/]+)\/floorplan\/image$/)) {
       const user = requireAuth(req, res); if (!user) return

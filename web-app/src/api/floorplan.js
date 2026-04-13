@@ -49,6 +49,10 @@ export function uploadShowFloorplanImage(showId, file) {
   })
 }
 
+export function deleteShowFloorplanImage(showId) {
+  return api.delete(`/api/shows/${showId}/floorplan/image`)
+}
+
 export function fetchShowFloorplan(showId) {
   return api.get(`/api/shows/${showId}/floorplan`)
 }

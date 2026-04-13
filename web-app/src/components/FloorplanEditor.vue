@@ -1,57 +1,69 @@
 <template>
   <div class="relative flex h-full overflow-hidden bg-gray-950 text-white" @keydown.prevent.stop>
     <!-- Left Toolbar -->
-    <div class="w-[52px] bg-gray-900 border-r border-white/10 flex flex-col items-center py-2 gap-1 z-10 shrink-0">
+    <div class="w-[56px] bg-gray-900 border-r border-white/10 flex flex-col items-center py-2 gap-1 z-10 shrink-0">
       <!-- Tools -->
       <ToolBtn :active="activeTool === 'select'" title="Auswählen (V)" @click="activeTool = 'select'">
-        <svg viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4"><path d="M2 2l5 12 2-4 4-2z"/></svg>
+        <!-- Heroicons: cursor-arrow-rays -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.042 21.672 13.684 16.6m0 0-2.51 2.225.569-9.47 5.227 7.917-3.286-.672ZM12 2.25V4.5m5.834.166-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243-1.59-1.59"/></svg>
       </ToolBtn>
       <ToolBtn :active="activeTool === 'pan'" title="Verschieben (H)" @click="activeTool = 'pan'">
-        <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path d="M10 2a1 1 0 011 1v5h5a1 1 0 010 2h-5v5a1 1 0 01-2 0v-5H4a1 1 0 010-2h5V3a1 1 0 011-1z"/></svg>
+        <!-- Heroicons: hand-raised -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.05 4.575a1.575 1.575 0 1 0-3.15 0v3m3.15-3v-1.5a1.575 1.575 0 0 1 3.15 0v1.5m-3.15 0 .075 5.925m3.075.75V4.575m0 0a1.575 1.575 0 0 1 3.15 0V15M6.9 7.575a1.575 1.575 0 1 0-3.15 0v8.175a6.75 6.75 0 0 0 6.75 6.75h2.018a5.25 5.25 0 0 0 3.712-1.538l1.732-1.732a5.25 5.25 0 0 0 1.538-3.712l.003-2.024a.668.668 0 0 1 .198-.471 1.575 1.575 0 1 0-2.228-2.228 3.818 3.818 0 0 0-1.12 2.687M6.9 7.575V12m6.27 4.318A4.49 4.49 0 0 1 16.35 15"/></svg>
       </ToolBtn>
       <div class="w-8 h-px bg-white/10 my-1"></div>
       <ToolBtn :active="activeTool === 'line'" title="Linie (L)" @click="activeTool = 'line'">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" class="w-4 h-4"><line x1="2" y1="14" x2="14" y2="2"/></svg>
+        <!-- Heroicons: minus (diagonal via transform) -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><line x1="4" y1="20" x2="20" y2="4" stroke-linecap="round"/></svg>
       </ToolBtn>
       <ToolBtn :active="activeTool === 'rect'" title="Rechteck (R)" @click="activeTool = 'rect'">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" class="w-4 h-4"><rect x="2" y="4" width="12" height="8"/></svg>
+        <!-- Heroicons: stop (square outline) -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-5 h-5"><rect x="4" y="4" width="16" height="16" rx="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </ToolBtn>
       <ToolBtn :active="activeTool === 'ellipse'" title="Ellipse (E)" @click="activeTool = 'ellipse'">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" class="w-4 h-4"><ellipse cx="8" cy="8" rx="6" ry="4"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-5 h-5"><ellipse cx="12" cy="12" rx="9" ry="6" stroke-linecap="round"/></svg>
       </ToolBtn>
       <ToolBtn :active="activeTool === 'text'" title="Text (T)" @click="activeTool = 'text'">
-        <span class="font-bold text-xs">T</span>
+        <!-- Heroicons: language (T icon) -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h7"/></svg>
       </ToolBtn>
-      <ToolBtn :active="activeTool === 'channel'" title="Kanal (C)" @click="activeTool = 'channel'">
-        <span class="font-bold text-xs">①</span>
+      <ToolBtn :active="activeTool === 'channel'" title="Kanal platzieren (C)" @click="activeTool = 'channel'">
+        <!-- Heroicons: map-pin (circle with dot) -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
       </ToolBtn>
       <div class="w-8 h-px bg-white/10 my-1"></div>
 
       <!-- Image Upload -->
-      <ToolBtn title="Bild hochladen" @click="imageUploadInput?.click()">
-        <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path d="M4 16v-1a4 4 0 014-4h4a4 4 0 014 4v1M8 8a3 3 0 100-6 3 3 0 000 6z"/></svg>
+      <ToolBtn title="Hintergrundbild hochladen" @click="imageUploadInput?.click()">
+        <!-- Heroicons: arrow-up-tray -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"/></svg>
+      </ToolBtn>
+      <ToolBtn v-if="bgImage" title="Hintergrundbild entfernen" variant="danger" @click="emit('delete-image')">
+        <!-- Heroicons: photo mit x -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/></svg>
       </ToolBtn>
       <input ref="imageUploadInput" type="file" accept="image/*" class="hidden" @change="onImageFileSelected" />
 
       <!-- Export -->
       <ToolBtn title="Als PNG exportieren" @click="exportPNG">
-        <span class="font-bold text-[10px]">PNG</span>
-      </ToolBtn>
-      <ToolBtn title="Als PDF exportieren" @click="exportPDF">
-        <span class="font-bold text-[10px]">PDF</span>
+        <!-- Heroicons: arrow-down-tray -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
       </ToolBtn>
 
       <div class="flex-1"></div>
 
       <!-- Undo/Redo -->
       <ToolBtn :disabled="historyIndex <= 0" title="Rückgängig (Ctrl+Z)" @click="undo">
-        <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+        <!-- Heroicons: arrow-uturn-left -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"/></svg>
       </ToolBtn>
       <ToolBtn :disabled="historyIndex >= history.length - 1" title="Wiederholen (Ctrl+Y)" @click="redo">
-        <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M12.293 3.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 10H9a5 5 0 00-5 5v2a1 1 0 11-2 0v-2a7 7 0 017-7h5.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        <!-- Heroicons: arrow-uturn-right -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m15 15 6-6m0 0-6-6m6 6H9a6 6 0 0 0 0 12h3"/></svg>
       </ToolBtn>
-      <ToolBtn :disabled="selectedIds.size === 0" variant="danger" title="Löschen (Delete)" @click="deleteSelected">
-        <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+      <ToolBtn :disabled="selectedIds.size === 0" variant="danger" title="Auswahl löschen (Delete)" @click="deleteSelected">
+        <!-- Heroicons: trash -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg>
       </ToolBtn>
     </div>
 
@@ -83,7 +95,7 @@
       >
         <!-- Background image layer -->
         <v-layer :config="{ listening: false }">
-          <v-image v-if="bgImage" :config="{ image: bgImage, width: 1920, height: 1080 }" />
+          <v-image v-if="bgImage" :config="{ image: bgImage, width: bgImage.naturalWidth, height: bgImage.naturalHeight }" />
         </v-layer>
 
         <!-- Elements layer -->
@@ -503,7 +515,7 @@ const ToolBtn = defineComponent({
       disabled: props.disabled,
       onClick: () => !props.disabled && emit('click'),
       class: [
-        'w-9 h-9 rounded flex items-center justify-center transition-colors',
+        'w-10 h-10 rounded flex items-center justify-center transition-colors',
         props.disabled
           ? 'text-gray-600 cursor-not-allowed'
           : props.variant === 'danger'
@@ -534,7 +546,7 @@ const props = defineProps({
   initialCanvasData: { type: String, default: null },
   channels: { type: Array, default: () => [] }
 })
-const emit = defineEmits(['change', 'jump-to-channel', 'upload-image'])
+const emit = defineEmits(['change', 'jump-to-channel', 'upload-image', 'delete-image'])
 
 // --------------- State ---------------
 const activeTool = ref('select')

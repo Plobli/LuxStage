@@ -333,6 +333,7 @@
           :channels="channels"
           @change="onFloorplanChange"
           @upload-image="onFloorplanImageUpload"
+          @delete-image="onFloorplanImageDelete"
           @jump-to-channel="jumpToChannel"
         />
       </div>
@@ -689,7 +690,7 @@ import ColorAutocomplete from '../components/ColorAutocomplete.vue'
 import OcrImport from '../components/OcrImport.vue'
 import EosMergePreviewDialog from '../components/EosMergePreviewDialog.vue'
 import FloorplanEditor from '../components/FloorplanEditor.vue'
-import { fetchShowFloorplan, saveShowFloorplan, uploadShowFloorplanImage } from '../api/floorplan.js'
+import { fetchShowFloorplan, saveShowFloorplan, uploadShowFloorplanImage, deleteShowFloorplanImage } from '../api/floorplan.js'
 import Sortable from 'sortablejs'
 
 const props = defineProps({ id: { type: String, required: true } })
@@ -1429,6 +1430,11 @@ async function onFloorplanImageUpload(file) {
   if (result?.image_url) {
     floorplan.value = { ...floorplan.value, image_url: result.image_url }
   }
+}
+
+async function onFloorplanImageDelete() {
+  await deleteShowFloorplanImage(props.id)
+  floorplan.value = { ...floorplan.value, image_url: null }
 }
 
 function jumpToChannel(channelNum) {

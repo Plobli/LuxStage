@@ -296,11 +296,7 @@ export async function router(req, res) {
       if (!boundaryMatch) return json(res, 400, { error: 'Kein Boundary' })
       const body = await photos.parseMultipart(req)
       const parts = photos.extractFileFromMultipart(body, boundaryMatch[1])
-      const saved = []
-      for (const part of parts) {
-        const name = await photos.savePhoto(id, part.filename, part.data)
-        saved.push(name)
-      }
+      const saved = await Promise.all(parts.map(part => photos.savePhoto(id, part.filename, part.data)))
       return json(res, 201, { saved })
     }
 

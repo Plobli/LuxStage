@@ -15,7 +15,7 @@ export const config = {
   jwtSecret,
   // Rollen: admin (alles), techniker (shows lesen/schreiben, keine templates/backup/update)
   lockTimeout: 10 * 60 * 1000, // 10 Minuten in ms
-  photoMaxWidth: 1600,
-  photoQuality: 82,
+  photoMaxWidth: 1500,
+  photoQuality: 70,
   anthropicApiKey: process.env.ANTHROPIC_API_KEY || null,
 }

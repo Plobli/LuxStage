@@ -1217,6 +1217,8 @@ watch(() => props.initialCanvasData, (newVal) => {
 </script>
 
 <style scoped>
+@reference "../style.css";
+
 .prop-label {
   @apply text-xs text-gray-500 uppercase tracking-wide;
 }

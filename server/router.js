@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { readBody, readJsonBody, json, send, notFound, parseUrl } from './helpers.js'
+import { readBody, readBodyBuffer, readJsonBody, json, send, notFound, parseUrl } from './helpers.js'
 const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url)))
 import { login, signToken, requireAuth, requireAdmin, issueDownloadToken } from './auth.js'
 import * as db from './db.js'
@@ -781,12 +781,10 @@ export async function router(req, res) {
       const templateName = decodeURIComponent(pathname.split('/')[3])
       const tpl = db.getTemplateByName(templateName)
       if (!tpl) return notFound(res)
-      const body = await new Promise((resolve, reject) => {
-        const chunks = []
-        req.on('data', c => chunks.push(c))
-        req.on('end', () => resolve(Buffer.concat(chunks)))
-        req.on('error', reject)
-      })
+      let body
+      try { body = await readBodyBuffer(req, 50 * 1024 * 1024) } catch {
+        return json(res, 413, { error: 'Bild zu groß (max. 50 MB)' })
+      }
       const ct = req.headers['content-type'] || ''
       const boundaryMatch = ct.match(/boundary=(.+)/)
       if (!boundaryMatch) return json(res, 400, { error: 'Kein Boundary' })
@@ -833,12 +831,10 @@ export async function router(req, res) {
       const showId = pathname.split('/')[3]
       const show = db.readShow(showId)
       if (!show) return notFound(res)
-      const body = await new Promise((resolve, reject) => {
-        const chunks = []
-        req.on('data', c => chunks.push(c))
-        req.on('end', () => resolve(Buffer.concat(chunks)))
-        req.on('error', reject)
-      })
+      let body
+      try { body = await readBodyBuffer(req, 50 * 1024 * 1024) } catch {
+        return json(res, 413, { error: 'Bild zu groß (max. 50 MB)' })
+      }
       const ct = req.headers['content-type'] || ''
       const boundaryMatch = ct.match(/boundary=(.+)/)
       if (!boundaryMatch) return json(res, 400, { error: 'Kein Boundary' })

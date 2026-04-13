@@ -1,3 +1,16 @@
+export function readBodyBuffer(req, maxBytes) {
+  return new Promise((resolve, reject) => {
+    const chunks = []; let size = 0
+    req.on('data', c => {
+      size += c.length
+      if (size > maxBytes) { req.destroy(); return reject(new Error('Body zu groß')) }
+      chunks.push(c)
+    })
+    req.on('end', () => resolve(Buffer.concat(chunks)))
+    req.on('error', reject)
+  })
+}
+
 export function readBody(req, maxBytes = 1_048_576) {
   return new Promise((resolve, reject) => {
     const chunks = []; let size = 0

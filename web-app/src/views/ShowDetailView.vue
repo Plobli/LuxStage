@@ -97,7 +97,6 @@
             v-if="menuOpen === 'import'"
             class="absolute right-0 top-full mt-1 z-50 w-56 rounded-lg bg-gray-950 ring-1 ring-white/15 shadow-2xl overflow-hidden"
           >
-            <OcrImport class="w-full text-left px-4 py-2.5 text-sm text-gray-200 hover:bg-white/8 block" @click.stop @dialog-open="ocrDialogOpen = true" @dialog-close="ocrDialogOpen = false; menuOpen = null" @import="onOcrImport" />
             <button class="w-full text-left px-4 py-2.5 text-sm text-gray-200 hover:bg-white/8" @click="eosFileInput?.click(); menuOpen = null">{{ t('eos.import.button') }}</button>
             <div class="border-t border-white/10" />
             <button class="w-full text-left px-4 py-2.5 text-sm text-gray-500 hover:bg-white/8" @click="csvImportInput?.click(); menuOpen = null">{{ t('channel.import') }}</button>
@@ -127,8 +126,8 @@
         </div>
 
       </div>
-      <!-- Klick außerhalb schließt Dropdown (nicht wenn OCR-Dialog offen) -->
-      <div v-if="menuOpen && !ocrDialogOpen" class="fixed inset-0 z-40" @click="menuOpen = null" />
+      <!-- Klick außerhalb schließt Dropdown -->
+      <div v-if="menuOpen" class="fixed inset-0 z-40" @click="menuOpen = null" />
       <input ref="csvImportInput" type="file" accept=".csv" class="hidden" @change="onCsvImportSelected" />
       <input ref="eosFileInput" type="file" accept=".csv" class="hidden" @change="onEosFileSelected" />
     </div>
@@ -687,7 +686,6 @@ import { fetchShowSections, saveShowSections, fetchShowSectionDefs, saveShowSect
 import { uuid } from '../utils/uuid.js'
 import { usePhotoSettings } from '../composables/usePhotoSettings.js'
 import ColorAutocomplete from '../components/ColorAutocomplete.vue'
-import OcrImport from '../components/OcrImport.vue'
 import EosMergePreviewDialog from '../components/EosMergePreviewDialog.vue'
 import FloorplanEditor from '../components/FloorplanEditor.vue'
 import { fetchShowFloorplan, saveShowFloorplan, uploadShowFloorplanImage, deleteShowFloorplanImage } from '../api/floorplan.js'
@@ -743,7 +741,6 @@ const channelsSaving = ref(false)
 
 const mobileTab = ref('channels') // 'channels' | 'info' | 'floorplan'
 const menuOpen = ref(null) // 'import' | 'export' | null
-const ocrDialogOpen = ref(false)
 
 const floorplan = ref({ image_url: null, canvas_data: null })
 let floorplanSaveTimer = null
@@ -852,37 +849,6 @@ function onSetupChange(md) {
   nextTick(() => commitFocus()) // nach v-model-Update: pusht Snapshot wenn sich etwas geändert hat
 }
 
-function onOcrImport(data) {
-  // 1. Aufbau-Text anhängen
-  if (data.aufbau) {
-    const appended = setupMarkdown.value ? `${setupMarkdown.value}\n\n---\n\n${data.aufbau}` : data.aufbau
-    setupMarkdown.value = appended
-    onSetupChange(appended)
-  }
-
-  // 2. Kanäle befüllen — nur leere Felder werden befüllt, befüllte bleiben unberührt
-  if (data.kanaele?.length) {
-    const updated = channels.value.map(ch => {
-      // Passenden OCR-Eintrag suchen nach Kanalnummer (primär) oder Position (fallback)
-      const match = data.kanaele.find(k =>
-        (k.channel && Number(k.channel) === Number(ch.channel)) ||
-        (k.position && ch.position && k.position.toLowerCase() === ch.position.toLowerCase())
-      )
-      if (!match) return ch
-
-      return {
-        ...ch,
-        device:  ch.device?.trim()  ? ch.device  : (match.device  || ch.device),
-        color:   ch.color?.trim()   ? ch.color   : (match.color   || ch.color),
-        address: ch.address?.trim() ? ch.address : (match.address || ch.address),
-        notes:   ch.notes?.trim()   ? ch.notes   : (match.notes   || ch.notes),
-      }
-    })
-    channels.value = updated
-    persistChannels()
-    pushSnapshot()
-  }
-}
 
 async function persistSetup(md) {
   setupSaving.value = true

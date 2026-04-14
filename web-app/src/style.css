@@ -5,6 +5,24 @@
 @theme {
   --color-accent: #D95C5C;
   --color-accent-hover: #e07070;
+
+  /* shadcn-vue design tokens (dark theme) */
+  --color-background: #030712;
+  --color-foreground: #f9fafb;
+  --color-card: #111827;
+  --color-card-foreground: #f9fafb;
+  --color-popover: #111827;
+  --color-popover-foreground: #f9fafb;
+  --color-primary: #f9fafb;
+  --color-primary-foreground: #030712;
+  --color-secondary: #1f2937;
+  --color-secondary-foreground: #f9fafb;
+  --color-muted: #1f2937;
+  --color-muted-foreground: #9ca3af;
+  --color-border: #1f2937;
+  --color-input: #1f2937;
+  --color-ring: #D95C5C;
+  --radius: 0.5rem;
 }
 
 :root {

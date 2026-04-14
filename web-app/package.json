@@ -1,6 +1,6 @@
 {
   "name": "luxstage-web",
-  "version": "1.7.14",
+  "version": "2.0.0",
   "private": true,
   "scripts": {
     "dev": "vite",
@@ -14,9 +14,15 @@
     "@tiptap/extension-placeholder": "^3.22.2",
     "@tiptap/starter-kit": "^3.22.2",
     "@tiptap/vue-3": "^3.22.2",
+    "@vueuse/core": "^14.2.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "jspdf": "^4.2.1",
     "konva": "^10.2.5",
+    "lucide-vue-next": "^1.0.0",
+    "radix-vue": "^1.9.17",
     "sortablejs": "^1.15.7",
+    "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.2",
     "tiptap-markdown": "^0.9.0",
     "vue": "^3.5.32",

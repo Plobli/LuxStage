@@ -65,6 +65,7 @@
           @pushSnapshot="emit('pushSnapshot')"
           @toggleStatus="toggleChannelStatus(ch)"
           @delete="emit('deleteChannel', ch)"
+          @insertAfter="insertAfter(ch)"
         />
 
         <!-- Add row button -->
@@ -222,6 +223,16 @@ function saveAdd() {
   if (idx === -1) props.channels.push(newCh)
   else props.channels.splice(idx, 0, newCh)
   addingPosition.value = null
+  emit('change')
+}
+
+// ── Zeile darunter einfügen (via Context Menu) ────────────────────────────
+function insertAfter(ch) {
+  emit('pushSnapshot')
+  const idx = props.channels.findIndex(c => c === ch)
+  const newCh = { channel: '', address: '', device: '', position: ch.position, color: '', notes: '' }
+  if (idx === -1) props.channels.push(newCh)
+  else props.channels.splice(idx + 1, 0, newCh)
   emit('change')
 }
 

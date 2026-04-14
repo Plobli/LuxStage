@@ -186,9 +186,20 @@ ok "Datenverzeichnis bereit: $DATA_DIR"
 
 # ── Nutzer in DB anlegen ──────────────────────────────────────────────────────
 step "Lege Nutzer in Datenbank an..."
-sudo -i -u "$SERVICE_USER" bash -c \
-  "ADMIN_PASSWORD='$ADMIN_PASSWORD' TECH_PASSWORD='$TECH_PASSWORD' JWT_SECRET='$JWT_SECRET' DATA_PATH='$DATA_DIR' \
-   . \$HOME/.nvm/nvm.sh && node '$INSTALL_DIR/server/bootstrap.js'"
+BOOTSTRAPSCRIPT=$(mktemp /tmp/luxstage-bootstrap.XXXXXX.sh)
+chmod 755 "$BOOTSTRAPSCRIPT"
+cat > "$BOOTSTRAPSCRIPT" << BSEOF
+#!/usr/bin/env bash
+set -e
+export ADMIN_PASSWORD='$ADMIN_PASSWORD'
+export TECH_PASSWORD='$TECH_PASSWORD'
+export JWT_SECRET='$JWT_SECRET'
+export DATA_PATH='$DATA_DIR'
+. "\$HOME/.nvm/nvm.sh"
+node '$INSTALL_DIR/server/bootstrap.js'
+BSEOF
+sudo -i -u "$SERVICE_USER" bash "$BOOTSTRAPSCRIPT"
+rm -f "$BOOTSTRAPSCRIPT"
 ok "Nutzer angelegt"
 
 # ── PM2 Ecosystem-Datei ───────────────────────────────────────────────────────

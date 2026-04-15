@@ -1,6 +1,6 @@
 <template>
   <div class="relative">
-    <input
+    <Input
       :value="modelValue"
       @input="onInput"
       @focus="open = true"
@@ -13,7 +13,7 @@
       :placeholder="placeholder"
       :style="badgeStyle || {}"
       :class="badgeStyle ? 'font-semibold' : 'bg-white/10 text-gray-400 placeholder:text-gray-600'"
-      class="focus:outline-none text-xs rounded-full px-2 py-0.5 border-0 w-16 text-center"
+      class="focus-visible:ring-0 text-xs rounded-full px-2 py-0.5 border-0 w-16 text-center h-6 shadow-none"
       v-bind="inputAttrs"
     />
     <ul
@@ -42,6 +42,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { Input } from '@/components/ui/input'
 import { ALL_FILTERS, filterBadgeStyle } from '../utils/filterColors.js'
 
 const props = defineProps({

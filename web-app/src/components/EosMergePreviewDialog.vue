@@ -1,7 +1,9 @@
 <template>
   <Dialog :open="open" @update:open="!$event && $emit('cancel')">
     <DialogContent class="sm:max-w-2xl">
-      <DialogTitle class="mb-4">{{ t('eos.preview.title') }}</DialogTitle>
+      <DialogHeader>
+        <DialogTitle class="mb-4">{{ t('eos.preview.title') }}</DialogTitle>
+      </DialogHeader>
 
       <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
         <!-- Neu aktiv (gelb) -->
@@ -62,27 +64,20 @@
       </div>
 
       <DialogFooter class="mt-5 sm:mt-4 gap-3 flex-wrap">
-        <button
-          type="button"
-          class="inline-flex w-full justify-center rounded-md bg-white/5 px-3 py-2 text-sm font-semibold text-white shadow-xs ring-1 ring-white/10 hover:ring-white/20 sm:w-auto"
-          @click="$emit('cancel')"
-        >
+        <Button variant="outline" class="w-full sm:w-auto" @click="$emit('cancel')">
           {{ t('action.cancel') }}
-        </button>
-        <button
-          type="button"
-          class="inline-flex w-full justify-center rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-accent-hover sm:w-auto"
-          @click="$emit('confirm')"
-        >
+        </Button>
+        <Button class="w-full sm:w-auto bg-accent hover:bg-accent/90 text-white" @click="$emit('confirm')">
           {{ t('eos.preview.confirm') }}
-        </button>
+        </Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>
 </template>
 
 <script setup>
-import { Dialog, DialogContent, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { useLocale } from '../composables/useLocale.js'
 
 const { t } = useLocale()

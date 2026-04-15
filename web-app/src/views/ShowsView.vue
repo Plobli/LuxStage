@@ -86,16 +86,17 @@
           </div>
           <div class="space-y-2">
             <Label for="showTemplate">{{ t('show.template') }}</Label>
-            <select
-              id="showTemplate"
-              v-model="form.template"
-              class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <option value="">{{ t('show.template.none') }}</option>
-              <option v-for="tpl in templates" :key="tpl" :value="tpl">
-                {{ templateDisplayName(tpl) }}
-              </option>
-            </select>
+            <Select id="showTemplate" v-model="form.template">
+              <SelectTrigger class="w-full">
+                <SelectValue :placeholder="t('show.template.none')" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">{{ t('show.template.none') }}</SelectItem>
+                <SelectItem v-for="tpl in templates" :key="tpl" :value="tpl">
+                  {{ templateDisplayName(tpl) }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <DialogFooter class="pt-4">
             <Button variant="outline" type="button" @click="drawerOpen = false">
@@ -130,6 +131,13 @@ import { Card } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 const router = useRouter()
 const { t } = useLocale()

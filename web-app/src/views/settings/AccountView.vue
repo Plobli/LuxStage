@@ -11,26 +11,22 @@
         <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:max-w-xl">
           <div>
             <label class="block text-sm/6 font-medium text-white mb-2">{{ t('settings.account.current_password') }}</label>
-            <input v-model="pwCurrent" type="password" required autocomplete="current-password"
-              class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent" />
+            <Input v-model="pwCurrent" type="password" required autocomplete="current-password" />
           </div>
           <div>
             <label class="block text-sm/6 font-medium text-white mb-2">{{ t('settings.account.new_password') }}</label>
-            <input v-model="pwNew" type="password" required autocomplete="new-password"
-              class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent" />
+            <Input v-model="pwNew" type="password" required autocomplete="new-password" />
           </div>
           <div>
             <label class="block text-sm/6 font-medium text-white mb-2">{{ t('settings.account.new_password.confirm') }}</label>
-            <input v-model="pwConfirm" type="password" required autocomplete="new-password"
-              class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent" />
+            <Input v-model="pwConfirm" type="password" required autocomplete="new-password" />
           </div>
           <p v-if="pwMsg" :class="pwMsg.startsWith('✓') ? 'text-green-400' : 'text-red-400'" class="text-sm">{{ pwMsg }}</p>
         </div>
         <div class="mt-8">
-          <button type="submit" :disabled="pwLoading"
-            class="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-50">
+          <Button type="submit" :disabled="pwLoading">
             {{ pwLoading ? '…' : t('settings.account.change_password.submit') }}
-          </button>
+          </Button>
         </div>
       </form>
     </div>
@@ -59,10 +55,9 @@
         <p class="mt-1 text-sm/6 text-gray-400">Aktuelle Sitzung beenden.</p>
       </div>
       <div class="md:col-span-2 flex items-start">
-        <button type="button" @click="handleLogout"
-          class="rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-500">
+        <Button variant="destructive" type="button" @click="handleLogout">
           {{ t('settings.logout') }}
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -75,6 +70,8 @@ import { useRouter } from 'vue-router'
 import { useLocale } from '../../composables/useLocale.js'
 import { usePhotoSettings } from '../../composables/usePhotoSettings.js'
 import { logout, changePassword } from '../../api/client.js'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 
 const { t } = useLocale()
 const { photosPerPage, VALID } = usePhotoSettings()

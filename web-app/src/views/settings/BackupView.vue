@@ -8,13 +8,13 @@
         <p class="mt-1 text-sm/6 text-gray-400">{{ t('settings.backup.hint') }}</p>
       </div>
       <div class="md:col-span-2 flex items-start">
-        <button
+        <Button
           type="button"
           @click="downloadBackup"
-          class="rounded-md px-3 py-2 text-sm font-semibold text-gray-300 ring-1 ring-white/10 hover:ring-white/20"
+          variant="outline"
         >
           {{ t('settings.backup.download') }}
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -33,14 +33,14 @@
           <span v-if="restoreFile" class="text-sm text-gray-400 truncate max-w-xs">{{ restoreFile.name }}</span>
         </div>
         <div class="mt-4" v-if="restoreFile">
-          <button
+          <Button
             type="button"
             :disabled="restoreLoading"
             @click="doRestore"
-            class="rounded-md bg-red-700 px-3 py-2 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-50"
+            variant="destructive"
           >
             {{ restoreLoading ? '…' : t('settings.backup.restore.submit') }}
-          </button>
+          </Button>
         </div>
         <p v-if="restoreMsg" :class="restoreMsg.startsWith('✓') ? 'text-green-400' : 'text-red-400'" class="mt-3 text-sm">{{ restoreMsg }}</p>
       </div>
@@ -51,6 +51,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import { Button } from '@/components/ui/button'
 import { useLocale } from '../../composables/useLocale.js'
 import { downloadBackup, uploadRestore } from '../../api/backup.js'
 

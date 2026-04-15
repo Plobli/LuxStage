@@ -6,55 +6,66 @@
     <!-- App-Layout mit Sidebar -->
     <div v-else class="h-full bg-gray-950">
       <!-- Mobile Sidebar -->
-      <Dialog :open="sidebarOpen" @update:open="sidebarOpen = $event" class="relative z-50 lg:hidden">
-        <DialogContent class="fixed inset-y-0 left-0 flex w-full max-w-xs flex-1 p-0 border-0 rounded-none bg-transparent shadow-none" hideClose>
-          <div class="absolute top-0 left-full flex w-16 justify-center pt-5">
-            <button type="button" class="-m-2.5 p-2.5" @click="sidebarOpen = false">
-              <span class="sr-only">Sidebar schließen</span>
-              <X class="size-6 text-white" aria-hidden="true" />
-            </button>
-          </div>
-          <div class="flex grow flex-col gap-y-5 overflow-y-auto bg-gray-950 px-6 pb-2 ring-1 ring-white/10">
-            <div class="flex h-16 shrink-0 items-center">
-              <img src="/favicon.png" alt="LuxStage" class="h-8 w-8 rounded-lg" />
-              <span class="ml-3 text-lg font-bold text-white">LuxStage</span>
-            </div>
-            <nav class="flex flex-1 flex-col">
-              <ul role="list" class="flex flex-1 flex-col gap-y-7">
-                <li>
-                  <ul role="list" class="-mx-2 space-y-1">
-                    <li v-for="item in navigation" :key="item.name">
-                      <RouterLink
-                        :to="item.to"
-                        class="group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold"
-                        :class="isActiveRoute(item) ? 'bg-white/5 text-white' : 'text-gray-400 hover:bg-white/5 hover:text-white'"
-                      >
-                        <span class="relative shrink-0">
-                          <component :is="item.icon" class="size-6" aria-hidden="true" />
-                          <span v-if="item.badge?.value" class="absolute -top-1 -right-1 size-2 rounded-full bg-accent" />
-                        </span>
-                        {{ item.name }}
-                      </RouterLink>
-                    </li>
-                  </ul>
-                </li>
-              </ul>
-            </nav>
-            <div class="-mx-6 pb-4 mt-auto">
-              <button
-                @click="handleLogout"
-                class="flex w-full items-center gap-x-4 px-6 py-3 text-sm/6 font-semibold text-gray-400 hover:bg-white/5 hover:text-white"
-              >
-                <LogOut class="size-5 shrink-0" aria-hidden="true" />
-                {{ t('nav.logout') }}
-              </button>
-              <div class="px-6 text-xs text-gray-600">
-                Web {{ appVersion }}<span v-if="serverVersion"> · Srv {{ serverVersion }}</span>
+      <Transition name="fade">
+        <div v-if="sidebarOpen" class="relative z-50 lg:hidden" @keydown.esc="sidebarOpen = false">
+          <Transition name="fade">
+            <div v-if="sidebarOpen" class="fixed inset-0 bg-black/70" @click="sidebarOpen = false" />
+          </Transition>
+
+          <div class="fixed inset-0 flex">
+            <Transition name="slide">
+              <div v-if="sidebarOpen" class="relative flex w-full max-w-xs flex-1">
+                <div class="absolute top-0 left-full flex w-16 justify-center pt-5">
+                  <button type="button" class="-m-2.5 p-2.5" @click="sidebarOpen = false">
+                    <span class="sr-only">Sidebar schließen</span>
+                    <X class="size-6 text-white" aria-hidden="true" />
+                  </button>
+                </div>
+                <div class="flex grow flex-col gap-y-5 overflow-y-auto bg-gray-950 px-6 pb-2 ring-1 ring-white/10">
+                  <div class="flex h-16 shrink-0 items-center">
+                    <img src="/favicon.png" alt="LuxStage" class="h-8 w-8 rounded-lg" />
+                    <span class="ml-3 text-lg font-bold text-white">LuxStage</span>
+                  </div>
+                  <nav class="flex flex-1 flex-col">
+                    <ul role="list" class="flex flex-1 flex-col gap-y-7">
+                      <li>
+                        <ul role="list" class="-mx-2 space-y-1">
+                          <li v-for="item in navigation" :key="item.name">
+                            <RouterLink
+                              :to="item.to"
+                              class="group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold"
+                              :class="isActiveRoute(item) ? 'bg-white/5 text-white' : 'text-gray-400 hover:bg-white/5 hover:text-white'"
+                            >
+                              <span class="relative shrink-0">
+                                <component :is="item.icon" class="size-6" aria-hidden="true" />
+                                <span v-if="item.badge?.value" class="absolute -top-1 -right-1 size-2 rounded-full bg-accent" />
+                              </span>
+                              {{ item.name }}
+                            </RouterLink>
+                          </li>
+                        </ul>
+                      </li>
+                    </ul>
+                  </nav>
+                  <div class="-mx-6 pb-4 mt-auto">
+                    <Button
+                      variant="ghost"
+                      @click="handleLogout"
+                      class="flex w-full justify-start items-center gap-x-4 px-6 py-6 text-sm/6 font-semibold text-gray-400 hover:bg-white/5 hover:text-white rounded-none"
+                    >
+                      <LogOut class="size-5 shrink-0" aria-hidden="true" />
+                      {{ t('nav.logout') }}
+                    </Button>
+                    <div class="px-6 mt-2 text-xs text-gray-600">
+                      Web {{ appVersion }}<span v-if="serverVersion"> · Srv {{ serverVersion }}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            </Transition>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </Transition>
 
       <!-- Desktop Sidebar (statisch, schmal – nur Icons) -->
       <div class="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:block lg:w-20 lg:overflow-y-auto lg:bg-gray-950 lg:pb-4 border-r border-white/10">
@@ -78,14 +89,16 @@
           </ul>
         </nav>
         <div class="absolute bottom-0 left-0 right-0 pb-2 flex flex-col items-center gap-1">
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             @click="handleLogout"
             :title="t('nav.logout')"
-            class="p-3 text-gray-400 hover:bg-white/5 hover:text-white rounded-md"
+            class="size-12 text-gray-400 hover:bg-white/5 hover:text-white rounded-md"
           >
             <LogOut class="size-6 shrink-0" aria-hidden="true" />
             <span class="sr-only">{{ t('nav.logout') }}</span>
-          </button>
+          </Button>
           <div class="text-center leading-tight">
             <div class="text-[9px] text-gray-600">Web {{ appVersion }}</div>
             <div v-if="serverVersion" class="text-[9px] text-gray-600">Srv {{ serverVersion }}</div>
@@ -132,7 +145,7 @@
 <script setup>
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { RouterView, RouterLink, useRoute, useRouter } from 'vue-router'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import {
   Menu,
   X,
@@ -180,17 +193,17 @@ async function checkForUpdate() {
 let updateCheckInterval = null
 let pingInterval = null
 
-onMounted(async () => {
-  await pingServer()
-  pingInterval = setInterval(pingServer, 10_000)
-
-  await checkForUpdate()
-  updateCheckInterval = setInterval(checkForUpdate, 60 * 60 * 1000)
-})
-
 onUnmounted(() => {
   clearInterval(updateCheckInterval)
   clearInterval(pingInterval)
+})
+
+onMounted(() => {
+  void pingServer()
+  pingInterval = setInterval(pingServer, 10_000)
+
+  void checkForUpdate()
+  updateCheckInterval = setInterval(checkForUpdate, 60 * 60 * 1000)
 })
 const route = useRoute()
 const router = useRouter()
@@ -217,3 +230,43 @@ async function handleLogout() {
   router.push('/login')
 }
 </script>
+
+<style>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s linear;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.slide-enter-active,
+.slide-leave-active {
+  transition: transform 0.2s ease-in-out;
+}
+.slide-enter-from,
+.slide-leave-to {
+  transform: translateX(-100%);
+}
+</style>
+
+<style>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s linear;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.slide-enter-active,
+.slide-leave-active {
+  transition: transform 0.2s ease-in-out;
+}
+.slide-enter-from,
+.slide-leave-to {
+  transform: translateX(-100%);
+}
+</style>

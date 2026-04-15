@@ -8,14 +8,14 @@
       <div class="md:col-span-2 space-y-4 sm:max-w-xl">
         <div class="flex items-center gap-3">
           <label class="text-sm text-gray-400 shrink-0">{{ t('settings.update.branch') }}</label>
-          <select
-            v-model="selectedBranch"
-            @change="onBranchChange"
-            :disabled="updating"
-            class="rounded-md bg-white/5 px-2 py-1 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent disabled:opacity-50"
-          >
-            <option v-for="b in availableBranches" :key="b" :value="b">{{ b }}</option>
-          </select>
+          <Select v-model="selectedBranch" @update:modelValue="onBranchChange" :disabled="updating">
+            <SelectTrigger class="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="b in availableBranches" :key="b" :value="b">{{ b }}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <div class="text-sm">
@@ -32,14 +32,13 @@
         <pre v-if="checkResult?.log" class="text-xs text-gray-400 bg-white/5 rounded-md px-3 py-2 whitespace-pre-wrap font-mono">{{ checkResult.log }}</pre>
 
         <div>
-          <button
+          <Button
             type="button"
             :disabled="updating || !checkResult?.available"
             @click="doUpdate"
-            class="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-50"
           >
             {{ updating ? '…' : t('settings.update.run') }}
-          </button>
+          </Button>
         </div>
 
         <!-- Update läuft -->
@@ -74,6 +73,14 @@
 
 <script setup>
 import { ref, watch, nextTick, onMounted } from 'vue'
+import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useLocale } from '../../composables/useLocale.js'
 import { api, BASE } from '../../api/client.js'
 import { updateAvailable } from '../../composables/useUpdateCheck.js'

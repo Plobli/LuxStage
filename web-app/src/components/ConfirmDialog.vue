@@ -1,39 +1,42 @@
 <template>
-  <Dialog :open="open" @update:open="!$event && cancel()">
-    <DialogContent class="sm:max-w-lg">
-      <div class="sm:flex sm:items-start">
+  <AlertDialog :open="open" @update:open="!$event && cancel()">
+    <AlertDialogContent class="sm:max-w-lg">
+      <AlertDialogHeader class="flex sm:flex-row items-start gap-4">
         <div class="mx-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-red-500/10 sm:mx-0 sm:size-10">
-          <AlertTriangle class="size-6 text-red-400" aria-hidden="true" />
+          <AlertTriangle class="size-5 text-red-400" aria-hidden="true" />
         </div>
-        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-          <DialogTitle>{{ title }}</DialogTitle>
-          <div class="mt-2">
-            <p class="text-sm text-muted-foreground">{{ message }}</p>
-          </div>
+        <div class="mt-3 text-center sm:mt-0 sm:text-left">
+          <AlertDialogTitle>{{ title }}</AlertDialogTitle>
+          <AlertDialogDescription class="mt-2">{{ message }}</AlertDialogDescription>
         </div>
-      </div>
-      <DialogFooter class="mt-5 sm:mt-4 gap-3">
-        <button
-          type="button"
-          class="inline-flex w-full justify-center rounded-md bg-white/5 px-3 py-2 text-sm font-semibold text-white shadow-xs ring-1 ring-white/10 hover:ring-white/20 sm:w-auto"
-          @click="cancel"
-        >
+      </AlertDialogHeader>
+      <AlertDialogFooter class="mt-5 sm:mt-4 gap-3">
+        <AlertDialogCancel @click="cancel">
           {{ cancelLabel }}
-        </button>
-        <button
-          type="button"
-          class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-red-500 sm:w-auto"
+        </AlertDialogCancel>
+        <AlertDialogAction
           @click="confirm"
+          :class="buttonVariants({ variant: 'destructive' })"
         >
           {{ confirmLabel }}
-        </button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
 </template>
 
 <script setup>
-import { Dialog, DialogContent, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog'
+import { buttonVariants } from '@/components/ui/button'
 import { AlertTriangle } from 'lucide-vue-next'
 
 const props = defineProps({

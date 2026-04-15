@@ -5,22 +5,22 @@
         :data-ch-key="ch.channel + '|' + ch.address"
         :data-ch-pos="ch.position"
         :data-nav-row="rowIndex"
-        class="border-t border-white/5 group/row hover:bg-white/[0.03] transition-colors align-middle"
+        class="border-t border-white/5 group/row hover:bg-white/[0.035] transition-colors align-middle"
       >
         <!-- Drag handle -->
-        <td class="py-2 pr-0 pl-0 align-middle w-4">
-          <div class="drag-handle no-print cursor-grab active:cursor-grabbing px-1 text-gray-400 hover:text-gray-200 transition-colors">
+        <td class="py-2.5 pr-0 pl-0 align-middle w-4">
+          <div class="drag-handle no-print cursor-grab active:cursor-grabbing rounded-md px-1 text-gray-500 hover:bg-white/5 hover:text-gray-200 transition-colors">
             <svg class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M7 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/></svg>
           </div>
         </td>
 
         <!-- Channel number + address -->
-        <td class="py-2 pr-3 pl-0 align-middle">
+        <td class="py-2.5 pr-4 pl-0 align-middle">
           <div
-            class="flex flex-col items-center gap-1 cursor-pointer select-none"
+            class="flex flex-col items-center gap-1 cursor-pointer select-none rounded-lg border border-transparent px-1.5 py-1 transition-colors hover:border-white/5 hover:bg-white/[0.02]"
             @click.stop="emit('toggleStatus', ch)"
           >
-            <input
+            <Input
               v-model="ch.channel"
               @focus="emit('recordFocus')"
               @input="emit('change')"
@@ -29,20 +29,20 @@
               data-nav-col="0"
               @keydown="onKeydownCol0"
               :class="[dupChannelNrs.has(ch.channel) ? 'ring-1 ring-yellow-400/60 rounded' : '', channelStatusClass]"
-              class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-2xl font-bold font-mono px-0 border-0 leading-none w-[4ch] text-center"
+              class="bg-transparent focus-visible:bg-white/5 focus-visible:outline-none focus-visible:ring-0 text-2xl font-bold font-mono px-0 border-0 leading-none w-[4ch] text-center shadow-none h-auto py-0"
             />
-            <input
+            <Input
               v-model="ch.address"
               @focus="emit('recordFocus')"
               @input="emit('change')"
               @blur="emit('commitFocus')"
-              class="bg-transparent focus:bg-white/5 focus:outline-none focus:ring-0 text-xs text-gray-500 px-0 border-0 w-[5ch] text-center"
+              class="bg-transparent focus-visible:bg-white/5 focus-visible:outline-none focus-visible:ring-0 text-xs text-muted-foreground px-0 border-0 w-[5ch] text-center shadow-none h-auto py-0 mt-1"
             />
           </div>
         </td>
 
         <!-- Color -->
-        <td class="px-3 py-2 align-middle">
+        <td class="px-4 py-2.5 align-middle">
           <ColorAutocomplete
             :modelValue="ch.color"
             @update:modelValue="emit('pushSnapshot'); ch.color = $event; emit('change')"
@@ -53,7 +53,7 @@
         </td>
 
         <!-- Device -->
-        <td class="px-3 py-0 align-middle">
+        <td class="px-4 py-0 align-middle">
           <ChannelTextarea
             v-model="ch.device"
             :data-nav-row="rowIndex"
@@ -66,7 +66,7 @@
         </td>
 
         <!-- Notes -->
-        <td class="px-3 py-0 align-middle">
+        <td class="px-4 py-0 align-middle">
           <ChannelTextarea
             v-model="ch.notes"
             :data-nav-row="rowIndex"
@@ -80,13 +80,15 @@
 
         <!-- Delete (immer sichtbar auf Touch; auf Desktop via Hover + Kontextmenü) -->
         <td class="pl-2 pr-1" style="vertical-align: middle; text-align: center;">
-          <button
-            class="no-print text-gray-600 hover:text-red-400 opacity-0 group-hover/row:opacity-100 transition-all"
+          <Button
+            variant="ghost"
+            size="icon"
+            class="no-print h-8 w-8 text-muted-foreground hover:bg-red-500/10 hover:text-red-400 opacity-0 group-hover/row:opacity-100 transition-all"
             @click="emit('delete', ch)"
             :title="deleteTitle"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
-          </button>
+          </Button>
         </td>
       </tr>
     </ContextMenuTrigger>
@@ -107,6 +109,8 @@
 
 <script setup>
 import { computed } from 'vue'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import ColorAutocomplete from '../ColorAutocomplete.vue'
 import ChannelTextarea from './ChannelTextarea.vue'
 import {

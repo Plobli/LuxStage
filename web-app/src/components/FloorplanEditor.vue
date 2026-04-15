@@ -310,9 +310,9 @@
 
       <!-- Zoom controls -->
       <div class="absolute bottom-2 right-2 z-20 flex items-center gap-1">
-        <button @click="setZoom(zoom * 1.25)" class="w-7 h-7 rounded bg-gray-800 hover:bg-gray-700 text-white text-lg flex items-center justify-center leading-none">+</button>
-        <button @click="setZoom(1); panOffset.value = { x: 0, y: 0 }" class="px-2 h-7 rounded bg-gray-800 hover:bg-gray-700 text-white text-xs">1:1</button>
-        <button @click="setZoom(zoom * 0.8)" class="w-7 h-7 rounded bg-gray-800 hover:bg-gray-700 text-white text-lg flex items-center justify-center leading-none">−</button>
+        <Button variant="outline" size="icon" @click="setZoom(zoom * 1.25)" class="h-7 w-7 bg-gray-800 border-white/10 text-white hover:bg-gray-700">+</Button>
+        <Button variant="outline" size="sm" @click="setZoom(1); panOffset.value = { x: 0, y: 0 }" class="h-7 px-2 bg-gray-800 border-white/10 text-white text-xs hover:bg-gray-700">1:1</Button>
+        <Button variant="outline" size="icon" @click="setZoom(zoom * 0.8)" class="h-7 w-7 bg-gray-800 border-white/10 text-white hover:bg-gray-700">−</Button>
       </div>
 
       <!-- Inline Text Editor -->
@@ -367,14 +367,16 @@
           <!-- Text editing -->
           <div v-if="selectedElement.type === 'text'" class="space-y-2">
             <label class="prop-label">Text</label>
-            <input v-model="selectedElement.text" type="text" class="prop-input" @input="emitChange" />
+            <Input v-model="selectedElement.text" type="text" class="h-7 px-2 py-1 bg-gray-800 border-gray-700 text-white text-xs rounded focus-visible:ring-amber-500" @input="emitChange" />
             <label class="prop-label">Schriftgröße</label>
-            <input v-model.number="selectedElement.fontSize" type="number" min="6" max="200" class="prop-input w-16" @input="emitChange" />
+            <Input v-model.number="selectedElement.fontSize" type="number" min="6" max="200" class="h-7 w-16 px-2 py-1 bg-gray-800 border-gray-700 text-white text-xs rounded focus-visible:ring-amber-500" @input="emitChange" />
             <div class="flex gap-1">
-              <button
-                :class="['px-2 py-1 rounded text-xs font-bold border', selectedElement.fontStyle === 'bold' ? 'bg-amber-500 border-amber-500 text-black' : 'bg-gray-800 border-white/10 text-gray-300']"
+              <Button
+                variant="outline"
+                size="sm"
+                :class="['h-7 px-2 text-xs font-bold border', selectedElement.fontStyle === 'bold' ? 'bg-amber-500 border-amber-500 text-black hover:bg-amber-400' : 'bg-gray-800 border-white/10 text-gray-300 hover:text-white hover:bg-gray-700']"
                 @click="toggleFontStyle(selectedElement)"
-              >B</button>
+              >B</Button>
             </div>
           </div>
 
@@ -386,14 +388,14 @@
               <span class="text-xs text-gray-400">{{ selectedElement.color || '#6b7280' }}</span>
             </div>
             <label class="prop-label">Stärke</label>
-            <input v-model.number="selectedElement.strokeWidth" type="number" min="1" max="20" class="prop-input w-16" @input="emitChange" />
+            <Input v-model.number="selectedElement.strokeWidth" type="number" min="1" max="20" class="h-7 w-16 px-2 py-1 bg-gray-800 border-gray-700 text-white text-xs rounded focus-visible:ring-amber-500" @input="emitChange" />
             <template v-if="selectedElement.type !== 'line'">
               <label class="prop-label">Füllung</label>
               <div class="flex items-center gap-2">
                 <input type="color" :value="selectedElement.fill === 'transparent' || !selectedElement.fill ? '#000000' : selectedElement.fill" @input="e => { selectedElement.fill = e.target.value; emitChange() }" class="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
-                <button @click="toggleFill(selectedElement)" class="px-2 py-1 rounded text-xs bg-gray-800 hover:bg-gray-700 border border-white/10">
+                <Button variant="outline" size="sm" @click="toggleFill(selectedElement)" class="h-7 px-2 text-xs bg-gray-800 hover:bg-gray-700 border-white/10 text-gray-300 hover:text-white">
                   {{ selectedElement.fill && selectedElement.fill !== 'transparent' ? 'Transparent' : 'Füllen' }}
-                </button>
+                </Button>
               </div>
             </template>
           </div>
@@ -409,11 +411,14 @@
           <!-- Position & size -->
           <template v-if="selectedElement.type !== 'channel'">
             <label class="prop-label">Rotation</label>
-            <div class="flex items-center gap-2">
-              <input type="range" min="-180" max="180" step="1"
-                :value="selectedElement.rotation || 0"
-                @input="updateRotation(selectedElement.id, +$event.target.value)"
-                class="flex-1 accent-amber-500 h-1"
+            <div class="flex items-center gap-2 pt-1 pb-2">
+              <Slider
+                :model-value="[selectedElement.rotation || 0]"
+                @update:model-value="updateRotation(selectedElement.id, $event[0])"
+                :min="-180"
+                :max="180"
+                :step="1"
+                class="flex-1"
               />
               <span class="text-xs text-gray-400 w-9 text-right">{{ Math.round(selectedElement.rotation || 0) }}°</span>
             </div>
@@ -437,27 +442,33 @@
 
     <!-- Top bar options -->
     <div class="absolute top-2 left-[60px] z-20 flex items-center gap-2">
-      <button
+      <Button
+        variant="outline"
+        size="sm"
         @click="showGrid = !showGrid"
-        :class="['px-2 py-1 rounded text-xs border transition-colors', showGrid ? 'bg-amber-500/20 border-amber-500/50 text-amber-400' : 'bg-gray-800/80 border-white/10 text-gray-400 hover:text-white']"
+        :class="['h-7 px-2 text-xs transition-colors', showGrid ? 'bg-amber-500/20 border-amber-500/50 text-amber-400 hover:bg-amber-500/30' : 'bg-gray-800/80 border-white/10 text-gray-400 hover:bg-gray-800 hover:text-white']"
         title="Gitter anzeigen (G)"
       >
         Gitter
-      </button>
-      <button
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
         @click="snapToGrid = !snapToGrid"
-        :class="['px-2 py-1 rounded text-xs border transition-colors', snapToGrid ? 'bg-amber-500/20 border-amber-500/50 text-amber-400' : 'bg-gray-800/80 border-white/10 text-gray-400 hover:text-white']"
+        :class="['h-7 px-2 text-xs transition-colors', snapToGrid ? 'bg-amber-500/20 border-amber-500/50 text-amber-400 hover:bg-amber-500/30' : 'bg-gray-800/80 border-white/10 text-gray-400 hover:bg-gray-800 hover:text-white']"
         title="Am Gitter einrasten"
       >
         Einrasten
-      </button>
-      <button
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
         @click="resetView"
-        class="px-2 py-1 rounded text-xs border bg-gray-800/80 border-white/10 text-gray-400 hover:text-white"
+        class="h-7 px-2 text-xs bg-gray-800/80 border-white/10 text-gray-400 hover:bg-gray-800 hover:text-white"
         title="Ansicht zurücksetzen (F)"
       >
         Ansicht ↺
-      </button>
+      </Button>
     </div>
 
     <!-- Channel Picker Modal -->
@@ -466,13 +477,13 @@
       class="fixed inset-0 bg-black/50 flex items-center justify-center z-40"
       @click.self="showChannelPicker = false"
     >
-      <div class="bg-gray-800 rounded-lg p-4 w-72 max-h-[28rem] flex flex-col shadow-2xl border border-white/10">
+      <div class="bg-gray-900 rounded-lg p-4 w-72 max-h-[28rem] flex flex-col shadow-2xl border border-white/10">
         <h3 class="text-sm font-semibold mb-3 text-amber-400">Kanal wählen</h3>
-        <input
+        <Input
           v-model="channelSearch"
           type="text"
           placeholder="Suchen..."
-          class="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-white text-sm rounded mb-3 focus:outline-none focus:border-amber-500"
+          class="w-full h-8 px-2 bg-black/20 border-white/10 text-white text-sm mb-3 focus-visible:ring-1 focus-visible:ring-amber-500 focus-visible:border-amber-500"
           autofocus
         />
         <div class="flex-1 overflow-y-auto space-y-1">
@@ -482,19 +493,19 @@
             :disabled="usedChannels.includes(ch.channel)"
             @click="placeChannelCircle(ch)"
             :class="[
-              'w-full text-left px-2 py-1.5 text-sm rounded',
+              'w-full text-left px-2 py-1.5 text-sm rounded transition-colors',
               usedChannels.includes(ch.channel)
-                ? 'bg-gray-900 text-gray-500 cursor-not-allowed'
-                : 'hover:bg-gray-700 text-white'
+                ? 'bg-gray-950/50 text-gray-500 cursor-not-allowed'
+                : 'hover:bg-white/10 text-white'
             ]"
           >
             <div class="font-semibold">{{ ch.channel }}</div>
             <div class="text-xs text-gray-400">{{ ch.device }}</div>
           </button>
         </div>
-        <button @click="showChannelPicker = false" class="mt-3 w-full px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded">
+        <Button variant="outline" @click="showChannelPicker = false" class="mt-3 w-full bg-gray-800 border-white/10 text-white hover:bg-gray-700">
           Abbrechen
-        </button>
+        </Button>
       </div>
     </div>
   </div>
@@ -504,39 +515,40 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick, defineComponent, h } from 'vue'
 import { uuid } from '../utils/uuid.js'
 import jsPDF from 'jspdf'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Slider } from '@/components/ui/slider'
 
 // --------------- Sub-components ---------------
 const ToolBtn = defineComponent({
   props: { active: Boolean, disabled: Boolean, variant: String, title: String },
   emits: ['click'],
   setup(props, { slots, emit }) {
-    return () => h('button', {
+    return () => h(Button, {
       title: props.title,
       disabled: props.disabled,
+      variant: props.variant === 'danger' ? 'destructive' : (props.active ? 'default' : 'ghost'),
+      size: 'icon',
       onClick: () => !props.disabled && emit('click'),
       class: [
-        'w-10 h-10 rounded flex items-center justify-center transition-colors',
-        props.disabled
-          ? 'text-gray-600 cursor-not-allowed'
-          : props.variant === 'danger'
-            ? 'bg-red-700 hover:bg-red-600 text-white'
-            : props.active
-              ? 'bg-amber-500 text-black'
-              : 'bg-gray-800 hover:bg-gray-700 text-gray-300',
+        'w-10 h-10 rounded transition-colors',
+        props.active ? 'bg-amber-500 text-black hover:bg-amber-400' : 'text-gray-300 hover:text-white hover:bg-gray-800'
       ]
-    }, slots.default?.())
+    }, slots.default)
   }
 })
 
 const PanelBtn = defineComponent({
-  props: { title: String },
+  props: { title: String, class: String },
   emits: ['click'],
   setup(props, { slots, emit }) {
-    return () => h('button', {
+    return () => h(Button, {
+      variant: 'outline',
+      size: 'sm',
       title: props.title,
       onClick: () => emit('click'),
-      class: 'px-2 py-1 rounded text-xs bg-gray-800 hover:bg-gray-700 border border-white/10 text-gray-300 whitespace-nowrap'
-    }, slots.default?.())
+      class: ['h-7 text-xs px-2 bg-gray-800 hover:bg-gray-700 border-white/10 text-gray-300 hover:text-white', props.class]
+    }, slots.default)
   }
 })
 

@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="h-full bg-gray-950">
     <!-- Top Header -->
     <ShowHeader
       v-model="mobileTab"
@@ -42,104 +42,117 @@
 
     <div v-if="loading" class="flex items-center justify-center h-64 text-sm text-gray-400">…</div>
 
-    <div v-else :inert="!isOnline || undefined" :class="{ 'opacity-40 pointer-events-none select-none': !isOnline }">
-      <!-- Two-column layout: aside + main -->
-      <div :class="mobileTab !== 'channels' && mobileTab !== 'info' ? 'hidden' : mobileTab !== 'channels' ? 'hidden xl:block' : ''" class="xl:pl-[28rem] xl:ml-0 h-[calc(100vh-4rem)] overflow-y-auto">
-        <!-- Main: Kanaltabelle -->
-        <main class="px-4 py-6 sm:px-6 lg:px-8 min-h-full">
-          <div class="flex items-center gap-3 mb-4">
-            <SectionHeading :text="t('show.channels')" class="flex-1 min-w-0" />
-            <span class="text-xs text-gray-500 shrink-0">{{ totalVisible }} / {{ channels.length }}</span>
+    <div v-else :inert="!isOnline || undefined" :class="{ 'opacity-40 pointer-events-none select-none': !isOnline }" class="px-3 sm:px-4 lg:px-6 xl:px-8 2xl:px-10 pb-6">
+      <div class="w-full flex flex-col gap-4 lg:grid lg:grid-cols-[32rem_minmax(0,1fr)] lg:items-start lg:gap-6 2xl:grid-cols-[34rem_minmax(0,1fr)]">
+        <!-- Info/Sections + Photos (left column card) -->
+        <aside class="w-full min-w-0 flex flex-col gap-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-hidden" :class="mobileTab === 'channels' ? 'hidden lg:flex' : mobileTab === 'info' ? 'flex' : 'hidden lg:flex'">
+          <div class="rounded-2xl border border-white/10 bg-gray-900/85 shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur px-4 py-4 sm:px-5 sm:py-5 lg:flex-1 lg:min-h-0 lg:overflow-auto">
+            <SectionEditor
+              :showId="props.id"
+              :sectionDefs="sectionDefs"
+              :sectionContents="sectionContents"
+              :setupMarkdown="setupMarkdown"
+              :labels="{
+                titlePlaceholder: t('sections.title.placeholder'),
+                fieldLabel: t('sections.field.label'),
+                fieldAdd: t('sections.field.add'),
+                addMarkdown: t('sections.add.markdown'),
+                addFields: t('sections.add.fields'),
+              }"
+              @update:sectionDefs="sectionDefs = $event"
+              @update:sectionContents="sectionContents = $event"
+              @update:setupMarkdown="onSetupChange($event)"
+              @pushSnapshot="pushSnapshot"
+              @sectionChange="persistSectionsDebounced"
+            >
+              <template #setup-heading>
+                <div class="flex items-center justify-between gap-3 mb-4">
+                  <SectionHeading :text="t('show.setup')" class="min-w-0" />
+                  <span class="text-[11px] uppercase tracking-[0.18em] text-gray-500 shrink-0">Info & Fotos</span>
+                </div>
+              </template>
+            </SectionEditor>
           </div>
-          <ChannelTable
-            :channels="channels"
-            :groupedChannels="groupedChannels"
-            :dupChannelNrs="dupChannelNrs"
-            :channelStatusFn="channelStatus"
-            :toggleChannelStatusFn="toggleChannelStatus"
-            :onKeydownFn="onKeydown"
-            :labels="{
-              channel: t('field.channel'),
-              color: t('field.color'),
-              device: t('field.device'),
-              notes: t('field.notes'),
-              editPosition: t('channel.position.edit'),
-              noCategory: t('channel.no_category'),
-              add: t('channel.add'),
-              delete: t('action.delete'),
-              empty: t('channel.list.empty'),
-              channelNr: t('show.channel.nr'),
-              addressExample: t('show.channel.address.example'),
-            }"
-            @change="scheduleChannelsSave()"
-            @recordFocus="recordFocus()"
-            @commitFocus="commitFocus()"
-            @pushSnapshot="pushSnapshot()"
-            @deleteChannel="deleteChannel($event)"
-            @reorder="channels.splice(0, channels.length, ...$event)"
-          />
-        </main>
+
+          <div class="rounded-2xl border border-white/10 bg-gray-900/70 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur px-4 py-4 sm:px-5 sm:py-5 lg:min-h-[40vh] lg:max-h-[42vh] lg:overflow-auto">
+            <div class="flex items-center gap-2 mb-3">
+              <SectionHeading :text="t('show.photos')" class="flex-1 min-w-0" />
+              <span class="text-[11px] uppercase tracking-[0.18em] text-gray-500 shrink-0">{{ photos.length }}</span>
+            </div>
+            <PhotoGallery
+              :showId="props.id"
+              :photos="photos"
+              :labels="{
+                add: t('photo.add'),
+                empty: t('photo.empty'),
+                delete: t('action.delete'),
+                captionPlaceholder: t('photo.caption.placeholder'),
+                channelLabel: 'Kanal:',
+                channelPlaceholder: 'z. B. 42',
+              }"
+              @update:photos="photos = $event"
+            />
+          </div>
+        </aside>
+
+        <!-- Right column: channels / floorplan -->
+        <div class="flex-1 min-w-0 flex flex-col gap-4" :class="mobileTab === 'floorplan' ? '' : mobileTab === 'channels' ? '' : 'hidden lg:flex'">
+          <!-- Channels card -->
+          <div v-if="mobileTab === 'channels'" class="rounded-2xl border border-white/10 bg-gray-900/85 shadow-[0_14px_40px_rgba(0,0,0,0.24)] backdrop-blur flex flex-col h-[calc(100vh-6rem)] overflow-hidden">
+            <header class="px-4 py-4 sm:px-5 border-b border-white/10 bg-gray-900/95">
+              <SectionHeading :text="t('show.channels')" class="min-w-0" />
+            </header>
+            <div class="flex-1 min-h-0 bg-gradient-to-b from-transparent to-black/10">
+              <ChannelTable
+                :channels="channels"
+                :groupedChannels="groupedChannels"
+                :dupChannelNrs="dupChannelNrs"
+                :channelStatusFn="channelStatus"
+                :toggleChannelStatusFn="toggleChannelStatus"
+                :onKeydownFn="onKeydown"
+                :labels="{
+                  channel: t('field.channel'),
+                  color: t('field.color'),
+                  device: t('field.device'),
+                  notes: t('field.notes'),
+                  editPosition: t('channel.position.edit'),
+                  noCategory: t('channel.no_category'),
+                  add: t('channel.add'),
+                  delete: t('action.delete'),
+                  empty: t('channel.list.empty'),
+                  channelNr: t('show.channel.nr'),
+                  addressExample: t('show.channel.address.example'),
+                }"
+                @change="scheduleChannelsSave()"
+                @recordFocus="recordFocus()"
+                @commitFocus="commitFocus()"
+                @pushSnapshot="pushSnapshot()"
+                @deleteChannel="deleteChannel($event)"
+                @reorder="channels.splice(0, channels.length, ...$event)"
+              />
+            </div>
+          </div>
+
+          <!-- Floorplan card -->
+          <div v-if="mobileTab === 'floorplan'" class="rounded-2xl border border-white/10 bg-gray-900/85 shadow-[0_14px_40px_rgba(0,0,0,0.24)] backdrop-blur h-[calc(100vh-6rem)] overflow-hidden">
+            <div class="flex items-center justify-between gap-3 px-4 py-3 sm:px-5 border-b border-white/10 bg-gradient-to-r from-gray-900 via-gray-900 to-gray-900/70">
+              <SectionHeading :text="t('tab.floorplan')" class="min-w-0" />
+              <span class="text-xs text-gray-500 shrink-0">Canvas</span>
+            </div>
+            <div class="h-[calc(100%-57px)]">
+              <FloorplanEditor
+                :image-url="floorplan.image_url ? api.url(floorplan.image_url) : null"
+                :initial-canvas-data="floorplan.canvas_data"
+                :channels="channels"
+                @change="onFloorplanChange"
+                @upload-image="onFloorplanImageUpload"
+                @delete-image="onFloorplanImageDelete"
+                @jump-to-channel="jumpToChannel"
+              />
+            </div>
+          </div>
+        </div>
       </div>
-
-      <!-- Grundriss-Tab -->
-      <div v-if="mobileTab === 'floorplan'" class="h-[calc(100vh-4rem)]">
-        <FloorplanEditor
-          :image-url="floorplan.image_url ? api.url(floorplan.image_url) : null"
-          :initial-canvas-data="floorplan.canvas_data"
-          :channels="channels"
-          @change="onFloorplanChange"
-          @upload-image="onFloorplanImageUpload"
-          @delete-image="onFloorplanImageDelete"
-          @jump-to-channel="jumpToChannel"
-        />
-      </div>
-
-      <!-- Aside: Sections + Fotos (fixed, left of main) -->
-      <aside :class="mobileTab === 'floorplan' ? 'hidden' : mobileTab !== 'info' ? 'hidden xl:block' : ''" class="xl:fixed xl:top-16 xl:bottom-0 xl:left-20 xl:w-[28rem] xl:overflow-y-auto xl:border-r xl:border-white/10 px-4 py-6 sm:px-6 border-b border-white/10 xl:border-b-0">
-
-        <!-- Sections (inline editor) -->
-        <SectionEditor
-          :showId="props.id"
-          :sectionDefs="sectionDefs"
-          :sectionContents="sectionContents"
-          :setupMarkdown="setupMarkdown"
-          :labels="{
-            titlePlaceholder: t('sections.title.placeholder'),
-            fieldLabel: t('sections.field.label'),
-            fieldAdd: t('sections.field.add'),
-            addMarkdown: t('sections.add.markdown'),
-            addFields: t('sections.add.fields'),
-          }"
-          @update:sectionDefs="sectionDefs = $event"
-          @update:sectionContents="sectionContents = $event"
-          @update:setupMarkdown="onSetupChange($event)"
-          @pushSnapshot="pushSnapshot"
-          @sectionChange="persistSectionsDebounced"
-        >
-          <template #setup-heading>
-            <SectionHeading :text="t('show.setup')" class="mb-4" />
-          </template>
-        </SectionEditor>
-
-        <!-- Foto-Galerie -->
-        <PhotoGallery
-          :showId="props.id"
-          :photos="photos"
-          :labels="{
-            add: t('photo.add'),
-            empty: t('photo.empty'),
-            delete: t('action.delete'),
-            captionPlaceholder: t('photo.caption.placeholder'),
-            channelLabel: 'Kanal:',
-            channelPlaceholder: 'z. B. 42',
-          }"
-          @update:photos="photos = $event"
-        >
-          <template #heading>
-            <SectionHeading :text="t('show.photos')" class="flex-1 min-w-0" />
-          </template>
-        </PhotoGallery>
-      </aside>
     </div>
 
     <HistorySlideOver

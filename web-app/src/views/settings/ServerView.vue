@@ -8,12 +8,11 @@
       <div class="md:col-span-2 space-y-6 sm:max-w-xl">
         <div>
           <label class="block text-sm/6 font-medium text-white mb-2">{{ t('settings.server_url') }}</label>
-          <input
+          <Input
             v-model="serverUrl"
             type="url"
             :placeholder="t('settings.server_url.placeholder')"
             @change="applyServer"
-            class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent"
           />
         </div>
         <dl class="divide-y divide-white/5 text-sm/6">
@@ -41,6 +40,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { Input } from '@/components/ui/input'
 import { useLocale } from '../../composables/useLocale.js'
 import { setServerUrl, api } from '../../api/client.js'
 

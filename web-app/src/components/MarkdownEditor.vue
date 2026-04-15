@@ -2,43 +2,48 @@
   <div>
     <!-- Toolbar -->
     <div v-if="editor" class="flex items-center gap-0.5 mb-2 flex-wrap">
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="sm"
         @mousedown.prevent="editor.chain().focus().toggleBold().run()"
         :class="editor.isActive('bold') ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'"
-        class="rounded px-2 py-1 text-sm font-bold transition-colors"
+        class="h-7 px-2 font-bold transition-colors"
         :title="t('editor.bold')"
-      >B</button>
-      <button
-        type="button"
+      >B</Button>
+      <Button
+        variant="ghost"
+        size="sm"
         @mousedown.prevent="editor.chain().focus().toggleItalic().run()"
         :class="editor.isActive('italic') ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'"
-        class="rounded px-2 py-1 text-sm italic transition-colors"
+        class="h-7 px-2 italic transition-colors"
         :title="t('editor.italic')"
-      >I</button>
+      >I</Button>
       <div class="w-px h-4 bg-white/10 mx-1" />
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="sm"
         @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 3 }).run()"
         :class="editor.isActive('heading', { level: 3 }) ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'"
-        class="rounded px-2 py-1 text-sm font-semibold transition-colors"
+        class="h-7 px-2 font-semibold transition-colors"
         :title="t('editor.heading')"
-      >H</button>
+      >H</Button>
       <div class="w-px h-4 bg-white/10 mx-1" />
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="sm"
         @mousedown.prevent="editor.chain().focus().toggleBulletList().run()"
         :class="editor.isActive('bulletList') ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'"
-        class="rounded px-2 py-1 text-sm transition-colors"
+        class="h-7 px-2 transition-colors"
         :title="t('editor.list.bullet')"
-      >≡</button>
-      <button
-        type="button"
+      >≡</Button>
+      <Button
+        variant="ghost"
+        size="sm"
         @mousedown.prevent="editor.chain().focus().toggleOrderedList().run()"
         :class="editor.isActive('orderedList') ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'"
-        class="rounded px-2 py-1 text-sm transition-colors"
+        class="h-7 px-2 transition-colors"
         :title="t('editor.list.ordered')"
-      >1.</button>
+      >1.</Button>
     </div>
 
     <!-- Editor Content -->
@@ -51,6 +56,7 @@
 
 <script setup>
 import { watch, onBeforeUnmount } from 'vue'
+import { Button } from '@/components/ui/button'
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import { useLocale } from '../composables/useLocale.js'
 import StarterKit from '@tiptap/starter-kit'

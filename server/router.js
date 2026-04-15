@@ -17,8 +17,40 @@ import { randomUUID } from 'node:crypto'
 import { config } from './config.js'
 
 function mimeFromFilename(filename) {
-  const ext = (filename || '').split('.').pop().toLowerCase()
-  return { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', svg: 'image/svg+xml', webp: 'image/webp' }[ext] || 'application/octet-stream'
+  const ext = path.extname(filename || '').toLowerCase()
+  return {
+    '.html': 'text/html; charset=utf-8',
+    '.js': 'application/javascript; charset=utf-8',
+    '.mjs': 'application/javascript; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
+    '.json': 'application/json; charset=utf-8',
+    '.map': 'application/json; charset=utf-8',
+    '.svg': 'image/svg+xml',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.webp': 'image/webp',
+    '.gif': 'image/gif',
+    '.ico': 'image/x-icon',
+    '.woff': 'font/woff',
+    '.woff2': 'font/woff2',
+    '.ttf': 'font/ttf',
+  }[ext] || 'application/octet-stream'
+}
+
+function isStaticAssetRequest(pathname) {
+  return /\.[a-zA-Z0-9]+$/.test(pathname)
+}
+
+async function serveStaticFile(res, filePath, cacheControl) {
+  const stat = await fs.promises.stat(filePath)
+  if (stat.isDirectory()) throw new Error('EISDIR')
+  res.writeHead(200, {
+    'Content-Type': mimeFromFilename(filePath),
+    'Content-Length': stat.size,
+    'Cache-Control': cacheControl,
+  })
+  fs.createReadStream(filePath).pipe(res)
 }
 
 // ── Rate Limiter (Login) ────────────────────────────────────────────────────
@@ -343,7 +375,8 @@ export async function router(req, res) {
     if (method === 'GET' && pathname.match(/^\/api\/shows\/([^/]+)\/photos\/(.+)$/)) {
       const user = requireAuth(req, res); if (!user) return
       const parts = pathname.split('/')
-      const slug = parts[3], filename = path.basename(parts[5])
+      const slug = parts[3]
+      const filename = path.basename(decodeURIComponent(parts[5]))
       const filePath = photos.getPhotoPath(slug, filename)
       try {
         const stat = await fs.promises.stat(filePath)
@@ -843,34 +876,33 @@ export async function router(req, res) {
     // ── Static (Web-App) ───────────────────────────────────────────────────
     if (method === 'GET') {
       const distPath = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'web-app', 'dist')
-      let filePath = path.join(distPath, pathname === '/' ? 'index.html' : pathname)
+      const safePathname = pathname === '/' ? '/index.html' : pathname
+      const filePath = path.join(distPath, safePathname.replace(/^\//, ''))
+
       // Sicherheitscheck: kein Pfad-Traversal
-      if (!filePath.startsWith(distPath)) return notFound(res)
+      if (!filePath.startsWith(distPath + path.sep) && filePath !== distPath) return notFound(res)
+
+      const isAsset = safePathname.startsWith('/assets/') || isStaticAssetRequest(safePathname)
+      const cacheControl = safePathname.startsWith('/assets/')
+        ? 'public, max-age=31536000, immutable'
+        : 'no-cache'
+
       try {
-        const stat = await fs.promises.stat(filePath)
-        if (stat.isDirectory()) filePath = path.join(filePath, 'index.html')
-        const ext = path.extname(filePath)
-        const mime = {
-          '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
-          '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg',
-        }[ext] || 'application/octet-stream'
-        // Assets mit Hash (in /assets/) → 1 Jahr cachen; index.html → nie cachen
-        const cacheControl = pathname.startsWith('/assets/')
-          ? 'public, max-age=31536000, immutable'
-          : 'no-cache'
-        res.writeHead(200, { 'Content-Type': mime, 'Cache-Control': cacheControl })
-        fs.createReadStream(filePath).pipe(res)
+        await serveStaticFile(res, filePath, cacheControl)
+        return
       } catch {
-        // SPA Fallback
-        try {
-          res.writeHead(200, { 'Content-Type': 'text/html' })
-          fs.createReadStream(path.join(distPath, 'index.html')).pipe(res)
-        } catch { notFound(res) }
+        if (isAsset) return notFound(res)
       }
-      return
+
+      try {
+        await serveStaticFile(res, path.join(distPath, 'index.html'), 'no-cache')
+        return
+      } catch {
+        return notFound(res)
+      }
     }
 
-    notFound(res)
+    return notFound(res)
   } catch (err) {
     console.error(err)
     json(res, 500, { error: 'Interner Fehler' })

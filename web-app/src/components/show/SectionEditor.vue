@@ -5,61 +5,61 @@
       v-for="sec in sortedSections"
       :key="sec.id"
       :data-section-id="sec.id"
-      class="group/sec mb-8"
+      class="group/sec mb-6 rounded-xl border border-white/10 bg-black/10 px-4 py-4 shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
     >
       <!-- Section header -->
-      <div class="flex items-center mb-4">
-        <input
+      <div class="flex items-center mb-4 gap-3">
+        <Input
           :value="sec.title"
           :placeholder="labels.titlePlaceholder"
           @input="sec.title = $event.target.value"
           @change="persistSectionDefs"
-          class="pr-3 text-lg font-semibold text-accent bg-gray-950 shrink-0 border-0 focus:outline-none min-w-0 placeholder:text-accent/40"
-          :size="Math.max((sec.title || labels.titlePlaceholder).length, 4)"
+          class="w-auto min-w-[8rem] text-base font-semibold text-accent bg-transparent border-0 focus-visible:ring-0 px-0 h-auto"
+          :style="{ width: Math.max((sec.title || labels.titlePlaceholder).length, 4) + 'ch' }"
         />
-        <div class="flex-1 border-t border-accent/40"></div>
-        <span class="section-drag-handle cursor-grab text-gray-400 hover:text-gray-200 transition-colors shrink-0 pl-3">
+        <div class="flex-1 border-t border-white/10"></div>
+        <span class="section-drag-handle cursor-grab rounded-md p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors shrink-0">
           <svg class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M7 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/></svg>
         </span>
-        <button class="text-gray-400 hover:text-red-400 shrink-0 transition-colors pl-2" @click="deleteSectionDef(sortedSections.indexOf(sec))">
+        <Button variant="ghost" size="icon" class="h-7 w-7 text-muted-foreground hover:bg-red-500/10 hover:text-red-400 shrink-0 transition-colors" @click="deleteSectionDef(sortedSections.indexOf(sec))">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
-        </button>
+        </Button>
       </div>
 
       <!-- Fields section -->
       <div v-if="sec.type === 'fields'">
         <div
           :data-fields-sortable="sec.id"
-          class="divide-y divide-white/5 mb-2"
+          class="space-y-2 mb-3"
         >
           <div
             v-for="(field, fidx) in sec.fields"
             :key="field.key"
-            class="flex items-center h-[40px] gap-2 group/field"
+            class="flex items-center min-h-[44px] gap-2 rounded-lg border border-white/5 bg-white/[0.02] px-2 py-1.5 group/field"
           >
-            <span class="field-drag-handle cursor-grab text-gray-400 hover:text-gray-200 transition-colors shrink-0">
+            <span class="field-drag-handle cursor-grab rounded-md p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors shrink-0">
               <svg class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M7 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/></svg>
             </span>
-            <label class="w-28 text-sm text-gray-500 shrink-0">
-              <input
+            <div class="w-32 shrink-0">
+              <Input
                 :value="field.label"
                 :placeholder="labels.fieldLabel"
                 @input="field.label = $event.target.value"
                 @change="persistSectionDefs"
-                class="w-full bg-transparent border-0 text-sm text-gray-400 focus:text-white focus:outline-none placeholder:text-gray-600"
+                class="w-full bg-transparent border-transparent px-2 h-8 text-sm focus-visible:ring-1 focus-visible:border-border transition-colors shadow-none"
               />
-            </label>
-            <input
+            </div>
+            <Input
               :value="parseFieldValue(sec.id, field.key)"
               @change="onFieldChange(sec.id, field.key, $event.target.value)"
-              class="flex-1 bg-transparent border-0 border-b border-white/10 focus:border-accent focus:outline-none text-sm text-white h-full px-2 transition-colors"
+              class="flex-1 bg-black/10 border-white/10 h-9"
             />
-            <button class="text-gray-400 hover:text-red-400 shrink-0 transition-colors" @click="deleteFieldDef(sec, fidx)">
+            <Button variant="ghost" size="icon" class="h-7 w-7 text-muted-foreground hover:bg-red-500/10 hover:text-red-400 shrink-0 transition-colors" @click="deleteFieldDef(sec, fidx)">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
-            </button>
+            </Button>
           </div>
         </div>
-        <button class="text-xs text-gray-500 hover:text-white" @click="addFieldDef(sec)">{{ labels.fieldAdd }}</button>
+        <Button variant="outline" size="sm" @click="addFieldDef(sec)">{{ labels.fieldAdd }}</Button>
       </div>
 
       <!-- Markdown/Textfeld section -->
@@ -72,20 +72,22 @@
   </div>
 
   <!-- Fallback: single setup editor (when no sections defined) -->
-  <section v-if="sortedSections.length === 0" class="mb-8">
+  <section v-if="sortedSections.length === 0" class="mb-8 rounded-xl border border-dashed border-white/10 bg-black/10 px-4 py-4">
     <slot name="setup-heading" />
     <MarkdownEditor :modelValue="setupMarkdown" @update:modelValue="emit('update:setupMarkdown', $event)" />
   </section>
 
   <!-- Add section buttons -->
-  <div class="flex items-center gap-2 mb-6 py-2 border-t border-white/10">
-    <button class="cursor-pointer text-sm text-gray-500 hover:text-white px-2 py-1 rounded hover:bg-white/5 transition-colors" @click="addMarkdownSection">{{ labels.addMarkdown }}</button>
-    <button v-if="!hasFieldsType()" class="cursor-pointer text-sm text-gray-500 hover:text-white px-2 py-1 rounded hover:bg-white/5 transition-colors" @click="addFieldsSection">{{ labels.addFields }}</button>
+  <div class="flex items-center gap-2 mb-6 py-3 border-t border-white/10">
+    <Button variant="outline" size="sm" @click="addMarkdownSection">{{ labels.addMarkdown }}</Button>
+    <Button v-if="!hasFieldsType()" variant="outline" size="sm" @click="addFieldsSection">{{ labels.addFields }}</Button>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import Sortable from 'sortablejs'
 import MarkdownEditor from '../MarkdownEditor.vue'
 import { useConfirm } from '../../composables/useConfirm.js'

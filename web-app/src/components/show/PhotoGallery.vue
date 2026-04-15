@@ -1,11 +1,13 @@
 <template>
-  <section>
-    <div class="flex items-center gap-3 mb-4">
+  <section class="space-y-4">
+    <div class="flex items-center justify-between gap-3 mb-4">
       <slot name="heading" />
-      <label class="cursor-pointer text-sm text-gray-400 hover:text-white shrink-0">
-        + {{ labels.add }}
-        <input type="file" accept="image/*" multiple class="sr-only" @change="onFileInput" />
-      </label>
+      <Button variant="outline" size="sm" as-child class="cursor-pointer shrink-0">
+        <label>
+          + {{ labels.add }}
+          <input type="file" accept="image/*" multiple class="sr-only" @change="onFileInput" />
+        </label>
+      </Button>
     </div>
 
     <!-- Upload progress -->
@@ -29,35 +31,36 @@
       @dragleave="dragging = false"
       @drop.prevent="onDrop"
     >
-      <p v-if="photos.length === 0 && !dragging" class="text-sm text-gray-500">{{ labels.empty }}</p>
-      <ul role="list" class="grid grid-cols-3 gap-2">
-        <li v-for="filename in photos" :key="filename" class="relative group flex flex-col gap-1">
-          <div class="aspect-square block w-full overflow-hidden rounded-lg bg-gray-800 cursor-pointer" @click="openLightbox(filename)">
-            <img :src="photoUrl(filename)" :alt="filename" class="pointer-events-none object-cover group-hover:opacity-75 w-full h-full" />
+      <p v-if="photos.length === 0 && !dragging" class="rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-4 py-8 text-sm text-gray-500 text-center">{{ labels.empty }}</p>
+      <ul role="list" class="grid grid-cols-2 gap-3 xl:grid-cols-3">
+        <li v-for="filename in photos" :key="filename" class="relative group flex flex-col gap-2 rounded-xl border border-white/10 bg-black/10 p-2">
+          <div class="aspect-[4/3] block w-full overflow-hidden rounded-lg bg-gray-800 cursor-pointer" @click="openLightbox(filename)">
+            <img :src="photoUrl(filename)" :alt="filename" class="pointer-events-none h-full w-full object-cover transition-opacity duration-200 group-hover:opacity-80" />
           </div>
-          <button
-            type="button"
-            class="absolute top-1 right-1 rounded bg-black/60 px-1 py-0.5 text-xs text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"
+          <Button
+            variant="destructive"
+            size="icon"
+            class="absolute top-3 right-3 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity bg-black/70 hover:bg-red-500/90 text-white"
             @click="onDeletePhoto(filename)"
             :title="labels.delete"
-          >✕</button>
-          <input
+          >✕</Button>
+          <Input
             type="text"
             :value="photoCaptions[filename]?.caption ?? ''"
             :placeholder="labels.captionPlaceholder"
-            class="w-full rounded bg-white/5 px-2 py-1 text-xs text-gray-300 placeholder-gray-600 border border-transparent focus:border-white/20 focus:outline-none"
             @blur="onCaptionBlur(filename, $event)"
             @keydown.enter="$event.target.blur()"
+            class="mt-2 text-xs"
           />
-          <div class="flex items-center gap-1 mt-1">
-            <span class="text-xs text-gray-600 shrink-0">{{ labels.channelLabel }}</span>
-            <input
+          <div class="flex items-center gap-2 mt-1">
+            <span class="text-xs text-muted-foreground shrink-0">{{ labels.channelLabel }}</span>
+            <Input
               type="text"
               :value="photoCaptions[filename]?.channelNumber ?? ''"
               :placeholder="labels.channelPlaceholder"
-              class="w-full rounded bg-white/5 px-2 py-1 text-xs text-gray-300 placeholder-gray-600 border border-transparent focus:border-white/20 focus:outline-none"
               @blur="onChannelNumberBlur(filename, $event)"
               @keydown.enter="$event.target.blur()"
+              class="text-xs"
             />
           </div>
         </li>
@@ -90,41 +93,49 @@
       @click="lightboxPhoto = null"
     >
       <div class="absolute inset-0 backdrop-blur-xl bg-black/70" />
-      <button
+      <Button
         v-if="lightboxIndex > 0"
-        class="absolute left-3 top-1/2 -translate-y-1/2 z-10 text-white/70 hover:text-white bg-black/40 hover:bg-black/60 rounded-full p-2 transition-colors"
+        variant="ghost"
+        size="icon"
+        class="absolute left-3 top-1/2 -translate-y-1/2 z-10 text-white/70 hover:text-white bg-black/40 hover:bg-black/60 rounded-full h-10 w-10 transition-colors"
         @click.stop="lightboxStep(-1)"
         aria-label="Vorheriges Foto"
       >
         <svg xmlns="http://www.w3.org/2000/svg" class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
-      </button>
+      </Button>
       <img :src="photoUrl(lightboxPhoto)" class="relative max-h-[85vh] max-w-[90vw] object-contain drop-shadow-2xl" @click.stop />
       <p
         v-if="photoCaptions[lightboxPhoto]?.caption"
         class="relative mt-3 text-sm text-gray-300 max-w-lg text-center px-4"
         @click.stop
       >{{ photoCaptions[lightboxPhoto].caption }}</p>
-      <button
+      <Button
         v-if="lightboxIndex < photos.length - 1"
-        class="absolute right-3 top-1/2 -translate-y-1/2 z-10 text-white/70 hover:text-white bg-black/40 hover:bg-black/60 rounded-full p-2 transition-colors"
+        variant="ghost"
+        size="icon"
+        class="absolute right-3 top-1/2 -translate-y-1/2 z-10 text-white/70 hover:text-white bg-black/40 hover:bg-black/60 rounded-full h-10 w-10 transition-colors"
         @click.stop="lightboxStep(1)"
         aria-label="Nächstes Foto"
       >
         <svg xmlns="http://www.w3.org/2000/svg" class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-      </button>
-      <button
-        class="absolute top-3 right-3 z-10 text-white/70 hover:text-white bg-black/40 hover:bg-black/60 rounded-full p-1.5 transition-colors"
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        class="absolute top-3 right-3 z-10 text-white/70 hover:text-white bg-black/40 hover:bg-black/60 rounded-full h-8 w-8 transition-colors"
         @click.stop="lightboxPhoto = null"
         aria-label="Schließen"
       >
         <svg xmlns="http://www.w3.org/2000/svg" class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-      </button>
+      </Button>
     </div>
   </Transition>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useConfirm } from '../../composables/useConfirm.js'
 import { useLocale } from '../../composables/useLocale.js'
 import { usePhotoSettings } from '../../composables/usePhotoSettings.js'
@@ -179,6 +190,12 @@ const photoCols = computed(() => {
 function photoUrl(filename) {
   return getPhotoUrl(props.showId, filename)
 }
+
+watch(() => [props.showId, ...props.photos], () => {
+  if (lightboxPhoto.value && !props.photos.includes(lightboxPhoto.value)) {
+    lightboxPhoto.value = null
+  }
+})
 
 onMounted(async () => {
   try {

@@ -5,7 +5,7 @@
  * abläuft. Falls ja, POST /api/auth/refresh und Token ersetzen.
  * Schlägt der Refresh fehl (401), wird der Nutzer ausgeloggt.
  */
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, getCurrentInstance } from 'vue'
 import { useRouter } from 'vue-router'
 import { getToken, setToken, clearToken } from '../api/client.js'
 import { jwtDecode } from '../api/jwtDecode.js'
@@ -14,6 +14,9 @@ const CHECK_INTERVAL_MS = 5 * 60 * 1000   // alle 5 Minuten prüfen
 const REFRESH_THRESHOLD_MS = 30 * 60 * 1000 // erneuern wenn < 30 Min. verbleiben
 
 export function useTokenRefresh() {
+  const instance = getCurrentInstance()
+  if (!instance) return
+
   const router = useRouter()
   let intervalId = null
 
@@ -58,7 +61,7 @@ export function useTokenRefresh() {
   }
 
   onMounted(() => {
-    tryRefresh()
+    void tryRefresh()
     intervalId = setInterval(tryRefresh, CHECK_INTERVAL_MS)
   })
 

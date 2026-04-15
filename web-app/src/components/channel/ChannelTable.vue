@@ -1,7 +1,7 @@
 <template>
-  <div v-bind="containerProps" class="h-full overflow-y-auto">
+  <div v-bind="containerProps" class="h-full overflow-y-auto px-2 pb-3 sm:px-3">
     <!-- Sticky Header Table -->
-    <table class="min-w-full overflow-x-auto sticky top-0 z-20 bg-gray-950">
+    <table class="min-w-full overflow-x-auto sticky top-0 z-20 bg-gray-900/95 backdrop-blur supports-[backdrop-filter]:bg-gray-900/80">
       <colgroup>
         <col class="w-4" />
         <col class="w-24" />
@@ -10,16 +10,16 @@
         <col />
         <col class="w-6" />
       </colgroup>
-      <thead>
-        <tr class="border-b border-white/10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1)]">
-          <th class="w-4"></th>
-          <th scope="col" class="py-3 pr-3 pl-0 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ labels.channel }}</th>
-          <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ labels.color }}</th>
-          <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ labels.device }}</th>
-          <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ labels.notes }}</th>
-          <th scope="col" class="w-6"></th>
-        </tr>
-      </thead>
+      <TableHeader>
+        <TableRow class="border-b border-white/10 shadow-[0_8px_24px_rgba(0,0,0,0.18)] hover:bg-transparent">
+          <TableHead class="w-4 p-0"></TableHead>
+          <TableHead class="py-3 pr-4 pl-0 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-[0.18em] h-auto">{{ labels.channel }}</TableHead>
+          <TableHead class="px-4 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-[0.18em] h-auto">{{ labels.color }}</TableHead>
+          <TableHead class="px-4 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-[0.18em] h-auto">{{ labels.device }}</TableHead>
+          <TableHead class="px-4 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-[0.18em] h-auto">{{ labels.notes }}</TableHead>
+          <TableHead class="w-6 p-0"></TableHead>
+        </TableRow>
+      </TableHeader>
     </table>
 
     <!-- Virtualized Body -->
@@ -33,34 +33,35 @@
           <col />
           <col class="w-6" />
         </colgroup>
-        <tbody ref="tbodyEl">
+        <TableBody ref="tbodyEl">
           <template v-for="item in list" :key="item.data.id">
             <!-- Group header -->
-            <tr v-if="item.data.type === 'header'" class="border-t border-white/5" data-no-drag :data-pos="item.data.group.position">
-              <th colspan="6" scope="colgroup" class="py-2 pr-3 pl-0 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">
+            <TableRow v-if="item.data.type === 'header'" class="border-t border-white/5 bg-white/[0.02] hover:bg-white/[0.02]" data-no-drag :data-pos="item.data.group.position">
+              <TableCell colspan="6" class="py-2.5 pr-4 pl-0 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-[0.18em]">
                 <template v-if="editingPosition === item.data.group.position">
-                  <input
+                  <Input
                     v-model="editingPositionValue"
                     autofocus
                     @blur="savePosition"
                     @keydown.enter="savePosition"
                     @keydown.escape="editingPosition = null"
-                    class="bg-transparent border-b border-accent focus:outline-none text-xs font-semibold text-white uppercase tracking-wide w-40"
+                    class="h-6 bg-transparent border-0 border-b border-accent rounded-none focus-visible:ring-0 px-0 text-xs font-semibold text-white uppercase tracking-wide w-40"
                   />
                 </template>
                 <template v-else>
-                  <button
-                    type="button"
-                    class="hover:text-white transition-colors"
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    class="h-auto p-0 hover:text-white transition-colors text-[11px] font-semibold text-gray-500 uppercase tracking-[0.18em]"
                     :title="labels.editPosition"
                     @click="startEditPosition(item.data.group.position)"
                   >
                     {{ item.data.group.position || labels.noCategory }}
-                  </button>
+                  </Button>
                   <span class="ml-2 font-normal normal-case text-gray-600">{{ item.data.group.channels.length }}</span>
                 </template>
-              </th>
-            </tr>
+              </TableCell>
+            </TableRow>
 
             <!-- Channel rows -->
             <ChannelRow
@@ -83,44 +84,50 @@
             />
 
             <!-- Add row button -->
-            <tr v-else-if="item.data.type === 'add-btn'" class="no-print border-t border-white/5" data-no-drag>
-              <td colspan="6" class="py-2 pl-0">
-                <button type="button" class="text-sm text-gray-600 hover:text-gray-300" @click="startAdd(item.data.group.position)">+ {{ labels.add }}</button>
-              </td>
-            </tr>
+            <TableRow v-else-if="item.data.type === 'add-btn'" class="no-print border-t border-white/5 hover:bg-transparent" data-no-drag>
+              <TableCell colspan="6" class="py-3 pl-0">
+                <Button variant="outline" size="sm" class="border-white/10 bg-white/[0.03] text-gray-400 hover:bg-white/[0.06] hover:text-white" @click="startAdd(item.data.group.position)">
+                  + {{ labels.add }}
+                </Button>
+              </TableCell>
+            </TableRow>
 
             <!-- Add row form -->
-            <tr
+            <TableRow
               v-else-if="item.data.type === 'add-form'"
-              class="border-t border-white/5 bg-white/5"
+              class="border-t border-white/5 bg-white/[0.04] hover:bg-white/[0.04]"
               data-no-drag
               @keydown.escape="addingPosition = null"
               @keydown.enter.prevent="saveAdd"
             >
-              <td class="w-4"></td>
-              <td class="py-2 pr-3 pl-0 align-middle">
-                <div class="flex flex-col items-center gap-1">
-                  <input autofocus class="bg-transparent focus:outline-none text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[4ch] text-center" v-model="addForm.channel" :placeholder="labels.channelNr" />
-                  <input class="bg-transparent focus:outline-none text-xs text-gray-500 px-0 border-0 w-[5ch] text-center" v-model="addForm.address" :placeholder="labels.addressExample" />
+              <TableCell class="w-4 p-0"></TableCell>
+              <TableCell class="py-2 pr-4 pl-0 align-middle">
+                <div class="flex flex-col items-center gap-1 rounded-lg border border-white/10 bg-black/10 px-2 py-2">
+                  <Input autofocus class="h-8 bg-transparent focus-visible:ring-0 text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[4ch] text-center shadow-none" v-model="addForm.channel" :placeholder="labels.channelNr" />
+                  <Input class="h-5 bg-transparent focus-visible:ring-0 text-xs text-gray-500 px-0 border-0 w-[5ch] text-center shadow-none" v-model="addForm.address" :placeholder="labels.addressExample" />
                 </div>
-              </td>
-              <td class="px-3 py-2 align-middle">
+              </TableCell>
+              <TableCell class="px-4 py-2 align-middle">
                 <ColorAutocomplete v-model="addForm.color" @change="() => {}" :placeholder="labels.color" />
-              </td>
-              <td class="px-3 py-0 align-middle"><textarea class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle" v-model="addForm.device" /></td>
-              <td class="px-3 py-0 align-middle"><textarea class="bg-transparent focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle" v-model="addForm.notes" /></td>
-              <td class="py-2 pl-2 pr-0 align-middle"><button class="text-green-400 hover:text-green-300 text-sm" @click="saveAdd">✓</button></td>
-            </tr>
+              </TableCell>
+              <TableCell class="px-4 py-0 align-middle"><Textarea class="bg-black/10 border-white/10 focus-visible:ring-accent/60 text-sm text-gray-300 w-full resize-none leading-snug min-h-14 shadow-none" v-model="addForm.device" /></TableCell>
+              <TableCell class="px-4 py-0 align-middle"><Textarea class="bg-black/10 border-white/10 focus-visible:ring-accent/60 text-sm text-gray-300 w-full resize-none leading-snug min-h-14 shadow-none" v-model="addForm.notes" /></TableCell>
+              <TableCell class="py-2 pl-2 pr-0 align-middle"><Button size="icon" variant="ghost" class="size-8 text-green-400 hover:bg-green-500/10 hover:text-green-300" @click="saveAdd">✓</Button></TableCell>
+            </TableRow>
 
             <!-- Empty state -->
-            <tr v-else-if="item.data.type === 'empty'" class="border-t border-white/5" data-no-drag>
-              <td colspan="6" class="py-4 pl-0">
-                <span class="text-sm text-gray-500">{{ labels.empty }}</span>
-                <button type="button" class="ml-3 text-sm text-gray-400 hover:text-white" @click="startAdd('')">+ {{ labels.add }}</button>
-              </td>
-            </tr>
+            <TableRow v-else-if="item.data.type === 'empty'" class="border-t border-white/5 hover:bg-transparent" data-no-drag>
+              <TableCell colspan="6" class="py-6 pl-0">
+                <div class="rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-4 py-5">
+                  <span class="text-sm text-gray-500">{{ labels.empty }}</span>
+                  <Button variant="outline" size="sm" class="ml-3 border-white/10 bg-white/[0.03] text-gray-400 hover:bg-white/[0.06] hover:text-white" @click="startAdd('')">
+                    + {{ labels.add }}
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
           </template>
-        </tbody>
+        </TableBody>
       </table>
     </div>
   </div>
@@ -132,6 +139,10 @@ import { useVirtualList } from '@vueuse/core'
 import Sortable from 'sortablejs'
 import ChannelRow from './ChannelRow.vue'
 import ColorAutocomplete from '../ColorAutocomplete.vue'
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
 
 const props = defineProps({
   // The full channels array (mutated via events)

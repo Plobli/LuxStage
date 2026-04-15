@@ -12,13 +12,13 @@
           <li v-for="u in users" :key="u.username" class="flex items-center justify-between py-3">
             <div class="flex items-center gap-3">
               <span class="text-white font-medium">{{ u.username }}</span>
-              <span class="text-xs text-gray-400 bg-white/5 px-2 py-0.5 rounded">{{ t('settings.users.role.' + u.role) }}</span>
-              <span class="text-xs text-gray-600">{{ t('settings.users.source.' + u.source) }}</span>
+              <Badge :variant="u.role === 'admin' ? 'default' : 'secondary'">{{ t('settings.users.role.' + u.role) }}</Badge>
+              <Badge variant="outline" class="text-gray-400 border-white/10">{{ t('settings.users.source.' + u.source) }}</Badge>
             </div>
-            <button v-if="u.source === 'db'" @click="doDeleteUser(u.username)"
-              class="text-xs text-red-400 hover:text-red-300">
+            <Button v-if="u.source === 'db'" variant="ghost" size="sm" @click="doDeleteUser(u.username)"
+              class="text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10">
               {{ t('settings.users.delete') }}
-            </button>
+            </Button>
           </li>
         </ul>
         <p v-if="deleteMsg" :class="deleteMsg.startsWith('✓') ? 'text-green-400' : 'text-red-400'" class="mt-3 text-sm">{{ deleteMsg }}</p>
@@ -35,29 +35,30 @@
         <div class="space-y-4 sm:max-w-xl">
           <div>
             <label class="block text-sm/6 font-medium text-white mb-2">{{ t('settings.users.username') }}</label>
-            <input v-model="newUsername" type="text" required pattern="[a-zA-Z0-9_-]+"
-              class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent" />
+            <Input v-model="newUsername" type="text" required pattern="[a-zA-Z0-9_-]+" />
           </div>
           <div>
             <label class="block text-sm/6 font-medium text-white mb-2">{{ t('settings.users.password') }}</label>
-            <input v-model="newPassword" type="password" required minlength="8"
-              class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent" />
+            <Input v-model="newPassword" type="password" required minlength="8" />
           </div>
           <div>
             <label class="block text-sm/6 font-medium text-white mb-2">{{ t('settings.users.role') }}</label>
-            <select v-model="newRole"
-              class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent">
-              <option value="techniker">{{ t('settings.users.role.techniker') }}</option>
-              <option value="admin">{{ t('settings.users.role.admin') }}</option>
-            </select>
+            <Select v-model="newRole">
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="techniker">{{ t('settings.users.role.techniker') }}</SelectItem>
+                <SelectItem value="admin">{{ t('settings.users.role.admin') }}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <p v-if="usersMsg" :class="usersMsg.startsWith('✓') ? 'text-green-400' : 'text-red-400'" class="text-sm">{{ usersMsg }}</p>
         </div>
         <div class="mt-8">
-          <button type="submit" :disabled="usersLoading"
-            class="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-50">
+          <Button type="submit" :disabled="usersLoading">
             {{ usersLoading ? '…' : t('settings.users.create') }}
-          </button>
+          </Button>
         </div>
       </form>
     </div>
@@ -71,15 +72,13 @@
       <form class="md:col-span-2" @submit.prevent="doResetPassword">
         <div class="sm:max-w-xl">
           <label class="block text-sm/6 font-medium text-white mb-2">{{ t('settings.account.reset_password.username') }}</label>
-          <input v-model="resetUsername" type="text" required
-            class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent" />
+          <Input v-model="resetUsername" type="text" required />
           <p v-if="resetMsg" :class="resetMsg.startsWith('✓') ? 'text-green-400' : 'text-red-400'" class="mt-3 text-sm font-mono">{{ resetMsg }}</p>
         </div>
         <div class="mt-8">
-          <button type="submit" :disabled="resetLoading"
-            class="rounded-md bg-white/10 px-3 py-2 text-sm font-semibold text-white hover:bg-white/20 disabled:opacity-50">
+          <Button type="submit" variant="secondary" :disabled="resetLoading">
             {{ resetLoading ? '…' : t('settings.account.reset_password.submit') }}
-          </button>
+          </Button>
         </div>
       </form>
     </div>
@@ -89,6 +88,16 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useLocale } from '../../composables/useLocale.js'
 import { listUsers, createUser, deleteUser, resetPassword } from '../../api/client.js'
 

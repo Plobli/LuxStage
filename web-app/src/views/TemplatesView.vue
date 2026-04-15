@@ -235,13 +235,9 @@
           <h1 class="text-base font-semibold text-white">{{ t('nav.templates') }}</h1>
         </div>
         <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <button
-            type="button"
-            class="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-accent-hover"
-            @click="openUpload"
-          >
+          <Button @click="openUpload">
             {{ t('template.upload') }}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -250,83 +246,84 @@
 
       <ul v-else role="list" class="divide-y divide-white/10">
         <li v-for="name in templates" :key="name" class="flex items-center justify-between gap-x-6 py-5">
-          <button type="button" class="min-w-0 text-left hover:text-accent transition-colors" @click="openDetail(name)">
-            <p class="text-sm/6 font-semibold text-white">{{ templateDisplayName(name) || name }}</p>
-          </button>
+          <Button variant="link" class="min-w-0 text-left text-white px-0 hover:text-accent font-semibold" @click="openDetail(name)">
+            {{ templateDisplayName(name) || name }}
+          </Button>
           <div class="flex flex-none items-center gap-x-4">
-            <button type="button" class="rounded-md px-2.5 py-1.5 text-sm font-semibold text-white ring-1 ring-white/10 hover:ring-white/20" @click="openDetail(name)">
+            <Button variant="outline" size="sm" @click="openDetail(name)">
               {{ t('action.edit') }}
-            </button>
-            <button type="button" class="rounded-md px-2.5 py-1.5 text-sm font-semibold text-red-400 ring-1 ring-white/10 hover:ring-red-400/50" @click="handleDelete(name)">
+            </Button>
+            <Button variant="ghost" size="sm" class="text-red-400 hover:text-red-300 hover:bg-red-500/10" @click="handleDelete(name)">
               {{ t('action.delete') }}
-            </button>
+            </Button>
           </div>
         </li>
       </ul>
     </template>
 
-    <!-- Upload-Dialog (bleibt als Modal, da Datei-Upload) -->
-    <dialog ref="uploadDialog" class="m-auto w-full max-w-3xl rounded-xl bg-gray-950 ring-1 ring-white/10 shadow-2xl p-0 backdrop:bg-black/50">
-      <div class="flex items-center justify-between px-6 py-4 border-b border-white/10">
-        <h3 class="text-base font-semibold text-white">{{ t('template.upload') }}</h3>
-        <button class="rounded-md px-3 py-2 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @click="closeUpload">✕</button>
-      </div>
+    <!-- Upload-Dialog -->
+    <Dialog :open="uploadOpen" @update:open="val => { if (!val) closeUpload() }">
+      <DialogContent class="sm:max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>{{ t('template.upload') }}</DialogTitle>
+        </DialogHeader>
 
-      <div v-if="step === 'select'" class="border-2 border-dashed border-white/20 rounded-lg p-8 text-center m-6" @dragover.prevent @drop.prevent="onDrop">
-        <input ref="fileInput" type="file" accept=".csv,.txt" hidden @change="onFileChange" />
-        <p class="text-sm text-gray-400 mb-4">{{ t('template.upload.hint') }}</p>
-        <button class="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-hover" @click="fileInput?.click()">{{ t('template.csv.choose') }}</button>
-      </div>
+        <div v-if="step === 'select'" class="border-2 border-dashed border-white/20 rounded-lg p-8 text-center mt-4" @dragover.prevent @drop.prevent="onDrop">
+          <input ref="fileInput" type="file" accept=".csv,.txt" hidden @change="onFileChange" />
+          <p class="text-sm text-gray-400 mb-4">{{ t('template.upload.hint') }}</p>
+          <Button @click="fileInput?.click()">{{ t('template.csv.choose') }}</Button>
+        </div>
 
-      <div v-else-if="step === 'preview'" class="px-6 pt-4">
-        <div class="text-sm text-gray-400 mb-4">
-          <div class="mb-2">
-            <label class="block text-xs text-gray-400 mb-1">{{ t('template.name') }}</label>
-            <input v-model="importName" type="text" required class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent" />
+        <div v-else-if="step === 'preview'" class="pt-4 space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-400 mb-1">{{ t('template.name') }}</label>
+            <Input v-model="importName" type="text" required />
           </div>
-          <span>{{ t('csv.preview.channels', { count: previewChannels.length }) }}</span>
+          <div class="text-sm text-gray-400">
+            <span>{{ t('csv.preview.channels', { count: previewChannels.length }) }}</span>
+          </div>
+          <div class="overflow-x-auto max-h-96 border border-white/10 rounded-md">
+            <Table class="min-w-full text-sm">
+              <TableHeader class="sticky top-0 bg-gray-900 shadow-sm">
+                <TableRow>
+                  <TableHead class="w-16">{{ t('field.channel') }}</TableHead>
+                  <TableHead class="w-24">{{ t('field.address') }}</TableHead>
+                  <TableHead class="w-[30ch]">{{ t('field.device') }}</TableHead>
+                  <TableHead class="w-[30ch]">{{ t('field.position') }}</TableHead>
+                  <TableHead class="w-24">{{ t('field.color') }}</TableHead>
+                  <TableHead>{{ t('field.notes') }}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow v-for="ch in previewChannels.slice(0, 20)" :key="ch.channel">
+                  <TableCell>{{ ch.channel }}</TableCell>
+                  <TableCell>{{ ch.address }}</TableCell>
+                  <TableCell>{{ ch.device }}</TableCell>
+                  <TableCell>{{ ch.position }}</TableCell>
+                  <TableCell>{{ ch.color }}</TableCell>
+                  <TableCell>{{ ch.notes }}</TableCell>
+                </TableRow>
+                <TableRow v-if="previewChannels.length > 20">
+                  <TableCell colspan="6" class="text-center text-muted-foreground">{{ t('template.more_channels', { count: previewChannels.length - 20 }) }}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+          <DialogFooter class="flex justify-end gap-3 mt-4 sm:justify-end">
+            <span v-if="importError" class="text-sm text-red-400 flex-1">{{ importError }}</span>
+            <Button variant="outline" @click="step = 'select'">{{ t('action.back') }}</Button>
+            <Button :disabled="importing || !importName.trim()" @click="handleImport">
+              {{ importing ? '…' : t('template.upload.confirm') }}
+            </Button>
+          </DialogFooter>
         </div>
-        <div class="overflow-x-auto">
-          <table class="min-w-full text-sm">
-            <thead>
-              <tr>
-                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-400 border-b border-white/10">{{ t('field.channel') }}</th>
-                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-400 border-b border-white/10">{{ t('field.address') }}</th>
-                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-400 border-b border-white/10">{{ t('field.device') }}</th>
-                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-400 border-b border-white/10">{{ t('field.position') }}</th>
-                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-400 border-b border-white/10">{{ t('field.color') }}</th>
-                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-400 border-b border-white/10">{{ t('field.notes') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="ch in previewChannels.slice(0, 20)" :key="ch.channel">
-                <td class="px-3 py-2 text-white border-b border-white/10">{{ ch.channel }}</td>
-                <td class="px-3 py-2 text-white border-b border-white/10">{{ ch.address }}</td>
-                <td class="px-3 py-2 text-white border-b border-white/10">{{ ch.device }}</td>
-                <td class="px-3 py-2 text-white border-b border-white/10">{{ ch.position }}</td>
-                <td class="px-3 py-2 text-white border-b border-white/10">{{ ch.color }}</td>
-                <td class="px-3 py-2 text-white border-b border-white/10">{{ ch.notes }}</td>
-              </tr>
-              <tr v-if="previewChannels.length > 20">
-                <td colspan="6" class="px-3 py-2 text-gray-400">{{ t('template.more_channels', { count: previewChannels.length - 20 }) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="flex justify-end gap-3 py-4 border-t border-white/10 mt-4">
-          <span v-if="importError" class="text-sm text-red-400 flex-1">{{ importError }}</span>
-          <button class="rounded-md px-3 py-2 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20" @click="step = 'select'">{{ t('action.back') }}</button>
-          <button class="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-50" :disabled="importing || !importName.trim()" @click="handleImport">
-            {{ importing ? '…' : t('template.upload.confirm') }}
-          </button>
-        </div>
-      </div>
 
-      <div v-else-if="step === 'done'" class="px-6 py-8 text-center">
-        <p class="text-white mb-4">✓ {{ t('template.upload.success') }}</p>
-        <button class="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-hover" @click="closeUpload">{{ t('action.close') }}</button>
-      </div>
-    </dialog>
+        <div v-else-if="step === 'done'" class="py-8 text-center">
+          <p class="text-white mb-4">✓ {{ t('template.upload.success') }}</p>
+          <Button @click="closeUpload">{{ t('action.close') }}</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
@@ -343,6 +340,7 @@ import { fetchTemplateFloorplan, uploadTemplateFloorplanImage, deleteTemplateFlo
 import { api } from '../api/client.js'
 
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell, TableFooter } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
@@ -356,7 +354,7 @@ const templates = ref([])
 const loading = ref(true)
 
 // Upload
-const uploadDialog = ref(null)
+const uploadOpen = ref(false)
 const fileInput = ref(null)
 const step = ref('select')
 const csvText = ref('')
@@ -403,11 +401,11 @@ function openUpload() {
   importName.value = ''
   previewChannels.value = []
   importError.value = ''
-  uploadDialog.value.showModal()
+  uploadOpen.value = true
 }
 
 function closeUpload() {
-  uploadDialog.value.close()
+  uploadOpen.value = false
   step.value = 'select'
 }
 

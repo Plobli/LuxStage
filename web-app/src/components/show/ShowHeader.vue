@@ -7,22 +7,20 @@
     <div class="h-6 w-px bg-white/10" aria-hidden="true"></div>
 
     <!-- Tab-Switcher -->
-    <div class="flex gap-1 mr-2">
-      <button
-        :class="modelValue === 'channels' ? 'bg-white/10 text-white' : 'text-gray-400'"
-        class="rounded px-2 py-1 text-xs font-medium"
-        @click="emit('update:modelValue', 'channels')"
-      >{{ labels.tabChannels }}</button>
-      <button
-        :class="modelValue === 'info' ? 'bg-white/10 text-white' : 'text-gray-400'"
-        class="rounded px-2 py-1 text-xs font-medium"
-        @click="emit('update:modelValue', 'info')"
-      >{{ labels.tabInfo }}</button>
-      <button
-        :class="modelValue === 'floorplan' ? 'bg-white/10 text-white' : 'text-gray-400'"
-        class="rounded px-2 py-1 text-xs font-medium"
-        @click="emit('update:modelValue', 'floorplan')"
-      >{{ labels.tabFloorplan }}</button>
+    <div class="flex mr-2">
+      <Tabs :model-value="modelValue" @update:model-value="emit('update:modelValue', $event)" class="w-auto">
+        <TabsList class="bg-white/5 p-1 h-8">
+          <TabsTrigger value="channels" class="text-xs px-3 py-1 data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400">
+            {{ labels.tabChannels }}
+          </TabsTrigger>
+          <TabsTrigger value="info" class="text-xs px-3 py-1 data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400">
+            {{ labels.tabInfo }}
+          </TabsTrigger>
+          <TabsTrigger value="floorplan" class="text-xs px-3 py-1 data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400">
+            {{ labels.tabFloorplan }}
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
     </div>
 
     <div class="flex min-w-0 flex-1 items-center gap-x-3">
@@ -37,7 +35,7 @@
         :title="labels.undo"
         @click="emit('undo')"
       >
-        <ArrowUturnLeftIcon class="size-4" />
+        <Undo2 class="size-4" />
       </button>
       <button
         type="button"
@@ -47,7 +45,7 @@
         :title="labels.redo"
         @click="emit('redo')"
       >
-        <ArrowUturnRightIcon class="size-4" />
+        <Redo2 class="size-4" />
       </button>
       <span v-if="saving" class="text-xs text-gray-500 shrink-0">…</span>
     </div>
@@ -74,7 +72,7 @@
           :placeholder="labels.search"
           class="col-start-1 row-start-1 block w-28 xl:w-48 bg-white/5 py-1.5 pr-3 pl-9 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent rounded-md placeholder:text-gray-500"
         />
-        <MagnifyingGlassIcon class="pointer-events-none col-start-1 row-start-1 ml-3 size-4 self-center text-gray-400" aria-hidden="true" />
+        <Search class="pointer-events-none col-start-1 row-start-1 ml-3 size-4 self-center text-gray-400" aria-hidden="true" />
       </div>
     </div>
 
@@ -140,8 +138,8 @@
 
 <script setup>
 import { ref } from 'vue'
-import { MagnifyingGlassIcon } from '@heroicons/vue/20/solid'
-import { ArrowUturnLeftIcon, ArrowUturnRightIcon } from '@heroicons/vue/24/outline'
+import { Search, Undo2, Redo2 } from 'lucide-vue-next'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 defineProps({
   modelValue: { type: String, default: 'channels' }, // active tab

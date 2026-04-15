@@ -181,10 +181,19 @@ function photoUrl(filename) {
 }
 
 onMounted(async () => {
-  const caps = await fetchPhotoCaptions(props.showId)
-  const map = {}
-  for (const c of caps) map[c.filename] = c
-  photoCaptions.value = map
+  try {
+    const caps = await fetchPhotoCaptions(props.showId)
+    const map = {}
+    if (Array.isArray(caps)) {
+      for (const c of caps) map[c.filename] = c
+    } else if (caps && typeof caps === 'object') {
+      // Fallback falls das Backend ein Objekt statt eines Arrays liefert
+      Object.assign(map, caps)
+    }
+    photoCaptions.value = map
+  } catch (e) {
+    console.error('Fehler beim Laden der Fotobeschriftungen:', e)
+  }
 })
 
 async function onCaptionBlur(filename, event) {

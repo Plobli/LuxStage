@@ -44,9 +44,9 @@
 
     <div v-else :inert="!isOnline || undefined" :class="{ 'opacity-40 pointer-events-none select-none': !isOnline }">
       <!-- Two-column layout: aside + main -->
-      <div :class="mobileTab !== 'channels' && mobileTab !== 'info' ? 'hidden' : mobileTab !== 'channels' ? 'hidden xl:block' : ''" class="xl:pl-[28rem] xl:ml-0">
+      <div :class="mobileTab !== 'channels' && mobileTab !== 'info' ? 'hidden' : mobileTab !== 'channels' ? 'hidden xl:block' : ''" class="xl:pl-[28rem] xl:ml-0 h-[calc(100vh-4rem)] overflow-y-auto">
         <!-- Main: Kanaltabelle -->
-        <main class="px-4 py-6 sm:px-6 lg:px-8">
+        <main class="px-4 py-6 sm:px-6 lg:px-8 min-h-full">
           <div class="flex items-center gap-3 mb-4">
             <SectionHeading :text="t('show.channels')" class="flex-1 min-w-0" />
             <span class="text-xs text-gray-500 shrink-0">{{ totalVisible }} / {{ channels.length }}</span>
@@ -658,7 +658,6 @@ onMounted(async () => {
 
   // Drag & Drop initialisieren
   await nextTick()
-  initSortable()
 
   // Scroll-Position wiederherstellen
   const scrollKey = `scroll_${props.id}`

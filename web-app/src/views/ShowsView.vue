@@ -3,184 +3,133 @@
     <!-- Page Header -->
     <div class="sm:flex sm:items-center mb-8">
       <div class="sm:flex-auto">
-        <h1 class="text-base font-semibold text-white">{{ t('nav.shows') }}</h1>
+        <h1 class="text-2xl font-semibold text-foreground">{{ t('nav.shows') }}</h1>
       </div>
       <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-        <button
-          type="button"
-          class="block rounded-md bg-accent px-3 py-2 text-center text-sm font-semibold text-white shadow-xs hover:bg-accent-hover"
-          @click="drawerOpen = true"
-        >
+        <Button @click="drawerOpen = true">
           {{ t('show.new') }}
-        </button>
+        </Button>
       </div>
     </div>
 
     <!-- Loading -->
-    <div v-if="loading" class="text-sm text-gray-400">…</div>
+    <div v-if="loading" class="text-sm text-muted-foreground">…</div>
 
     <!-- Leerer Zustand -->
-    <div v-else-if="shows.length === 0" class="text-sm text-gray-400">{{ t('show.list.empty') }}</div>
+    <div v-else-if="shows.length === 0" class="text-sm text-muted-foreground">{{ t('show.list.empty') }}</div>
 
     <!-- Gruppierte Show-Listen -->
     <template v-else>
       <div v-for="group in groupedShows" :key="group.template" class="mb-10">
-        <h2 class="text-sm font-medium text-gray-400 mb-3">
+        <h2 class="text-sm font-medium text-muted-foreground mb-3">
           {{ templateDisplayName(group.template) || '—' }}
         </h2>
-        <ul role="list" class="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
+        <ul role="list" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           <li
             v-for="show in group.shows"
             :key="show.id"
-            class="col-span-1 flex rounded-md shadow-xs cursor-pointer"
-            @click="router.push(`/shows/${show.id}`)"
+            class="col-span-1"
           >
-            <div class="flex w-16 shrink-0 items-center justify-center rounded-l-md bg-gray-700 text-sm font-medium text-white">
-              {{ initials(show.name || show.id) }}
-            </div>
-            <div class="flex flex-1 items-center justify-between truncate rounded-r-md border-t border-r border-b border-white/10 bg-gray-800/50">
-              <div class="flex-1 truncate px-4 py-2 text-sm">
-                <span class="font-medium text-white">{{ show.name || show.id }}</span>
-                <p class="text-gray-400">{{ show.datum }}</p>
-                <p v-if="show.last_edited_by" class="text-gray-500 text-xs mt-0.5 truncate">
-                  {{ show.last_edited_by }}, {{ formatEditedAt(show.last_edited_at) }}
-                </p>
+            <Card class="flex h-full overflow-hidden cursor-pointer hover:bg-muted/50 transition-colors" @click="router.push(`/shows/${show.id}`)">
+              <div class="flex w-16 shrink-0 items-center justify-center bg-secondary text-sm font-medium text-secondary-foreground border-r border-border">
+                {{ initials(show.name || show.id) }}
               </div>
-              <div class="shrink-0 pr-2" @click.stop>
-                <button
-                  type="button"
-                  class="inline-flex size-8 items-center justify-center rounded-full text-gray-400 hover:text-white focus:outline-none"
-                  @click="archive(show.id)"
-                  :title="t('show.archive')"
-                >
-                  <ArchiveBoxIcon class="size-4" aria-hidden="true" />
-                </button>
+              <div class="flex flex-1 items-center justify-between truncate bg-card">
+                <div class="flex-1 truncate px-4 py-3 text-sm">
+                  <span class="font-medium text-foreground">{{ show.name || show.id }}</span>
+                  <p class="text-muted-foreground">{{ show.datum }}</p>
+                  <p v-if="show.last_edited_by" class="text-muted-foreground text-xs mt-1 truncate">
+                    {{ show.last_edited_by }}, {{ formatEditedAt(show.last_edited_at) }}
+                  </p>
+                </div>
+                <div class="shrink-0 pr-4" @click.stop>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="text-muted-foreground hover:text-foreground"
+                    @click="archive(show.id)"
+                    :title="t('show.archive')"
+                  >
+                    <Archive class="size-4" aria-hidden="true" />
+                  </Button>
+                </div>
               </div>
-            </div>
+            </Card>
           </li>
         </ul>
       </div>
     </template>
 
-    <!-- Neue Show: Drawer -->
-    <TransitionRoot as="template" :show="drawerOpen">
-      <Dialog class="relative z-50" @close="drawerOpen = false">
-        <TransitionChild
-          as="template"
-          enter="ease-in-out duration-500"
-          enter-from="opacity-0"
-          enter-to="opacity-100"
-          leave="ease-in-out duration-500"
-          leave-from="opacity-100"
-          leave-to="opacity-0"
-        >
-          <div class="fixed inset-0 bg-gray-950/80 transition-opacity" />
-        </TransitionChild>
-        <div class="fixed inset-0 overflow-hidden">
-          <div class="absolute inset-0 overflow-hidden">
-            <div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
-              <TransitionChild
-                as="template"
-                enter="transform transition ease-in-out duration-500"
-                enter-from="translate-x-full"
-                enter-to="translate-x-0"
-                leave="transform transition ease-in-out duration-500"
-                leave-from="translate-x-0"
-                leave-to="translate-x-full"
-              >
-                <DialogPanel class="pointer-events-auto w-screen max-w-md">
-                  <div class="flex h-full flex-col overflow-y-scroll bg-gray-950 py-6 shadow-xl ring-1 ring-white/10">
-                    <div class="px-4 sm:px-6">
-                      <div class="flex items-start justify-between">
-                        <DialogTitle class="text-base font-semibold text-white">{{ t('show.new') }}</DialogTitle>
-                        <div class="ml-3 flex h-7 items-center">
-                          <button type="button" class="rounded-md text-gray-400 hover:text-white" @click="drawerOpen = false">
-                            <span class="sr-only">Schließen</span>
-                            <XMarkIcon class="size-6" aria-hidden="true" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="relative mt-6 flex-1 px-4 sm:px-6">
-                      <form @submit.prevent="handleCreate" class="space-y-6">
-                        <div>
-                          <label class="block text-sm/6 font-medium text-white">{{ t('show.name') }}</label>
-                          <div class="mt-2">
-                            <input
-                              v-model="form.name"
-                              type="text"
-                              required
-                              class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-accent"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label class="block text-sm/6 font-medium text-white">{{ t('show.date') }}</label>
-                          <div class="mt-2">
-                            <input
-                              v-model="form.datum"
-                              type="date"
-                              class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label class="block text-sm/6 font-medium text-white">{{ t('show.template') }}</label>
-                          <div class="mt-2">
-                            <select
-                              v-model="form.template"
-                              class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent"
-                            >
-                              <option value="" class="bg-gray-800">{{ t('show.template.none') }}</option>
-                              <option v-for="tpl in templates" :key="tpl" :value="tpl" class="bg-gray-800">
-                                {{ templateDisplayName(tpl) }}
-                              </option>
-                            </select>
-                          </div>
-                        </div>
-                        <div class="flex justify-end gap-3 pt-4 border-t border-white/10">
-                          <button
-                            type="button"
-                            class="rounded-md px-3 py-2 text-sm font-semibold text-gray-400 ring-1 ring-white/10 hover:ring-white/20"
-                            @click="drawerOpen = false"
-                          >
-                            {{ t('action.cancel') }}
-                          </button>
-                          <button
-                            type="submit"
-                            :disabled="creating"
-                            class="inline-flex items-center gap-2 rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-50"
-                          >
-                            <svg v-if="creating" class="size-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                            </svg>
-                            {{ creating ? t('show.creating') : t('show.create') }}
-                          </button>
-                        </div>
-                      </form>
-                    </div>
-                  </div>
-                </DialogPanel>
-              </TransitionChild>
-            </div>
+    <!-- Neue Show: Dialog -->
+    <Dialog :open="drawerOpen" @update:open="drawerOpen = $event">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{{ t('show.new') }}</DialogTitle>
+        </DialogHeader>
+        <form @submit.prevent="handleCreate" class="space-y-6 mt-4">
+          <div class="space-y-2">
+            <Label for="showName">{{ t('show.name') }}</Label>
+            <Input
+              id="showName"
+              v-model="form.name"
+              type="text"
+              required
+            />
           </div>
-        </div>
-      </Dialog>
-    </TransitionRoot>
+          <div class="space-y-2">
+            <Label for="showDate">{{ t('show.date') }}</Label>
+            <Input
+              id="showDate"
+              v-model="form.datum"
+              type="date"
+            />
+          </div>
+          <div class="space-y-2">
+            <Label for="showTemplate">{{ t('show.template') }}</Label>
+            <select
+              id="showTemplate"
+              v-model="form.template"
+              class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="">{{ t('show.template.none') }}</option>
+              <option v-for="tpl in templates" :key="tpl" :value="tpl">
+                {{ templateDisplayName(tpl) }}
+              </option>
+            </select>
+          </div>
+          <DialogFooter class="pt-4">
+            <Button variant="outline" type="button" @click="drawerOpen = false">
+              {{ t('action.cancel') }}
+            </Button>
+            <Button type="submit" :disabled="creating">
+              <svg v-if="creating" class="mr-2 size-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+              {{ creating ? t('show.creating') : t('show.create') }}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue'
-import { XMarkIcon, ArchiveBoxIcon } from '@heroicons/vue/24/outline'
+import { Archive } from 'lucide-vue-next'
 import { useLocale } from '../composables/useLocale.js'
 import { fetchShows, createShow, archiveShow } from '../api/shows.js'
 import { fetchTemplates, fetchTemplateChannels } from '../api/templates.js'
 import { saveChannels } from '../api/channels.js'
 import { templateDisplayName } from '../utils/templateName.js'
+
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 const router = useRouter()
 const { t } = useLocale()

@@ -5,230 +5,227 @@
     <template v-if="editingName">
       <!-- Header -->
       <div class="flex items-center gap-x-4 mb-8">
-        <button type="button" class="text-gray-400 hover:text-white" @click="editingName = null">
+        <Button variant="ghost" size="icon" class="text-muted-foreground hover:text-foreground" @click="editingName = null">
           <svg class="size-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M17 10a.75.75 0 0 1-.75.75H5.612l4.158 3.96a.75.75 0 1 1-1.04 1.08l-5.5-5.25a.75.75 0 0 1 0-1.08l5.5-5.25a.75.75 0 1 1 1.04 1.08L5.612 9.25H16.25A.75.75 0 0 1 17 10Z" clip-rule="evenodd" /></svg>
-        </button>
-        <h1 class="text-base font-semibold text-white">{{ templateDisplayName(editingName) || editingName }}</h1>
-        <span v-if="detailSaving || sectionsSaving" class="text-xs text-gray-500">…</span>
-
-        <!-- Tab-Switcher -->
-        <div class="ml-auto flex gap-1 border-b border-white/10 -mb-10 pb-0">
-          <button
-            :class="['px-4 py-2 text-sm font-medium border-b-2 -mb-px', activeTab === 'channels' ? 'border-accent text-white' : 'border-transparent text-gray-400 hover:text-white']"
-            @click="activeTab = 'channels'"
-          >{{ t('show.channels') }}</button>
-          <button
-            :class="['px-4 py-2 text-sm font-medium border-b-2 -mb-px', activeTab === 'sections' ? 'border-accent text-white' : 'border-transparent text-gray-400 hover:text-white']"
-            @click="activeTab = 'sections'"
-          >{{ t('sections.btn') }}</button>
-          <button
-            :class="['px-4 py-2 text-sm font-medium border-b-2 -mb-px', activeTab === 'floorplan' ? 'border-accent text-white' : 'border-transparent text-gray-400 hover:text-white']"
-            @click="activeTab = 'floorplan'"
-          >Grundriss</button>
-        </div>
+        </Button>
+        <h1 class="text-2xl font-semibold text-foreground">{{ templateDisplayName(editingName) || editingName }}</h1>
+        <span v-if="detailSaving || sectionsSaving" class="text-xs text-muted-foreground">…</span>
       </div>
 
-      <div v-if="detailLoading" class="text-sm text-gray-400">…</div>
+      <div v-if="detailLoading" class="text-sm text-muted-foreground">…</div>
 
       <template v-else>
-        <!-- Kanaltabelle -->
-        <div v-show="activeTab === 'channels'">
-          <table class="min-w-full">
-            <colgroup>
-              <col class="w-16" />
-              <col class="w-20" />
-              <col class="w-[30ch]" />
-              <col class="w-[30ch]" />
-              <col />
-              <col class="w-6" />
-            </colgroup>
-            <thead class="sticky top-0 z-10 bg-gray-950">
-              <tr class="border-b border-white/10">
-                <th scope="col" class="py-3 pr-3 pl-0 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ t('field.channel') }}</th>
-                <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ t('field.color') }}</th>
-                <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ t('field.device') }}</th>
-                <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ t('field.position') }}</th>
-                <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ t('field.notes') }}</th>
-                <th scope="col" class="w-6"></th>
-              </tr>
-            </thead>
-            <tbody v-for="group in groupedChannels" :key="group.position">
-              <tr class="border-t border-white/5">
-                <th colspan="6" scope="colgroup" class="py-2 pr-3 pl-0 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">
+        <Tabs v-model="activeTab" class="w-full">
+          <TabsList class="w-full justify-start border-b border-border bg-transparent p-0 h-auto rounded-none mb-6">
+            <TabsTrigger value="channels" class="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground rounded-none px-4 py-2 border-b-2 border-transparent">
+              {{ t('show.channels') }}
+            </TabsTrigger>
+            <TabsTrigger value="sections" class="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground rounded-none px-4 py-2 border-b-2 border-transparent">
+              {{ t('sections.btn') }}
+            </TabsTrigger>
+            <TabsTrigger value="floorplan" class="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground rounded-none px-4 py-2 border-b-2 border-transparent">
+              Grundriss
+            </TabsTrigger>
+          </TabsList>
+
+          <!-- Kanaltabelle -->
+          <TabsContent value="channels" class="mt-0 outline-none">
+            <div class="overflow-hidden border border-border rounded-lg bg-card">
+              <Table>
+            <TableHeader class="sticky top-0 z-10 bg-muted/50">
+              <TableRow>
+                <TableHead class="w-16">{{ t('field.channel') }}</TableHead>
+                <TableHead class="w-24">{{ t('field.color') }}</TableHead>
+                <TableHead class="w-[30ch]">{{ t('field.device') }}</TableHead>
+                <TableHead class="w-[30ch]">{{ t('field.position') }}</TableHead>
+                <TableHead>{{ t('field.notes') }}</TableHead>
+                <TableHead class="w-12"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody v-for="group in groupedChannels" :key="group.position">
+              <TableRow class="bg-muted/30 hover:bg-muted/30">
+                <TableCell colspan="6" class="py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                   {{ group.position || t('channel.no_category') }}
-                  <span class="ml-2 font-normal normal-case text-gray-600">{{ group.channels.length }}</span>
-                </th>
-              </tr>
-              <tr
+                  <span class="ml-2 font-normal normal-case text-muted-foreground/70">{{ group.channels.length }}</span>
+                </TableCell>
+              </TableRow>
+              <TableRow
                 v-for="ch in group.channels"
                 :key="ch.channel"
-                class="border-t border-white/5 group/row hover:bg-white/[0.03] transition-colors align-middle"
+                class="group/row"
               >
-                <td class="py-2 pr-3 pl-0 align-middle">
+                <TableCell class="align-top py-3">
                   <div class="flex flex-col items-center gap-1">
-                    <input
-                      :value="ch.channel"
-                      @change="ch.channel = $event.target.value; persist()"
-                      class="bg-transparent focus:bg-white/5 focus:outline-none text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[3ch] text-center"
+                    <Input
+                      :model-value="ch.channel"
+                      @update:model-value="ch.channel = $event; persist()"
+                      class="h-10 text-xl font-bold font-mono px-1 text-center border-transparent hover:border-border focus:border-border bg-transparent shadow-none"
                     />
-                    <input
-                      :value="ch.address"
-                      @change="ch.address = $event.target.value; persist()"
-                      class="bg-transparent focus:bg-white/5 focus:outline-none text-xs text-gray-500 px-0 border-0 w-[5ch] text-center"
+                    <Input
+                      :model-value="ch.address"
+                      @update:model-value="ch.address = $event; persist()"
+                      class="h-6 text-xs text-muted-foreground px-1 text-center border-transparent hover:border-border focus:border-border bg-transparent shadow-none"
                     />
                   </div>
-                </td>
-                <td class="px-3 py-2 align-middle">
+                </TableCell>
+                <TableCell class="align-top py-3">
                   <ColorAutocomplete
                     :modelValue="ch.color"
                     @update:modelValue="ch.color = $event"
                     @change="persist()"
                     :placeholder="t('field.color')"
                   />
-                </td>
-                <td class="px-3 py-0 align-middle">
-                  <textarea :value="ch.device" @change="ch.device = $event.target.value; persist()" class="bg-white/[0.04] focus:bg-white/[0.07] focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle rounded" />
-                </td>
-                <td class="px-3 py-0 align-middle">
-                  <input
-                    :value="ch.position"
-                    @change="ch.position = $event.target.value; persist()"
-                    class="bg-white/[0.04] focus:bg-white/[0.07] focus:outline-none text-sm text-gray-300 w-full px-2 border-0 rounded h-14"
+                </TableCell>
+                <TableCell class="align-top py-3">
+                  <Textarea :model-value="ch.device" @update:model-value="ch.device = $event; persist()" class="min-h-[60px] resize-none" />
+                </TableCell>
+                <TableCell class="align-top py-3">
+                  <Input
+                    :model-value="ch.position"
+                    @update:model-value="ch.position = $event; persist()"
+                    class="h-[60px]"
                   />
-                </td>
-                <td class="px-3 py-0 align-middle">
-                  <textarea :value="ch.notes" @change="ch.notes = $event.target.value; persist()" class="bg-white/[0.04] focus:bg-white/[0.07] focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle rounded" />
-                </td>
-                <td class="py-2 pl-2 pr-0 align-middle">
-                  <button class="text-gray-600 hover:text-red-400 text-xs opacity-0 group-hover/row:opacity-100 transition-opacity" @click="deleteChannel(ch)" :title="t('action.delete')">✕</button>
-                </td>
-              </tr>
-              <tr class="border-t border-white/5">
-                <td colspan="6" class="py-2 pl-0">
-                  <button type="button" class="text-sm text-gray-600 hover:text-gray-300" @click="startAdd(group.position)">+ {{ t('channel.add') }}</button>
-                </td>
-              </tr>
-              <tr v-if="addingToPosition === group.position" class="border-t border-white/5 bg-white/5" @keydown.escape="addingToPosition = null" @keydown.enter.prevent="confirmAdd">
-                <td class="py-2 pr-3 pl-0 align-middle">
+                </TableCell>
+                <TableCell class="align-top py-3">
+                  <Textarea :model-value="ch.notes" @update:model-value="ch.notes = $event; persist()" class="min-h-[60px] resize-none" />
+                </TableCell>
+                <TableCell class="align-top py-3 pr-4">
+                  <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover/row:opacity-100 transition-opacity" @click="deleteChannel(ch)" :title="t('action.delete')">✕</Button>
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell colspan="6" class="py-2">
+                  <Button variant="ghost" size="sm" class="text-muted-foreground hover:text-foreground" @click="startAdd(group.position)">+ {{ t('channel.add') }}</Button>
+                </TableCell>
+              </TableRow>
+              <TableRow v-if="addingToPosition === group.position" class="bg-muted/30" @keydown.escape="addingToPosition = null" @keydown.enter.prevent="confirmAdd">
+                <TableCell class="align-top py-3">
                   <div class="flex flex-col items-center gap-1">
-                    <input autofocus class="bg-transparent focus:outline-none text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[3ch] text-center" v-model="addForm.channel" :placeholder="t('show.channel.nr')" />
-                    <input class="bg-transparent focus:outline-none text-xs text-gray-500 px-0 border-0 w-[5ch] text-center" v-model="addForm.address" />
+                    <Input autofocus class="h-10 text-xl font-bold font-mono px-1 text-center" v-model="addForm.channel" :placeholder="t('show.channel.nr')" />
+                    <Input class="h-6 text-xs text-muted-foreground px-1 text-center" v-model="addForm.address" />
                   </div>
-                </td>
-                <td class="px-3 py-2 align-middle">
+                </TableCell>
+                <TableCell class="align-top py-3">
                   <ColorAutocomplete
                     v-model="addForm.color"
                     @change="() => {}"
                     :placeholder="t('field.color')"
                   />
-                </td>
-                <td class="px-3 py-0 align-middle"><textarea class="bg-white/[0.04] focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle rounded" v-model="addForm.device" /></td>
-                <td class="px-3 py-0 align-middle"><input class="bg-white/[0.04] focus:outline-none text-sm text-gray-300 w-full px-2 border-0 rounded h-14" v-model="addForm.position" /></td>
-                <td class="px-3 py-0 align-middle"><textarea class="bg-white/[0.04] focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle rounded" v-model="addForm.notes" /></td>
-                <td class="py-2 pl-2 pr-0 align-middle"><button class="text-green-400 hover:text-green-300 text-sm" @click="confirmAdd">✓</button></td>
-              </tr>
-            </tbody>
-            <tbody v-if="groupedChannels.length === 0">
-              <tr v-if="addingToPosition === ''" class="border-t border-white/5 bg-white/5" @keydown.escape="addingToPosition = null" @keydown.enter.prevent="confirmAdd">
-                <td class="py-2 pr-3 pl-0 align-middle">
+                </TableCell>
+                <TableCell class="align-top py-3"><Textarea class="min-h-[60px] resize-none" v-model="addForm.device" /></TableCell>
+                <TableCell class="align-top py-3"><Input class="h-[60px]" v-model="addForm.position" /></TableCell>
+                <TableCell class="align-top py-3"><Textarea class="min-h-[60px] resize-none" v-model="addForm.notes" /></TableCell>
+                <TableCell class="align-top py-3 pr-4"><Button variant="ghost" size="icon" class="h-8 w-8 text-green-500 hover:text-green-600 hover:bg-green-500/10" @click="confirmAdd">✓</Button></TableCell>
+              </TableRow>
+            </TableBody>
+            <TableBody v-if="groupedChannels.length === 0">
+              <TableRow v-if="addingToPosition === ''" class="bg-muted/30" @keydown.escape="addingToPosition = null" @keydown.enter.prevent="confirmAdd">
+                <TableCell class="align-top py-3">
                   <div class="flex flex-col items-center gap-1">
-                    <input autofocus class="bg-transparent focus:outline-none text-2xl font-bold font-mono text-white px-0 border-0 leading-none w-[3ch] text-center" v-model="addForm.channel" :placeholder="t('show.channel.nr')" />
-                    <input class="bg-transparent focus:outline-none text-xs text-gray-500 px-0 border-0 w-[5ch] text-center" v-model="addForm.address" />
+                    <Input autofocus class="h-10 text-xl font-bold font-mono px-1 text-center" v-model="addForm.channel" :placeholder="t('show.channel.nr')" />
+                    <Input class="h-6 text-xs text-muted-foreground px-1 text-center" v-model="addForm.address" />
                   </div>
-                </td>
-                <td class="px-3 py-2 align-middle">
+                </TableCell>
+                <TableCell class="align-top py-3">
                   <ColorAutocomplete
                     v-model="addForm.color"
                     @change="() => {}"
                     :placeholder="t('field.color')"
                   />
-                </td>
-                <td class="px-3 py-0 align-middle"><textarea class="bg-white/[0.04] focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle rounded" v-model="addForm.device" /></td>
-                <td class="px-3 py-0 align-middle"><input class="bg-white/[0.04] focus:outline-none text-sm text-gray-300 w-full px-2 border-0 rounded h-14" v-model="addForm.position" /></td>
-                <td class="px-3 py-0 align-middle"><textarea class="bg-white/[0.04] focus:outline-none text-sm text-gray-300 w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle rounded" v-model="addForm.notes" /></td>
-                <td class="py-2 pl-2 pr-0 align-middle"><button class="text-green-400 hover:text-green-300 text-sm" @click="confirmAdd">✓</button></td>
-              </tr>
-              <tr v-else class="border-t border-white/5">
-                <td colspan="6" class="py-4 pl-0">
-                  <span class="text-sm text-gray-500">{{ t('channel.list.empty') }}</span>
-                  <button type="button" class="ml-3 text-sm text-gray-400 hover:text-white" @click="startAdd('')">+ {{ t('channel.add') }}</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                </TableCell>
+                <TableCell class="align-top py-3"><Textarea class="min-h-[60px] resize-none" v-model="addForm.device" /></TableCell>
+                <TableCell class="align-top py-3"><Input class="h-[60px]" v-model="addForm.position" /></TableCell>
+                <TableCell class="align-top py-3"><Textarea class="min-h-[60px] resize-none" v-model="addForm.notes" /></TableCell>
+                <TableCell class="align-top py-3 pr-4"><Button variant="ghost" size="icon" class="h-8 w-8 text-green-500 hover:text-green-600 hover:bg-green-500/10" @click="confirmAdd">✓</Button></TableCell>
+              </TableRow>
+              <TableRow v-else>
+                <TableCell colspan="6" class="py-8 text-center">
+                  <span class="text-sm text-muted-foreground">{{ t('channel.list.empty') }}</span>
+                  <Button variant="outline" size="sm" class="ml-3" @click="startAdd('')">+ {{ t('channel.add') }}</Button>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+            </div>
+          </TabsContent>
 
-        <!-- Sections-Editor -->
-        <div v-show="activeTab === 'sections'" class="space-y-4 max-w-2xl">
-          <div v-for="(sec, idx) in templateSections" :key="sec.id" class="border border-white/10 rounded-lg p-4 space-y-3">
+          <!-- Sections-Editor -->
+          <TabsContent value="sections" class="mt-0 outline-none space-y-4 max-w-2xl">
+          <div v-for="(sec, idx) in templateSections" :key="sec.id" class="border border-border rounded-lg p-4 space-y-3 bg-card">
             <div class="flex items-center gap-2">
               <div class="flex flex-col gap-0.5">
-                <button class="text-gray-500 hover:text-white text-[10px] leading-none px-0.5 disabled:opacity-30" :disabled="idx === 0" @click="moveSection(idx, -1)">▲</button>
-                <button class="text-gray-500 hover:text-white text-[10px] leading-none px-0.5 disabled:opacity-30" :disabled="idx === templateSections.length - 1" @click="moveSection(idx, 1)">▼</button>
+                <Button variant="ghost" size="icon" class="h-6 w-6 text-muted-foreground hover:text-foreground disabled:opacity-30" :disabled="idx === 0" @click="moveSection(idx, -1)">▲</Button>
+                <Button variant="ghost" size="icon" class="h-6 w-6 text-muted-foreground hover:text-foreground disabled:opacity-30" :disabled="idx === templateSections.length - 1" @click="moveSection(idx, 1)">▼</Button>
               </div>
-              <input
-                :value="sec.title"
+              <Input
+                :model-value="sec.title"
                 :placeholder="t('sections.title.placeholder')"
-                @input="sec.title = $event.target.value"
+                @update:model-value="sec.title = $event"
                 @change="persistSections"
-                class="flex-1 bg-white/5 rounded-md px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent"
+                class="flex-1"
               />
-              <select
-                :value="sec.type"
-                @change="onTypeChange(sec, $event.target.value)"
-                class="bg-white/5 rounded-md px-2 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10"
-              >
-                <option value="markdown" class="bg-gray-900">{{ t('sections.type.markdown') }}</option>
-                <option value="fields" :disabled="hasFieldsType() && sec.type !== 'fields'" class="bg-gray-900">{{ t('sections.type.fields') }}</option>
-              </select>
-              <button class="text-gray-500 hover:text-red-400 text-sm shrink-0" @click="deleteSection(idx)">✕</button>
+              <Select :model-value="sec.type" @update:model-value="(value) => onTypeChange(sec, value)">
+                <SelectTrigger class="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="markdown">{{ t('sections.type.markdown') }}</SelectItem>
+                    <SelectItem value="fields" :disabled="hasFieldsType() && sec.type !== 'fields'">{{ t('sections.type.fields') }}</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              <Button variant="ghost" size="icon" class="shrink-0 text-muted-foreground hover:text-destructive" @click="deleteSection(idx)">✕</Button>
             </div>
             <div v-if="sec.type === 'fields'" class="space-y-2 pl-6">
               <div v-for="(field, fidx) in sec.fields" :key="field.key" class="flex items-center gap-2">
-                <input
-                  :value="field.label"
+                <Input
+                  :model-value="field.label"
                   :placeholder="t('sections.field.label')"
-                  @input="field.label = $event.target.value"
+                  @update:model-value="field.label = $event"
                   @change="persistSections"
-                  class="flex-1 bg-white/5 rounded-md px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-accent"
+                  class="flex-1"
                 />
-                <button class="text-gray-500 hover:text-red-400 text-sm shrink-0" @click="deleteField(sec, fidx)">✕</button>
+                <Button variant="ghost" size="icon" class="shrink-0 text-muted-foreground hover:text-destructive" @click="deleteField(sec, fidx)">✕</Button>
               </div>
-              <button class="text-sm text-gray-400 hover:text-white" @click="addField(sec)">+ {{ t('sections.field.add') }}</button>
+              <Button variant="outline" size="sm" @click="addField(sec)">+ {{ t('sections.field.add') }}</Button>
             </div>
           </div>
-          <button class="text-sm text-gray-400 hover:text-white" @click="addSection">+ {{ t('sections.add') }}</button>
-        </div>
+          <Button variant="outline" size="sm" @click="addSection">+ {{ t('sections.add') }}</Button>
+          </TabsContent>
 
-        <!-- Grundriss-Bild Upload -->
-        <div v-show="activeTab === 'floorplan'" class="max-w-xl space-y-4">
-          <div class="text-sm text-gray-400">
+          <!-- Grundriss-Bild Upload -->
+          <TabsContent value="floorplan" class="mt-0 outline-none max-w-xl space-y-4">
+          <div class="text-sm text-muted-foreground">
             Lade ein Bild des Bühnengrundrisses hoch. Dieses Bild dient als Hintergrund für den Grundriss-Editor in allen Shows mit diesem Template.
           </div>
 
           <!-- Aktuelles Bild -->
           <div v-if="floorplanImageUrl" class="relative">
-            <img :src="floorplanImageUrl" class="w-full rounded border border-white/10 object-contain max-h-64 bg-gray-900" />
-            <button
-              class="absolute top-2 right-2 bg-gray-950/80 text-red-400 hover:text-red-300 rounded px-2 py-1 text-xs"
+            <img :src="floorplanImageUrl" class="w-full rounded border border-border object-contain max-h-64 bg-muted/10" />
+            <Button
+              variant="destructive" size="sm" class="absolute top-2 right-2"
               @click="removeFloorplanImage"
-            >Entfernen</button>
+            >Entfernen</Button>
           </div>
 
-          <div v-else class="border-2 border-dashed border-white/10 rounded-lg p-8 text-center text-gray-500 text-sm">
+          <div v-else class="border-2 border-dashed border-border rounded-lg p-8 text-center text-muted-foreground text-sm">
             Noch kein Grundriss-Bild
           </div>
 
           <!-- Upload -->
-          <label :class="['cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-white/5 rounded text-sm text-gray-300 transition-colors', floorplanUploading ? 'opacity-50 pointer-events-none' : 'hover:bg-white/10']">
-            <svg class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M9.25 13.25a.75.75 0 0 0 1.5 0V4.636l2.955 3.129a.75.75 0 0 0 1.09-1.03l-4.25-4.5a.75.75 0 0 0-1.09 0l-4.25 4.5a.75.75 0 1 0 1.09 1.03L9.25 4.636v8.614Z"/><path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"/></svg>
-            {{ floorplanUploading ? 'Wird hochgeladen…' : 'Bild hochladen' }}
-            <input type="file" accept="image/*" class="sr-only" @change="onFloorplanImageUpload" :disabled="floorplanUploading" />
-          </label>
+          <Button variant="secondary" as-child :disabled="floorplanUploading">
+            <label class="cursor-pointer inline-flex items-center gap-2">
+              <svg class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M9.25 13.25a.75.75 0 0 0 1.5 0V4.636l2.955 3.129a.75.75 0 0 0 1.09-1.03l-4.25-4.5a.75.75 0 0 0-1.09 0l-4.25 4.5a.75.75 0 1 0 1.09 1.03L9.25 4.636v8.614Z"/><path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"/></svg>
+              {{ floorplanUploading ? 'Wird hochgeladen…' : 'Bild hochladen' }}
+              <input type="file" accept="image/*" class="sr-only" @change="onFloorplanImageUpload" :disabled="floorplanUploading" />
+            </label>
+          </Button>
 
-          <div v-if="floorplanError" class="text-red-400 text-sm">{{ floorplanError }}</div>
-        </div>
-      </template>
+          <div v-if="floorplanError" class="text-red-400 text-sm">{{ floorplanError }}</div> 
+            </TabsContent>
+            </Tabs>
+            </template> 
     </template>
 
     <!-- Vorlagen-Liste -->
@@ -344,6 +341,13 @@ import ColorAutocomplete from '../components/ColorAutocomplete.vue'
 import { uuid } from '../utils/uuid.js'
 import { fetchTemplateFloorplan, uploadTemplateFloorplanImage, deleteTemplateFloorplanImage } from '../api/floorplan.js'
 import { api } from '../api/client.js'
+
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell, TableFooter } from '@/components/ui/table'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from '@/components/ui/select'
 
 const { t } = useLocale()
 const { confirm } = useConfirm()

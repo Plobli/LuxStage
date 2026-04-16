@@ -13,14 +13,12 @@
     <!-- Upload progress -->
     <div v-if="uploadQueue.length > 0" class="mb-3 space-y-1">
       <div v-for="item in uploadQueue" :key="item.name" class="flex items-center gap-2">
-        <div class="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
-          <div
-            class="h-full rounded-full transition-all"
-            :class="item.error ? 'bg-red-500' : item.done ? 'bg-green-500' : 'bg-accent'"
-            :style="{ width: item.progress + '%' }"
-          />
-        </div>
-        <span class="text-xs text-gray-500 w-8 text-right">{{ item.done ? '✓' : item.error ? '✗' : item.progress + '%' }}</span>
+        <Progress
+          :value="item.progress"
+          class="flex-1 h-1"
+          :class="item.error ? '[&>div]:bg-red-500' : item.done ? '[&>div]:bg-green-500' : ''"
+        />
+        <span class="text-xs text-muted-foreground w-8 text-right">{{ item.done ? '✓' : item.error ? '✗' : item.progress + '%' }}</span>
       </div>
     </div>
 
@@ -31,10 +29,10 @@
       @dragleave="dragging = false"
       @drop.prevent="onDrop"
     >
-      <p v-if="photos.length === 0 && !dragging" class="rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-4 py-8 text-sm text-gray-500 text-center">{{ labels.empty }}</p>
+      <p v-if="photos.length === 0 && !dragging" class="rounded-xl border border-dashed border-border bg-muted/10 px-4 py-8 text-sm text-muted-foreground text-center">{{ labels.empty }}</p>
       <ul role="list" class="grid grid-cols-2 gap-3 xl:grid-cols-3">
-        <li v-for="filename in photos" :key="filename" class="relative group flex flex-col gap-2 rounded-xl border border-white/10 bg-black/10 p-2">
-          <div class="aspect-[4/3] block w-full overflow-hidden rounded-lg bg-gray-800 cursor-pointer" @click="openLightbox(filename)">
+        <li v-for="filename in photos" :key="filename" class="relative group flex flex-col gap-2 rounded-xl border border-border bg-card p-2">
+          <div class="aspect-[4/3] block w-full overflow-hidden rounded-lg bg-muted cursor-pointer" @click="openLightbox(filename)">
             <img :src="photoUrl(filename)" :alt="filename" class="pointer-events-none h-full w-full object-cover transition-opacity duration-200 group-hover:opacity-80" />
           </div>
           <Button
@@ -101,12 +99,12 @@
         @click.stop="lightboxStep(-1)"
         aria-label="Vorheriges Foto"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+        <ChevronLeft class="size-6" />
       </Button>
       <img :src="photoUrl(lightboxPhoto)" class="relative max-h-[85vh] max-w-[90vw] object-contain drop-shadow-2xl" @click.stop />
       <p
         v-if="photoCaptions[lightboxPhoto]?.caption"
-        class="relative mt-3 text-sm text-gray-300 max-w-lg text-center px-4"
+        class="relative mt-3 text-sm text-muted-foreground max-w-lg text-center px-4"
         @click.stop
       >{{ photoCaptions[lightboxPhoto].caption }}</p>
       <Button
@@ -117,7 +115,7 @@
         @click.stop="lightboxStep(1)"
         aria-label="Nächstes Foto"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        <ChevronRight class="size-6" />
       </Button>
       <Button
         variant="ghost"
@@ -126,7 +124,7 @@
         @click.stop="lightboxPhoto = null"
         aria-label="Schließen"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        <X class="size-5" />
       </Button>
     </div>
   </Transition>
@@ -134,8 +132,10 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ChevronLeft, ChevronRight, X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Progress } from '@/components/ui/progress'
 import { useConfirm } from '../../composables/useConfirm.js'
 import { useLocale } from '../../composables/useLocale.js'
 import { usePhotoSettings } from '../../composables/usePhotoSettings.js'

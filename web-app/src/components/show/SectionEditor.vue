@@ -5,7 +5,7 @@
       v-for="sec in sortedSections"
       :key="sec.id"
       :data-section-id="sec.id"
-      class="group/sec mb-6 rounded-xl border border-white/10 bg-black/10 px-4 py-4 shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
+      class="group/sec mb-6 rounded-xl border border-border bg-card px-4 py-4 shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
     >
       <!-- Section header -->
       <div class="flex items-center mb-4 gap-3">
@@ -17,12 +17,12 @@
           class="w-auto min-w-[8rem] text-base font-semibold text-accent bg-transparent border-0 focus-visible:ring-0 px-0 h-auto"
           :style="{ width: Math.max((sec.title || labels.titlePlaceholder).length, 4) + 'ch' }"
         />
-        <div class="flex-1 border-t border-white/10"></div>
-        <span class="section-drag-handle cursor-grab rounded-md p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors shrink-0">
-          <svg class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M7 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/></svg>
+        <div class="flex-1 border-t border-border"></div>
+        <span class="section-drag-handle cursor-grab rounded-md p-1.5 text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors shrink-0">
+          <GripVertical class="size-4" />
         </span>
         <Button variant="ghost" size="icon" class="h-7 w-7 text-muted-foreground hover:bg-red-500/10 hover:text-red-400 shrink-0 transition-colors" @click="deleteSectionDef(sortedSections.indexOf(sec))">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+          <X class="size-4" />
         </Button>
       </div>
 
@@ -35,10 +35,10 @@
           <div
             v-for="(field, fidx) in sec.fields"
             :key="field.key"
-            class="flex items-center min-h-[44px] gap-2 rounded-lg border border-white/5 bg-white/[0.02] px-2 py-1.5 group/field"
+            class="flex items-center min-h-[44px] gap-2 rounded-lg border border-border bg-muted/10 px-2 py-1.5 group/field"
           >
-            <span class="field-drag-handle cursor-grab rounded-md p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors shrink-0">
-              <svg class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M7 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/></svg>
+            <span class="field-drag-handle cursor-grab rounded-md p-1.5 text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors shrink-0">
+              <GripVertical class="size-4" />
             </span>
             <div class="w-32 shrink-0">
               <Input
@@ -52,10 +52,10 @@
             <Input
               :value="parseFieldValue(sec.id, field.key)"
               @change="onFieldChange(sec.id, field.key, $event.target.value)"
-              class="flex-1 bg-black/10 border-white/10 h-9"
+              class="flex-1 bg-muted/40 border-border h-9"
             />
             <Button variant="ghost" size="icon" class="h-7 w-7 text-muted-foreground hover:bg-red-500/10 hover:text-red-400 shrink-0 transition-colors" @click="deleteFieldDef(sec, fidx)">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+              <X class="size-4" />
             </Button>
           </div>
         </div>
@@ -72,13 +72,13 @@
   </div>
 
   <!-- Fallback: single setup editor (when no sections defined) -->
-  <section v-if="sortedSections.length === 0" class="mb-8 rounded-xl border border-dashed border-white/10 bg-black/10 px-4 py-4">
+  <section v-if="sortedSections.length === 0" class="mb-8 rounded-xl border border-dashed border-border bg-card px-4 py-4">
     <slot name="setup-heading" />
     <MarkdownEditor :modelValue="setupMarkdown" @update:modelValue="emit('update:setupMarkdown', $event)" />
   </section>
 
   <!-- Add section buttons -->
-  <div class="flex items-center gap-2 mb-6 py-3 border-t border-white/10">
+  <div class="flex items-center gap-2 mb-6 py-3 border-t border-border">
     <Button variant="outline" size="sm" @click="addMarkdownSection">{{ labels.addMarkdown }}</Button>
     <Button v-if="!hasFieldsType()" variant="outline" size="sm" @click="addFieldsSection">{{ labels.addFields }}</Button>
   </div>
@@ -86,6 +86,7 @@
 
 <script setup>
 import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
+import { GripVertical, X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import Sortable from 'sortablejs'
@@ -147,7 +148,7 @@ function initSectionsSortable() {
         return { ...sec, order: i }
       })
       emit('update:sectionDefs', reordered)
-      persistSectionDefs()
+      persistSectionDefs(reordered)
     }
   })
 }
@@ -173,7 +174,7 @@ watch(() => props.sectionDefs.map(s => s.fields?.length).join(','), async () => 
           return { ...s, fields }
         })
         emit('update:sectionDefs', newDefs)
-        persistSectionDefs()
+        persistSectionDefs(newDefs)
       }
     })
   })
@@ -203,8 +204,8 @@ function onFieldChange(sectionId, key, value) {
 }
 
 // ── Section def management ─────────────────────────────────────────────────
-async function persistSectionDefs() {
-  await saveShowSectionDefs(props.showId, props.sectionDefs)
+async function persistSectionDefs(sectionDefs = props.sectionDefs) {
+  await saveShowSectionDefs(props.showId, sectionDefs)
 }
 
 async function addMarkdownSection() {
@@ -227,7 +228,11 @@ async function deleteSectionDef(idx) {
   const ok = await confirm({ t, titleKey: 'action.delete', confirmKey: 'action.delete', cancelKey: 'action.cancel' })
   if (!ok) return
   emit('pushSnapshot')
-  const newDefs = props.sectionDefs.filter((_, i) => i !== idx).map((s, i) => ({ ...s, order: i }))
+  const targetId = sortedSections.value[idx]?.id
+  if (!targetId) return
+  const newDefs = props.sectionDefs
+    .filter(s => s.id !== targetId)
+    .map((s, i) => ({ ...s, order: i }))
   emit('update:sectionDefs', newDefs)
   await saveShowSectionDefs(props.showId, newDefs)
 }
@@ -239,7 +244,7 @@ function addFieldDef(section) {
     return { ...s, fields: [...(s.fields ?? []), { key: uuid().slice(0, 8), label: '' }] }
   })
   emit('update:sectionDefs', newDefs)
-  persistSectionDefs()
+  persistSectionDefs(newDefs)
 }
 
 async function deleteFieldDef(section, idx) {
@@ -248,11 +253,16 @@ async function deleteFieldDef(section, idx) {
   emit('pushSnapshot')
   const newDefs = props.sectionDefs.map(s => {
     if (s.id !== section.id) return s
-    const fields = s.fields.filter((_, i) => i !== idx)
+    const sortedFields = [...(s.fields ?? [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    const targetKey = sortedFields[idx]?.key
+    if (!targetKey) return s
+    const fields = (s.fields ?? [])
+      .filter(field => field.key !== targetKey)
+      .map((field, order) => ({ ...field, sort_order: order }))
     return { ...s, fields }
   })
   emit('update:sectionDefs', newDefs)
-  persistSectionDefs()
+  persistSectionDefs(newDefs)
 }
 
 function hasFieldsType() {

@@ -1,11 +1,11 @@
 <template>
   <Textarea
-    :value="modelValue"
+    :model-value="modelValue"
     v-bind="$attrs"
     @focus="emit('focus')"
-    @input="emit('update:modelValue', $event.target.value); emit('input')"
+    @update:model-value="val => { emit('update:modelValue', val); emit('input', val) }"
     @blur="emit('blur')"
-    class="bg-transparent focus-visible:bg-white/5 focus-visible:outline-none focus-visible:ring-0 text-sm text-muted-foreground w-full px-2 border-0 resize-none leading-snug [field-sizing:content] min-h-14 py-4 align-middle rounded shadow-none"
+    class="bg-background/50 border border-border/40 hover:border-border focus-visible:bg-background focus-visible:outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring text-sm text-foreground w-full px-2.5 resize-none leading-snug h-8 py-1.5 rounded-md shadow-sm transition-colors"
   />
 </template>
 

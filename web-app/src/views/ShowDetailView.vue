@@ -1,6 +1,7 @@
 <template>
-  <div class="h-full bg-gray-950">
-    <!-- Top Header -->
+  <div class="flex flex-col h-screen bg-background overflow-hidden">
+
+    <!-- ── Top Navigation Bar ─────────────────────────────────────────────── -->
     <ShowHeader
       v-model="mobileTab"
       v-model:search="search"
@@ -40,13 +41,43 @@
       @csvFileSelected="onCsvImportSelected($event)"
     />
 
-    <div v-if="loading" class="flex items-center justify-center h-64 text-sm text-gray-400">…</div>
+    <!-- ── Loading ────────────────────────────────────────────────────────── -->
+    <div v-if="loading" class="flex flex-1 items-center justify-center">
+      <div class="flex flex-col items-center gap-3">
+        <Loader2 class="size-8 animate-spin text-accent" />
+        <span class="text-sm text-muted-foreground">Wird geladen…</span>
+      </div>
+    </div>
 
-    <div v-else :inert="!isOnline || undefined" :class="{ 'opacity-40 pointer-events-none select-none': !isOnline }" class="px-3 sm:px-4 lg:px-6 xl:px-8 2xl:px-10 pb-6">
-      <div class="w-full flex flex-col gap-4 lg:grid lg:grid-cols-[32rem_minmax(0,1fr)] lg:items-start lg:gap-6 2xl:grid-cols-[34rem_minmax(0,1fr)]">
-        <!-- Info/Sections + Photos (left column card) -->
-        <aside class="w-full min-w-0 flex flex-col gap-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-hidden" :class="mobileTab === 'channels' ? 'hidden lg:flex' : mobileTab === 'info' ? 'flex' : 'hidden lg:flex'">
-          <div class="rounded-2xl border border-white/10 bg-gray-900/85 shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur px-4 py-4 sm:px-5 sm:py-5 lg:flex-1 lg:min-h-0 lg:overflow-auto">
+    <!-- ── Main Layout ────────────────────────────────────────────────────── -->
+    <template v-else>
+    <!-- ── Offline-Banner ───────────────────────────────────────────────── -->
+    <Alert v-if="!isOnline" variant="destructive" class="rounded-none border-x-0 border-t-0 py-2 shrink-0">
+      <AlertTriangle class="size-4" />
+      <AlertDescription>{{ t('offline.banner') }}</AlertDescription>
+    </Alert>
+    <div
+      :inert="!isOnline || undefined"
+      :class="{ 'opacity-40 pointer-events-none select-none': !isOnline }"
+      class="flex flex-1 min-h-0 overflow-hidden"
+    >
+      <!-- Left Sidebar: Info + Photos (hidden on mobile when not active) -->
+      <aside
+        class="flex flex-col border-r border-border bg-card shrink-0 overflow-hidden transition-all"
+        :class="[
+          mobileTab === 'info' ? 'flex w-full' : 'hidden lg:flex lg:w-96 xl:w-132'
+        ]"
+      >
+        <!-- Sidebar Header -->
+        <div class="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
+          <span class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Info & Fotos</span>
+          <span class="text-xs text-muted-foreground">{{ meta.name }}</span>
+        </div>
+
+        <!-- Sidebar Scrollable Content -->
+        <div class="flex-1 min-h-0 overflow-y-auto">
+          <!-- Sections -->
+          <div class="p-4 border-b border-border">
             <SectionEditor
               :showId="props.id"
               :sectionDefs="sectionDefs"
@@ -66,18 +97,24 @@
               @sectionChange="persistSectionsDebounced"
             >
               <template #setup-heading>
-                <div class="flex items-center justify-between gap-3 mb-4">
-                  <SectionHeading :text="t('show.setup')" class="min-w-0" />
-                  <span class="text-[11px] uppercase tracking-[0.18em] text-gray-500 shrink-0">Info & Fotos</span>
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                    {{ t('show.setup') }}
+                  </span>
                 </div>
               </template>
             </SectionEditor>
           </div>
 
-          <div class="rounded-2xl border border-white/10 bg-gray-900/70 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur px-4 py-4 sm:px-5 sm:py-5 lg:min-h-[40vh] lg:max-h-[42vh] lg:overflow-auto">
-            <div class="flex items-center gap-2 mb-3">
-              <SectionHeading :text="t('show.photos')" class="flex-1 min-w-0" />
-              <span class="text-[11px] uppercase tracking-[0.18em] text-gray-500 shrink-0">{{ photos.length }}</span>
+          <!-- Photos -->
+          <div class="p-4">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                {{ t('show.photos') }}
+              </span>
+              <span v-if="photos.length > 0" class="text-xs tabular-nums text-muted-foreground bg-muted rounded-full px-2 py-0.5">
+                {{ photos.length }}
+              </span>
             </div>
             <PhotoGallery
               :showId="props.id"
@@ -93,68 +130,115 @@
               @update:photos="photos = $event"
             />
           </div>
-        </aside>
+        </div>
+      </aside>
 
-        <!-- Right column: channels / floorplan -->
-        <div class="flex-1 min-w-0 flex flex-col gap-4" :class="mobileTab === 'floorplan' ? '' : mobileTab === 'channels' ? '' : 'hidden lg:flex'">
-          <!-- Channels card -->
-          <div v-if="mobileTab === 'channels'" class="rounded-2xl border border-white/10 bg-gray-900/85 shadow-[0_14px_40px_rgba(0,0,0,0.24)] backdrop-blur flex flex-col h-[calc(100vh-6rem)] overflow-hidden">
-            <header class="px-4 py-4 sm:px-5 border-b border-white/10 bg-gray-900/95">
-              <SectionHeading :text="t('show.channels')" class="min-w-0" />
-            </header>
-            <div class="flex-1 min-h-0 bg-gradient-to-b from-transparent to-black/10">
-              <ChannelTable
-                :channels="channels"
-                :groupedChannels="groupedChannels"
-                :dupChannelNrs="dupChannelNrs"
-                :channelStatusFn="channelStatus"
-                :toggleChannelStatusFn="toggleChannelStatus"
-                :onKeydownFn="onKeydown"
-                :labels="{
-                  channel: t('field.channel'),
-                  color: t('field.color'),
-                  device: t('field.device'),
-                  notes: t('field.notes'),
-                  editPosition: t('channel.position.edit'),
-                  noCategory: t('channel.no_category'),
-                  add: t('channel.add'),
-                  delete: t('action.delete'),
-                  empty: t('channel.list.empty'),
-                  channelNr: t('show.channel.nr'),
-                  addressExample: t('show.channel.address.example'),
-                }"
-                @change="scheduleChannelsSave()"
-                @recordFocus="recordFocus()"
-                @commitFocus="commitFocus()"
-                @pushSnapshot="pushSnapshot()"
-                @deleteChannel="deleteChannel($event)"
-                @reorder="channels.splice(0, channels.length, ...$event)"
-              />
+      <!-- ── Right Content Area ──────────────────────────────────────────── -->
+      <div class="flex flex-1 min-w-0 min-h-0 flex-col overflow-hidden">
+
+        <!-- Channels View -->
+        <div
+          v-if="mobileTab === 'channels'"
+          class="flex flex-col flex-1 min-h-0 overflow-hidden"
+        >
+          <!-- Channel Table Header -->
+          <div class="flex items-center gap-3 px-4 py-2.5 border-b border-border bg-card shrink-0">
+            <span class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              {{ t('show.channels') }}
+            </span>
+            <span class="text-xs tabular-nums text-muted-foreground bg-muted rounded-full px-2 py-0.5">
+              {{ channels.length }}
+            </span>
+            <div v-if="search" class="text-xs text-muted-foreground ml-1">
+              — {{ totalVisible }} {{ t('channel.search.results') ?? 'Treffer' }}
             </div>
           </div>
 
-          <!-- Floorplan card -->
-          <div v-if="mobileTab === 'floorplan'" class="rounded-2xl border border-white/10 bg-gray-900/85 shadow-[0_14px_40px_rgba(0,0,0,0.24)] backdrop-blur h-[calc(100vh-6rem)] overflow-hidden">
-            <div class="flex items-center justify-between gap-3 px-4 py-3 sm:px-5 border-b border-white/10 bg-gradient-to-r from-gray-900 via-gray-900 to-gray-900/70">
-              <SectionHeading :text="t('tab.floorplan')" class="min-w-0" />
-              <span class="text-xs text-gray-500 shrink-0">Canvas</span>
-            </div>
-            <div class="h-[calc(100%-57px)]">
-              <FloorplanEditor
-                :image-url="floorplan.image_url ? api.url(floorplan.image_url) : null"
-                :initial-canvas-data="floorplan.canvas_data"
-                :channels="channels"
-                @change="onFloorplanChange"
-                @upload-image="onFloorplanImageUpload"
-                @delete-image="onFloorplanImageDelete"
-                @jump-to-channel="jumpToChannel"
-              />
-            </div>
+          <!-- Channel Table -->
+          <div class="flex-1 min-h-0 overflow-hidden">
+            <ChannelTable
+              :channels="channels"
+              :groupedChannels="groupedChannels"
+              :dupChannelNrs="dupChannelNrs"
+              :channelStatusFn="channelStatus"
+              :toggleChannelStatusFn="toggleChannelStatus"
+              :onKeydownFn="onKeydown"
+              :labels="{
+                channel: t('field.channel'),
+                color: t('field.color'),
+                device: t('field.device'),
+                notes: t('field.notes'),
+                editPosition: t('channel.position.edit'),
+                noCategory: t('channel.no_category'),
+                add: t('channel.add'),
+                delete: t('action.delete'),
+                empty: t('channel.list.empty'),
+                channelNr: t('show.channel.nr'),
+                addressExample: t('show.channel.address.example'),
+              }"
+              @change="scheduleChannelsSave()"
+              @recordFocus="recordFocus()"
+              @commitFocus="commitFocus()"
+              @pushSnapshot="pushSnapshot()"
+              @deleteChannel="deleteChannel($event)"
+              @reorder="channels.splice(0, channels.length, ...$event)"
+            />
           </div>
         </div>
+
+        <!-- Floorplan View -->
+        <div
+          v-else-if="mobileTab === 'floorplan'"
+          class="flex flex-col flex-1 min-h-0 overflow-hidden"
+        >
+          <div class="flex items-center gap-3 px-4 py-2.5 border-b border-border bg-card shrink-0">
+            <span class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              {{ t('tab.floorplan') }}
+            </span>
+          </div>
+          <div class="flex-1 min-h-0">
+            <FloorplanEditor
+              :image-url="floorplan.image_url ? api.url(floorplan.image_url) : null"
+              :initial-canvas-data="floorplan.canvas_data"
+              :channels="channels"
+              @change="onFloorplanChange"
+              @upload-image="onFloorplanImageUpload"
+              @delete-image="onFloorplanImageDelete"
+              @jump-to-channel="jumpToChannel"
+            />
+          </div>
+        </div>
+
+        <!-- Info View (mobile only — on desktop shown in sidebar) -->
+        <div
+          v-else-if="mobileTab === 'info'"
+          class="flex-1 min-h-0 overflow-y-auto lg:hidden p-4"
+        >
+          <SectionEditor
+            :showId="props.id"
+            :sectionDefs="sectionDefs"
+            :sectionContents="sectionContents"
+            :setupMarkdown="setupMarkdown"
+            :labels="{
+              titlePlaceholder: t('sections.title.placeholder'),
+              fieldLabel: t('sections.field.label'),
+              fieldAdd: t('sections.field.add'),
+              addMarkdown: t('sections.add.markdown'),
+              addFields: t('sections.add.fields'),
+            }"
+            @update:sectionDefs="sectionDefs = $event"
+            @update:sectionContents="sectionContents = $event"
+            @update:setupMarkdown="onSetupChange($event)"
+            @pushSnapshot="pushSnapshot"
+            @sectionChange="persistSectionsDebounced"
+          />
+        </div>
+
       </div>
     </div>
+    </template>
 
+    <!-- ── Overlays ───────────────────────────────────────────────────────── -->
     <HistorySlideOver
       :open="historyOpen"
       :showId="props.id"
@@ -169,7 +253,6 @@
       @restore="doRestoreHistory($event)"
     />
 
-    <!-- EOS Merge Vorschau -->
     <EosMergePreviewDialog
       :open="eosMergePreview.open"
       :newActive="eosMergePreview.newActive"
@@ -182,13 +265,14 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { Loader2, AlertTriangle } from 'lucide-vue-next'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useDebounceFn } from '@vueuse/core'
 import { useRouter } from 'vue-router'
 import { useLocale } from '../composables/useLocale.js'
 import { useConfirm } from '../composables/useConfirm.js'
 import { useKeyboardNav } from '../composables/useKeyboardNav.js'
-import SectionHeading from '../components/SectionHeading.vue'
 import { useUndoRedo } from '../composables/useUndoRedo.js'
 import ShowHeader from '../components/show/ShowHeader.vue'
 import { fetchShow, updateMeta, restoreHistory, createSnapshot } from '../api/shows.js'
@@ -213,9 +297,9 @@ const { onKeydown } = useKeyboardNav()
 
 // ── State ──────────────────────────────────────────────────────────────────
 const loading = ref(true)
-const meta = ref({})          // frontmatter: name, datum, venue, …
-const setupMarkdown = ref('') // Aufbau-Abschnitt aus .md-Datei
-const eosActiveChannels = ref(null) // null = noch kein Import; Array<string> (neg. Prefix = inaktiv)
+const meta = ref({})
+const setupMarkdown = ref('')
+const eosActiveChannels = ref(null)
 const eosMergePreview = ref({ open: false, newActive: [], nowGone: [], untouched: [] })
 let _eosMergeResolve = null
 const channels = ref([])
@@ -226,7 +310,7 @@ const search = ref('')
 const setupSaving = ref(false)
 const channelsSaving = ref(false)
 
-const mobileTab = ref('channels') // 'channels' | 'info' | 'floorplan'
+const mobileTab = ref('channels')
 
 const floorplan = ref({ image_url: null, canvas_data: null })
 let floorplanSaveTimer = null
@@ -238,7 +322,6 @@ const sectionsSaving = ref(false)
 // ── Undo/Redo ──────────────────────────────────────────────────────────────
 const { initSnapshot, recordFocus, commitFocus, pushSnapshot, undo, redo, canUndo, canRedo } =
   useUndoRedo(
-    // getState
     () => ({
       channels: channels.value,
       sectionContents: [...sectionContents.value.entries()],
@@ -246,7 +329,6 @@ const { initSnapshot, recordFocus, commitFocus, pushSnapshot, undo, redo, canUnd
       meta: meta.value,
       setupMarkdown: setupMarkdown.value,
     }),
-    // applyState
     (snap) => {
       channels.value = snap.channels
       sectionContents.value = new Map(snap.sectionContents)
@@ -254,19 +336,16 @@ const { initSnapshot, recordFocus, commitFocus, pushSnapshot, undo, redo, canUnd
       meta.value = snap.meta
       setupMarkdown.value = snap.setupMarkdown
     },
-    // cancelPendingSaves
     () => {
-      persistChannels.cancel()
-      persistSetupDebounced.cancel()
-      persistSectionsDebounced.cancel()
+      persistChannels?.cancel?.()
+      persistSetupDebounced?.cancel?.()
+      persistSectionsDebounced?.cancel?.()
     },
-    // saveNow
     () => {
       persistChannels()
       persistSetup(setupMarkdown.value)
       persistSections()
     },
-    // storageKey
     `undoredo-${props.id}`
   )
 
@@ -331,7 +410,7 @@ async function persistEosChannels() {
 async function onEosFileSelected(e) {
   const file = e.target.files?.[0]
   if (!file) return
-  e.target.value = '' // Reset: dieselbe Datei kann erneut gewählt werden
+  e.target.value = ''
 
   const text = await file.text()
   const { activeChannels, error } = parseEosCsv(text)
@@ -341,12 +420,10 @@ async function onEosFileSelected(e) {
     return
   }
 
-  // Merge-Vorschau berechnen
   const channelsWithNotes = new Set(
     channels.value.filter(ch => (ch.notes ?? '').trim().length > 0).map(ch => String(ch.channel))
   )
 
-  // Hilfsfunktion: Kanal-Nr → Label (device oder position, falls vorhanden)
   function chLabel(nr) {
     const ch = channels.value.find(c => String(c.channel) === nr)
     if (!ch) return ''
@@ -361,7 +438,6 @@ async function onEosFileSelected(e) {
   const nowGoneNrs    = prevTracked.filter(nr => !activeChannels.includes(nr))
   const untouchedNrs  = activeChannels.filter(nr => channelsWithNotes.has(nr))
 
-  // Preview-Dialog öffnen und auf Bestätigung warten
   const ok = await new Promise(resolve => {
     _eosMergeResolve = resolve
     eosMergePreview.value = {
@@ -374,7 +450,6 @@ async function onEosFileSelected(e) {
   eosMergePreview.value.open = false
   if (!ok) return
 
-  // Option 1: fehlende Kanäle automatisch anlegen
   const existingNrs = new Set(channels.value.map(ch => String(ch.channel)))
   const missingNrs = newActiveNrs.filter(nr => !existingNrs.has(nr))
   if (missingNrs.length > 0) {
@@ -384,7 +459,6 @@ async function onEosFileSelected(e) {
     await saveChannels(props.id, channels.value)
   }
 
-  // Import durchführen
   eosActiveChannels.value = [
     ...newActiveNrs,
     ...nowGoneNrs.map(nr => `-${nr}`),
@@ -399,11 +473,11 @@ function resolveEosMergePreview(value) {
 
 function channelStatus(ch) {
   const notes = (ch.notes ?? '').trim()
-  if (notes.length > 0) return 'active'   // grün — Notizen vorhanden
+  if (notes.length > 0) return 'active'
   const nr = String(ch.channel)
   if (!eosActiveChannels.value) return 'default'
-  if (eosActiveChannels.value.includes(nr)) return 'eos'        // gelb — Eos aktiv, keine Notizen
-  if (eosActiveChannels.value.includes(`-${nr}`)) return 'default'  // grau — manuell inaktiv
+  if (eosActiveChannels.value.includes(nr)) return 'eos'
+  if (eosActiveChannels.value.includes(`-${nr}`)) return 'default'
   return 'default'
 }
 
@@ -411,18 +485,15 @@ async function toggleChannelStatus(ch) {
   if (!eosActiveChannels.value) return
   const nr = String(ch.channel)
   const status = channelStatus(ch)
-  if (status === 'active') return  // grün = durch Notizen gesteuert, kein Toggle
+  if (status === 'active') return
 
   if (status === 'eos') {
-    // Gelb → Grau: deaktivieren
     eosActiveChannels.value = eosActiveChannels.value.map(c => c === nr ? `-${nr}` : c)
   } else {
-    // Grau → Gelb: reaktivieren (nur wenn Kanal bekannt in eosActiveChannels)
     const hasInactive = eosActiveChannels.value.includes(`-${nr}`)
     if (hasInactive) {
       eosActiveChannels.value = eosActiveChannels.value.map(c => c === `-${nr}` ? nr : c)
     }
-    // Wenn Kanal gar nicht in eosActiveChannels: kein Toggle möglich
   }
   await persistEosChannels()
 }
@@ -446,7 +517,7 @@ async function doRestoreHistory(entry) {
   historyOpen.value = false
 }
 
-// ── Kanal CSV Import ───────────────────────────────────────────────────────
+// ── CSV Import ─────────────────────────────────────────────────────────────
 function onCsvImportSelected(event) {
   const file = event.target.files?.[0]
   if (!file) return
@@ -494,7 +565,7 @@ async function openPdf() {
   window.open(url, '_blank')
 }
 
-// ── Kanal-Duplikat-Warnung ─────────────────────────────────────────────────
+// ── Duplikat-Warnungen ─────────────────────────────────────────────────────
 const dupWarning = computed(() => {
   const addresses = channels.value.map(c => c.address).filter(Boolean)
   return addresses.length !== new Set(addresses).size
@@ -515,7 +586,6 @@ const dupChannelWarning = computed(() => dupChannelNrs.value.size > 0)
 // ── Kanäle gruppiert ───────────────────────────────────────────────────────
 const groupedChannels = computed(() => {
   const q = search.value.toLowerCase()
-  // Bei aktivem Suchfilter numerisch sortieren, sonst Reihenfolge aus channels.value beibehalten
   let chs = q
     ? [...channels.value].sort((a, b) => parseInt(a.channel) - parseInt(b.channel))
     : [...channels.value]
@@ -548,7 +618,7 @@ async function deleteChannel(ch) {
 }
 
 // ── Kanäle speichern ───────────────────────────────────────────────────────
-let ignoreSseCount = 0   // Anzahl eigener Saves die noch kein SSE-Echo hatten
+let ignoreSseCount = 0
 const persistChannels = useDebounceFn(async () => {
   ignoreSseCount++
   try { await saveChannels(props.id, channels.value) }
@@ -561,7 +631,6 @@ function scheduleChannelsSave() {
 }
 
 // ── Sections ───────────────────────────────────────────────────────────────
-
 let ignoreSectionsSseCount = 0
 const persistSectionsDebounced = useDebounceFn(async () => {
   sectionsSaving.value = true
@@ -585,6 +654,7 @@ async function persistSections() {
   }
 }
 
+// ── Floorplan ─────────────────────────────────────────────────────────────
 async function loadFloorplan() {
   const data = await fetchShowFloorplan(props.id).catch(() => null)
   if (data) floorplan.value = data
@@ -607,15 +677,14 @@ async function onFloorplanImageDelete() {
   floorplan.value = { ...floorplan.value, image_url: null }
 }
 
-function jumpToChannel(channelNum) {
+function jumpToChannel(_channelNum) {
   mobileTab.value = 'channels'
 }
-
 
 // ── Laden ──────────────────────────────────────────────────────────────────
 let unsubscribeSSE = null
 let snapshotInterval = null
-const presence = ref([]) // [{ username, devices }]
+const presence = ref([])
 
 onMounted(async () => {
   try {
@@ -641,17 +710,12 @@ onMounted(async () => {
     loading.value = false
   }
 
-  // Initialer Snapshot: sauberer Ausgangspunkt für Undo, löscht alte sessionStorage-History
-  // Außerhalb des try-Blocks damit er immer ausgeführt wird (auch bei teilweisem Ladefehler)
   initSnapshot()
-  // Server-seitiger Snapshot beim Öffnen + alle 10 Minuten (fire-and-forget)
   createSnapshot(props.id).catch(() => {})
   snapshotInterval = setInterval(() => createSnapshot(props.id).catch(() => {}), 10 * 60 * 1000)
 
-  // Floorplan laden
   loadFloorplan().catch(() => {})
 
-  // SSE — gemeinsame Verbindung für Channels, Sections und Presence
   unsubscribeSSE = subscribeShow(props.id, {
     onChannels: async () => {
       if (ignoreSseCount > 0) { ignoreSseCount--; return }
@@ -669,32 +733,24 @@ onMounted(async () => {
     },
   })
 
-  // Drag & Drop initialisieren
   await nextTick()
 
-  // Scroll-Position wiederherstellen
   const scrollKey = `scroll_${props.id}`
   const saved = sessionStorage.getItem(scrollKey)
   if (saved) {
     await nextTick()
     window.scrollTo({ top: parseInt(saved), behavior: 'instant' })
   }
-  const onScroll = () => sessionStorage.setItem(scrollKey, window.scrollY)
-  window.addEventListener('scroll', onScroll, { passive: true })
   window.addEventListener('keydown', onUndoRedoKeydown)
-  onBeforeUnmount(() => {
-    window.removeEventListener('scroll', onScroll)
-  })
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onUndoRedoKeydown)
   unsubscribeSSE?.()
   clearInterval(snapshotInterval)
-  persistSetupDebounced.flush()
-  persistChannels.flush()
-  persistSectionsDebounced.flush()
+  persistSetupDebounced?.flush?.()
+  persistChannels?.flush?.()
+  persistSectionsDebounced?.flush?.()
   if (floorplanSaveTimer) { clearTimeout(floorplanSaveTimer) }
 })
-
 </script>

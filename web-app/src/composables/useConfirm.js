@@ -26,9 +26,10 @@ export function useConfirm() {
 }
 
 export function resolveConfirm(value) {
-  open.value = false
   if (resolveFn) {
-    resolveFn(value)
+    const fn = resolveFn
     resolveFn = null
+    open.value = false
+    fn(value)
   }
 }

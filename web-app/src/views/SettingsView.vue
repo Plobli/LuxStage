@@ -1,13 +1,13 @@
 <template>
   <div>
     <!-- Horizontale Sub-Navigation -->
-    <header class="border-b border-white/10">
+    <header class="border-b border-border">
       <nav class="flex overflow-x-auto py-4">
-        <ul role="list" class="flex min-w-full flex-none gap-x-6 px-4 text-sm/6 font-semibold text-gray-400 sm:px-6 lg:px-8">
+        <ul role="list" class="flex min-w-full flex-none gap-x-6 px-4 text-sm/6 font-semibold text-muted-foreground sm:px-6 lg:px-8">
           <li v-for="item in nav" :key="item.to">
             <RouterLink
               :to="item.to"
-              :class="isActive(item.to) ? 'text-accent' : 'hover:text-white'"
+              :class="isActive(item.to) ? 'text-accent' : 'hover:text-foreground'"
               class="transition-colors"
             >
               {{ item.label }}

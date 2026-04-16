@@ -31,7 +31,9 @@
             />
           </div>
 
-          <div v-if="error" class="text-sm text-destructive font-medium">{{ t('auth.login.error') }}</div>
+          <Alert v-if="error" variant="destructive">
+            <AlertDescription>{{ t('auth.login.error') }}</AlertDescription>
+          </Alert>
 
           <Button
             type="submit"
@@ -71,6 +73,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 const router = useRouter()
 const { t } = useLocale()

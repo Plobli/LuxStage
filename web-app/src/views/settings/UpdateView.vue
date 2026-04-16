@@ -1,15 +1,15 @@
 <template>
-  <div class="divide-y divide-white/10">
+  <div class="divide-y divide-border">
     <div class="grid max-w-7xl grid-cols-1 gap-x-8 gap-y-10 px-4 py-16 sm:px-6 md:grid-cols-3 lg:px-8">
       <div>
-        <h2 class="text-base/7 font-semibold text-white">{{ t('settings.update') }}</h2>
-        <p class="mt-1 text-sm/6 text-gray-400">{{ t('settings.update.hint') }}</p>
+        <h2 class="text-base/7 font-semibold text-foreground">{{ t('settings.update') }}</h2>
+        <p class="mt-1 text-sm/6 text-muted-foreground">{{ t('settings.update.hint') }}</p>
       </div>
       <div class="md:col-span-2 space-y-4 sm:max-w-xl">
         <div class="flex items-center gap-3">
-          <label class="text-sm text-gray-400 shrink-0">{{ t('settings.update.branch') }}</label>
+          <Label class="text-sm shrink-0">{{ t('settings.update.branch') }}</Label>
           <Select v-model="selectedBranch" @update:modelValue="onBranchChange" :disabled="updating">
-            <SelectTrigger class="w-[180px]">
+            <SelectTrigger class="w-45">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -19,17 +19,17 @@
         </div>
 
         <div class="text-sm">
-          <span v-if="checkLoading" class="text-gray-400">{{ t('settings.update.checking') }}</span>
-          <span v-else-if="checkResult?.available" class="text-amber-400 font-medium">
+          <span v-if="checkLoading" class="text-muted-foreground">{{ t('settings.update.checking') }}</span>
+          <span v-else-if="checkResult?.available" class="text-amber-500 font-medium">
             ↑ {{ t('settings.update.available', { commits: checkResult.commits }) }}
           </span>
-          <span v-else-if="checkResult && !checkResult.available" class="text-green-400">
+          <span v-else-if="checkResult && !checkResult.available" class="text-green-600 dark:text-green-400">
             ✓ {{ t('settings.update.uptodate') }}
           </span>
-          <span v-else-if="checkError" class="text-gray-500">{{ t('settings.update.check_failed') }}</span>
+          <span v-else-if="checkError" class="text-muted-foreground">{{ t('settings.update.check_failed') }}</span>
         </div>
 
-        <pre v-if="checkResult?.log" class="text-xs text-gray-400 bg-white/5 rounded-md px-3 py-2 whitespace-pre-wrap font-mono">{{ checkResult.log }}</pre>
+        <pre v-if="checkResult?.log" class="text-xs text-muted-foreground bg-muted rounded-md px-3 py-2 whitespace-pre-wrap font-mono">{{ checkResult.log }}</pre>
 
         <div>
           <Button
@@ -42,30 +42,27 @@
         </div>
 
         <!-- Update läuft -->
-        <div v-if="updating || updateLog.length" class="rounded-lg bg-white/5 border border-white/10 overflow-hidden">
+        <div v-if="updating || updateLog.length" class="rounded-lg bg-muted border border-border overflow-hidden">
           <!-- Header mit Spinner / Statuszeile -->
-          <div class="flex items-center gap-3 px-4 py-3 border-b border-white/10">
-            <svg v-if="updating" class="size-4 shrink-0 animate-spin text-accent" viewBox="0 0 24 24" fill="none">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
-            </svg>
-            <span v-if="updating" class="text-sm font-medium text-white">{{ t('settings.update.run') }}…</span>
-            <span v-else-if="!updateError" class="text-sm font-medium text-green-400">✓ {{ t('settings.update.success') }}</span>
-            <span v-else class="text-sm font-medium text-red-400">✗ Fehler</span>
+          <div class="flex items-center gap-3 px-4 py-3 border-b border-border">
+            <Loader2 v-if="updating" class="size-4 shrink-0 animate-spin text-accent" />
+            <span v-if="updating" class="text-sm font-medium text-foreground">{{ t('settings.update.run') }}…</span>
+            <span v-else-if="!updateError" class="text-sm font-medium text-green-600 dark:text-green-400">✓ {{ t('settings.update.success') }}</span>
+            <span v-else class="text-sm font-medium text-destructive">✗ Fehler</span>
           </div>
 
           <!-- Fortschrittsbalken -->
-          <div v-if="updating" class="h-0.5 w-full bg-white/10 overflow-hidden">
-            <div class="h-full bg-accent animate-progress-indeterminate" />
-          </div>
+          <Progress v-if="updating" class="h-0.5 rounded-none" :model-value="undefined" />
 
           <!-- Terminal-Output -->
           <div ref="logEl" class="px-4 py-3 max-h-72 overflow-y-auto">
-            <pre class="text-xs text-gray-300 font-mono whitespace-pre-wrap leading-relaxed">{{ updateLog.join('\n') }}<span v-if="updating" class="animate-pulse">▌</span></pre>
+            <pre class="text-xs text-muted-foreground font-mono whitespace-pre-wrap leading-relaxed">{{ updateLog.join('\n') }}<span v-if="updating" class="animate-pulse">▌</span></pre>
           </div>
         </div>
 
-        <p v-if="updateMsg && updateError" class="text-sm text-red-400">{{ updateMsg }}</p>
+        <Alert v-if="updateMsg && updateError" variant="destructive">
+          <AlertDescription>{{ updateMsg }}</AlertDescription>
+        </Alert>
       </div>
     </div>
   </div>
@@ -73,7 +70,11 @@
 
 <script setup>
 import { ref, watch, nextTick, onMounted } from 'vue'
+import { Loader2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Progress } from '@/components/ui/progress'
 import {
   Select,
   SelectContent,

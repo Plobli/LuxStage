@@ -1,25 +1,22 @@
 <template>
   <ContextMenu>
     <ContextMenuTrigger as-child>
-      <tr
+      <TableRow
         :data-ch-key="ch.channel + '|' + ch.address"
         :data-ch-pos="ch.position"
         :data-nav-row="rowIndex"
-        class="border-t border-white/5 group/row hover:bg-white/[0.035] transition-colors align-middle"
+        class="border-t border-border group/row hover:bg-muted/30 transition-colors"
       >
         <!-- Drag handle -->
-        <td class="py-2.5 pr-0 pl-0 align-middle w-4">
-          <div class="drag-handle no-print cursor-grab active:cursor-grabbing rounded-md px-1 text-gray-500 hover:bg-white/5 hover:text-gray-200 transition-colors">
-            <svg class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M7 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/></svg>
+        <TableCell class="w-8 py-0 pl-1 pr-0 align-middle">
+          <div class="drag-handle no-print cursor-grab active:cursor-grabbing flex items-center justify-center size-6 rounded text-muted-foreground/30 group-hover/row:text-muted-foreground hover:bg-muted transition-colors">
+            <GripVertical class="size-3.5" />
           </div>
-        </td>
+        </TableCell>
 
         <!-- Channel number + address -->
-        <td class="py-2.5 pr-4 pl-0 align-middle">
-          <div
-            class="flex flex-col items-center gap-1 cursor-pointer select-none rounded-lg border border-transparent px-1.5 py-1 transition-colors hover:border-white/5 hover:bg-white/[0.02]"
-            @click.stop="emit('toggleStatus', ch)"
-          >
+        <TableCell class="py-1.5 pr-4 pl-0 align-middle">
+          <div class="flex items-center gap-1.5">
             <Input
               v-model="ch.channel"
               @focus="emit('recordFocus')"
@@ -28,21 +25,28 @@
               :data-nav-row="rowIndex"
               data-nav-col="0"
               @keydown="onKeydownCol0"
-              :class="[dupChannelNrs.has(ch.channel) ? 'ring-1 ring-yellow-400/60 rounded' : '', channelStatusClass]"
-              class="bg-transparent focus-visible:bg-white/5 focus-visible:outline-none focus-visible:ring-0 text-2xl font-bold font-mono px-0 border-0 leading-none w-[4ch] text-center shadow-none h-auto py-0"
+              @click.stop="emit('toggleStatus', ch)"
+              :title="ch.channel ? 'Status umschalten' : ''"
+              :class="[
+                dupChannelNrs.has(ch.channel) ? 'ring-1 ring-yellow-400/60' : '',
+                channelStatusClass,
+              ]"
+              class="bg-background/50 border border-border/40 hover:border-border focus-visible:bg-background focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring text-lg font-bold font-mono px-1.5 py-0 w-[5.5ch] text-center shadow-sm h-8 transition-colors cursor-pointer"
             />
+            <span class="text-muted-foreground/30 font-mono text-sm select-none">/</span>
             <Input
               v-model="ch.address"
               @focus="emit('recordFocus')"
               @input="emit('change')"
               @blur="emit('commitFocus')"
-              class="bg-transparent focus-visible:bg-white/5 focus-visible:outline-none focus-visible:ring-0 text-xs text-muted-foreground px-0 border-0 w-[5ch] text-center shadow-none h-auto py-0 mt-1"
+              @click.stop
+              class="bg-background/50 border border-border/40 hover:border-border focus-visible:bg-background focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring text-xs text-muted-foreground px-1.5 py-0 w-[8ch] text-center shadow-sm h-8 transition-colors"
             />
           </div>
-        </td>
+        </TableCell>
 
         <!-- Color -->
-        <td class="px-4 py-2.5 align-middle">
+        <TableCell class="px-4 py-2 align-middle">
           <ColorAutocomplete
             :modelValue="ch.color"
             @update:modelValue="emit('pushSnapshot'); ch.color = $event; emit('change')"
@@ -50,23 +54,23 @@
             :inputAttrs="{ 'data-nav-row': rowIndex, 'data-nav-col': 1 }"
             @keydown="onKeydownCol1"
           />
-        </td>
+        </TableCell>
 
-        <!-- Device -->
-        <td class="px-4 py-0 align-middle">
-          <ChannelTextarea
-            v-model="ch.device"
-            :data-nav-row="rowIndex"
-            data-nav-col="2"
-            @focus="emit('recordFocus')"
-            @input="emit('change')"
-            @blur="emit('commitFocus')"
-            @keydown="onKeydownCol2"
-          />
-        </td>
+          <!-- Device -->
+          <TableCell class="px-3 py-2 align-middle">
+            <ChannelTextarea
+              v-model="ch.device"
+              :data-nav-row="rowIndex"
+              data-nav-col="2"
+              @focus="emit('recordFocus')"
+              @input="emit('change')"
+              @blur="emit('commitFocus')"
+              @keydown="onKeydownCol2"
+            />
+          </TableCell>
 
         <!-- Notes -->
-        <td class="px-4 py-0 align-middle">
+        <TableCell class="px-3 py-2 align-middle">
           <ChannelTextarea
             v-model="ch.notes"
             :data-nav-row="rowIndex"
@@ -76,31 +80,31 @@
             @blur="emit('commitFocus')"
             @keydown="onKeydownCol3"
           />
-        </td>
+        </TableCell>
 
-        <!-- Delete (immer sichtbar auf Touch; auf Desktop via Hover + Kontextmenü) -->
-        <td class="pl-2 pr-1" style="vertical-align: middle; text-align: center;">
+        <!-- Delete -->
+        <TableCell class="w-10 pl-1 pr-1 align-middle text-center">
           <Button
             variant="ghost"
             size="icon"
-            class="no-print h-8 w-8 text-muted-foreground hover:bg-red-500/10 hover:text-red-400 opacity-0 group-hover/row:opacity-100 transition-all"
+            class="no-print size-7 text-muted-foreground opacity-0 group-hover/row:opacity-100 hover:bg-red-500/10 hover:text-red-400 transition-all"
             @click="emit('delete', ch)"
             :title="deleteTitle"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+            <X class="size-3.5" />
           </Button>
-        </td>
-      </tr>
+        </TableCell>
+      </TableRow>
     </ContextMenuTrigger>
 
     <ContextMenuContent>
       <ContextMenuItem @select="emit('insertAfter', ch)">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4 mr-2 text-gray-400"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+        <Plus class="size-4 mr-2 text-muted-foreground" />
         Zeile darunter einfügen
       </ContextMenuItem>
       <ContextMenuSeparator />
       <ContextMenuItem class="text-red-400 focus:text-red-300 focus:bg-red-950/40" @select="emit('delete', ch)">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+        <X class="size-4 mr-2" />
         {{ deleteTitle || 'Löschen' }}
       </ContextMenuItem>
     </ContextMenuContent>
@@ -109,8 +113,10 @@
 
 <script setup>
 import { computed } from 'vue'
+import { GripVertical, X, Plus } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { TableRow, TableCell } from '@/components/ui/table'
 import ColorAutocomplete from '../ColorAutocomplete.vue'
 import ChannelTextarea from './ChannelTextarea.vue'
 import {
@@ -150,6 +156,6 @@ function onKeydownCol3(e) { props.onKeydownFn?.(e, props.rowIndex, 3, 4, props.o
 const channelStatusClass = computed(() => {
   if (props.channelStatus === 'active') return 'text-green-400'
   if (props.channelStatus === 'eos') return 'text-amber-400'
-  return 'text-gray-400'
+  return 'text-foreground'
 })
 </script>

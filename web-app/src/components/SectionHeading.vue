@@ -1,6 +1,6 @@
 <template>
   <div class="flex items-center">
-    <span class="pr-3 text-lg font-semibold text-accent bg-gray-950 shrink-0">{{ text }}</span>
+    <span class="pr-3 text-lg font-semibold text-accent bg-background shrink-0">{{ text }}</span>
     <Separator class="flex-1 bg-accent/40" />
   </div>
 </template>

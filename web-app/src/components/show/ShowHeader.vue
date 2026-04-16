@@ -1,22 +1,22 @@
 <template>
-  <div class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-white/10 bg-gray-950 px-4 sm:px-6 lg:px-8">
-    <Button variant="ghost" size="icon" class="text-gray-400 hover:text-white" @click="emit('back')">
+  <div class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-border bg-background px-4 sm:px-6 lg:px-8">
+    <Button variant="ghost" size="icon" class="text-muted-foreground hover:text-foreground" @click="emit('back')">
       <span class="sr-only">{{ labels.back }}</span>
-      <svg class="size-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M17 10a.75.75 0 0 1-.75.75H5.612l4.158 3.96a.75.75 0 1 1-1.04 1.08l-5.5-5.25a.75.75 0 0 1 0-1.08l5.5-5.25a.75.75 0 1 1 1.04 1.08L5.612 9.25H16.25A.75.75 0 0 1 17 10Z" clip-rule="evenodd" /></svg>
+      <ArrowLeft class="size-5" />
     </Button>
-    <div class="h-6 w-px bg-white/10" aria-hidden="true"></div>
+    <Separator orientation="vertical" class="h-6" />
 
     <!-- Tab-Switcher -->
     <div class="flex mr-2">
       <Tabs :model-value="modelValue" @update:model-value="emit('update:modelValue', $event)" class="w-auto">
-        <TabsList class="bg-white/5 p-1 h-8">
-          <TabsTrigger value="channels" class="text-xs px-3 py-1 data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400">
+        <TabsList class="bg-muted/50 p-1 h-8">
+          <TabsTrigger value="channels" class="text-xs px-3 py-1">
             {{ labels.tabChannels }}
           </TabsTrigger>
-          <TabsTrigger value="info" class="text-xs px-3 py-1 data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400">
+          <TabsTrigger value="info" class="text-xs px-3 py-1">
             {{ labels.tabInfo }}
           </TabsTrigger>
-          <TabsTrigger value="floorplan" class="text-xs px-3 py-1 data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400">
+          <TabsTrigger value="floorplan" class="text-xs px-3 py-1">
             {{ labels.tabFloorplan }}
           </TabsTrigger>
         </TabsList>
@@ -24,8 +24,8 @@
     </div>
 
     <div class="flex min-w-0 flex-1 items-center gap-x-3">
-      <h1 class="text-sm font-semibold text-white truncate">{{ showName }}</h1>
-      <span class="hidden sm:block text-xs text-gray-500 shrink-0">{{ showDate }}</span>
+      <h1 class="text-sm font-semibold text-foreground truncate">{{ showName }}</h1>
+      <span class="hidden sm:block text-xs text-muted-foreground shrink-0">{{ showDate }}</span>
       <!-- Undo/Redo -->
       <TooltipProvider>
         <Tooltip>
@@ -34,14 +34,14 @@
               variant="ghost"
               size="icon"
               :disabled="!canUndo"
-              class="no-print h-8 w-8 text-gray-400 hover:text-white"
+              class="no-print h-8 w-8 text-muted-foreground hover:text-foreground"
               @click="emit('undo')"
             >
               <Undo2 class="size-4" />
               <span class="sr-only">{{ labels.undo }}</span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="bottom" class="bg-gray-900 border-white/10 text-white">
+          <TooltipContent side="bottom">
             <p>{{ labels.undo }}</p>
           </TooltipContent>
         </Tooltip>
@@ -51,19 +51,19 @@
               variant="ghost"
               size="icon"
               :disabled="!canRedo"
-              class="no-print h-8 w-8 text-gray-400 hover:text-white"
+              class="no-print h-8 w-8 text-muted-foreground hover:text-foreground"
               @click="emit('redo')"
             >
               <Redo2 class="size-4" />
               <span class="sr-only">{{ labels.redo }}</span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="bottom" class="bg-gray-900 border-white/10 text-white">
+          <TooltipContent side="bottom">
             <p>{{ labels.redo }}</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
-      <span v-if="saving" class="text-xs text-gray-500 shrink-0">…</span>
+      <span v-if="saving" class="text-xs text-muted-foreground shrink-0">…</span>
     </div>
 
     <!-- Right side -->
@@ -74,45 +74,49 @@
           v-for="u in presence.slice(0, 4)"
           :key="u.username"
           :title="u.username + (u.devices.includes('ios') ? ' (iOS)' : '')"
-          class="size-6 rounded-full bg-gray-700 ring-2 ring-gray-950 flex items-center justify-center text-[10px] font-semibold text-white uppercase"
+          class="size-6 rounded-full bg-muted ring-2 ring-background flex items-center justify-center text-[10px] font-semibold text-foreground uppercase"
         >{{ u.username[0] }}</div>
-        <div v-if="presence.length > 4" class="size-6 rounded-full bg-gray-700 ring-2 ring-gray-950 flex items-center justify-center text-[9px] text-gray-400">+{{ presence.length - 4 }}</div>
+        <div v-if="presence.length > 4" class="size-6 rounded-full bg-muted ring-2 ring-background flex items-center justify-center text-[9px] text-muted-foreground">+{{ presence.length - 4 }}</div>
       </div>
-      <span v-if="dupAddressWarning" class="text-xs text-yellow-400">⚠ {{ labels.dupAddress }}</span>
-      <span v-if="dupChannelWarning" class="text-xs text-yellow-400">⚠ {{ labels.dupChannel }}</span>
+      <Badge v-if="dupAddressWarning" variant="outline" class="text-yellow-400 border-yellow-500/30 bg-yellow-500/10 text-xs">
+        <AlertTriangle class="size-3 mr-1" />{{ labels.dupAddress }}
+      </Badge>
+      <Badge v-if="dupChannelWarning" variant="outline" class="text-yellow-400 border-yellow-500/30 bg-yellow-500/10 text-xs">
+        <AlertTriangle class="size-3 mr-1" />{{ labels.dupChannel }}
+      </Badge>
       <div class="relative">
         <Input
           :value="search"
           @input="emit('update:search', $event.target.value)"
           type="search"
           :placeholder="labels.search"
-          class="h-9 w-44 md:w-56 xl:w-72 bg-white/[0.04] border-white/10 text-white pl-9 placeholder:text-muted-foreground hover:border-white/20 focus-visible:ring-1 focus-visible:ring-accent/60 focus-visible:bg-white/[0.06] transition-colors"
+          class="h-9 w-44 md:w-56 xl:w-72 pl-9"
         />
         <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" aria-hidden="true" />
       </div>
     </div>
 
-    <div class="h-6 w-px bg-white/10 shrink-0" aria-hidden="true"></div>
+    <Separator orientation="vertical" class="h-6 shrink-0" />
 
     <!-- Buttons -->
     <div class="no-print flex items-center gap-x-2 shrink-0">
       <!-- Verlauf -->
-      <Button variant="outline" size="sm" class="bg-transparent border-white/10 text-gray-400 hover:bg-transparent hover:text-white hover:border-white/20" @click="emit('openHistory')">{{ labels.history }}</Button>
+      <Button variant="outline" size="sm" class="text-muted-foreground hover:text-foreground" @click="emit('openHistory')">{{ labels.history }}</Button>
 
       <!-- Importieren Dropdown -->
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" class="bg-transparent border-white/10 text-gray-400 hover:bg-transparent hover:text-white hover:border-white/30 data-[state=open]:border-white/30 data-[state=open]:text-white flex items-center gap-1">
+          <Button variant="outline" size="sm" class="text-muted-foreground hover:text-foreground flex items-center gap-1">
             {{ labels.import }}
-            <svg class="size-3 opacity-50" viewBox="0 0 12 12" fill="currentColor"><path d="M6 8L1 3h10z"/></svg>
+            <ChevronDown class="size-3 opacity-50" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" class="w-56 bg-gray-950 border-white/10 text-gray-200">
-          <DropdownMenuItem class="cursor-pointer hover:bg-white/8 focus:bg-white/8 focus:text-white" @click="eosFileInput?.click()">
+        <DropdownMenuContent align="end" class="w-56">
+          <DropdownMenuItem class="cursor-pointer" @click="eosFileInput?.click()">
             {{ labels.eosImport }}
           </DropdownMenuItem>
-          <DropdownMenuSeparator class="bg-white/10" />
-          <DropdownMenuItem class="cursor-pointer text-gray-500 hover:bg-white/8 focus:bg-white/8 focus:text-white" @click="csvImportInput?.click()">
+          <DropdownMenuSeparator />
+          <DropdownMenuItem class="cursor-pointer text-muted-foreground" @click="csvImportInput?.click()">
             {{ labels.csvImport }}
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -121,17 +125,17 @@
       <!-- Exportieren Dropdown -->
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" class="bg-transparent border-white/10 text-gray-400 hover:bg-transparent hover:text-white hover:border-white/30 data-[state=open]:border-white/30 data-[state=open]:text-white flex items-center gap-1">
+          <Button variant="outline" size="sm" class="text-muted-foreground hover:text-foreground flex items-center gap-1">
             {{ labels.export }}
-            <svg class="size-3 opacity-50" viewBox="0 0 12 12" fill="currentColor"><path d="M6 8L1 3h10z"/></svg>
+            <ChevronDown class="size-3 opacity-50" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" class="w-56 bg-gray-950 border-white/10 text-gray-200">
-          <DropdownMenuItem class="cursor-pointer hover:bg-white/8 focus:bg-white/8 focus:text-white" @click="emit('openPdf')">
+        <DropdownMenuContent align="end" class="w-56">
+          <DropdownMenuItem class="cursor-pointer" @click="emit('openPdf')">
             {{ labels.pdf }}
           </DropdownMenuItem>
-          <DropdownMenuSeparator class="bg-white/10" />
-          <DropdownMenuItem class="cursor-pointer text-gray-500 hover:bg-white/8 focus:bg-white/8 focus:text-white" @click="emit('downloadCsv')">
+          <DropdownMenuSeparator />
+          <DropdownMenuItem class="cursor-pointer text-muted-foreground" @click="emit('downloadCsv')">
             {{ labels.csvExport }}
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -146,9 +150,11 @@
 
 <script setup>
 import { ref } from 'vue'
-import { Search, Undo2, Redo2 } from 'lucide-vue-next'
+import { Search, Undo2, Redo2, ArrowLeft, ChevronDown, AlertTriangle } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   DropdownMenu,

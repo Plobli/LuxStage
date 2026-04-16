@@ -1,5 +1,5 @@
 <template>
-  <AlertDialog :open="open" @update:open="!$event && cancel()">
+  <AlertDialog :open="open">
     <AlertDialogContent class="sm:max-w-lg">
       <AlertDialogHeader class="flex sm:flex-row items-start gap-4">
         <div class="mx-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-red-500/10 sm:mx-0 sm:size-10">

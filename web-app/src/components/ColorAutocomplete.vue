@@ -12,13 +12,13 @@
       @keydown="$emit('keydown', $event)"
       :placeholder="placeholder"
       :style="badgeStyle || {}"
-      :class="badgeStyle ? 'font-semibold' : 'bg-white/10 text-gray-400 placeholder:text-gray-600'"
-      class="focus-visible:ring-0 text-xs rounded-full px-2 py-0.5 border-0 w-16 text-center h-6 shadow-none"
+      :class="badgeStyle ? 'font-semibold' : 'bg-muted text-muted-foreground placeholder:text-muted-foreground/60'"
+      class="focus-visible:ring-0 focus-visible:bg-muted/80 text-xs rounded-full px-2 py-0.5 border border-transparent focus-visible:border-border w-16 text-center h-6 shadow-none"
       v-bind="inputAttrs"
     />
     <ul
       v-if="open && filtered.length > 0"
-      class="absolute left-0 top-full mt-1 z-50 w-72 max-h-48 overflow-y-auto rounded-md bg-gray-900 ring-1 ring-white/10 shadow-xl text-sm"
+      class="absolute left-0 top-full mt-1 z-50 w-72 max-h-48 overflow-y-auto rounded-md bg-popover text-popover-foreground border border-border shadow-xl text-sm"
     >
       <li
         v-for="(f, idx) in filtered"
@@ -26,15 +26,15 @@
         @mousedown.prevent="select(f)"
         :class="[
           'flex items-center gap-2 px-3 py-1.5 cursor-pointer',
-          idx === activeIdx ? 'bg-white/10' : 'hover:bg-white/5'
+          idx === activeIdx ? 'bg-muted' : 'hover:bg-muted/50'
         ]"
       >
         <span
-          class="size-4 rounded-full shrink-0 ring-1 ring-white/10"
+          class="size-4 rounded-full shrink-0 border border-border/50"
           :style="f.hex ? { backgroundColor: f.hex } : { backgroundColor: '#555' }"
         />
-        <span class="text-white font-mono text-xs">{{ f.displayCode }}</span>
-        <span class="text-gray-400 text-xs truncate">{{ f.name }}</span>
+        <span class="text-foreground font-mono text-xs">{{ f.displayCode }}</span>
+        <span class="text-muted-foreground text-xs truncate">{{ f.name }}</span>
       </li>
     </ul>
   </div>

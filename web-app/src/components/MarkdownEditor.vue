@@ -2,61 +2,57 @@
   <div>
     <!-- Toolbar -->
     <div v-if="editor" class="flex items-center gap-0.5 mb-2 flex-wrap">
-      <Button
-        variant="ghost"
+      <Toggle
         size="sm"
+        :pressed="editor.isActive('bold')"
         @mousedown.prevent="editor.chain().focus().toggleBold().run()"
-        :class="editor.isActive('bold') ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'"
-        class="h-7 px-2 font-bold transition-colors"
+        class="h-7 px-2 font-bold"
         :title="t('editor.bold')"
-      >B</Button>
-      <Button
-        variant="ghost"
+      >B</Toggle>
+      <Toggle
         size="sm"
+        :pressed="editor.isActive('italic')"
         @mousedown.prevent="editor.chain().focus().toggleItalic().run()"
-        :class="editor.isActive('italic') ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'"
-        class="h-7 px-2 italic transition-colors"
+        class="h-7 px-2 italic"
         :title="t('editor.italic')"
-      >I</Button>
-      <div class="w-px h-4 bg-white/10 mx-1" />
-      <Button
-        variant="ghost"
+      >I</Toggle>
+      <Separator orientation="vertical" class="h-4 mx-1" />
+      <Toggle
         size="sm"
+        :pressed="editor.isActive('heading', { level: 3 })"
         @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 3 }).run()"
-        :class="editor.isActive('heading', { level: 3 }) ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'"
-        class="h-7 px-2 font-semibold transition-colors"
+        class="h-7 px-2 font-semibold"
         :title="t('editor.heading')"
-      >H</Button>
-      <div class="w-px h-4 bg-white/10 mx-1" />
-      <Button
-        variant="ghost"
+      >H</Toggle>
+      <Separator orientation="vertical" class="h-4 mx-1" />
+      <Toggle
         size="sm"
+        :pressed="editor.isActive('bulletList')"
         @mousedown.prevent="editor.chain().focus().toggleBulletList().run()"
-        :class="editor.isActive('bulletList') ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'"
-        class="h-7 px-2 transition-colors"
+        class="h-7 px-2"
         :title="t('editor.list.bullet')"
-      >≡</Button>
-      <Button
-        variant="ghost"
+      >≡</Toggle>
+      <Toggle
         size="sm"
+        :pressed="editor.isActive('orderedList')"
         @mousedown.prevent="editor.chain().focus().toggleOrderedList().run()"
-        :class="editor.isActive('orderedList') ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'"
-        class="h-7 px-2 transition-colors"
+        class="h-7 px-2"
         :title="t('editor.list.ordered')"
-      >1.</Button>
+      >1.</Toggle>
     </div>
 
     <!-- Editor Content -->
     <EditorContent
       :editor="editor"
-      class="tiptap-content min-h-[80px] text-sm text-gray-200 focus-within:outline-none [&_.tiptap]:outline-none [&_.tiptap]:min-h-[80px] [&_.tiptap_p]:my-1 [&_.tiptap_h3]:text-sm [&_.tiptap_h3]:font-semibold [&_.tiptap_h3]:text-white [&_.tiptap_h3]:mt-3 [&_.tiptap_h3]:mb-1 [&_.tiptap_ul]:list-disc [&_.tiptap_ul]:pl-4 [&_.tiptap_ol]:list-decimal [&_.tiptap_ol]:pl-4 [&_.tiptap_li]:my-0.5 [&_.tiptap_strong]:text-white [&_.tiptap_strong]:font-semibold [&_.tiptap_em]:italic"
+      class="tiptap-content min-h-[80px] text-sm text-foreground focus-within:outline-none [&_.tiptap]:outline-none [&_.tiptap]:min-h-[80px] [&_.tiptap_p]:my-1 [&_.tiptap_h3]:text-sm [&_.tiptap_h3]:font-semibold [&_.tiptap_h3]:text-foreground [&_.tiptap_h3]:mt-3 [&_.tiptap_h3]:mb-1 [&_.tiptap_ul]:list-disc [&_.tiptap_ul]:pl-4 [&_.tiptap_ol]:list-decimal [&_.tiptap_ol]:pl-4 [&_.tiptap_li]:my-0.5 [&_.tiptap_strong]:text-foreground [&_.tiptap_strong]:font-semibold [&_.tiptap_em]:italic"
     />
   </div>
 </template>
 
 <script setup>
 import { watch, onBeforeUnmount } from 'vue'
-import { Button } from '@/components/ui/button'
+import { Toggle } from '@/components/ui/toggle'
+import { Separator } from '@/components/ui/separator'
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import { useLocale } from '../composables/useLocale.js'
 import StarterKit from '@tiptap/starter-kit'

@@ -1,69 +1,57 @@
 <template>
-  <div class="relative flex h-full overflow-hidden bg-gray-950 text-white" @keydown.prevent.stop>
+  <div class="relative flex h-full overflow-hidden bg-background text-foreground" @keydown.prevent.stop>
     <!-- Left Toolbar -->
-    <div class="w-[56px] bg-gray-900 border-r border-white/10 flex flex-col items-center py-2 gap-1 z-10 shrink-0">
+    <div class="w-[56px] bg-muted/30 border-r border-border flex flex-col items-center py-2 gap-1 z-10 shrink-0">
       <!-- Tools -->
       <ToolBtn :active="activeTool === 'select'" title="Auswählen (V)" @click="activeTool = 'select'">
-        <!-- Heroicons: cursor-arrow-rays -->
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.042 21.672 13.684 16.6m0 0-2.51 2.225.569-9.47 5.227 7.917-3.286-.672ZM12 2.25V4.5m5.834.166-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243-1.59-1.59"/></svg>
+        <MousePointer2 class="w-5 h-5" />
       </ToolBtn>
       <ToolBtn :active="activeTool === 'pan'" title="Verschieben (H)" @click="activeTool = 'pan'">
-        <!-- Heroicons: hand-raised -->
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.05 4.575a1.575 1.575 0 1 0-3.15 0v3m3.15-3v-1.5a1.575 1.575 0 0 1 3.15 0v1.5m-3.15 0 .075 5.925m3.075.75V4.575m0 0a1.575 1.575 0 0 1 3.15 0V15M6.9 7.575a1.575 1.575 0 1 0-3.15 0v8.175a6.75 6.75 0 0 0 6.75 6.75h2.018a5.25 5.25 0 0 0 3.712-1.538l1.732-1.732a5.25 5.25 0 0 0 1.538-3.712l.003-2.024a.668.668 0 0 1 .198-.471 1.575 1.575 0 1 0-2.228-2.228 3.818 3.818 0 0 0-1.12 2.687M6.9 7.575V12m6.27 4.318A4.49 4.49 0 0 1 16.35 15"/></svg>
+        <Hand class="w-5 h-5" />
       </ToolBtn>
-      <div class="w-8 h-px bg-white/10 my-1"></div>
+      <Separator class="w-8 my-1" />
       <ToolBtn :active="activeTool === 'line'" title="Linie (L)" @click="activeTool = 'line'">
-        <!-- Heroicons: minus (diagonal via transform) -->
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><line x1="4" y1="20" x2="20" y2="4" stroke-linecap="round"/></svg>
+        <Minus class="w-5 h-5 rotate-45" />
       </ToolBtn>
       <ToolBtn :active="activeTool === 'rect'" title="Rechteck (R)" @click="activeTool = 'rect'">
-        <!-- Heroicons: stop (square outline) -->
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-5 h-5"><rect x="4" y="4" width="16" height="16" rx="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <Square class="w-5 h-5" />
       </ToolBtn>
       <ToolBtn :active="activeTool === 'ellipse'" title="Ellipse (E)" @click="activeTool = 'ellipse'">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-5 h-5"><ellipse cx="12" cy="12" rx="9" ry="6" stroke-linecap="round"/></svg>
+        <Circle class="w-5 h-5" />
       </ToolBtn>
       <ToolBtn :active="activeTool === 'text'" title="Text (T)" @click="activeTool = 'text'">
-        <!-- Heroicons: language (T icon) -->
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h7"/></svg>
+        <Type class="w-5 h-5" />
       </ToolBtn>
       <ToolBtn :active="activeTool === 'channel'" title="Kanal platzieren (C)" @click="activeTool = 'channel'">
-        <!-- Heroicons: map-pin (circle with dot) -->
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+        <CircleDot class="w-5 h-5" />
       </ToolBtn>
-      <div class="w-8 h-px bg-white/10 my-1"></div>
+      <Separator class="w-8 my-1" />
 
       <!-- Image Upload -->
       <ToolBtn title="Hintergrundbild hochladen" @click="imageUploadInput?.click()">
-        <!-- Heroicons: arrow-up-tray -->
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"/></svg>
+        <Upload class="w-5 h-5" />
       </ToolBtn>
       <ToolBtn v-if="bgImage" title="Hintergrundbild entfernen" variant="danger" @click="emit('delete-image')">
-        <!-- Heroicons: photo mit x -->
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/></svg>
+        <ImageOff class="w-5 h-5" />
       </ToolBtn>
       <input ref="imageUploadInput" type="file" accept="image/*" class="hidden" @change="onImageFileSelected" />
 
       <!-- Export -->
       <ToolBtn title="Als PNG exportieren" @click="exportPNG">
-        <!-- Heroicons: arrow-down-tray -->
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+        <Download class="w-5 h-5" />
       </ToolBtn>
 
       <div class="flex-1"></div>
 
       <!-- Undo/Redo -->
       <ToolBtn :disabled="historyIndex <= 0" title="Rückgängig (Ctrl+Z)" @click="undo">
-        <!-- Heroicons: arrow-uturn-left -->
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"/></svg>
+        <Undo2 class="w-5 h-5" />
       </ToolBtn>
       <ToolBtn :disabled="historyIndex >= history.length - 1" title="Wiederholen (Ctrl+Y)" @click="redo">
-        <!-- Heroicons: arrow-uturn-right -->
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m15 15 6-6m0 0-6-6m6 6H9a6 6 0 0 0 0 12h3"/></svg>
+        <Redo2 class="w-5 h-5" />
       </ToolBtn>
       <ToolBtn :disabled="selectedIds.size === 0" variant="danger" title="Auswahl löschen (Delete)" @click="deleteSelected">
-        <!-- Heroicons: trash -->
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg>
+        <Trash2 class="w-5 h-5" />
       </ToolBtn>
     </div>
 
@@ -304,15 +292,15 @@
       </v-stage>
 
       <!-- Zoom indicator -->
-      <div class="absolute bottom-2 left-2 z-20 flex items-center gap-1 bg-gray-900/80 rounded px-2 py-1 text-xs text-gray-400 select-none pointer-events-none">
+      <div class="absolute bottom-2 left-2 z-20 flex items-center gap-1 bg-background/80 backdrop-blur border border-border rounded px-2 py-1 text-xs text-muted-foreground select-none pointer-events-none">
         {{ Math.round(zoom * 100) }}%
       </div>
 
       <!-- Zoom controls -->
-      <div class="absolute bottom-2 right-2 z-20 flex items-center gap-1">
-        <Button variant="outline" size="icon" @click="setZoom(zoom * 1.25)" class="h-7 w-7 bg-gray-800 border-white/10 text-white hover:bg-gray-700">+</Button>
-        <Button variant="outline" size="sm" @click="setZoom(1); panOffset.value = { x: 0, y: 0 }" class="h-7 px-2 bg-gray-800 border-white/10 text-white text-xs hover:bg-gray-700">1:1</Button>
-        <Button variant="outline" size="icon" @click="setZoom(zoom * 0.8)" class="h-7 w-7 bg-gray-800 border-white/10 text-white hover:bg-gray-700">−</Button>
+      <div class="absolute bottom-2 right-2 z-20 flex items-center gap-1 bg-background/80 backdrop-blur border border-border rounded p-1">
+        <Button variant="ghost" size="icon" @click="setZoom(zoom * 1.25)" class="h-6 w-6">+</Button>
+        <Button variant="ghost" size="sm" @click="setZoom(1); panOffset.value = { x: 0, y: 0 }" class="h-6 px-2 text-xs">1:1</Button>
+        <Button variant="ghost" size="icon" @click="setZoom(zoom * 0.8)" class="h-6 w-6">−</Button>
       </div>
 
       <!-- Inline Text Editor -->
@@ -320,7 +308,7 @@
         v-if="textEditNode"
         ref="textareaRef"
         v-model="textEditValue"
-        class="absolute z-30 bg-gray-900/90 border border-amber-500 text-white p-1 resize-none outline-none rounded text-sm"
+        class="absolute z-30 bg-popover/90 border border-primary text-popover-foreground p-1 resize-none outline-none rounded text-sm shadow-md"
         :style="textEditStyle"
         @blur="commitTextEdit"
         @keydown.enter.prevent="commitTextEdit"
@@ -332,31 +320,31 @@
     <transition name="slide-panel">
       <div
         v-if="selectedIds.size >= 1"
-        class="w-[200px] bg-gray-900 border-l border-white/10 flex flex-col gap-3 p-3 overflow-y-auto shrink-0"
+        class="w-[200px] bg-muted/10 border-l border-border flex flex-col gap-3 p-3 overflow-y-auto shrink-0"
       >
         <!-- Multi-select summary -->
-        <div v-if="selectedIds.size > 1" class="text-xs text-gray-400">
-          <div class="text-amber-400 font-semibold text-sm mb-1">{{ selectedIds.size }} Elemente</div>
+        <div v-if="selectedIds.size > 1" class="text-xs text-muted-foreground">
+          <div class="text-primary font-semibold text-sm mb-1">{{ selectedIds.size }} Elemente</div>
           <div class="flex gap-1 flex-wrap mt-2">
-            <PanelBtn @click="bringToFront" title="Ganz nach vorne">⬆ Vorne</PanelBtn>
-            <PanelBtn @click="sendToBack" title="Ganz nach hinten">⬇ Hinten</PanelBtn>
+            <PanelBtn @click="bringToFront" title="Ganz nach vorne"><ChevronsUp class="size-3 mr-1" />Vorne</PanelBtn>
+            <PanelBtn @click="sendToBack" title="Ganz nach hinten"><ChevronsDown class="size-3 mr-1" />Hinten</PanelBtn>
           </div>
         </div>
 
         <!-- Single element -->
         <template v-if="selectedIds.size === 1 && selectedElement">
-          <div class="text-amber-400 font-semibold text-sm capitalize">{{ typeLabel(selectedElement.type) }}</div>
+          <div class="text-primary font-semibold text-sm capitalize">{{ typeLabel(selectedElement.type) }}</div>
 
           <!-- Channel info -->
           <div v-if="selectedElement.type === 'channel'">
-            <div class="text-xs space-y-1 text-gray-400 mb-2">
+            <div class="text-xs space-y-1 text-muted-foreground mb-2">
               <template v-if="channelInfo">
-                <div class="font-semibold text-white">{{ channelInfo.channel }}</div>
+                <div class="font-semibold text-foreground">{{ channelInfo.channel }}</div>
                 <div>{{ channelInfo.device }}</div>
                 <div>{{ channelInfo.position }}</div>
                 <div>{{ channelInfo.address }}</div>
                 <div v-if="channelInfo.color" class="flex items-center gap-2 mt-1">
-                  <div :style="{ backgroundColor: channelInfo.color }" class="w-4 h-4 rounded border border-gray-600"></div>
+                  <div :style="{ backgroundColor: channelInfo.color }" class="w-4 h-4 rounded border border-border"></div>
                   {{ channelInfo.color }}
                 </div>
               </template>
@@ -366,34 +354,34 @@
 
           <!-- Text editing -->
           <div v-if="selectedElement.type === 'text'" class="space-y-2">
-            <label class="prop-label">Text</label>
-            <Input v-model="selectedElement.text" type="text" class="h-7 px-2 py-1 bg-gray-800 border-gray-700 text-white text-xs rounded focus-visible:ring-amber-500" @input="emitChange" />
-            <label class="prop-label">Schriftgröße</label>
-            <Input v-model.number="selectedElement.fontSize" type="number" min="6" max="200" class="h-7 w-16 px-2 py-1 bg-gray-800 border-gray-700 text-white text-xs rounded focus-visible:ring-amber-500" @input="emitChange" />
+            <p class="text-xs text-muted-foreground uppercase tracking-wide">Text</p>
+            <Input v-model="selectedElement.text" type="text" class="h-7 px-2 py-1 text-xs" @input="emitChange" />
+            <p class="text-xs text-muted-foreground uppercase tracking-wide">Schriftgröße</p>
+            <Input v-model.number="selectedElement.fontSize" type="number" min="6" max="200" class="h-7 w-16 px-2 py-1 text-xs" @input="emitChange" />
             <div class="flex gap-1">
-              <Button
-                variant="outline"
+              <Toggle
                 size="sm"
-                :class="['h-7 px-2 text-xs font-bold border', selectedElement.fontStyle === 'bold' ? 'bg-amber-500 border-amber-500 text-black hover:bg-amber-400' : 'bg-gray-800 border-white/10 text-gray-300 hover:text-white hover:bg-gray-700']"
+                :pressed="selectedElement.fontStyle === 'bold'"
                 @click="toggleFontStyle(selectedElement)"
-              >B</Button>
+                class="h-7 px-2 text-xs font-bold"
+              >B</Toggle>
             </div>
           </div>
 
           <!-- Stroke color (line/rect/ellipse) -->
           <div v-if="['line','rect','ellipse'].includes(selectedElement.type)" class="space-y-2">
-            <label class="prop-label">Farbe</label>
+            <p class="text-xs text-muted-foreground uppercase tracking-wide">Farbe</p>
             <div class="flex items-center gap-2">
               <input type="color" :value="selectedElement.color || '#6b7280'" @input="e => { selectedElement.color = e.target.value; emitChange() }" class="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
-              <span class="text-xs text-gray-400">{{ selectedElement.color || '#6b7280' }}</span>
+              <span class="text-xs text-muted-foreground">{{ selectedElement.color || '#6b7280' }}</span>
             </div>
-            <label class="prop-label">Stärke</label>
-            <Input v-model.number="selectedElement.strokeWidth" type="number" min="1" max="20" class="h-7 w-16 px-2 py-1 bg-gray-800 border-gray-700 text-white text-xs rounded focus-visible:ring-amber-500" @input="emitChange" />
+            <p class="text-xs text-muted-foreground uppercase tracking-wide">Stärke</p>
+            <Input v-model.number="selectedElement.strokeWidth" type="number" min="1" max="20" class="h-7 w-16 px-2 py-1 text-xs" @input="emitChange" />
             <template v-if="selectedElement.type !== 'line'">
-              <label class="prop-label">Füllung</label>
+              <p class="text-xs text-muted-foreground uppercase tracking-wide">Füllung</p>
               <div class="flex items-center gap-2">
                 <input type="color" :value="selectedElement.fill === 'transparent' || !selectedElement.fill ? '#000000' : selectedElement.fill" @input="e => { selectedElement.fill = e.target.value; emitChange() }" class="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
-                <Button variant="outline" size="sm" @click="toggleFill(selectedElement)" class="h-7 px-2 text-xs bg-gray-800 hover:bg-gray-700 border-white/10 text-gray-300 hover:text-white">
+                <Button variant="outline" size="sm" @click="toggleFill(selectedElement)" class="h-7 px-2 text-xs">
                   {{ selectedElement.fill && selectedElement.fill !== 'transparent' ? 'Transparent' : 'Füllen' }}
                 </Button>
               </div>
@@ -402,7 +390,7 @@
 
           <!-- Text color -->
           <div v-if="selectedElement.type === 'text'" class="space-y-2">
-            <label class="prop-label">Farbe</label>
+            <p class="text-xs text-muted-foreground uppercase tracking-wide">Farbe</p>
             <div class="flex items-center gap-2">
               <input type="color" :value="selectedElement.color || '#9ca3af'" @input="e => { selectedElement.color = e.target.value; emitChange() }" class="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
             </div>
@@ -410,7 +398,7 @@
 
           <!-- Position & size -->
           <template v-if="selectedElement.type !== 'channel'">
-            <label class="prop-label">Rotation</label>
+            <p class="text-xs text-muted-foreground uppercase tracking-wide">Rotation</p>
             <div class="flex items-center gap-2 pt-1 pb-2">
               <Slider
                 :model-value="[selectedElement.rotation || 0]"
@@ -420,94 +408,94 @@
                 :step="1"
                 class="flex-1"
               />
-              <span class="text-xs text-gray-400 w-9 text-right">{{ Math.round(selectedElement.rotation || 0) }}°</span>
+              <span class="text-xs text-muted-foreground w-9 text-right">{{ Math.round(selectedElement.rotation || 0) }}°</span>
             </div>
           </template>
 
           <!-- Z-Order -->
           <div class="flex gap-1 flex-wrap mt-1">
-            <PanelBtn @click="bringToFront">⬆ Vorne</PanelBtn>
-            <PanelBtn @click="bringForward">↑ Vor</PanelBtn>
-            <PanelBtn @click="sendBackward">↓ Zurück</PanelBtn>
-            <PanelBtn @click="sendToBack">⬇ Hinten</PanelBtn>
+            <PanelBtn @click="bringToFront"><ChevronsUp class="size-3 mr-1" />Vorne</PanelBtn>
+            <PanelBtn @click="bringForward"><ChevronUp class="size-3 mr-1" />Vor</PanelBtn>
+            <PanelBtn @click="sendBackward"><ChevronDown class="size-3 mr-1" />Zurück</PanelBtn>
+            <PanelBtn @click="sendToBack"><ChevronsDown class="size-3 mr-1" />Hinten</PanelBtn>
           </div>
 
           <!-- Copy/Duplicate -->
           <div class="flex gap-1">
-            <PanelBtn @click="duplicateSelected" class="flex-1">⧉ Duplizieren</PanelBtn>
+            <PanelBtn @click="duplicateSelected" class="flex-1"><Copy class="size-3 mr-1" />Duplizieren</PanelBtn>
           </div>
         </template>
       </div>
     </transition>
 
     <!-- Top bar options -->
-    <div class="absolute top-2 left-[60px] z-20 flex items-center gap-2">
-      <Button
-        variant="outline"
+    <div class="absolute top-2 left-[60px] z-20 flex items-center gap-2 bg-background/80 backdrop-blur border border-border rounded p-1">
+      <Toggle
         size="sm"
+        :pressed="showGrid"
         @click="showGrid = !showGrid"
-        :class="['h-7 px-2 text-xs transition-colors', showGrid ? 'bg-amber-500/20 border-amber-500/50 text-amber-400 hover:bg-amber-500/30' : 'bg-gray-800/80 border-white/10 text-gray-400 hover:bg-gray-800 hover:text-white']"
+        class="h-7 px-2 text-xs"
         title="Gitter anzeigen (G)"
       >
         Gitter
-      </Button>
-      <Button
-        variant="outline"
+      </Toggle>
+      <Toggle
         size="sm"
+        :pressed="snapToGrid"
         @click="snapToGrid = !snapToGrid"
-        :class="['h-7 px-2 text-xs transition-colors', snapToGrid ? 'bg-amber-500/20 border-amber-500/50 text-amber-400 hover:bg-amber-500/30' : 'bg-gray-800/80 border-white/10 text-gray-400 hover:bg-gray-800 hover:text-white']"
+        class="h-7 px-2 text-xs"
         title="Am Gitter einrasten"
       >
         Einrasten
-      </Button>
+      </Toggle>
+      <Separator orientation="vertical" class="h-4" />
       <Button
-        variant="outline"
+        variant="ghost"
         size="sm"
         @click="resetView"
-        class="h-7 px-2 text-xs bg-gray-800/80 border-white/10 text-gray-400 hover:bg-gray-800 hover:text-white"
+        class="h-7 px-2 text-xs"
         title="Ansicht zurücksetzen (F)"
       >
         Ansicht ↺
       </Button>
     </div>
 
-    <!-- Channel Picker Modal -->
-    <div
-      v-if="showChannelPicker"
-      class="fixed inset-0 bg-black/50 flex items-center justify-center z-40"
-      @click.self="showChannelPicker = false"
-    >
-      <div class="bg-gray-900 rounded-lg p-4 w-72 max-h-[28rem] flex flex-col shadow-2xl border border-white/10">
-        <h3 class="text-sm font-semibold mb-3 text-amber-400">Kanal wählen</h3>
+    <!-- Channel Picker Dialog -->
+    <Dialog :open="showChannelPicker" @update:open="val => { if (!val) showChannelPicker = false }">
+      <DialogContent class="w-72 max-h-[28rem] flex flex-col gap-0 p-4">
+        <DialogHeader class="mb-3">
+          <DialogTitle class="text-sm">Kanal wählen</DialogTitle>
+        </DialogHeader>
         <Input
           v-model="channelSearch"
           type="text"
           placeholder="Suchen..."
-          class="w-full h-8 px-2 bg-black/20 border-white/10 text-white text-sm mb-3 focus-visible:ring-1 focus-visible:ring-amber-500 focus-visible:border-amber-500"
+          class="w-full h-8 mb-3"
           autofocus
         />
         <div class="flex-1 overflow-y-auto space-y-1">
-          <button
+          <Button
             v-for="ch in filteredChannels"
             :key="ch.channel"
+            variant="ghost"
             :disabled="usedChannels.includes(ch.channel)"
             @click="placeChannelCircle(ch)"
-            :class="[
-              'w-full text-left px-2 py-1.5 text-sm rounded transition-colors',
-              usedChannels.includes(ch.channel)
-                ? 'bg-gray-950/50 text-gray-500 cursor-not-allowed'
-                : 'hover:bg-white/10 text-white'
-            ]"
+            class="w-full justify-start px-2 py-1.5 h-auto text-sm"
+            :class="usedChannels.includes(ch.channel) && 'opacity-50'"
           >
-            <div class="font-semibold">{{ ch.channel }}</div>
-            <div class="text-xs text-gray-400">{{ ch.device }}</div>
-          </button>
+            <div>
+              <div class="font-semibold">{{ ch.channel }}</div>
+              <div class="text-xs text-muted-foreground">{{ ch.device }}</div>
+            </div>
+          </Button>
         </div>
-        <Button variant="outline" @click="showChannelPicker = false" class="mt-3 w-full bg-gray-800 border-white/10 text-white hover:bg-gray-700">
-          Abbrechen
-        </Button>
-      </div>
-    </div>
+        <DialogFooter class="mt-3">
+          <Button variant="outline" @click="showChannelPicker = false" class="w-full">
+            Abbrechen
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
@@ -515,9 +503,17 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick, defineComponent, h } from 'vue'
 import { uuid } from '../utils/uuid.js'
 import jsPDF from 'jspdf'
+import {
+  ChevronsUp, ChevronsDown, ChevronUp, ChevronDown, Copy,
+  MousePointer2, Hand, Minus, Square, Circle, Type, CircleDot,
+  Upload, ImageOff, Download, Undo2, Redo2, Trash2
+} from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Slider } from '@/components/ui/slider'
+import { Separator } from '@/components/ui/separator'
+import { Toggle } from '@/components/ui/toggle'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 
 // --------------- Sub-components ---------------
 const ToolBtn = defineComponent({
@@ -530,10 +526,7 @@ const ToolBtn = defineComponent({
       variant: props.variant === 'danger' ? 'destructive' : (props.active ? 'default' : 'ghost'),
       size: 'icon',
       onClick: () => !props.disabled && emit('click'),
-      class: [
-        'w-10 h-10 rounded transition-colors',
-        props.active ? 'bg-amber-500 text-black hover:bg-amber-400' : 'text-gray-300 hover:text-white hover:bg-gray-800'
-      ]
+      class: 'w-10 h-10'
     }, slots.default)
   }
 })
@@ -547,7 +540,7 @@ const PanelBtn = defineComponent({
       size: 'sm',
       title: props.title,
       onClick: () => emit('click'),
-      class: ['h-7 text-xs px-2 bg-gray-800 hover:bg-gray-700 border-white/10 text-gray-300 hover:text-white', props.class]
+      class: ['h-7 text-xs px-2', props.class]
     }, slots.default)
   }
 })
@@ -1243,12 +1236,6 @@ watch(() => props.initialCanvasData, (newVal) => {
 <style scoped>
 @reference "../style.css";
 
-.prop-label {
-  @apply text-xs text-gray-500 uppercase tracking-wide;
-}
-.prop-input {
-  @apply w-full px-2 py-1 bg-gray-800 border border-gray-700 text-white text-sm rounded focus:outline-none focus:border-amber-500;
-}
 .slide-panel-enter-active,
 .slide-panel-leave-active {
   transition: width 0.15s ease, opacity 0.15s ease;

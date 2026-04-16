@@ -103,10 +103,7 @@
               {{ t('action.cancel') }}
             </Button>
             <Button type="submit" :disabled="creating">
-              <svg v-if="creating" class="mr-2 size-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-              </svg>
+              <Loader2 v-if="creating" class="mr-2 size-4 animate-spin" />
               {{ creating ? t('show.creating') : t('show.create') }}
             </Button>
           </DialogFooter>
@@ -119,7 +116,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Archive } from 'lucide-vue-next'
+import { Archive, Loader2 } from 'lucide-vue-next'
 import { useLocale } from '../composables/useLocale.js'
 import { fetchShows, createShow, archiveShow } from '../api/shows.js'
 import { fetchTemplates, fetchTemplateChannels } from '../api/templates.js'

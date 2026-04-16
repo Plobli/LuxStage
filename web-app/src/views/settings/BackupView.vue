@@ -1,11 +1,11 @@
 <template>
-  <div class="divide-y divide-white/10">
+  <div class="divide-y divide-border">
 
     <!-- Backup herunterladen -->
     <div class="grid max-w-7xl grid-cols-1 gap-x-8 gap-y-10 px-4 py-16 sm:px-6 md:grid-cols-3 lg:px-8">
       <div>
-        <h2 class="text-base/7 font-semibold text-white">{{ t('settings.backup') }}</h2>
-        <p class="mt-1 text-sm/6 text-gray-400">{{ t('settings.backup.hint') }}</p>
+        <h2 class="text-base/7 font-semibold text-foreground">{{ t('settings.backup') }}</h2>
+        <p class="mt-1 text-sm/6 text-muted-foreground">{{ t('settings.backup.hint') }}</p>
       </div>
       <div class="md:col-span-2 flex items-start">
         <Button
@@ -21,16 +21,18 @@
     <!-- Backup wiederherstellen -->
     <div class="grid max-w-7xl grid-cols-1 gap-x-8 gap-y-10 px-4 py-16 sm:px-6 md:grid-cols-3 lg:px-8">
       <div>
-        <h2 class="text-base/7 font-semibold text-white">{{ t('settings.backup.restore') }}</h2>
-        <p class="mt-1 text-sm/6 text-gray-400">{{ t('settings.backup.restore.hint') }}</p>
+        <h2 class="text-base/7 font-semibold text-foreground">{{ t('settings.backup.restore') }}</h2>
+        <p class="mt-1 text-sm/6 text-muted-foreground">{{ t('settings.backup.restore.hint') }}</p>
       </div>
       <div class="md:col-span-2 sm:max-w-xl">
         <div class="flex items-center gap-3">
-          <label class="rounded-md px-3 py-2 text-sm font-semibold text-gray-300 ring-1 ring-white/10 hover:ring-white/20 cursor-pointer">
-            {{ t('settings.backup.restore.choose') }}
-            <input type="file" accept=".zip" class="sr-only" @change="onRestoreFile" />
-          </label>
-          <span v-if="restoreFile" class="text-sm text-gray-400 truncate max-w-xs">{{ restoreFile.name }}</span>
+          <Button variant="outline" as-child>
+            <label class="cursor-pointer">
+              {{ t('settings.backup.restore.choose') }}
+              <input type="file" accept=".zip" class="sr-only" @change="onRestoreFile" />
+            </label>
+          </Button>
+          <span v-if="restoreFile" class="text-sm text-muted-foreground truncate max-w-xs">{{ restoreFile.name }}</span>
         </div>
         <div class="mt-4" v-if="restoreFile">
           <Button
@@ -42,7 +44,9 @@
             {{ restoreLoading ? '…' : t('settings.backup.restore.submit') }}
           </Button>
         </div>
-        <p v-if="restoreMsg" :class="restoreMsg.startsWith('✓') ? 'text-green-400' : 'text-red-400'" class="mt-3 text-sm">{{ restoreMsg }}</p>
+        <Alert v-if="restoreMsg" :variant="restoreMsg.startsWith('✓') ? 'default' : 'destructive'" class="mt-3">
+          <AlertDescription>{{ restoreMsg }}</AlertDescription>
+        </Alert>
       </div>
     </div>
 
@@ -52,10 +56,13 @@
 <script setup>
 import { ref } from 'vue'
 import { Button } from '@/components/ui/button'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useLocale } from '../../composables/useLocale.js'
+import { useConfirm } from '../../composables/useConfirm.js'
 import { downloadBackup, uploadRestore } from '../../api/backup.js'
 
 const { t } = useLocale()
+const { confirm } = useConfirm()
 
 const restoreFile = ref(null)
 const restoreLoading = ref(false)
@@ -68,7 +75,8 @@ function onRestoreFile(e) {
 
 async function doRestore() {
   if (!restoreFile.value) return
-  if (!confirm(t('settings.backup.restore.confirm'))) return
+  const ok = await confirm({ t, titleKey: 'settings.backup.restore.confirm', confirmKey: 'action.confirm', cancelKey: 'action.cancel' })
+  if (!ok) return
   restoreLoading.value = true
   restoreMsg.value = ''
   try {

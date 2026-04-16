@@ -6,7 +6,7 @@
       <!-- Header -->
       <div class="flex items-center gap-x-4 mb-8">
         <Button variant="ghost" size="icon" class="text-muted-foreground hover:text-foreground" @click="editingName = null">
-          <svg class="size-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M17 10a.75.75 0 0 1-.75.75H5.612l4.158 3.96a.75.75 0 1 1-1.04 1.08l-5.5-5.25a.75.75 0 0 1 0-1.08l5.5-5.25a.75.75 0 1 1 1.04 1.08L5.612 9.25H16.25A.75.75 0 0 1 17 10Z" clip-rule="evenodd" /></svg>
+          <ArrowLeft class="size-5" />
         </Button>
         <h1 class="text-2xl font-semibold text-foreground">{{ templateDisplayName(editingName) || editingName }}</h1>
         <span v-if="detailSaving || sectionsSaving" class="text-xs text-muted-foreground">…</span>
@@ -216,13 +216,15 @@
           <!-- Upload -->
           <Button variant="secondary" as-child :disabled="floorplanUploading">
             <label class="cursor-pointer inline-flex items-center gap-2">
-              <svg class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M9.25 13.25a.75.75 0 0 0 1.5 0V4.636l2.955 3.129a.75.75 0 0 0 1.09-1.03l-4.25-4.5a.75.75 0 0 0-1.09 0l-4.25 4.5a.75.75 0 1 0 1.09 1.03L9.25 4.636v8.614Z"/><path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"/></svg>
+              <Upload class="size-4" />
               {{ floorplanUploading ? 'Wird hochgeladen…' : 'Bild hochladen' }}
               <input type="file" accept="image/*" class="sr-only" @change="onFloorplanImageUpload" :disabled="floorplanUploading" />
             </label>
           </Button>
 
-          <div v-if="floorplanError" class="text-red-400 text-sm">{{ floorplanError }}</div> 
+          <Alert v-if="floorplanError" variant="destructive">
+            <AlertDescription>{{ floorplanError }}</AlertDescription>
+          </Alert>
             </TabsContent>
             </Tabs>
             </template> 
@@ -232,7 +234,7 @@
     <template v-else>
       <div class="sm:flex sm:items-center mb-8">
         <div class="sm:flex-auto">
-          <h1 class="text-base font-semibold text-white">{{ t('nav.templates') }}</h1>
+          <h1 class="text-base font-semibold text-foreground">{{ t('nav.templates') }}</h1>
         </div>
         <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
           <Button @click="openUpload">
@@ -241,12 +243,12 @@
         </div>
       </div>
 
-      <div v-if="loading" class="text-sm text-gray-400">…</div>
-      <div v-else-if="templates.length === 0" class="text-sm text-gray-400">{{ t('template.list.empty') }}</div>
+      <div v-if="loading" class="text-sm text-muted-foreground">…</div>
+      <div v-else-if="templates.length === 0" class="text-sm text-muted-foreground">{{ t('template.list.empty') }}</div>
 
-      <ul v-else role="list" class="divide-y divide-white/10">
+      <ul v-else role="list" class="divide-y divide-border">
         <li v-for="name in templates" :key="name" class="flex items-center justify-between gap-x-6 py-5">
-          <Button variant="link" class="min-w-0 text-left text-white px-0 hover:text-accent font-semibold" @click="openDetail(name)">
+          <Button variant="link" class="min-w-0 text-left px-0 font-semibold" @click="openDetail(name)">
             {{ templateDisplayName(name) || name }}
           </Button>
           <div class="flex flex-none items-center gap-x-4">
@@ -268,23 +270,23 @@
           <DialogTitle>{{ t('template.upload') }}</DialogTitle>
         </DialogHeader>
 
-        <div v-if="step === 'select'" class="border-2 border-dashed border-white/20 rounded-lg p-8 text-center mt-4" @dragover.prevent @drop.prevent="onDrop">
+        <div v-if="step === 'select'" class="border-2 border-dashed border-border rounded-lg p-8 text-center mt-4" @dragover.prevent @drop.prevent="onDrop">
           <input ref="fileInput" type="file" accept=".csv,.txt" hidden @change="onFileChange" />
-          <p class="text-sm text-gray-400 mb-4">{{ t('template.upload.hint') }}</p>
+          <p class="text-sm text-muted-foreground mb-4">{{ t('template.upload.hint') }}</p>
           <Button @click="fileInput?.click()">{{ t('template.csv.choose') }}</Button>
         </div>
 
         <div v-else-if="step === 'preview'" class="pt-4 space-y-4">
           <div>
-            <label class="block text-xs font-medium text-gray-400 mb-1">{{ t('template.name') }}</label>
-            <Input v-model="importName" type="text" required />
+            <Label for="importName" class="text-xs">{{ t('template.name') }}</Label>
+            <Input id="importName" v-model="importName" type="text" required class="mt-1" />
           </div>
-          <div class="text-sm text-gray-400">
+          <div class="text-sm text-muted-foreground">
             <span>{{ t('csv.preview.channels', { count: previewChannels.length }) }}</span>
           </div>
-          <div class="overflow-x-auto max-h-96 border border-white/10 rounded-md">
+          <div class="overflow-x-auto max-h-96 border border-border rounded-md">
             <Table class="min-w-full text-sm">
-              <TableHeader class="sticky top-0 bg-gray-900 shadow-sm">
+              <TableHeader class="sticky top-0 bg-card shadow-sm">
                 <TableRow>
                   <TableHead class="w-16">{{ t('field.channel') }}</TableHead>
                   <TableHead class="w-24">{{ t('field.address') }}</TableHead>
@@ -309,8 +311,10 @@
               </TableBody>
             </Table>
           </div>
+          <Alert v-if="importError" variant="destructive" class="mt-2">
+            <AlertDescription>{{ importError }}</AlertDescription>
+          </Alert>
           <DialogFooter class="flex justify-end gap-3 mt-4 sm:justify-end">
-            <span v-if="importError" class="text-sm text-red-400 flex-1">{{ importError }}</span>
             <Button variant="outline" @click="step = 'select'">{{ t('action.back') }}</Button>
             <Button :disabled="importing || !importName.trim()" @click="handleImport">
               {{ importing ? '…' : t('template.upload.confirm') }}
@@ -319,7 +323,7 @@
         </div>
 
         <div v-else-if="step === 'done'" class="py-8 text-center">
-          <p class="text-white mb-4">✓ {{ t('template.upload.success') }}</p>
+          <p class="text-foreground mb-4">✓ {{ t('template.upload.success') }}</p>
           <Button @click="closeUpload">{{ t('action.close') }}</Button>
         </div>
       </DialogContent>
@@ -329,6 +333,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { ArrowLeft, Upload } from 'lucide-vue-next'
 import { useLocale } from '../composables/useLocale.js'
 import { useConfirm } from '../composables/useConfirm.js'
 import { fetchTemplates, fetchTemplateChannels, saveTemplate, uploadTemplate, deleteTemplate } from '../api/templates.js'
@@ -340,6 +345,8 @@ import { fetchTemplateFloorplan, uploadTemplateFloorplanImage, deleteTemplateFlo
 import { api } from '../api/client.js'
 
 import { Button } from '@/components/ui/button'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell, TableFooter } from '@/components/ui/table'

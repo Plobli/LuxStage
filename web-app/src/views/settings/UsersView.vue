@@ -1,50 +1,52 @@
 <template>
-  <div class="divide-y divide-white/10">
+  <div class="divide-y divide-border">
 
     <!-- Benutzerliste -->
     <div class="grid max-w-7xl grid-cols-1 gap-x-8 gap-y-10 px-4 py-16 sm:px-6 md:grid-cols-3 lg:px-8">
       <div>
-        <h2 class="text-base/7 font-semibold text-white">{{ t('settings.users') }}</h2>
-        <p class="mt-1 text-sm/6 text-gray-400">{{ t('settings.users.hint') }}</p>
+        <h2 class="text-base/7 font-semibold text-foreground">{{ t('settings.users') }}</h2>
+        <p class="mt-1 text-sm/6 text-muted-foreground">{{ t('settings.users.hint') }}</p>
       </div>
       <div class="md:col-span-2">
-        <ul class="divide-y divide-white/5 text-sm">
+        <ul class="divide-y divide-border text-sm">
           <li v-for="u in users" :key="u.username" class="flex items-center justify-between py-3">
             <div class="flex items-center gap-3">
-              <span class="text-white font-medium">{{ u.username }}</span>
+              <span class="text-foreground font-medium">{{ u.username }}</span>
               <Badge :variant="u.role === 'admin' ? 'default' : 'secondary'">{{ t('settings.users.role.' + u.role) }}</Badge>
-              <Badge variant="outline" class="text-gray-400 border-white/10">{{ t('settings.users.source.' + u.source) }}</Badge>
+              <Badge variant="outline" class="text-muted-foreground">{{ t('settings.users.source.' + u.source) }}</Badge>
             </div>
             <Button v-if="u.source === 'db'" variant="ghost" size="sm" @click="doDeleteUser(u.username)"
-              class="text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10">
+              class="text-xs text-destructive hover:text-destructive hover:bg-destructive/10">
               {{ t('settings.users.delete') }}
             </Button>
           </li>
         </ul>
-        <p v-if="deleteMsg" :class="deleteMsg.startsWith('✓') ? 'text-green-400' : 'text-red-400'" class="mt-3 text-sm">{{ deleteMsg }}</p>
+        <Alert v-if="deleteMsg" :variant="deleteMsg.startsWith('✓') ? 'default' : 'destructive'" class="mt-3">
+          <AlertDescription>{{ deleteMsg }}</AlertDescription>
+        </Alert>
       </div>
     </div>
 
     <!-- Neuer Benutzer -->
     <div class="grid max-w-7xl grid-cols-1 gap-x-8 gap-y-10 px-4 py-16 sm:px-6 md:grid-cols-3 lg:px-8">
       <div>
-        <h2 class="text-base/7 font-semibold text-white">{{ t('settings.users.new') }}</h2>
-        <p class="mt-1 text-sm/6 text-gray-400">Legt einen neuen Benutzer mit Benutzername, Passwort und Rolle an.</p>
+        <h2 class="text-base/7 font-semibold text-foreground">{{ t('settings.users.new') }}</h2>
+        <p class="mt-1 text-sm/6 text-muted-foreground">Legt einen neuen Benutzer mit Benutzername, Passwort und Rolle an.</p>
       </div>
       <form class="md:col-span-2" @submit.prevent="doCreateUser">
         <div class="space-y-4 sm:max-w-xl">
-          <div>
-            <label class="block text-sm/6 font-medium text-white mb-2">{{ t('settings.users.username') }}</label>
-            <Input v-model="newUsername" type="text" required pattern="[a-zA-Z0-9_-]+" />
+          <div class="space-y-2">
+            <Label for="new-username">{{ t('settings.users.username') }}</Label>
+            <Input id="new-username" v-model="newUsername" type="text" required pattern="[a-zA-Z0-9_-]+" />
           </div>
-          <div>
-            <label class="block text-sm/6 font-medium text-white mb-2">{{ t('settings.users.password') }}</label>
-            <Input v-model="newPassword" type="password" required minlength="8" />
+          <div class="space-y-2">
+            <Label for="new-password">{{ t('settings.users.password') }}</Label>
+            <Input id="new-password" v-model="newPassword" type="password" required minlength="8" />
           </div>
-          <div>
-            <label class="block text-sm/6 font-medium text-white mb-2">{{ t('settings.users.role') }}</label>
+          <div class="space-y-2">
+            <Label for="new-role">{{ t('settings.users.role') }}</Label>
             <Select v-model="newRole">
-              <SelectTrigger>
+              <SelectTrigger id="new-role">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -53,7 +55,9 @@
               </SelectContent>
             </Select>
           </div>
-          <p v-if="usersMsg" :class="usersMsg.startsWith('✓') ? 'text-green-400' : 'text-red-400'" class="text-sm">{{ usersMsg }}</p>
+          <Alert v-if="usersMsg" :variant="usersMsg.startsWith('✓') ? 'default' : 'destructive'">
+            <AlertDescription>{{ usersMsg }}</AlertDescription>
+          </Alert>
         </div>
         <div class="mt-8">
           <Button type="submit" :disabled="usersLoading">
@@ -66,14 +70,16 @@
     <!-- Passwort zurücksetzen -->
     <div class="grid max-w-7xl grid-cols-1 gap-x-8 gap-y-10 px-4 py-16 sm:px-6 md:grid-cols-3 lg:px-8">
       <div>
-        <h2 class="text-base/7 font-semibold text-white">{{ t('settings.account.reset_password') }}</h2>
-        <p class="mt-1 text-sm/6 text-gray-400">Setzt das Passwort eines Benutzers zurück und zeigt das neue temporäre Passwort an.</p>
+        <h2 class="text-base/7 font-semibold text-foreground">{{ t('settings.account.reset_password') }}</h2>
+        <p class="mt-1 text-sm/6 text-muted-foreground">Setzt das Passwort eines Benutzers zurück und zeigt das neue temporäre Passwort an.</p>
       </div>
       <form class="md:col-span-2" @submit.prevent="doResetPassword">
-        <div class="sm:max-w-xl">
-          <label class="block text-sm/6 font-medium text-white mb-2">{{ t('settings.account.reset_password.username') }}</label>
-          <Input v-model="resetUsername" type="text" required />
-          <p v-if="resetMsg" :class="resetMsg.startsWith('✓') ? 'text-green-400' : 'text-red-400'" class="mt-3 text-sm font-mono">{{ resetMsg }}</p>
+        <div class="sm:max-w-xl space-y-2">
+          <Label for="reset-username">{{ t('settings.account.reset_password.username') }}</Label>
+          <Input id="reset-username" v-model="resetUsername" type="text" required />
+          <Alert v-if="resetMsg" :variant="resetMsg.startsWith('✓') ? 'default' : 'destructive'" class="mt-3">
+            <AlertDescription class="font-mono">{{ resetMsg }}</AlertDescription>
+          </Alert>
         </div>
         <div class="mt-8">
           <Button type="submit" variant="secondary" :disabled="resetLoading">
@@ -91,6 +97,8 @@ import { ref, onMounted } from 'vue'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   Select,
   SelectContent,
@@ -99,9 +107,11 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useLocale } from '../../composables/useLocale.js'
+import { useConfirm } from '../../composables/useConfirm.js'
 import { listUsers, createUser, deleteUser, resetPassword } from '../../api/client.js'
 
 const { t } = useLocale()
+const { confirm } = useConfirm()
 
 const users = ref([])
 const deleteMsg = ref('')
@@ -134,7 +144,8 @@ async function doCreateUser() {
 }
 
 async function doDeleteUser(username) {
-  if (!confirm(t('settings.users.delete.confirm', { username }))) return
+  const ok = await confirm({ t, titleKey: 'settings.users.delete.confirm', messageParams: { username }, confirmKey: 'action.delete', cancelKey: 'action.cancel' })
+  if (!ok) return
   try {
     await deleteUser(username)
     await loadUsers()

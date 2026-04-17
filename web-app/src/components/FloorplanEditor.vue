@@ -69,12 +69,20 @@
         @mousedown="onStageMouseDown"
         @mousemove="onStageMouseMove"
         @mouseup="onStageMouseUp"
-        @wheel="onWheel"
         @dblclick="onStageDblClick"
       >
         <!-- Background image layer -->
         <v-layer :config="{ listening: false }">
-          <v-image v-if="bgImage" :config="{ image: bgImage, width: bgImage.naturalWidth, height: bgImage.naturalHeight }" />
+          <v-image
+            v-if="bgImage"
+            :config="{
+              image: bgImage,
+              x: bgImageRect.x,
+              y: bgImageRect.y,
+              width: bgImageRect.width,
+              height: bgImageRect.height,
+            }"
+          />
         </v-layer>
 
         <!-- Grid layer (über dem Bild) -->
@@ -82,12 +90,12 @@
           <v-line
             v-for="x in gridVerticalLines"
             :key="'gv' + x"
-            :config="{ points: [x, gridTop, x, gridBottom], stroke: 'rgba(100,100,100,0.3)', strokeWidth: 1 / zoom }"
+            :config="{ points: [x, gridTop, x, gridBottom], stroke: 'rgba(100,100,100,0.3)', strokeWidth: 1 }"
           />
           <v-line
             v-for="y in gridHorizontalLines"
             :key="'gh' + y"
-            :config="{ points: [gridLeft, y, gridRight, y], stroke: 'rgba(100,100,100,0.3)', strokeWidth: 1 / zoom }"
+            :config="{ points: [gridLeft, y, gridRight, y], stroke: 'rgba(100,100,100,0.3)', strokeWidth: 1 }"
           />
         </v-layer>
 
@@ -112,7 +120,7 @@
             }"
             @click="onNodeClick(el.id, $event)"
             @dragstart="e => { e.cancelBubble = true; draggingElementId = el.id; isElementDragging = true }"
-            @dragend="e => { draggingElementId = null; isElementDragging = false; onLineDragEnd(el, $event) }"
+            @dragend="onLineDragEnd(el, $event)"
             @transformend="onLineTransformEnd(el, $event)"
           />
 
@@ -136,7 +144,7 @@
             }"
             @click="onNodeClick(el.id, $event)"
             @dragstart="e => { e.cancelBubble = true; draggingElementId = el.id; isElementDragging = true }"
-            @dragend="e => { draggingElementId = null; isElementDragging = false; onRectDragEnd(el, $event) }"
+            @dragend="onRectDragEnd(el, $event)"
             @transformend="onRectTransformEnd(el, $event)"
           />
 
@@ -158,7 +166,7 @@
             }"
             @click="onNodeClick(el.id, $event)"
             @dragstart="e => { e.cancelBubble = true; draggingElementId = el.id; isElementDragging = true }"
-            @dragend="e => { draggingElementId = null; isElementDragging = false; onSimpleDragEnd(el, $event) }"
+            @dragend="onSimpleDragEnd(el, $event)"
             @transformend="onEllipseTransformEnd(el, $event)"
           />
 
@@ -178,8 +186,8 @@
               draggable: activeTool === 'select',
             }"
             @click="onNodeClick(el.id, $event)"
-            @dragstart="e => { e.cancelBubble = true; isElementDragging = true }"
-            @dragend="e => { isElementDragging = false; onSimpleDragEnd(el, $event) }"
+            @dragstart="e => { e.cancelBubble = true; draggingElementId = el.id; isElementDragging = true }"
+            @dragend="onSimpleDragEnd(el, $event)"
             @transformend="onTextTransformEnd(el, $event)"
             @dblclick="startTextEdit(el, $event)"
           />
@@ -192,12 +200,10 @@
               id: el.id,
               x: el.x,
               y: el.y,
-              scaleX: 1 / zoom,
-              scaleY: 1 / zoom,
               draggable: activeTool === 'select',
               onClick: (e) => onNodeClick(el.id, e),
               onDragstart: (e) => { e.cancelBubble = true; draggingElementId = el.id; isElementDragging = true },
-              onDragend: (e) => { draggingElementId = null; isElementDragging = false; onSimpleDragEnd(el, e) },
+              onDragend: (e) => onSimpleDragEnd(el, e),
             }"
           >
             <v-circle v-if="selectedIds.has(el.id)" :config="{
@@ -305,8 +311,6 @@
                 y: el._noteY,
                 listening: false,
                 visible: !isElementDragging || el.id !== draggingElementId,
-                scaleX: 1 / zoom,
-                scaleY: 1 / zoom,
               }"
             >
               <v-tag :config="{ fill: 'rgba(30,30,30,0.75)', cornerRadius: 3, pointerDirection: 'up', pointerWidth: 6, pointerHeight: 5 }" />
@@ -325,7 +329,7 @@
               fill: 'rgba(59,130,246,0.08)',
               stroke: '#3b82f6',
               strokeWidth: 1,
-              dash: [4, 4],
+              dash: [2, 3],
               listening: false,
             }"
           />
@@ -333,18 +337,6 @@
 
         </v-layer>
       </v-stage>
-
-      <!-- Zoom indicator -->
-      <div class="absolute bottom-2 left-2 z-20 flex items-center gap-1 bg-background/80 backdrop-blur border border-border rounded px-2 py-1 text-xs text-muted-foreground select-none pointer-events-none">
-        {{ Math.round(zoom * 100) }}%
-      </div>
-
-      <!-- Zoom controls -->
-      <div class="absolute bottom-2 right-2 z-20 flex items-center gap-1 bg-background/80 backdrop-blur border border-border rounded p-1">
-        <Button variant="ghost" size="icon" @click="setZoom(zoom * 1.25)" class="h-6 w-6">+</Button>
-        <Button variant="ghost" size="sm" @click="setZoom(1); panOffset = { x: 0, y: 0 }" class="h-6 px-2 text-xs">1:1</Button>
-        <Button variant="ghost" size="icon" @click="setZoom(zoom * 0.8)" class="h-6 w-6">−</Button>
-      </div>
 
       <!-- Inline Text Editor -->
       <textarea
@@ -482,23 +474,6 @@
         class="h-7 px-2 text-xs"
         title="Am Gitter einrasten"
       >Einrasten</Button>
-      <Button
-        size="sm"
-        :variant="lockZoom ? 'default' : 'ghost'"
-        @click="lockZoom = !lockZoom"
-        class="h-7 px-2 text-xs"
-        title="Zoom sperren"
-      >Zoom sperren</Button>
-      <Separator orientation="vertical" class="h-4" />
-      <Button
-        variant="ghost"
-        size="sm"
-        @click="resetView"
-        class="h-7 px-2 text-xs"
-        title="Ansicht zurücksetzen (F)"
-      >
-        Ansicht ↺
-      </Button>
     </div>
 
     <!-- Reassign Channel Dialog -->
@@ -653,9 +628,7 @@ const bgImage = ref(null)
 const stageSize = ref({ width: 1200, height: 800 })
 const showGrid = ref(false)
 const snapToGrid = ref(false)
-const lockZoom = ref(false)
-const GRID_SIZE = 40
-const zoom = ref(1)
+const GRID_SIZE = 30
 const panOffset = ref({ x: 0, y: 0 })
 const isPanning = ref(false)
 const panStart = ref(null)
@@ -678,13 +651,32 @@ const channelEls = computed(() => elements.value.filter(e => e.type === 'channel
 const stageConfig = computed(() => ({
   width: stageSize.value.width,
   height: stageSize.value.height,
-  scaleX: zoom.value,
-  scaleY: zoom.value,
+  scaleX: 1,
+  scaleY: 1,
   x: panOffset.value.x,
   y: panOffset.value.y,
 }))
 
-// --------------- Computed ---------------
+const bgImageRect = computed(() => {
+  if (!bgImage.value) return { x: 0, y: 0, width: 0, height: 0 }
+
+  const cw = stageSize.value.width
+  const ch = stageSize.value.height
+  const iw = bgImage.value.naturalWidth || 1
+  const ih = bgImage.value.naturalHeight || 1
+  const scale = Math.max(cw / iw, ch / ih)
+  const width = iw * scale
+  const height = ih * scale
+
+  return {
+    x: (cw - width) / 2,
+    y: (ch - height) / 2,
+    width,
+    height,
+  }
+})
+
+
 const selectedId = computed(() => selectedIds.value.size === 1 ? [...selectedIds.value][0] : null)
 const selectedElement = computed(() => elements.value.find(e => e.id === selectedId.value))
 const usedChannels = computed(() => elements.value.filter(e => e.type === 'channel').map(e => e.channel))
@@ -693,19 +685,58 @@ const channelInfo = computed(() => {
   return props.channels.find(ch => ch.channel === selectedElement.value.channel)
 })
 const elementsWithNotes = computed(() => {
-  const z = zoom.value
   return elements.value
     .filter(el => el.notes && el.notes.trim())
     .map(el => {
       let x, y
-      // base position at element anchor
-      if (el.type === 'line') { x = (el.x1 + el.x2) / 2; y = Math.min(el.y1, el.y2) }
-      else if (el.type === 'rect') { x = el.x + el.w / 2; y = el.y + el.h }
-      else if (el.type === 'ellipse') { x = el.x; y = el.y + el.ry }
-      else if (el.type === 'channel') { x = el.x; y = el.y + 42 }
-      else { x = el.x; y = el.y + (el.fontSize || 16) }
-      // add a fixed 6px screen-space gap (compensated for zoom)
-      return { ...el, _noteX: x, _noteY: y + 6 / z }
+
+      if (el.type === 'line') {
+        const x1 = el.x1
+        const y1 = el.y1
+        const x2 = el.x2
+        const y2 = el.y2
+        const mx = (x1 + x2) / 2
+        const my = (y1 + y2) / 2
+        const dx = x2 - x1
+        const dy = y2 - y1
+        const len = Math.hypot(dx, dy) || 1
+        const nx = -dy / len
+        const ny = dx / len
+        x = mx + nx * 12
+        y = my + ny * 12
+      } else if (el.type === 'rect') {
+        const cx = el.x + el.w / 2
+        const cy = el.y + el.h / 2
+        const angle = ((el.rotation || 0) * Math.PI) / 180
+        const offsetX = 0
+        const offsetY = el.h / 2 + 12
+        const rx = offsetX * Math.cos(angle) - offsetY * Math.sin(angle)
+        const ry = offsetX * Math.sin(angle) + offsetY * Math.cos(angle)
+        x = cx + rx
+        y = cy + ry
+      } else if (el.type === 'ellipse') {
+        const angle = ((el.rotation || 0) * Math.PI) / 180
+        const offsetX = 0
+        const offsetY = el.ry + 12
+        const rx = offsetX * Math.cos(angle) - offsetY * Math.sin(angle)
+        const ry = offsetX * Math.sin(angle) + offsetY * Math.cos(angle)
+        x = el.x + rx
+        y = el.y + ry
+      } else if (el.type === 'channel') {
+        x = el.x
+        y = el.y + 16
+      } else {
+        const angle = ((el.rotation || 0) * Math.PI) / 180
+        const fontSize = el.fontSize || 16
+        const offsetX = 0
+        const offsetY = fontSize + 8
+        const rx = offsetX * Math.cos(angle) - offsetY * Math.sin(angle)
+        const ry = offsetX * Math.sin(angle) + offsetY * Math.cos(angle)
+        x = el.x + rx
+        y = el.y + ry
+      }
+
+      return { ...el, _noteX: x, _noteY: y }
     })
 })
 
@@ -720,51 +751,50 @@ const filteredChannels = computed(() => {
 const isElementDragging = ref(false)
 const draggingElementId = ref(null)
   
-// --------------- Floating panel position ---------------
-const floatingPanelPos = computed(() => {
-  if (!selectedElement.value) return null
+// --------------- Floating panel position --------------- 
+const floatingPanelPos = computed(() => { 
+if (!selectedElement.value) return null 
 
-  const el = selectedElement.value
-  const z = zoom.value
-  const px = panOffset.value.x
-  const py = panOffset.value.y
+const el = selectedElement.value 
+const px = panOffset.value.x 
+const py = panOffset.value.y 
 
-  let edgeLeft, edgeRight, edgeTop, edgeBottom
+let edgeLeft, edgeRight, edgeTop, edgeBottom 
 
-  if (el.type === 'line') {
-    const x1s = el.x1 * z + px
-    const x2s = el.x2 * z + px
-    const y1s = el.y1 * z + py
-    const y2s = el.y2 * z + py
+if (el.type === 'line') { 
+const x1s = el.x1 + px 
+const x2s = el.x2 + px 
+const y1s = el.y1 + py 
+const y2s = el.y2 + py 
 
-    edgeLeft = Math.min(x1s, x2s)
-    edgeRight = Math.max(x1s, x2s)
-    edgeTop = Math.min(y1s, y2s)
-    edgeBottom = Math.max(y1s, y2s)
-  } else if (el.type === 'rect') {
-    edgeLeft = el.x * z + px
-    edgeRight = (el.x + el.w) * z + px
-    edgeTop = el.y * z + py
-    edgeBottom = (el.y + el.h) * z + py
-  } else if (el.type === 'ellipse') {
-    edgeLeft = (el.x - el.rx) * z + px
-    edgeRight = (el.x + el.rx) * z + px
-    edgeTop = (el.y - el.ry) * z + py
-    edgeBottom = (el.y + el.ry) * z + py
-  } else if (el.type === 'channel') {
-    const r = 14 * z
-    edgeLeft = el.x * z + px - r
-    edgeRight = el.x * z + px + r
-    edgeTop = el.y * z + py - r
-    edgeBottom = el.y * z + py + r
-  } else {
-    const textW = 60
-    const textH = (el.fontSize || 16) * z
-    edgeLeft = el.x * z + px
-    edgeRight = edgeLeft + textW
-    edgeTop = el.y * z + py
-    edgeBottom = edgeTop + textH
-  }
+edgeLeft = Math.min(x1s, x2s) 
+edgeRight = Math.max(x1s, x2s) 
+edgeTop = Math.min(y1s, y2s) 
+edgeBottom = Math.max(y1s, y2s) 
+} else if (el.type === 'rect') { 
+edgeLeft = el.x + px 
+edgeRight = el.x + el.w + px 
+edgeTop = el.y + py 
+edgeBottom = el.y + el.h + py 
+} else if (el.type === 'ellipse') { 
+edgeLeft = el.x - el.rx + px 
+edgeRight = el.x + el.rx + px 
+edgeTop = el.y - el.ry + py 
+edgeBottom = el.y + el.ry + py 
+} else if (el.type === 'channel') { 
+const r = 14 
+edgeLeft = el.x + px - r 
+edgeRight = el.x + px + r 
+edgeTop = el.y + py - r 
+edgeBottom = el.y + py + r 
+} else { 
+const textW = 60 
+const textH = el.fontSize || 16 
+edgeLeft = el.x + px 
+edgeRight = edgeLeft + textW 
+edgeTop = el.y + py 
+edgeBottom = edgeTop + textH 
+}
 
   const PANEL_W = 256
   const PANEL_H = 340
@@ -807,16 +837,7 @@ function typeLabel(type) {
 
 // --------------- Background image ---------------
 function fitToContainer() {
-  const cw = stageSize.value.width
-  const ch = stageSize.value.height
-  const iw = bgImage.value?.naturalWidth || 1200
-  const ih = bgImage.value?.naturalHeight || 800
-  const scale = Math.min(cw / iw, ch / ih, 1400 / iw) * 0.95
-  zoom.value = scale
-  panOffset.value = {
-    x: (cw - iw * scale) / 2,
-    y: (ch - ih * scale) / 2,
-  }
+  panOffset.value = { x: 0, y: 0 }
 }
 
 watch(() => props.imageUrl, (url) => {
@@ -830,10 +851,10 @@ watch(() => props.imageUrl, (url) => {
 }, { immediate: true })
 
 // --------------- Grid (Konva-layer) ---------------
-const gridLeft   = computed(() => -panOffset.value.x / zoom.value)
-const gridTop    = computed(() => -panOffset.value.y / zoom.value)
-const gridRight  = computed(() => gridLeft.value + stageSize.value.width  / zoom.value)
-const gridBottom = computed(() => gridTop.value  + stageSize.value.height / zoom.value)
+const gridLeft   = computed(() => -panOffset.value.x)
+const gridTop    = computed(() => -panOffset.value.y)
+const gridRight  = computed(() => gridLeft.value + stageSize.value.width)
+const gridBottom = computed(() => gridTop.value  + stageSize.value.height)
 const gridVerticalLines = computed(() => {
   const lines = []
   const start = Math.floor(gridLeft.value / GRID_SIZE) * GRID_SIZE
@@ -876,10 +897,9 @@ function getPointerPos() {
   if (!stage) return { x: 0, y: 0 }
   const pos = stage.getPointerPosition()
   if (!pos) return { x: 0, y: 0 }
-  // Convert from screen coords to canvas coords accounting for pan & zoom
   return {
-    x: (pos.x - panOffset.value.x) / zoom.value,
-    y: (pos.y - panOffset.value.y) / zoom.value,
+    x: pos.x - panOffset.value.x,
+    y: pos.y - panOffset.value.y,
   }
 }
 
@@ -1057,39 +1077,13 @@ function onStageMouseUp(e) {
   lassoRect.value = null
 }
 
-// --------------- Zoom / Pan ---------------
-function onWheel(e) {
-  e.evt.preventDefault()
-  if (lockZoom.value) return
-  const stage = stageRef.value?.getNode()
-  if (!stage) return
-  const pointer = stage.getPointerPosition()
-  // Fine-grained zoom: scale factor proportional to scroll amount, capped per tick
-  const rawDelta = e.evt.deltaY
-  const factor = Math.pow(0.999, rawDelta)  // smooth, direction-aware
-  const newZoom = Math.max(0.1, Math.min(10, zoom.value * factor))
-  const ox = pointer.x - (pointer.x - panOffset.value.x) * (newZoom / zoom.value)
-  const oy = pointer.y - (pointer.y - panOffset.value.y) * (newZoom / zoom.value)
-  zoom.value = newZoom
-  panOffset.value = { x: ox, y: oy }
-}
 
-function setZoom(z) {
-  const center = { x: stageSize.value.width / 2, y: stageSize.value.height / 2 }
-  const newZoom = Math.max(0.1, Math.min(10, z))
-  const ox = center.x - (center.x - panOffset.value.x) * (newZoom / zoom.value)
-  const oy = center.y - (center.y - panOffset.value.y) * (newZoom / zoom.value)
-  zoom.value = newZoom
-  panOffset.value = { x: ox, y: oy }
-}
-
-function resetView() {
-  if (bgImage.value) {
-    fitToContainer()
-  } else {
-    zoom.value = 1
-    panOffset.value = { x: 0, y: 0 }
-  }
+function resetView() { 
+if (bgImage.value) { 
+fitToContainer() 
+} else { 
+panOffset.value = { x: 0, y: 0 } 
+} 
 }
 
 // --------------- Double-click: text editing ---------------
@@ -1101,26 +1095,26 @@ function onStageDblClick(e) {
   if (el?.type === 'text') startTextEdit(el, e)
 }
 
-function startTextEdit(el, e) {
-  e.cancelBubble = true
-  const node = e.target
-  const stage = stageRef.value?.getNode()
-  if (!stage) return
-  // absPos is in stage canvas pixels (already accounts for zoom & pan)
-  const absPos = node.getAbsolutePosition()
-  const containerBox = containerEl.value.getBoundingClientRect()
-  const stageBox = stage.container().getBoundingClientRect()
-  textEditNode.value = el
-  textEditValue.value = el.text
-  textEditStyle.value = {
-    top: (stageBox.top - containerBox.top + absPos.y) + 'px',
-    left: (stageBox.left - containerBox.left + absPos.x) + 'px',
-    minWidth: '80px',
-    fontSize: ((el.fontSize || 16) * zoom.value) + 'px',
-    transform: `rotate(${el.rotation || 0}deg)`,
-    transformOrigin: '0 0',
-  }
-  nextTick(() => textareaRef.value?.focus())
+function startTextEdit(el, e) { 
+e.cancelBubble = true 
+const node = e.target 
+const stage = stageRef.value?.getNode() 
+if (!stage) return 
+// absPos is in stage canvas pixels (already accounts for zoom & pan) 
+const absPos = node.getAbsolutePosition() 
+const containerBox = containerEl.value.getBoundingClientRect() 
+const stageBox = stage.container().getBoundingClientRect() 
+textEditNode.value = el 
+textEditValue.value = el.text 
+textEditStyle.value = { 
+top: (stageBox.top - containerBox.top + absPos.y) + 'px', 
+left: (stageBox.left - containerBox.left + absPos.x) + 'px', 
+minWidth: '80px', 
+fontSize: (el.fontSize || 16) + 'px', 
+transform: `rotate(${el.rotation || 0}deg)`, 
+transformOrigin: '0 0', 
+} 
+nextTick(() => textareaRef.value?.focus()) 
 }
 
 function commitTextEdit() {
@@ -1136,8 +1130,9 @@ function cancelTextEdit() {
 
 // --------------- Drag handlers ---------------
 function onLineDragEnd(el, e) {
-  e.cancelBubble = true
-  const node = e.target
+  if (e) e.cancelBubble = true
+  const node = e?.target
+  if (!node) return
   const origCx = (el.x1 + el.x2) / 2
   const origCy = (el.y1 + el.y2) / 2
   const dx = node.x() - origCx
@@ -1148,22 +1143,30 @@ function onLineDragEnd(el, e) {
   const newCy = (el.y1 + el.y2) / 2
   node.position({ x: newCx, y: newCy })
   node.offsetX(newCx); node.offsetY(newCy)
+  draggingElementId.value = null
+  isElementDragging.value = false
   emitChange()
 }
 
 function onRectDragEnd(el, e) {
-  e.cancelBubble = true
-  const node = e.target
+  if (e) e.cancelBubble = true
+  const node = e?.target
+  if (!node) return
   el.x = snap(node.x() - el.w / 2)
   el.y = snap(node.y() - el.h / 2)
   node.position({ x: el.x + el.w / 2, y: el.y + el.h / 2 })
+  draggingElementId.value = null
+  isElementDragging.value = false
   emitChange()
 }
 
 function onSimpleDragEnd(el, e) {
-  e.cancelBubble = true
-  const node = e.target
+  if (e) e.cancelBubble = true
+  const node = e?.target
+  if (!node) return
   el.x = snap(node.x()); el.y = snap(node.y())
+  draggingElementId.value = null
+  isElementDragging.value = false
   emitChange()
 }
 
@@ -1433,8 +1436,6 @@ function handleKeyDown(e) {
     if (e.key === 'v') { e.preventDefault(); pasteClipboard(); return }
     if (e.key === 'd') { e.preventDefault(); duplicateSelected(); return }
     if (e.key === 'a') { e.preventDefault(); selectedIds.value = new Set(elements.value.map(e => e.id)); return }
-    if (e.key === '+' || e.key === '=') { e.preventDefault(); setZoom(zoom.value * 1.25); return }
-    if (e.key === '-') { e.preventDefault(); setZoom(zoom.value * 0.8); return }
     if (e.key === '0') { e.preventDefault(); resetView(); return }
   }
 }

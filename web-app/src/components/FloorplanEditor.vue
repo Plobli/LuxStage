@@ -384,8 +384,8 @@
             </div>
           </template>
 
-          <!-- Notizen (alle Typen) -->
-          <div class="space-y-1">
+          <!-- Notizen (nur Nicht-Text-Elemente) -->
+          <div v-if="selectedElement.type !== 'text'" class="space-y-1">
             <p class="text-xs text-muted-foreground uppercase tracking-wide">Notiz</p>
             <textarea
               v-model="selectedElement.notes"
@@ -684,60 +684,46 @@ const channelInfo = computed(() => {
   if (!selectedElement.value || selectedElement.value.type !== 'channel') return null
   return props.channels.find(ch => ch.channel === selectedElement.value.channel)
 })
+const NOTE_GAP = 3
+const NOTE_CHANNEL_RADIUS = 14
+const NOTE_TEXT_BASELINE = 10
+
 const elementsWithNotes = computed(() => {
-  return elements.value
-    .filter(el => el.notes && el.notes.trim())
-    .map(el => {
-      let x, y
+return elements.value
+.filter(el => el.type !== 'text' && el.notes && el.notes.trim())
+   .map(el => {
+let x, y
 
-      if (el.type === 'line') {
-        const x1 = el.x1
-        const y1 = el.y1
-        const x2 = el.x2
-        const y2 = el.y2
-        const mx = (x1 + x2) / 2
-        const my = (y1 + y2) / 2
-        const dx = x2 - x1
-        const dy = y2 - y1
-        const len = Math.hypot(dx, dy) || 1
-        const nx = -dy / len
-        const ny = dx / len
-        x = mx + nx * 12
-        y = my + ny * 12
-      } else if (el.type === 'rect') {
-        const cx = el.x + el.w / 2
-        const cy = el.y + el.h / 2
-        const angle = ((el.rotation || 0) * Math.PI) / 180
-        const offsetX = 0
-        const offsetY = el.h / 2 + 12
-        const rx = offsetX * Math.cos(angle) - offsetY * Math.sin(angle)
-        const ry = offsetX * Math.sin(angle) + offsetY * Math.cos(angle)
-        x = cx + rx
-        y = cy + ry
-      } else if (el.type === 'ellipse') {
-        const angle = ((el.rotation || 0) * Math.PI) / 180
-        const offsetX = 0
-        const offsetY = el.ry + 12
-        const rx = offsetX * Math.cos(angle) - offsetY * Math.sin(angle)
-        const ry = offsetX * Math.sin(angle) + offsetY * Math.cos(angle)
-        x = el.x + rx
-        y = el.y + ry
-      } else if (el.type === 'channel') {
-        x = el.x
-        y = el.y + 16
-      } else {
-        const angle = ((el.rotation || 0) * Math.PI) / 180
-        const fontSize = el.fontSize || 16
-        const offsetX = 0
-        const offsetY = fontSize + 8
-        const rx = offsetX * Math.cos(angle) - offsetY * Math.sin(angle)
-        const ry = offsetX * Math.sin(angle) + offsetY * Math.cos(angle)
-        x = el.x + rx
-        y = el.y + ry
-      }
+if (el.type === 'line') {
+const x1 = el.x1
+const y1 = el.y1
+const x2 = el.x2
+const y2 = el.y2
+const mx = (x1 + x2) / 2
+const my = (y1 + y2) / 2
+const dx = x2 - x1
+const dy = y2 - y1
+const len = Math.hypot(dx, dy) || 1
+const nx = -dy / len
+const ny = dx / len
+  x = mx + nx * NOTE_GAP
+y = my + ny * NOTE_GAP
+} else if (el.type === 'rect') {
+x = el.x + el.w / 2
+y = el.y + el.h + NOTE_GAP
+} else if (el.type === 'ellipse') {
+x = el.x
+y = el.y + el.ry + NOTE_GAP
+} else if (el.type === 'channel') {
+x = el.x
+  y = el.y + NOTE_CHANNEL_RADIUS + NOTE_GAP
+} else {
+x = el.x
+y = el.y + NOTE_TEXT_BASELINE + NOTE_GAP
+}
 
-      return { ...el, _noteX: x, _noteY: y }
-    })
+return { ...el, _noteX: x, _noteY: y }
+})
 })
 
 const filteredChannels = computed(() => {

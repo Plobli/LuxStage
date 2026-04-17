@@ -171,18 +171,18 @@
                 <SelectContent>
                   <SelectGroup>
                     <SelectItem value="markdown">{{ t('sections.type.markdown') }}</SelectItem>
-                    <SelectItem value="fields" :disabled="hasFieldsType() && sec.type !== 'fields'">{{ t('sections.type.fields') }}</SelectItem>
+                    <SelectItem value="kv-table" :disabled="hasKvTableType() && sec.type !== 'kv-table'">{{ t('sections.type.fields') }}</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
               <Button variant="ghost" size="icon" class="shrink-0 text-muted-foreground hover:text-destructive" @click="deleteSection(idx)">✕</Button>
             </div>
-            <div v-if="sec.type === 'fields'" class="space-y-2 pl-6">
-              <div v-for="(field, fidx) in sec.fields" :key="field.key" class="flex items-center gap-2">
+            <div v-if="sec.type === 'kv-table' || sec.type === 'fields'" class="space-y-2 pl-6">
+              <div v-for="(row, fidx) in (sec.rows ?? sec.fields ?? [])" :key="row.key" class="flex items-center gap-2">
                 <Input
-                  :model-value="field.label"
+                  :model-value="row.label"
                   :placeholder="t('sections.field.label')"
-                  @update:model-value="field.label = $event"
+                  @update:model-value="row.label = $event"
                   @change="persistSections"
                   class="flex-1"
                 />
@@ -349,7 +349,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell, TableFooter } from '@/components/ui/table'
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from '@/components/ui/select'
@@ -544,7 +544,7 @@ async function confirmAdd() {
 // ── Sections ────────────────────────────────────────────────────────────────
 
 function addSection() {
-  templateSections.value.push({ id: uuid(), title: '', type: 'markdown', order: templateSections.value.length, fields: [] })
+  templateSections.value.push({ id: uuid(), title: '', type: 'markdown', order: templateSections.value.length, rows: [] })
   persistSections()
 }
 
@@ -564,23 +564,25 @@ function moveSection(idx, dir) {
 }
 
 function addField(section) {
-  section.fields.push({ key: uuid().slice(0, 8), label: '' })
+  if (!section.rows) section.rows = []
+  section.rows.push({ key: uuid().slice(0, 8), label: '', value: '' })
   persistSections()
 }
 
 function deleteField(section, idx) {
-  section.fields.splice(idx, 1)
+  const arr = section.rows ?? section.fields
+  arr?.splice(idx, 1)
   persistSections()
 }
 
-function hasFieldsType() {
-  return templateSections.value.some(s => s.type === 'fields')
+function hasKvTableType() {
+  return templateSections.value.some(s => s.type === 'kv-table' || s.type === 'fields')
 }
 
 function onTypeChange(section, newType) {
-  if (newType === 'fields' && hasFieldsType() && section.type !== 'fields') return
+  if (newType === 'kv-table' && hasKvTableType() && section.type !== 'kv-table' && section.type !== 'fields') return
   section.type = newType
-  if (newType === 'fields' && !section.fields) section.fields = []
+  if (newType === 'kv-table' && !section.rows) section.rows = []
   persistSections()
 }
 

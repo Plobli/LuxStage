@@ -173,6 +173,7 @@
   "sections.type.markdown": "Textfeld",
   "sections.type.fields": "Felder",
   "sections.field.label": "Label",
+  "sections.field.value": "Wert",
   "sections.field.unit": "Einheit",
   "sections.field.add": "+ Feld",
   "sections.new": "Abschnitt",

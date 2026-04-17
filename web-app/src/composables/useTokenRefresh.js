@@ -7,7 +7,7 @@
  */
 import { onMounted, onUnmounted, getCurrentInstance } from 'vue'
 import { useRouter } from 'vue-router'
-import { getToken, setToken, clearToken } from '../api/client.js'
+import { getToken, setToken, clearToken, BASE } from '../api/client.js'
 import { jwtDecode } from '../api/jwtDecode.js'
 
 const CHECK_INTERVAL_MS = 5 * 60 * 1000   // alle 5 Minuten prüfen
@@ -41,8 +41,7 @@ export function useTokenRefresh() {
 
     // Token erneuern
     try {
-      const BASE = localStorage.getItem('server_url') || window.location.origin
-      const res = await fetch(BASE + '/api/auth/refresh', {
+      const res = await fetch(BASE() + '/api/auth/refresh', {
         method: 'POST',
         headers: { Authorization: 'Bearer ' + token },
       })

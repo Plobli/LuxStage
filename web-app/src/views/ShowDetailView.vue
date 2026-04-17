@@ -51,11 +51,6 @@
 
     <!-- ── Main Layout ────────────────────────────────────────────────────── -->
     <template v-else>
-    <!-- ── Offline-Banner ───────────────────────────────────────────────── -->
-    <Alert v-if="!isOnline" variant="destructive" class="rounded-none border-x-0 border-t-0 py-2 shrink-0">
-      <AlertTriangle class="size-4" />
-      <AlertDescription>{{ t('offline.banner') }}</AlertDescription>
-    </Alert>
     <div
       :inert="!isOnline || undefined"
       :class="{ 'opacity-40 pointer-events-none select-none': !isOnline }"
@@ -81,6 +76,7 @@
               :labels="{
                 titlePlaceholder: t('sections.title.placeholder'),
                 fieldLabel: t('sections.field.label'),
+                fieldValue: t('sections.field.value'),
                 fieldAdd: t('sections.field.add'),
                 addMarkdown: t('sections.add.markdown'),
                 addFields: t('sections.add.fields'),
@@ -205,6 +201,7 @@
             :labels="{
               titlePlaceholder: t('sections.title.placeholder'),
               fieldLabel: t('sections.field.label'),
+              fieldValue: t('sections.field.value'),
               fieldAdd: t('sections.field.add'),
               addMarkdown: t('sections.add.markdown'),
               addFields: t('sections.add.fields'),
@@ -249,8 +246,7 @@
 
 <script setup>
 import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import { Loader2, AlertTriangle } from 'lucide-vue-next'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Loader2 } from 'lucide-vue-next'
 import { useDebounceFn } from '@vueuse/core'
 import { useRouter } from 'vue-router'
 import { useLocale } from '../composables/useLocale.js'
@@ -325,6 +321,7 @@ const { initSnapshot, recordFocus, commitFocus, pushSnapshot, undo, redo, canUnd
       persistSectionsDebounced?.cancel?.()
     },
     () => {
+      channelsSaving.value = true
       persistChannels()
       persistSetup(setupMarkdown.value)
       persistSections()

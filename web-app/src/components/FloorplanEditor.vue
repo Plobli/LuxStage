@@ -211,41 +211,49 @@
               onDragend: (e) => onSimpleDragEnd(el, e),
             }"
           >
-            <v-circle v-if="selectedIds.has(el.id)" :config="{
-              radius: 20,
+            <v-arrow :config="{
+              points: [0, 0, pillW(el.channel) / 3 + 35, 0],
+              pointerLength: 15,
+              pointerWidth: 15,
+              fill: '#dc3740',
+              stroke: '#dc3740',
+              strokeWidth: 3,
+              rotation: el.rotation || 0,
+              listening: false,
+            }" />
+            <v-rect v-if="selectedIds.has(el.id)" :config="{
+              width: pillW(el.channel) + 8,
+              height: 44,
+              offsetX: (pillW(el.channel) + 8) / 2,
+              offsetY: 22,
+              cornerRadius: 26,
               stroke: '#dc3740',
               strokeWidth: 2,
               fill: 'transparent',
               dash: [4, 3],
               listening: false,
             }" />
-            <v-circle :config="{
-              radius: 14,
+            <v-rect :config="{
+              width: pillW(el.channel),
+              height: 36,
+              offsetX: pillW(el.channel) / 2,
+              offsetY: 18,
+              cornerRadius: 18,
               stroke: '#dc3740',
               strokeWidth: 2,
               fill: '#dc3740',
             }" />
             <v-text :config="{
-              text: el.channel,
-              fontSize: 16,
+              text: String(el.channel),
+              fontSize: 18,
               fontStyle: 'bold',
               fill: '#fff',
               align: 'center',
               verticalAlign: 'middle',
-              width: 28,
-              height: 28,
-              offsetX: 14,
-              offsetY: 14,
-              listening: false,
-            }" />
-            <v-arrow :config="{
-              points: [14, 0, 30, 0],
-              pointerLength: 7,
-              pointerWidth: 7,
-              fill: '#dc3740',
-              stroke: '#dc3740',
-              strokeWidth: 2,
-              rotation: el.rotation || 0,
+              width: pillW(el.channel),
+              height: 36,
+              offsetX: pillW(el.channel) / 2,
+              offsetY: 18,
               listening: false,
             }" />
           </v-group>
@@ -359,7 +367,7 @@
       <transition name="fade-panel">
         <div
           v-if="selectedIds.size === 1 && selectedElement && floatingPanelPos && !isElementDragging"
-          class="absolute z-40 w-64 bg-popover border border-border rounded-lg shadow-xl flex flex-col gap-4.5 p-6 text-sm"
+          class="absolute z-40 w-64 bg-popover/75 backdrop-blur-md border border-border rounded-lg shadow-xl flex flex-col gap-4.5 p-6 text-sm"
           :style="{ left: floatingPanelPos.left + 'px', top: floatingPanelPos.top + 'px' }"
           @mousedown.stop
         >
@@ -451,7 +459,7 @@
       <transition name="fade-panel">
         <div
           v-if="selectedIds.size > 1"
-          class="absolute z-40 bottom-14 left-1/2 -translate-x-1/2 bg-popover border border-border rounded-lg shadow-xl flex items-center gap-3 px-4 py-2 text-sm"
+          class="absolute z-40 bottom-14 left-1/2 -translate-x-1/2 bg-popover/75 backdrop-blur-md border border-border rounded-lg shadow-xl flex items-center gap-3 px-4 py-2 text-sm"
           @mousedown.stop
         >
           <span class="text-muted-foreground text-xs">{{ selectedIds.size }} Elemente ausgewählt</span>
@@ -769,12 +777,12 @@ edgeLeft = el.x - el.rx + px
 edgeRight = el.x + el.rx + px 
 edgeTop = el.y - el.ry + py 
 edgeBottom = el.y + el.ry + py 
-} else if (el.type === 'channel') { 
-const r = 14 
-edgeLeft = el.x + px - r 
-edgeRight = el.x + px + r 
-edgeTop = el.y + py - r 
-edgeBottom = el.y + py + r 
+} else if (el.type === 'channel') {
+const hw = pillW(el.channel) / 2
+edgeLeft = el.x + px - hw
+edgeRight = el.x + px + hw
+edgeTop = el.y + py - 14
+edgeBottom = el.y + py + 14
 } else { 
 const textW = 60 
 const textH = el.fontSize || 16 
@@ -816,6 +824,10 @@ edgeBottom = edgeTop + textH
     top: Math.round(top),
   }
 })
+
+function pillW(_channel) {
+  return 62 // fixed width for 4-digit channels at 18px bold
+}
 
 function typeLabel(type) {
   return {
@@ -896,10 +908,9 @@ function getPointerPos() {
   if (!stage) return { x: 0, y: 0 }
   const pos = stage.getPointerPosition()
   if (!pos) return { x: 0, y: 0 }
-  const s = stageScale.value
   return {
-    x: (pos.x / s) - panOffset.value.x,
-    y: (pos.y / s) - panOffset.value.y,
+    x: pos.x - panOffset.value.x,
+    y: pos.y - panOffset.value.y,
   }
 }
 
@@ -1373,10 +1384,13 @@ function emitChange() {
 function exportPNG() {
   const stage = stageRef.value?.getNode()
   if (!stage) return
-  const saved = { x: stage.x(), y: stage.y(), scaleX: stage.scaleX(), scaleY: stage.scaleY() }
-  stage.x(0); stage.y(0); stage.scaleX(1); stage.scaleY(1)
-  const dataUrl = stage.toDataURL({ pixelRatio: 2, width: 1920, height: 1080 })
-  stage.x(saved.x); stage.y(saved.y); stage.scaleX(saved.scaleX); stage.scaleY(saved.scaleY)
+  const dataUrl = stage.toDataURL({
+    pixelRatio: 2,
+    x: 0,
+    y: 0,
+    width: stageSize.value.width,
+    height: stageSize.value.height,
+  })
   const a = document.createElement('a'); a.href = dataUrl; a.download = 'grundriss.png'; a.click()
 }
 

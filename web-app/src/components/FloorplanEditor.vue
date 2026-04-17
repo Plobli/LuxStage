@@ -1,5 +1,5 @@
 <template>
-  <div class="relative flex h-full overflow-hidden bg-background text-foreground" @keydown.prevent.stop>
+  <div class="relative flex h-full overflow-hidden bg-background text-foreground">
     <!-- Left Toolbar -->
     <div class="w-[56px] bg-muted/30 border-r border-border flex flex-col items-center py-2 gap-1 z-10 shrink-0">
       <!-- Tools -->
@@ -59,18 +59,9 @@
     <div
       ref="containerEl"
       class="flex-1 relative overflow-hidden"
-      :class="activeTool === 'pan' ? 'cursor-grab' : activeTool !== 'select' ? 'cursor-crosshair' : 'cursor-default'"
-      :style="activeTool === 'pan' && isPanning ? 'cursor:grabbing' : ''"
+      :class="(activeTool === 'pan' || spaceHeld) ? 'cursor-grab' : activeTool !== 'select' ? 'cursor-crosshair' : 'cursor-default'"
+      :style="isPanning ? 'cursor:grabbing' : ''"
     >
-      <!-- Grid overlay (behind stage) -->
-      <canvas
-        v-if="showGrid"
-        ref="gridCanvasRef"
-        class="absolute inset-0 pointer-events-none z-0"
-        :width="stageSize.width"
-        :height="stageSize.height"
-      />
-
       <v-stage
         ref="stageRef"
         :config="stageConfig"
@@ -86,13 +77,26 @@
           <v-image v-if="bgImage" :config="{ image: bgImage, width: bgImage.naturalWidth, height: bgImage.naturalHeight }" />
         </v-layer>
 
+        <!-- Grid layer (über dem Bild) -->
+        <v-layer v-if="showGrid" :config="{ listening: false }">
+          <v-line
+            v-for="x in gridVerticalLines"
+            :key="'gv' + x"
+            :config="{ points: [x, gridTop, x, gridBottom], stroke: 'rgba(100,100,100,0.3)', strokeWidth: 1 / zoom }"
+          />
+          <v-line
+            v-for="y in gridHorizontalLines"
+            :key="'gh' + y"
+            :config="{ points: [gridLeft, y, gridRight, y], stroke: 'rgba(100,100,100,0.3)', strokeWidth: 1 / zoom }"
+          />
+        </v-layer>
+
         <!-- Elements layer -->
         <v-layer ref="elementsLayerRef">
           <!-- Lines -->
           <v-line
             v-for="el in lines"
             :key="el.id"
-            :ref="el => setNodeRef(el, el?.getNode?.()?.id?.() ?? el?.config?.id)"
             :config="{
               id: el.id,
               points: [el.x1, el.y1, el.x2, el.y2],
@@ -107,8 +111,8 @@
               hitStrokeWidth: 12,
             }"
             @click="onNodeClick(el.id, $event)"
-            @dragstart="e => e.cancelBubble = true"
-            @dragend="onLineDragEnd(el, $event)"
+            @dragstart="e => { e.cancelBubble = true; draggingElementId = el.id; isElementDragging = true }"
+            @dragend="e => { draggingElementId = null; isElementDragging = false; onLineDragEnd(el, $event) }"
             @transformend="onLineTransformEnd(el, $event)"
           />
 
@@ -131,8 +135,8 @@
               draggable: activeTool === 'select',
             }"
             @click="onNodeClick(el.id, $event)"
-            @dragstart="e => e.cancelBubble = true"
-            @dragend="onRectDragEnd(el, $event)"
+            @dragstart="e => { e.cancelBubble = true; draggingElementId = el.id; isElementDragging = true }"
+            @dragend="e => { draggingElementId = null; isElementDragging = false; onRectDragEnd(el, $event) }"
             @transformend="onRectTransformEnd(el, $event)"
           />
 
@@ -153,8 +157,8 @@
               draggable: activeTool === 'select',
             }"
             @click="onNodeClick(el.id, $event)"
-            @dragstart="e => e.cancelBubble = true"
-            @dragend="onSimpleDragEnd(el, $event)"
+            @dragstart="e => { e.cancelBubble = true; draggingElementId = el.id; isElementDragging = true }"
+            @dragend="e => { draggingElementId = null; isElementDragging = false; onSimpleDragEnd(el, $event) }"
             @transformend="onEllipseTransformEnd(el, $event)"
           />
 
@@ -174,8 +178,8 @@
               draggable: activeTool === 'select',
             }"
             @click="onNodeClick(el.id, $event)"
-            @dragstart="e => e.cancelBubble = true"
-            @dragend="onSimpleDragEnd(el, $event)"
+            @dragstart="e => { e.cancelBubble = true; isElementDragging = true }"
+            @dragend="e => { isElementDragging = false; onSimpleDragEnd(el, $event) }"
             @transformend="onTextTransformEnd(el, $event)"
             @dblclick="startTextEdit(el, $event)"
           />
@@ -188,29 +192,49 @@
               id: el.id,
               x: el.x,
               y: el.y,
+              scaleX: 1 / zoom,
+              scaleY: 1 / zoom,
               draggable: activeTool === 'select',
+              onClick: (e) => onNodeClick(el.id, e),
+              onDragstart: (e) => { e.cancelBubble = true; draggingElementId = el.id; isElementDragging = true },
+              onDragend: (e) => { draggingElementId = null; isElementDragging = false; onSimpleDragEnd(el, e) },
             }"
-            @click="onNodeClick(el.id, $event)"
-            @dragstart="e => e.cancelBubble = true"
-            @dragend="onSimpleDragEnd(el, $event)"
           >
+            <v-circle v-if="selectedIds.has(el.id)" :config="{
+              radius: 20,
+              stroke: '#dc3740',
+              strokeWidth: 2,
+              fill: 'transparent',
+              dash: [4, 3],
+              listening: false,
+            }" />
             <v-circle :config="{
               radius: 14,
-              stroke: '#2563eb',
+              stroke: '#dc3740',
               strokeWidth: 2,
-              fill: '#1e3a5f',
+              fill: '#dc3740',
             }" />
             <v-text :config="{
               text: el.channel,
-              fontSize: 10,
+              fontSize: 16,
               fontStyle: 'bold',
-              fill: '#60a5fa',
+              fill: '#fff',
               align: 'center',
               verticalAlign: 'middle',
               width: 28,
               height: 28,
               offsetX: 14,
               offsetY: 14,
+              listening: false,
+            }" />
+            <v-arrow :config="{
+              points: [14, 0, 30, 0],
+              pointerLength: 7,
+              pointerWidth: 7,
+              fill: '#dc3740',
+              stroke: '#dc3740',
+              strokeWidth: 2,
+              rotation: el.rotation || 0,
               listening: false,
             }" />
           </v-group>
@@ -273,6 +297,23 @@
             }"
           />
 
+          <!-- Notes labels for all elements -->
+          <template v-for="el in elementsWithNotes" :key="'note-' + el.id">
+            <v-label
+              :config="{
+                x: el._noteX,
+                y: el._noteY,
+                listening: false,
+                visible: !isElementDragging || el.id !== draggingElementId,
+                scaleX: 1 / zoom,
+                scaleY: 1 / zoom,
+              }"
+            >
+              <v-tag :config="{ fill: 'rgba(30,30,30,0.75)', cornerRadius: 3, pointerDirection: 'up', pointerWidth: 6, pointerHeight: 5 }" />
+              <v-text :config="{ text: el.notes, fontSize: 11, fill: '#e5e7eb', padding: 6, fontFamily: 'sans-serif', listening: false }" />
+            </v-label>
+          </template>
+
           <!-- Lasso selection rect -->
           <v-rect
             v-if="lassoRect"
@@ -288,6 +329,8 @@
               listening: false,
             }"
           />
+
+
         </v-layer>
       </v-stage>
 
@@ -299,7 +342,7 @@
       <!-- Zoom controls -->
       <div class="absolute bottom-2 right-2 z-20 flex items-center gap-1 bg-background/80 backdrop-blur border border-border rounded p-1">
         <Button variant="ghost" size="icon" @click="setZoom(zoom * 1.25)" class="h-6 w-6">+</Button>
-        <Button variant="ghost" size="sm" @click="setZoom(1); panOffset.value = { x: 0, y: 0 }" class="h-6 px-2 text-xs">1:1</Button>
+        <Button variant="ghost" size="sm" @click="setZoom(1); panOffset = { x: 0, y: 0 }" class="h-6 px-2 text-xs">1:1</Button>
         <Button variant="ghost" size="icon" @click="setZoom(zoom * 0.8)" class="h-6 w-6">−</Button>
       </div>
 
@@ -314,140 +357,138 @@
         @keydown.enter.prevent="commitTextEdit"
         @keydown.escape="cancelTextEdit"
       />
-    </div>
 
-    <!-- Right Properties Panel -->
-    <transition name="slide-panel">
-      <div
-        v-if="selectedIds.size >= 1"
-        class="w-[200px] bg-muted/10 border-l border-border flex flex-col gap-3 p-3 overflow-y-auto shrink-0"
-      >
-        <!-- Multi-select summary -->
-        <div v-if="selectedIds.size > 1" class="text-xs text-muted-foreground">
-          <div class="text-primary font-semibold text-sm mb-1">{{ selectedIds.size }} Elemente</div>
-          <div class="flex gap-1 flex-wrap mt-2">
-            <PanelBtn @click="bringToFront" title="Ganz nach vorne"><ChevronsUp class="size-3 mr-1" />Vorne</PanelBtn>
-            <PanelBtn @click="sendToBack" title="Ganz nach hinten"><ChevronsDown class="size-3 mr-1" />Hinten</PanelBtn>
+      <!-- Floating Properties Panel (single selection) -->
+      <transition name="fade-panel">
+        <div
+          v-if="selectedIds.size === 1 && selectedElement && floatingPanelPos && !isElementDragging"
+          class="absolute z-40 w-64 bg-popover border border-border rounded-lg shadow-xl flex flex-col gap-4.5 p-6 text-sm"
+          :style="{ left: floatingPanelPos.left + 'px', top: floatingPanelPos.top + 'px' }"
+          @mousedown.stop
+        >
+          <!-- Header -->
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-xs uppercase tracking-wide text-muted-foreground">{{ typeLabel(selectedElement.type) }}</span>
+            <Button variant="ghost" size="icon" class="h-5 w-5 -mr-1" @click="deleteSelected" title="Löschen">
+              <Trash2 class="size-3 text-destructive" />
+            </Button>
           </div>
-        </div>
-
-        <!-- Single element -->
-        <template v-if="selectedIds.size === 1 && selectedElement">
-          <div class="text-primary font-semibold text-sm capitalize">{{ typeLabel(selectedElement.type) }}</div>
 
           <!-- Channel info -->
-          <div v-if="selectedElement.type === 'channel'">
-            <div class="text-xs space-y-1 text-muted-foreground mb-2">
-              <template v-if="channelInfo">
-                <div class="font-semibold text-foreground">{{ channelInfo.channel }}</div>
-                <div>{{ channelInfo.device }}</div>
-                <div>{{ channelInfo.position }}</div>
-                <div>{{ channelInfo.address }}</div>
-                <div v-if="channelInfo.color" class="flex items-center gap-2 mt-1">
-                  <div :style="{ backgroundColor: channelInfo.color }" class="w-4 h-4 rounded border border-border"></div>
-                  {{ channelInfo.color }}
-                </div>
-              </template>
-            </div>
-            <PanelBtn @click="jumpToChannel" class="w-full">→ Zum Kanal</PanelBtn>
-          </div>
-
-          <!-- Text editing -->
-          <div v-if="selectedElement.type === 'text'" class="space-y-2">
-            <p class="text-xs text-muted-foreground uppercase tracking-wide">Text</p>
-            <Input v-model="selectedElement.text" type="text" class="h-7 px-2 py-1 text-xs" @input="emitChange" />
-            <p class="text-xs text-muted-foreground uppercase tracking-wide">Schriftgröße</p>
-            <Input v-model.number="selectedElement.fontSize" type="number" min="6" max="200" class="h-7 w-16 px-2 py-1 text-xs" @input="emitChange" />
-            <div class="flex gap-1">
-              <Toggle
-                size="sm"
-                :pressed="selectedElement.fontStyle === 'bold'"
-                @click="toggleFontStyle(selectedElement)"
-                class="h-7 px-2 text-xs font-bold"
-              >B</Toggle>
-            </div>
-          </div>
-
-          <!-- Stroke color (line/rect/ellipse) -->
-          <div v-if="['line','rect','ellipse'].includes(selectedElement.type)" class="space-y-2">
-            <p class="text-xs text-muted-foreground uppercase tracking-wide">Farbe</p>
-            <div class="flex items-center gap-2">
-              <input type="color" :value="selectedElement.color || '#6b7280'" @input="e => { selectedElement.color = e.target.value; emitChange() }" class="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
-              <span class="text-xs text-muted-foreground">{{ selectedElement.color || '#6b7280' }}</span>
-            </div>
-            <p class="text-xs text-muted-foreground uppercase tracking-wide">Stärke</p>
-            <Input v-model.number="selectedElement.strokeWidth" type="number" min="1" max="20" class="h-7 w-16 px-2 py-1 text-xs" @input="emitChange" />
-            <template v-if="selectedElement.type !== 'line'">
-              <p class="text-xs text-muted-foreground uppercase tracking-wide">Füllung</p>
-              <div class="flex items-center gap-2">
-                <input type="color" :value="selectedElement.fill === 'transparent' || !selectedElement.fill ? '#000000' : selectedElement.fill" @input="e => { selectedElement.fill = e.target.value; emitChange() }" class="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
-                <Button variant="outline" size="sm" @click="toggleFill(selectedElement)" class="h-7 px-2 text-xs">
-                  {{ selectedElement.fill && selectedElement.fill !== 'transparent' ? 'Transparent' : 'Füllen' }}
-                </Button>
+          <template v-if="selectedElement.type === 'channel'">
+            <div v-if="channelInfo" class="text-xs space-y-0.5 text-muted-foreground border-b border-border pb-2">
+              <div class="font-semibold text-foreground">{{ channelInfo.channel }}</div>
+              <div v-if="channelInfo.device">{{ channelInfo.device }}</div>
+              <div v-if="channelInfo.position">{{ channelInfo.position }}</div>
+              <div v-if="channelInfo.address">{{ channelInfo.address }}</div>
+              <div v-if="channelInfo.color" class="flex items-center gap-1.5 mt-1">
+                <div :style="{ backgroundColor: channelInfo.color }" class="w-3 h-3 rounded-sm border border-border shrink-0"></div>
+                <span>{{ channelInfo.color }}</span>
               </div>
-            </template>
-          </div>
-
-          <!-- Text color -->
-          <div v-if="selectedElement.type === 'text'" class="space-y-2">
-            <p class="text-xs text-muted-foreground uppercase tracking-wide">Farbe</p>
-            <div class="flex items-center gap-2">
-              <input type="color" :value="selectedElement.color || '#9ca3af'" @input="e => { selectedElement.color = e.target.value; emitChange() }" class="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
             </div>
-          </div>
-
-          <!-- Position & size -->
-          <template v-if="selectedElement.type !== 'channel'">
-            <p class="text-xs text-muted-foreground uppercase tracking-wide">Rotation</p>
-            <div class="flex items-center gap-2 pt-1 pb-2">
-              <Slider
-                :model-value="[selectedElement.rotation || 0]"
-                @update:model-value="updateRotation(selectedElement.id, $event[0])"
-                :min="-180"
-                :max="180"
-                :step="1"
-                class="flex-1"
-              />
-              <span class="text-xs text-muted-foreground w-9 text-right">{{ Math.round(selectedElement.rotation || 0) }}°</span>
+            <div class="flex gap-1">
+              <Button variant="outline" size="sm" class="h-7 text-xs flex-1" @click="jumpToChannel">→ Zum Kanal</Button>
+              <Button variant="outline" size="sm" class="h-7 text-xs flex-1" @click="openReassignPicker">Kanal ändern</Button>
             </div>
           </template>
 
-          <!-- Z-Order -->
-          <div class="flex gap-1 flex-wrap mt-1">
-            <PanelBtn @click="bringToFront"><ChevronsUp class="size-3 mr-1" />Vorne</PanelBtn>
-            <PanelBtn @click="bringForward"><ChevronUp class="size-3 mr-1" />Vor</PanelBtn>
-            <PanelBtn @click="sendBackward"><ChevronDown class="size-3 mr-1" />Zurück</PanelBtn>
-            <PanelBtn @click="sendToBack"><ChevronsDown class="size-3 mr-1" />Hinten</PanelBtn>
+          <!-- Notizen (alle Typen) -->
+          <div class="space-y-1">
+            <p class="text-xs text-muted-foreground uppercase tracking-wide">Notiz</p>
+            <textarea
+              v-model="selectedElement.notes"
+              placeholder="Notiz hinzufügen…"
+              rows="2"
+              class="w-full text-xs bg-muted/30 border border-border rounded px-2 py-1.5 resize-none outline-none focus:border-primary"
+              @input="emitChange"
+            />
           </div>
 
-          <!-- Copy/Duplicate -->
-          <div class="flex gap-1">
-            <PanelBtn @click="duplicateSelected" class="flex-1"><Copy class="size-3 mr-1" />Duplizieren</PanelBtn>
+          <!-- Text editing -->
+          <template v-if="selectedElement.type === 'text'">
+            <div class="space-y-1.5">
+              <Input v-model="selectedElement.text" type="text" class="h-7 px-2 py-1 text-xs" placeholder="Text…" @input="emitChange" />
+              <div class="flex items-center gap-1.5">
+                <Input v-model.number="selectedElement.fontSize" type="number" min="6" max="200" class="h-7 w-14 px-2 py-1 text-xs" @input="emitChange" />
+                <Button size="sm" :variant="selectedElement.fontStyle === 'bold' ? 'default' : 'ghost'" @click="toggleFontStyle(selectedElement)" class="h-7 px-2 text-xs font-bold">B</Button>
+                <input type="color" :value="selectedElement.color || '#9ca3af'" @input="e => { selectedElement.color = e.target.value; emitChange() }" class="w-7 h-7 rounded cursor-pointer bg-transparent border border-border p-0.5" />
+              </div>
+            </div>
+          </template>
+
+          <!-- Stroke/fill (line/rect/ellipse) -->
+          <template v-if="['line','rect','ellipse'].includes(selectedElement.type)">
+            <div class="flex items-center gap-2">
+              <input type="color" :value="selectedElement.color || '#6b7280'" @input="e => { selectedElement.color = e.target.value; emitChange() }" class="w-7 h-7 rounded cursor-pointer bg-transparent border border-border p-0.5" />
+              <span class="text-xs text-muted-foreground flex-1">Farbe</span>
+              <Input v-model.number="selectedElement.strokeWidth" type="number" min="1" max="20" class="h-7 w-12 px-2 py-1 text-xs" @input="emitChange" />
+            </div>
+            <div v-if="selectedElement.type !== 'line'" class="flex items-center gap-2">
+              <input type="color" :value="selectedElement.fill === 'transparent' || !selectedElement.fill ? '#000000' : selectedElement.fill" @input="e => { selectedElement.fill = e.target.value; emitChange() }" class="w-7 h-7 rounded cursor-pointer bg-transparent border border-border p-0.5" />
+              <span class="text-xs text-muted-foreground flex-1">Füllung</span>
+              <Button variant="outline" size="sm" @click="toggleFill(selectedElement)" class="h-7 px-2 text-xs">
+                {{ selectedElement.fill && selectedElement.fill !== 'transparent' ? 'Transparent' : 'Füllen' }}
+              </Button>
+            </div>
+          </template>
+
+          <!-- Rotation -->
+          <div class="flex items-center gap-2">
+            <Slider
+              :model-value="[selectedElement.rotation || 0]"
+              @update:model-value="updateRotation(selectedElement.id, $event[0])"
+              :min="-180" :max="180" :step="1"
+              class="flex-1"
+            />
+            <span class="text-xs text-muted-foreground w-9 text-right tabular-nums">{{ Math.round(selectedElement.rotation || 0) }}°</span>
           </div>
-        </template>
-      </div>
-    </transition>
+
+          <!-- Duplicate -->
+          <div class="flex gap-1 flex-wrap border-t border-border pt-2">
+            <PanelBtn @click="duplicateSelected" title="Duplizieren"><Copy class="size-3" /></PanelBtn>
+          </div>
+        </div>
+      </transition>
+
+      <!-- Floating multi-select panel -->
+      <transition name="fade-panel">
+        <div
+          v-if="selectedIds.size > 1"
+          class="absolute z-40 bottom-14 left-1/2 -translate-x-1/2 bg-popover border border-border rounded-lg shadow-xl flex items-center gap-3 px-4 py-2 text-sm"
+          @mousedown.stop
+        >
+          <span class="text-muted-foreground text-xs">{{ selectedIds.size }} Elemente ausgewählt</span>
+          <Button variant="destructive" size="sm" class="h-7 text-xs" @click="deleteSelected">
+            <Trash2 class="size-3 mr-1" />Löschen
+          </Button>
+        </div>
+      </transition>
+    </div>
+
 
     <!-- Top bar options -->
     <div class="absolute top-2 left-[60px] z-20 flex items-center gap-2 bg-background/80 backdrop-blur border border-border rounded p-1">
-      <Toggle
+      <Button
         size="sm"
-        :pressed="showGrid"
+        :variant="showGrid ? 'default' : 'ghost'"
         @click="showGrid = !showGrid"
         class="h-7 px-2 text-xs"
         title="Gitter anzeigen (G)"
-      >
-        Gitter
-      </Toggle>
-      <Toggle
+      >Gitter</Button>
+      <Button
         size="sm"
-        :pressed="snapToGrid"
+        :variant="snapToGrid ? 'default' : 'ghost'"
         @click="snapToGrid = !snapToGrid"
         class="h-7 px-2 text-xs"
         title="Am Gitter einrasten"
-      >
-        Einrasten
-      </Toggle>
+      >Einrasten</Button>
+      <Button
+        size="sm"
+        :variant="lockZoom ? 'default' : 'ghost'"
+        @click="lockZoom = !lockZoom"
+        class="h-7 px-2 text-xs"
+        title="Zoom sperren"
+      >Zoom sperren</Button>
       <Separator orientation="vertical" class="h-4" />
       <Button
         variant="ghost"
@@ -459,6 +500,41 @@
         Ansicht ↺
       </Button>
     </div>
+
+    <!-- Reassign Channel Dialog -->
+    <Dialog :open="!!reassignTargetId" @update:open="val => { if (!val) reassignTargetId = null }">
+      <DialogContent class="w-72 max-h-[28rem] flex flex-col gap-0 p-4">
+        <DialogHeader class="mb-3">
+          <DialogTitle class="text-sm">Kanal neu zuweisen</DialogTitle>
+        </DialogHeader>
+        <Input
+          v-model="channelSearch"
+          type="text"
+          placeholder="Suchen..."
+          class="w-full h-8 mb-3"
+          autofocus
+        />
+        <div class="flex-1 overflow-y-auto space-y-1">
+          <Button
+            v-for="ch in filteredChannels"
+            :key="ch.channel"
+            variant="ghost"
+            :disabled="usedChannels.includes(ch.channel)"
+            @click="reassignChannel(ch)"
+            class="w-full justify-start px-2 py-1.5 h-auto text-sm"
+            :class="usedChannels.includes(ch.channel) && 'opacity-50'"
+          >
+            <div>
+              <div class="font-semibold">{{ ch.channel }}</div>
+              <div class="text-xs text-muted-foreground">{{ ch.device }}</div>
+            </div>
+          </Button>
+        </div>
+        <DialogFooter class="mt-3">
+          <Button variant="outline" @click="reassignTargetId = null" class="w-full">Abbrechen</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
 
     <!-- Channel Picker Dialog -->
     <Dialog :open="showChannelPicker" @update:open="val => { if (!val) showChannelPicker = false }">
@@ -502,9 +578,8 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick, defineComponent, h } from 'vue'
 import { uuid } from '../utils/uuid.js'
-import jsPDF from 'jspdf'
 import {
-  ChevronsUp, ChevronsDown, ChevronUp, ChevronDown, Copy,
+  Copy,
   MousePointer2, Hand, Minus, Square, Circle, Type, CircleDot,
   Upload, ImageOff, Download, Undo2, Redo2, Trash2
 } from 'lucide-vue-next'
@@ -512,7 +587,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Slider } from '@/components/ui/slider'
 import { Separator } from '@/components/ui/separator'
-import { Toggle } from '@/components/ui/toggle'
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 
 // --------------- Sub-components ---------------
@@ -562,24 +637,29 @@ const drawStart = ref(null)
 const showChannelPicker = ref(false)
 const channelPickerPos = ref({ x: 0, y: 0 })
 const channelSearch = ref('')
+const reassignTargetId = ref(null)
 const stageRef = ref(null)
 const elementsLayerRef = ref(null)
 const transformerRef = ref(null)
 const containerEl = ref(null)
-const gridCanvasRef = ref(null)
+
 const imageUploadInput = ref(null)
 const history = ref([])
 const historyIndex = ref(-1)
 const lassoRect = ref(null)
+const pendingDirectionId = ref(null)
+
 const bgImage = ref(null)
 const stageSize = ref({ width: 1200, height: 800 })
 const showGrid = ref(false)
 const snapToGrid = ref(false)
+const lockZoom = ref(false)
 const GRID_SIZE = 40
 const zoom = ref(1)
 const panOffset = ref({ x: 0, y: 0 })
 const isPanning = ref(false)
 const panStart = ref(null)
+const spaceHeld = ref(false)
 const clipboard = ref(null)
 // Text editing
 const textEditNode = ref(null)
@@ -612,6 +692,23 @@ const channelInfo = computed(() => {
   if (!selectedElement.value || selectedElement.value.type !== 'channel') return null
   return props.channels.find(ch => ch.channel === selectedElement.value.channel)
 })
+const elementsWithNotes = computed(() => {
+  const z = zoom.value
+  return elements.value
+    .filter(el => el.notes && el.notes.trim())
+    .map(el => {
+      let x, y
+      // base position at element anchor
+      if (el.type === 'line') { x = (el.x1 + el.x2) / 2; y = Math.min(el.y1, el.y2) }
+      else if (el.type === 'rect') { x = el.x + el.w / 2; y = el.y + el.h }
+      else if (el.type === 'ellipse') { x = el.x; y = el.y + el.ry }
+      else if (el.type === 'channel') { x = el.x; y = el.y + 42 }
+      else { x = el.x; y = el.y + (el.fontSize || 16) }
+      // add a fixed 6px screen-space gap (compensated for zoom)
+      return { ...el, _noteX: x, _noteY: y + 6 / z }
+    })
+})
+
 const filteredChannels = computed(() => {
   const q = channelSearch.value.toLowerCase()
   return props.channels.filter(ch =>
@@ -620,38 +717,135 @@ const filteredChannels = computed(() => {
   )
 })
 
+const isElementDragging = ref(false)
+const draggingElementId = ref(null)
+  
+// --------------- Floating panel position ---------------
+const floatingPanelPos = computed(() => {
+  if (!selectedElement.value) return null
+
+  const el = selectedElement.value
+  const z = zoom.value
+  const px = panOffset.value.x
+  const py = panOffset.value.y
+
+  let edgeLeft, edgeRight, edgeTop, edgeBottom
+
+  if (el.type === 'line') {
+    const x1s = el.x1 * z + px
+    const x2s = el.x2 * z + px
+    const y1s = el.y1 * z + py
+    const y2s = el.y2 * z + py
+
+    edgeLeft = Math.min(x1s, x2s)
+    edgeRight = Math.max(x1s, x2s)
+    edgeTop = Math.min(y1s, y2s)
+    edgeBottom = Math.max(y1s, y2s)
+  } else if (el.type === 'rect') {
+    edgeLeft = el.x * z + px
+    edgeRight = (el.x + el.w) * z + px
+    edgeTop = el.y * z + py
+    edgeBottom = (el.y + el.h) * z + py
+  } else if (el.type === 'ellipse') {
+    edgeLeft = (el.x - el.rx) * z + px
+    edgeRight = (el.x + el.rx) * z + px
+    edgeTop = (el.y - el.ry) * z + py
+    edgeBottom = (el.y + el.ry) * z + py
+  } else if (el.type === 'channel') {
+    const r = 14 * z
+    edgeLeft = el.x * z + px - r
+    edgeRight = el.x * z + px + r
+    edgeTop = el.y * z + py - r
+    edgeBottom = el.y * z + py + r
+  } else {
+    const textW = 60
+    const textH = (el.fontSize || 16) * z
+    edgeLeft = el.x * z + px
+    edgeRight = edgeLeft + textW
+    edgeTop = el.y * z + py
+    edgeBottom = edgeTop + textH
+  }
+
+  const PANEL_W = 256
+  const PANEL_H = 340
+  const MARGIN = 12
+  const GAP = 38
+
+  const containerW = stageSize.value.width
+  const containerH = stageSize.value.height
+
+  let left = edgeRight + GAP
+  let top = edgeTop - GAP
+
+  if (left + PANEL_W > containerW - MARGIN) {
+    left = edgeLeft - PANEL_W - GAP
+  }
+
+  if (top < MARGIN) {
+    top = edgeBottom + GAP
+  }
+
+  if (left < MARGIN) left = MARGIN
+  if (top + PANEL_H > containerH - MARGIN) top = containerH - PANEL_H - MARGIN
+  if (top < MARGIN) top = MARGIN
+
+  return {
+    left: Math.round(left),
+    top: Math.round(top),
+  }
+})
+
 function typeLabel(type) {
-  return { line: 'Linie', rect: 'Rechteck', ellipse: 'Ellipse', text: 'Text', channel: 'Kanal' }[type] || type
+  return {
+    line: 'Linie',
+    rect: 'Rechteck',
+    ellipse: 'Ellipse',
+    text: 'Text',
+    channel: 'Kanal',
+  }[type] || type
 }
 
 // --------------- Background image ---------------
+function fitToContainer() {
+  const cw = stageSize.value.width
+  const ch = stageSize.value.height
+  const iw = bgImage.value?.naturalWidth || 1200
+  const ih = bgImage.value?.naturalHeight || 800
+  const scale = Math.min(cw / iw, ch / ih, 1400 / iw) * 0.95
+  zoom.value = scale
+  panOffset.value = {
+    x: (cw - iw * scale) / 2,
+    y: (ch - ih * scale) / 2,
+  }
+}
+
 watch(() => props.imageUrl, (url) => {
   if (!url) { bgImage.value = null; return }
   const img = new Image()
-  img.onload = () => { bgImage.value = img }
+  img.onload = () => {
+    bgImage.value = img
+    nextTick(fitToContainer)
+  }
   img.src = url
 }, { immediate: true })
 
-// --------------- Grid drawing ---------------
-function drawGrid() {
-  const c = gridCanvasRef.value
-  if (!c) return
-  const ctx = c.getContext('2d')
-  ctx.clearRect(0, 0, c.width, c.height)
-  if (!showGrid.value) return
-  ctx.strokeStyle = 'rgba(255,255,255,0.06)'
-  ctx.lineWidth = 1
-  const gs = GRID_SIZE * zoom.value
-  const ox = panOffset.value.x % gs
-  const oy = panOffset.value.y % gs
-  for (let x = ox; x < c.width; x += gs) {
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, c.height); ctx.stroke()
-  }
-  for (let y = oy; y < c.height; y += gs) {
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(c.width, y); ctx.stroke()
-  }
-}
-watch([showGrid, zoom, panOffset, stageSize], () => nextTick(drawGrid), { deep: true, immediate: true })
+// --------------- Grid (Konva-layer) ---------------
+const gridLeft   = computed(() => -panOffset.value.x / zoom.value)
+const gridTop    = computed(() => -panOffset.value.y / zoom.value)
+const gridRight  = computed(() => gridLeft.value + stageSize.value.width  / zoom.value)
+const gridBottom = computed(() => gridTop.value  + stageSize.value.height / zoom.value)
+const gridVerticalLines = computed(() => {
+  const lines = []
+  const start = Math.floor(gridLeft.value / GRID_SIZE) * GRID_SIZE
+  for (let x = start; x <= gridRight.value; x += GRID_SIZE) lines.push(x)
+  return lines
+})
+const gridHorizontalLines = computed(() => {
+  const lines = []
+  const start = Math.floor(gridTop.value / GRID_SIZE) * GRID_SIZE
+  for (let y = start; y <= gridBottom.value; y += GRID_SIZE) lines.push(y)
+  return lines
+})
 
 // --------------- Snap to grid ---------------
 function snap(val) {
@@ -710,7 +904,7 @@ function onStageMouseDown(e) {
 
   const pos = getPointerPos()
 
-  if (activeTool.value === 'pan') {
+  if (activeTool.value === 'pan' || spaceHeld.value) {
     isPanning.value = true
     panStart.value = { mx: e.evt.clientX, my: e.evt.clientY, ox: panOffset.value.x, oy: panOffset.value.y }
     return
@@ -733,13 +927,17 @@ function onStageMouseDown(e) {
   }
 }
 
-function onStageMouseMove(e) {
-  if (isPanning.value && panStart.value) {
-    const dx = e.evt.clientX - panStart.value.mx
-    const dy = e.evt.clientY - panStart.value.my
-    panOffset.value = { x: panStart.value.ox + dx, y: panStart.value.oy + dy }
+function onStageMouseMove(_e) {
+  if (activeTool.value === 'channel-direction' && pendingDirectionId.value) {
+    const el = elements.value.find(e => e.id === pendingDirectionId.value)
+    if (el) {
+      const pos = getPointerPos()
+      el.rotation = Math.atan2(pos.y - el.y, pos.x - el.x) * 180 / Math.PI
+    }
     return
   }
+
+  if (isPanning.value) return
 
   if (!drawStart.value) return
   const pos = getPointerPos()
@@ -773,6 +971,20 @@ function onStageMouseMove(e) {
 }
 
 function onStageMouseUp(e) {
+  if (activeTool.value === 'channel-direction' && pendingDirectionId.value) {
+    const el = elements.value.find(e => e.id === pendingDirectionId.value)
+    if (el) {
+      const pos = getPointerPos()
+      const dx = pos.x - el.x
+      const dy = pos.y - el.y
+      el.rotation = Math.atan2(dy, dx) * 180 / Math.PI
+      emitChange()
+    }
+    pendingDirectionId.value = null
+    activeTool.value = 'select'
+    return
+  }
+
   if (isPanning.value) {
     isPanning.value = false
     panStart.value = null
@@ -848,12 +1060,14 @@ function onStageMouseUp(e) {
 // --------------- Zoom / Pan ---------------
 function onWheel(e) {
   e.evt.preventDefault()
-  const delta = e.evt.deltaY < 0 ? 1.1 : 0.9
+  if (lockZoom.value) return
   const stage = stageRef.value?.getNode()
   if (!stage) return
   const pointer = stage.getPointerPosition()
-  const newZoom = Math.max(0.1, Math.min(10, zoom.value * delta))
-  // Zoom towards pointer
+  // Fine-grained zoom: scale factor proportional to scroll amount, capped per tick
+  const rawDelta = e.evt.deltaY
+  const factor = Math.pow(0.999, rawDelta)  // smooth, direction-aware
+  const newZoom = Math.max(0.1, Math.min(10, zoom.value * factor))
   const ox = pointer.x - (pointer.x - panOffset.value.x) * (newZoom / zoom.value)
   const oy = pointer.y - (pointer.y - panOffset.value.y) * (newZoom / zoom.value)
   zoom.value = newZoom
@@ -870,8 +1084,12 @@ function setZoom(z) {
 }
 
 function resetView() {
-  zoom.value = 1
-  panOffset.value = { x: 0, y: 0 }
+  if (bgImage.value) {
+    fitToContainer()
+  } else {
+    zoom.value = 1
+    panOffset.value = { x: 0, y: 0 }
+  }
 }
 
 // --------------- Double-click: text editing ---------------
@@ -888,16 +1106,19 @@ function startTextEdit(el, e) {
   const node = e.target
   const stage = stageRef.value?.getNode()
   if (!stage) return
+  // absPos is in stage canvas pixels (already accounts for zoom & pan)
   const absPos = node.getAbsolutePosition()
+  const containerBox = containerEl.value.getBoundingClientRect()
   const stageBox = stage.container().getBoundingClientRect()
   textEditNode.value = el
   textEditValue.value = el.text
   textEditStyle.value = {
-    top: (stageBox.top + absPos.y - containerEl.value.getBoundingClientRect().top) + 'px',
-    left: (stageBox.left + absPos.x - containerEl.value.getBoundingClientRect().left) + 'px',
-    minWidth: '100px',
+    top: (stageBox.top - containerBox.top + absPos.y) + 'px',
+    left: (stageBox.left - containerBox.left + absPos.x) + 'px',
+    minWidth: '80px',
     fontSize: ((el.fontSize || 16) * zoom.value) + 'px',
     transform: `rotate(${el.rotation || 0}deg)`,
+    transformOrigin: '0 0',
   }
   nextTick(() => textareaRef.value?.focus())
 }
@@ -917,10 +1138,16 @@ function cancelTextEdit() {
 function onLineDragEnd(el, e) {
   e.cancelBubble = true
   const node = e.target
-  const dx = node.x(); const dy = node.y()
+  const origCx = (el.x1 + el.x2) / 2
+  const origCy = (el.y1 + el.y2) / 2
+  const dx = node.x() - origCx
+  const dy = node.y() - origCy
   el.x1 = snap(el.x1 + dx); el.y1 = snap(el.y1 + dy)
   el.x2 = snap(el.x2 + dx); el.y2 = snap(el.y2 + dy)
-  node.position({ x: 0, y: 0 })
+  const newCx = (el.x1 + el.x2) / 2
+  const newCy = (el.y1 + el.y2) / 2
+  node.position({ x: newCx, y: newCy })
+  node.offsetX(newCx); node.offsetY(newCy)
   emitChange()
 }
 
@@ -943,8 +1170,42 @@ function onSimpleDragEnd(el, e) {
 // --------------- Transform end handlers ---------------
 function onLineTransformEnd(el, e) {
   const node = e.target
-  el.rotation = node.rotation()
+  const sx = node.scaleX()
+  const sy = node.scaleY()
+  const rot = node.rotation() * Math.PI / 180
+  const nx = node.x()
+  const ny = node.y()
+
+  // Transform endpoints from local (offset-adjusted) space to canvas space
+  // Original points are relative to the line's internal origin (offset applied)
+  const ox = (el.x1 + el.x2) / 2
+  const oy = (el.y1 + el.y2) / 2
+  // Local coords relative to offset pivot
+  const lx1 = el.x1 - ox; const ly1 = el.y1 - oy
+  const lx2 = el.x2 - ox; const ly2 = el.y2 - oy
+
+  function transformPt(lx, ly) {
+    const scaled = { x: lx * sx, y: ly * sy }
+    const rotated = {
+      x: scaled.x * Math.cos(rot) - scaled.y * Math.sin(rot),
+      y: scaled.x * Math.sin(rot) + scaled.y * Math.cos(rot),
+    }
+    return { x: rotated.x + nx, y: rotated.y + ny }
+  }
+
+  const p1 = transformPt(lx1, ly1)
+  const p2 = transformPt(lx2, ly2)
+  el.x1 = p1.x; el.y1 = p1.y
+  el.x2 = p2.x; el.y2 = p2.y
+  el.rotation = 0
+
+  node.scaleX(1); node.scaleY(1)
   node.rotation(0)
+  const newCx = (el.x1 + el.x2) / 2
+  const newCy = (el.y1 + el.y2) / 2
+  node.position({ x: newCx, y: newCy })
+  node.offsetX(newCx); node.offsetY(newCy)
+  node.points([el.x1, el.y1, el.x2, el.y2])
   emitChange()
 }
 
@@ -982,46 +1243,6 @@ function onTextTransformEnd(el, e) {
   emitChange()
 }
 
-// --------------- Z-Order ---------------
-function bringToFront() {
-  const ids = selectedIds.value
-  const rest = elements.value.filter(e => !ids.has(e.id))
-  const sel = elements.value.filter(e => ids.has(e.id))
-  elements.value = [...rest, ...sel]
-  emitChange()
-}
-
-function bringForward() {
-  const ids = selectedIds.value
-  const arr = [...elements.value]
-  for (let i = arr.length - 2; i >= 0; i--) {
-    if (ids.has(arr[i].id) && !ids.has(arr[i + 1].id)) {
-      ;[arr[i], arr[i + 1]] = [arr[i + 1], arr[i]]
-    }
-  }
-  elements.value = arr
-  emitChange()
-}
-
-function sendBackward() {
-  const ids = selectedIds.value
-  const arr = [...elements.value]
-  for (let i = 1; i < arr.length; i++) {
-    if (ids.has(arr[i].id) && !ids.has(arr[i - 1].id)) {
-      ;[arr[i], arr[i - 1]] = [arr[i - 1], arr[i]]
-    }
-  }
-  elements.value = arr
-  emitChange()
-}
-
-function sendToBack() {
-  const ids = selectedIds.value
-  const rest = elements.value.filter(e => !ids.has(e.id))
-  const sel = elements.value.filter(e => ids.has(e.id))
-  elements.value = [...sel, ...rest]
-  emitChange()
-}
 
 // --------------- Copy / Paste / Duplicate ---------------
 function copySelected() {
@@ -1060,9 +1281,11 @@ function deleteSelected() {
 }
 
 function placeChannelCircle(ch) {
-  addElement({ id: uuid(), type: 'channel', x: channelPickerPos.value.x, y: channelPickerPos.value.y, channel: ch.channel })
+  const id = uuid()
+  addElement({ id, type: 'channel', x: channelPickerPos.value.x, y: channelPickerPos.value.y, channel: ch.channel, rotation: 0 })
   showChannelPicker.value = false
-  activeTool.value = 'select'
+  pendingDirectionId.value = id
+  activeTool.value = 'channel-direction'
   emitChange()
 }
 
@@ -1074,6 +1297,19 @@ function onImageFileSelected(e) {
 
 function jumpToChannel() {
   if (selectedElement.value?.type === 'channel') emit('jump-to-channel', selectedElement.value.channel)
+}
+
+function openReassignPicker() {
+  if (selectedElement.value?.type === 'channel') {
+    reassignTargetId.value = selectedElement.value.id
+    channelSearch.value = ''
+  }
+}
+
+function reassignChannel(ch) {
+  const el = elements.value.find(e => e.id === reassignTargetId.value)
+  if (el) { el.channel = ch.channel; emitChange() }
+  reassignTargetId.value = null
 }
 
 function updateRotation(id, deg) {
@@ -1141,19 +1377,6 @@ function exportPNG() {
   const a = document.createElement('a'); a.href = dataUrl; a.download = 'grundriss.png'; a.click()
 }
 
-function exportPDF() {
-  const stage = stageRef.value?.getNode()
-  if (!stage) return
-  const saved = { x: stage.x(), y: stage.y(), scaleX: stage.scaleX(), scaleY: stage.scaleY() }
-  stage.x(0); stage.y(0); stage.scaleX(1); stage.scaleY(1)
-  const dataUrl = stage.toDataURL({ pixelRatio: 2, width: 1920, height: 1080 })
-  stage.x(saved.x); stage.y(saved.y); stage.scaleX(saved.scaleX); stage.scaleY(saved.scaleY)
-  const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
-  const pw = pdf.internal.pageSize.getWidth()
-  const ph = pdf.internal.pageSize.getHeight()
-  pdf.addImage(dataUrl, 'PNG', 0, 0, pw, ph)
-  pdf.save('grundriss.pdf')
-}
 
 // --------------- Keyboard shortcuts ---------------
 function isInputFocused() {
@@ -1163,6 +1386,8 @@ function isInputFocused() {
 
 function handleKeyDown(e) {
   if (isInputFocused()) return
+
+  if (e.key === ' ') { e.preventDefault(); spaceHeld.value = true; return }
 
   // Tool shortcuts
   if (!e.ctrlKey && !e.metaKey) {
@@ -1175,7 +1400,14 @@ function handleKeyDown(e) {
     if (e.key === 'c' && activeTool.value !== 'select') { activeTool.value = 'channel'; return }
     if (e.key === 'g' || e.key === 'G') { showGrid.value = !showGrid.value; return }
     if (e.key === 'f' || e.key === 'F') { resetView(); return }
-    if (e.key === 'Escape') { activeTool.value = 'select'; selectedIds.value = new Set(); return }
+    if (e.key === 'Escape') {
+      if (activeTool.value === 'channel-direction') {
+        pendingDirectionId.value = null
+      }
+      activeTool.value = 'select'
+      selectedIds.value = new Set()
+      return
+    }
     if (e.key === 'Delete' || e.key === 'Backspace') { deleteSelected(); return }
 
     // Nudge with arrow keys
@@ -1207,11 +1439,33 @@ function handleKeyDown(e) {
   }
 }
 
+// --------------- Global pan handlers (active during pan to prevent losing drag when mouse leaves stage) ---------------
+function onWindowMouseMove(e) {
+  if (!isPanning.value || !panStart.value) return
+  const dx = e.clientX - panStart.value.mx
+  const dy = e.clientY - panStart.value.my
+  panOffset.value = { x: panStart.value.ox + dx, y: panStart.value.oy + dy }
+}
+
+function onWindowMouseUp() {
+  if (isPanning.value) {
+    isPanning.value = false
+    panStart.value = null
+  }
+}
+
 // --------------- Lifecycle ---------------
 let resizeObserver = null
 
+function handleKeyUp(e) {
+  if (e.key === ' ') { spaceHeld.value = false }
+}
+
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
+  window.addEventListener('keyup', handleKeyUp)
+  window.addEventListener('mousemove', onWindowMouseMove)
+  window.addEventListener('mouseup', onWindowMouseUp)
   if (containerEl.value) {
     resizeObserver = new ResizeObserver(entries => {
       const { width, height } = entries[0].contentRect
@@ -1223,6 +1477,9 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
+  window.removeEventListener('keyup', handleKeyUp)
+  window.removeEventListener('mousemove', onWindowMouseMove)
+  window.removeEventListener('mouseup', onWindowMouseUp)
   resizeObserver?.disconnect()
 })
 
@@ -1236,14 +1493,13 @@ watch(() => props.initialCanvasData, (newVal) => {
 <style scoped>
 @reference "../style.css";
 
-.slide-panel-enter-active,
-.slide-panel-leave-active {
-  transition: width 0.15s ease, opacity 0.15s ease;
+.fade-panel-enter-active,
+.fade-panel-leave-active {
+  transition: opacity 0.12s ease, transform 0.12s ease;
 }
-.slide-panel-enter-from,
-.slide-panel-leave-to {
-  width: 0;
+.fade-panel-enter-from,
+.fade-panel-leave-to {
   opacity: 0;
-  overflow: hidden;
+  transform: scale(0.95);
 }
 </style>

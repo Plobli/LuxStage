@@ -20,7 +20,7 @@ export function useConfirm() {
       prev(false)
     }
     return new Promise((resolve) => {
-      title.value = t(titleKey, titleParams ?? messageParams)
+      title.value = t(titleKey, titleParams)
       message.value = messageKey ? t(messageKey, messageParams) : ''
       confirmLabel.value = t(confirmKey)
       cancelLabel.value = t(cancelKey)

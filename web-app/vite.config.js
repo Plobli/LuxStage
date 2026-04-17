@@ -18,8 +18,8 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: '../web-app/dist',
-    emptyOutDir: true,
+    outDir: 'dist', // direkt relativ zum Projektroot, kein Umweg über ../web-app/
+    emptyOutDir: true, // alte Artefakte vor jedem Build bereinigen
   },
   server: {
     port: 5173,

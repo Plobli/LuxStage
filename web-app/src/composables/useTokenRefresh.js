@@ -19,6 +19,7 @@ export function useTokenRefresh() {
 
   const router = useRouter()
   let intervalId = null
+  let mounted = false // Guard gegen Redirects nach onUnmounted
 
   async function tryRefresh() {
     const token = getToken()
@@ -29,10 +30,10 @@ export function useTokenRefresh() {
 
     const msUntilExpiry = payload.exp * 1000 - Date.now()
 
-    // Bereits abgelaufen → ausloggen
+    // Bereits abgelaufen → ausloggen (nur wenn Komponente noch gemountet)
     if (msUntilExpiry <= 0) {
       clearToken()
-      router.push('/login')
+      if (mounted) router.push('/login')
       return
     }
 
@@ -45,6 +46,8 @@ export function useTokenRefresh() {
         method: 'POST',
         headers: { Authorization: 'Bearer ' + token },
       })
+      // Nach dem await prüfen ob die Komponente noch lebt
+      if (!mounted) return
       if (res.status === 401) {
         clearToken()
         router.push('/login')
@@ -52,7 +55,7 @@ export function useTokenRefresh() {
       }
       if (res.ok) {
         const { token: newToken } = await res.json()
-        setToken(newToken)
+        if (mounted) setToken(newToken)
       }
     } catch {
       // Netzwerkfehler → still ignorieren, beim nächsten Tick erneut versuchen
@@ -60,11 +63,13 @@ export function useTokenRefresh() {
   }
 
   onMounted(() => {
+    mounted = true
     void tryRefresh()
     intervalId = setInterval(tryRefresh, CHECK_INTERVAL_MS)
   })
 
   onUnmounted(() => {
+    mounted = false
     clearInterval(intervalId)
   })
 }

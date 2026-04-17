@@ -189,7 +189,9 @@ async function checkForUpdate() {
     if (!isAdmin) return
     const check = await api.get('/api/update/check')
     if (check?.available) updateAvailable.value = true
-  } catch {}
+  } catch (e) {
+    console.warn('[LuxStage] Update-Check fehlgeschlagen:', e)
+  }
 }
 
 let updateCheckInterval = null
@@ -202,7 +204,7 @@ onUnmounted(() => {
 
 onMounted(() => {
   void pingServer()
-  pingInterval = setInterval(pingServer, 10_000)
+  pingInterval = setInterval(pingServer, 30_000) // 30 s statt 10 s – weniger Last bei vielen gleichzeitigen Clients
 
   void checkForUpdate()
   updateCheckInterval = setInterval(checkForUpdate, 60 * 60 * 1000)

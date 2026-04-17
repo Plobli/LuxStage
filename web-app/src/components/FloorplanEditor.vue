@@ -65,7 +65,12 @@
       <v-stage
         ref="stageRef"
         :config="stageConfig"
-        class="absolute top-0 left-0 z-10"
+        class="absolute z-10 origin-top-left"
+        :style="{
+          transform: `scale(${stageScale})`,
+          left: Math.round((containerSize.width - stageSize.width * stageScale) / 2) + 'px',
+          top: Math.round((containerSize.height - stageSize.height * stageScale) / 2) + 'px',
+        }"
         @mousedown="onStageMouseDown"
         @mousemove="onStageMouseMove"
         @mouseup="onStageMouseUp"
@@ -625,7 +630,15 @@ const lassoRect = ref(null)
 const pendingDirectionId = ref(null)
 
 const bgImage = ref(null)
+const containerSize = ref({ width: 1200, height: 800 })
+// stageSize = fixed logical size based on image natural resolution (set on image load, never changes on resize)
 const stageSize = ref({ width: 1200, height: 800 })
+// visual scale: how much the stage canvas is shrunk via CSS transform to fit the container
+const stageScale = computed(() => {
+  const sx = containerSize.value.width / stageSize.value.width
+  const sy = containerSize.value.height / stageSize.value.height
+  return Math.min(sx, sy, 1)
+})
 const showGrid = ref(false)
 const snapToGrid = ref(false)
 const GRID_SIZE = 30
@@ -657,24 +670,13 @@ const stageConfig = computed(() => ({
   y: panOffset.value.y,
 }))
 
-const bgImageRect = computed(() => {
-  if (!bgImage.value) return { x: 0, y: 0, width: 0, height: 0 }
-
-  const cw = stageSize.value.width
-  const ch = stageSize.value.height
-  const iw = bgImage.value.naturalWidth || 1
-  const ih = bgImage.value.naturalHeight || 1
-  const scale = Math.max(cw / iw, ch / ih)
-  const width = iw * scale
-  const height = ih * scale
-
-  return {
-    x: (cw - width) / 2,
-    y: (ch - height) / 2,
-    width,
-    height,
-  }
-})
+// Image fills the stage exactly (stage was sized to match image aspect ratio on load)
+const bgImageRect = computed(() => ({
+  x: 0,
+  y: 0,
+  width: stageSize.value.width,
+  height: stageSize.value.height,
+}))
 
 
 const selectedId = computed(() => selectedIds.value.size === 1 ? [...selectedIds.value][0] : null)
@@ -787,18 +789,22 @@ edgeBottom = edgeTop + textH
   const MARGIN = 12
   const GAP = 38
 
-  const containerW = stageSize.value.width
-  const containerH = stageSize.value.height
+  // Convert logical stage coords to screen pixels
+  const s = stageScale.value
+  const stageOffsetX = Math.round((containerSize.value.width - stageSize.value.width * s) / 2)
+  const stageOffsetY = Math.round((containerSize.value.height - stageSize.value.height * s) / 2)
+  const containerW = containerSize.value.width
+  const containerH = containerSize.value.height
 
-  let left = edgeRight + GAP
-  let top = edgeTop - GAP
+  let left = edgeRight * s + stageOffsetX + GAP
+  let top = edgeTop * s + stageOffsetY - GAP
 
   if (left + PANEL_W > containerW - MARGIN) {
-    left = edgeLeft - PANEL_W - GAP
+    left = edgeLeft * s + stageOffsetX - PANEL_W - GAP
   }
 
   if (top < MARGIN) {
-    top = edgeBottom + GAP
+    top = edgeBottom * s + stageOffsetY + GAP
   }
 
   if (left < MARGIN) left = MARGIN
@@ -830,6 +836,13 @@ watch(() => props.imageUrl, (url) => {
   if (!url) { bgImage.value = null; return }
   const img = new Image()
   img.onload = () => {
+    // Set fixed logical stage size based on image aspect ratio (max 2000px wide)
+    const MAX = 2000
+    const scale = Math.min(1, MAX / img.naturalWidth, MAX / img.naturalHeight)
+    stageSize.value = {
+      width: Math.round(img.naturalWidth * scale),
+      height: Math.round(img.naturalHeight * scale),
+    }
     bgImage.value = img
     nextTick(fitToContainer)
   }
@@ -883,9 +896,10 @@ function getPointerPos() {
   if (!stage) return { x: 0, y: 0 }
   const pos = stage.getPointerPosition()
   if (!pos) return { x: 0, y: 0 }
+  const s = stageScale.value
   return {
-    x: pos.x - panOffset.value.x,
-    y: pos.y - panOffset.value.y,
+    x: (pos.x / s) - panOffset.value.x,
+    y: (pos.y / s) - panOffset.value.y,
   }
 }
 
@@ -1086,7 +1100,7 @@ e.cancelBubble = true
 const node = e.target 
 const stage = stageRef.value?.getNode() 
 if (!stage) return 
-// absPos is in stage canvas pixels (already accounts for zoom & pan) 
+// absPos is in stage canvas pixels (already accounts for pan)
 const absPos = node.getAbsolutePosition() 
 const containerBox = containerEl.value.getBoundingClientRect() 
 const stageBox = stage.container().getBoundingClientRect() 
@@ -1429,8 +1443,9 @@ function handleKeyDown(e) {
 // --------------- Global pan handlers (active during pan to prevent losing drag when mouse leaves stage) ---------------
 function onWindowMouseMove(e) {
   if (!isPanning.value || !panStart.value) return
-  const dx = e.clientX - panStart.value.mx
-  const dy = e.clientY - panStart.value.my
+  const s = stageScale.value
+  const dx = (e.clientX - panStart.value.mx) / s
+  const dy = (e.clientY - panStart.value.my) / s
   panOffset.value = { x: panStart.value.ox + dx, y: panStart.value.oy + dy }
 }
 
@@ -1456,7 +1471,7 @@ onMounted(() => {
   if (containerEl.value) {
     resizeObserver = new ResizeObserver(entries => {
       const { width, height } = entries[0].contentRect
-      if (width > 0 && height > 0) stageSize.value = { width, height }
+      if (width > 0 && height > 0) containerSize.value = { width, height }
     })
     resizeObserver.observe(containerEl.value)
   }

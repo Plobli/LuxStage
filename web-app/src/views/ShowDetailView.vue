@@ -133,7 +133,7 @@
 
         <!-- Channels View -->
         <div
-          v-if="mobileTab === 'channels'"
+          v-show="mobileTab === 'channels'"
           class="flex flex-col flex-1 min-h-0 overflow-hidden"
         >
 
@@ -171,7 +171,7 @@
 
         <!-- Floorplan View -->
         <div
-          v-else-if="mobileTab === 'floorplan'"
+          v-show="mobileTab === 'floorplan'"
           class="flex flex-col flex-1 min-h-0 overflow-hidden"
         >
           <div class="flex items-center gap-3 px-4 py-2.5 border-b border-border bg-card shrink-0">
@@ -194,7 +194,7 @@
 
         <!-- Info View (mobile only — on desktop shown in sidebar) -->
         <div
-          v-else-if="mobileTab === 'info'"
+          v-show="mobileTab === 'info'"
           class="flex-1 min-h-0 overflow-y-auto lg:hidden p-4"
         >
           <SectionEditor

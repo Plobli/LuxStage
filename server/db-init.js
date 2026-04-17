@@ -174,6 +174,40 @@ if (!userCols.includes('role')) {
 if (!userCols.includes('requires_password_change')) {
   dbContainer.db.exec("ALTER TABLE users ADD COLUMN requires_password_change INTEGER NOT NULL DEFAULT 0")
 }
+// section_kv_rows: Zeilen für kv-table Sections
+const kvRowsTableExists = dbContainer.db.prepare(
+  "SELECT name FROM sqlite_master WHERE type='table' AND name='section_kv_rows'"
+).get()
+if (!kvRowsTableExists) {
+  dbContainer.db.exec(`
+    CREATE TABLE section_kv_rows (
+      id         TEXT PRIMARY KEY,
+      section_id TEXT NOT NULL REFERENCES section_defs(id) ON DELETE CASCADE,
+      label      TEXT NOT NULL DEFAULT '',
+      value      TEXT NOT NULL DEFAULT '',
+      sort_order INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE INDEX idx_section_kv_rows_section ON section_kv_rows(section_id);
+  `)
+}
+
+// template_section_kv_rows: wie section_kv_rows, aber für Templates
+const tplKvRowsTableExists = dbContainer.db.prepare(
+  "SELECT name FROM sqlite_master WHERE type='table' AND name='template_section_kv_rows'"
+).get()
+if (!tplKvRowsTableExists) {
+  dbContainer.db.exec(`
+    CREATE TABLE template_section_kv_rows (
+      id         TEXT PRIMARY KEY,
+      section_id TEXT NOT NULL REFERENCES template_section_defs(id) ON DELETE CASCADE,
+      label      TEXT NOT NULL DEFAULT '',
+      value      TEXT NOT NULL DEFAULT '',
+      sort_order INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE INDEX idx_tpl_section_kv_rows_section ON template_section_kv_rows(section_id);
+  `)
+}
+
 const photoCols = dbContainer.db.pragma('table_info(photo_descriptions)').map(c => c.name)
 if (!photoCols.includes('channel_number')) {
   dbContainer.db.exec("ALTER TABLE photo_descriptions ADD COLUMN channel_number TEXT NOT NULL DEFAULT ''")

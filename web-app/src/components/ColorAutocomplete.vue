@@ -3,7 +3,7 @@
     <Input
       :model-value="displayValue"
       @input="onInput"
-      @focus="open = true"
+      @focus="onFocus"
       @blur="onBlur"
       @keydown.down="open && filtered.length ? (moveDown(), $event.preventDefault()) : null"
       @keydown.up="open && filtered.length ? (moveUp(), $event.preventDefault()) : null"
@@ -41,7 +41,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { Input } from '@/components/ui/input'
 import { ALL_FILTERS, filterBadgeStyle } from '../utils/filterColors.js'
 
@@ -54,10 +54,13 @@ const emit = defineEmits(['update:modelValue', 'change', 'keydown'])
 
 const open = ref(false)
 const activeIdx = ref(0)
+const isEditing = ref(false)
 
-const badgeStyle = computed(() => filterBadgeStyle(props.modelValue))
-const displayValue = computed(() => {
-  const raw = (props.modelValue || '').trim().toUpperCase()
+// Lokaler Eingabe-Buffer: wird nur während der Eingabe verwendet
+const localInput = ref('')
+
+function resolveDisplayCode(value) {
+  const raw = (value || '').trim().toUpperCase()
   if (!raw) return ''
   const exact = ALL_FILTERS.find(f => f.code === raw || f.altCode === raw)
   if (exact) return exact.displayCode
@@ -73,11 +76,24 @@ const displayValue = computed(() => {
     const match = ALL_FILTERS.find(f => f.code === normalized || f.altCode === normalized)
     if (match) return match.displayCode
   }
-  return props.modelValue
+  return value
+}
+
+// Während der Eingabe: roher Tipp-Wert; sonst: formatierter Display-Code
+const displayValue = computed(() => {
+  if (isEditing.value) return localInput.value
+  return resolveDisplayCode(props.modelValue)
 })
+
+const badgeStyle = computed(() => filterBadgeStyle(props.modelValue))
 const inputClass = computed(() => {
   if (!badgeStyle.value) return 'text-muted-foreground placeholder:text-muted-foreground/35 bg-muted/35'
   return 'font-semibold text-current placeholder:text-current/55'
+})
+
+// Wenn modelValue von außen gesetzt wird (z.B. nach Select), localInput synchronisieren
+watch(() => props.modelValue, (val) => {
+  if (!isEditing.value) localInput.value = resolveDisplayCode(val)
 })
 
 const filtered = computed(() => {
@@ -125,14 +141,25 @@ const filtered = computed(() => {
   return results.slice(0, 12)
 })
 
+function onFocus() {
+  isEditing.value = true
+  localInput.value = props.modelValue || ''
+  open.value = true
+}
+
 function onInput(e) {
+  localInput.value = e.target.value
   emit('update:modelValue', e.target.value)
   open.value = true
   activeIdx.value = 0
 }
 
 function onBlur() {
-  setTimeout(() => { open.value = false }, 150)
+  setTimeout(() => {
+    open.value = false
+    isEditing.value = false
+    localInput.value = resolveDisplayCode(props.modelValue)
+  }, 150)
   emit('change')
 }
 

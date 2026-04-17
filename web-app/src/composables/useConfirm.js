@@ -13,6 +13,12 @@ export function useConfirmDialog() {
 
 export function useConfirm() {
   function confirm({ t, titleKey, titleParams, messageKey, messageParams, confirmKey = 'action.delete', cancelKey = 'action.cancel' }) {
+    // If a dialog is already open, dismiss it as cancelled before opening the new one
+    if (open.value && resolveFn) {
+      const prev = resolveFn
+      resolveFn = null
+      prev(false)
+    }
     return new Promise((resolve) => {
       title.value = t(titleKey, titleParams ?? messageParams)
       message.value = messageKey ? t(messageKey, messageParams) : ''

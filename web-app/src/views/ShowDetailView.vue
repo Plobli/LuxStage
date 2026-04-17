@@ -593,7 +593,7 @@ async function deleteChannel(ch) {
   const ok = await confirm({ t, titleKey: 'show.channel.delete.confirm', messageParams: { channel: ch.channel }, confirmKey: 'action.delete', cancelKey: 'action.cancel' })
   if (!ok) return
   pushSnapshot()
-  channels.value = channels.value.filter(c => c.channel !== ch.channel)
+  channels.value = channels.value.filter(c => c !== ch)
   scheduleChannelsSave()
 }
 
@@ -715,12 +715,6 @@ onMounted(async () => {
 
   await nextTick()
 
-  const scrollKey = `scroll_${props.id}`
-  const saved = sessionStorage.getItem(scrollKey)
-  if (saved) {
-    await nextTick()
-    window.scrollTo({ top: parseInt(saved), behavior: 'instant' })
-  }
   window.addEventListener('keydown', onUndoRedoKeydown)
 })
 

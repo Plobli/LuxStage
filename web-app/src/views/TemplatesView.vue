@@ -478,7 +478,7 @@ async function openDetail(name) {
 
 watch(editingName, () => {
   loadFloorplan()
-})
+}, { immediate: true })
 
 async function persist() {
   detailSaving.value = true

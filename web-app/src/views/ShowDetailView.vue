@@ -68,11 +68,6 @@
           mobileTab === 'info' ? 'flex w-full' : 'hidden lg:flex lg:w-96 xl:w-132'
         ]"
       >
-        <!-- Sidebar Header -->
-        <div class="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
-          <span class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Info & Fotos</span>
-          <span class="text-xs text-muted-foreground">{{ meta.name }}</span>
-        </div>
 
         <!-- Sidebar Scrollable Content -->
         <div class="flex-1 min-h-0 overflow-y-auto">
@@ -141,18 +136,6 @@
           v-if="mobileTab === 'channels'"
           class="flex flex-col flex-1 min-h-0 overflow-hidden"
         >
-          <!-- Channel Table Header -->
-          <div class="flex items-center gap-3 px-4 py-2.5 border-b border-border bg-card shrink-0">
-            <span class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              {{ t('show.channels') }}
-            </span>
-            <span class="text-xs tabular-nums text-muted-foreground bg-muted rounded-full px-2 py-0.5">
-              {{ channels.length }}
-            </span>
-            <div v-if="search" class="text-xs text-muted-foreground ml-1">
-              — {{ totalVisible }} {{ t('channel.search.results') ?? 'Treffer' }}
-            </div>
-          </div>
 
           <!-- Channel Table -->
           <div class="flex-1 min-h-0 overflow-hidden">

@@ -1,86 +1,91 @@
 <template>
   <!-- Sections (inline editor) -->
-  <div ref="sortableSectionsEl" class="space-y-6 mb-6">
+  <div ref="sortableSectionsEl" class="mb-6 space-y-4">
     <section
       v-for="sec in sortedSections"
       :key="sec.id"
       :data-section-id="sec.id"
-      class="group/sec mb-6 rounded-xl border border-border bg-card px-4 py-4 shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
+      class="group/sec relative overflow-hidden rounded-[24px] border border-border/60 bg-card/95 shadow-[0_20px_60px_rgba(0,0,0,0.22)] backdrop-blur-sm"
     >
-      <!-- Section header -->
-      <div class="flex items-center mb-4 gap-3">
-        <Input
-          :value="sec.title"
-          :placeholder="labels.titlePlaceholder"
-          @input="sec.title = $event.target.value"
-          @change="persistSectionDefs"
-          class="w-auto min-w-[8rem] text-base font-semibold text-accent bg-transparent border-0 focus-visible:ring-0 px-0 h-auto"
-          :style="{ width: Math.max((sec.title || labels.titlePlaceholder).length, 4) + 'ch' }"
-        />
-        <div class="flex-1 border-t border-border"></div>
-        <span class="section-drag-handle cursor-grab rounded-md p-1.5 text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors shrink-0">
-          <GripVertical class="size-4" />
-        </span>
-        <Button variant="ghost" size="icon" class="h-7 w-7 text-muted-foreground hover:bg-red-500/10 hover:text-red-400 shrink-0 transition-colors" @click="deleteSectionDef(sortedSections.indexOf(sec))">
-          <X class="size-4" />
-        </Button>
-      </div>
-
-      <!-- Fields section -->
-      <div v-if="sec.type === 'fields'">
-        <div
-          :data-fields-sortable="sec.id"
-          class="space-y-2 mb-3"
-        >
-          <div
-            v-for="(field, fidx) in sec.fields"
-            :key="field.key"
-            class="flex items-center min-h-[44px] gap-2 rounded-lg border border-border bg-muted/10 px-2 py-1.5 group/field"
-          >
-            <span class="field-drag-handle cursor-grab rounded-md p-1.5 text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors shrink-0">
+      <div class="border-b border-border/50 bg-muted/10 px-5 py-4">
+        <div class="flex items-center gap-3">
+          <Input
+            :value="sec.title"
+            :placeholder="labels.titlePlaceholder"
+            @input="sec.title = $event.target.value"
+            @change="persistSectionDefs"
+            class="h-10 min-w-[10rem] flex-1 border-0 bg-transparent px-0 text-base font-semibold text-foreground shadow-none placeholder:text-muted-foreground/40 focus-visible:ring-0"
+          />
+          <div class="flex items-center gap-1.5">
+            <span class="section-drag-handle inline-flex size-8 cursor-grab items-center justify-center rounded-full border border-border/40 bg-background/60 text-muted-foreground transition-colors hover:border-border/70 hover:text-foreground active:cursor-grabbing shrink-0">
               <GripVertical class="size-4" />
             </span>
-            <div class="w-32 shrink-0">
-              <Input
-                :value="field.label"
-                :placeholder="labels.fieldLabel"
-                @input="field.label = $event.target.value"
-                @change="persistSectionDefs"
-                class="w-full bg-transparent border-transparent px-2 h-8 text-sm focus-visible:ring-1 focus-visible:border-border transition-colors shadow-none"
-              />
-            </div>
-            <Input
-              :value="parseFieldValue(sec.id, field.key)"
-              @change="onFieldChange(sec.id, field.key, $event.target.value)"
-              class="flex-1 bg-muted/40 border-border h-9"
-            />
-            <Button variant="ghost" size="icon" class="h-7 w-7 text-muted-foreground hover:bg-red-500/10 hover:text-red-400 shrink-0 transition-colors" @click="deleteFieldDef(sec, fidx)">
+            <Button variant="ghost" size="icon" class="h-8 w-8 rounded-full text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-400 shrink-0" @click="deleteSectionDef(sortedSections.indexOf(sec))">
               <X class="size-4" />
             </Button>
           </div>
         </div>
-        <Button variant="outline" size="sm" @click="addFieldDef(sec)">{{ labels.fieldAdd }}</Button>
       </div>
 
-      <!-- Markdown/Textfeld section -->
-      <MarkdownEditor
-        v-else
-        :modelValue="sectionContents.get(sec.id) ?? ''"
-        @update:modelValue="onSectionChange(sec.id, $event)"
-      />
+      <div class="px-5 py-5">
+        <div v-if="sec.type === 'fields'" class="space-y-3">
+          <div
+            :data-fields-sortable="sec.id"
+            class="space-y-2"
+          >
+            <div
+              v-for="(field, fidx) in sec.fields"
+              :key="field.key"
+              class="group/field overflow-hidden rounded-2xl border border-border/50 bg-background/40"
+            >
+              <div class="grid min-h-11 grid-cols-[40px_minmax(180px,0.9fr)_minmax(0,1.4fr)_40px] items-stretch">
+                <span class="field-drag-handle inline-flex cursor-grab items-center justify-center border-r border-border/40 text-muted-foreground/45 transition-colors hover:text-foreground active:cursor-grabbing">
+                  <GripVertical class="size-4" />
+                </span>
+                <Input
+                  :value="field.label"
+                  :placeholder="labels.fieldLabel"
+                  @input="field.label = $event.target.value"
+                  @change="persistSectionDefs"
+                  class="h-full rounded-none border-0 border-r border-border/40 bg-transparent px-3 py-0 text-sm font-medium text-foreground shadow-none placeholder:text-muted-foreground/35 focus-visible:ring-0"
+                />
+                <Input
+                  :value="parseFieldValue(sec.id, field.key)"
+                  @change="onFieldChange(sec.id, field.key, $event.target.value)"
+                  class="h-full rounded-none border-0 bg-transparent px-3 py-0 text-sm text-foreground shadow-none placeholder:text-muted-foreground/30 focus-visible:ring-0"
+                />
+                <Button variant="ghost" size="icon" class="h-full w-full rounded-none border-l border-border/40 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-400" @click="deleteFieldDef(sec, fidx)">
+                  <X class="size-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" class="mt-1 rounded-full border-border/50 bg-background/70 px-4 text-foreground hover:bg-muted/40" @click="addFieldDef(sec)">{{ labels.fieldAdd }}</Button>
+        </div>
+
+        <MarkdownEditor
+          v-else
+          :modelValue="sectionContents.get(sec.id) ?? ''"
+          @update:modelValue="onSectionChange(sec.id, $event)"
+        />
+      </div>
     </section>
   </div>
 
   <!-- Fallback: single setup editor (when no sections defined) -->
-  <section v-if="sortedSections.length === 0" class="mb-8 rounded-xl border border-dashed border-border bg-card px-4 py-4">
-    <slot name="setup-heading" />
-    <MarkdownEditor :modelValue="setupMarkdown" @update:modelValue="emit('update:setupMarkdown', $event)" />
+  <section v-if="sortedSections.length === 0" class="mb-8 overflow-hidden rounded-[24px] border border-dashed border-border/60 bg-card/95">
+    <div class="border-b border-border/50 bg-muted/10 px-5 py-4">
+      <slot name="setup-heading" />
+    </div>
+    <div class="px-5 py-5">
+      <MarkdownEditor :modelValue="setupMarkdown" @update:modelValue="emit('update:setupMarkdown', $event)" />
+    </div>
   </section>
 
   <!-- Add section buttons -->
-  <div class="flex items-center gap-2 mb-6 py-3 border-t border-border">
-    <Button variant="outline" size="sm" @click="addMarkdownSection">{{ labels.addMarkdown }}</Button>
-    <Button v-if="!hasFieldsType()" variant="outline" size="sm" @click="addFieldsSection">{{ labels.addFields }}</Button>
+  <div class="mb-6 flex items-center gap-2 border-t border-border/50 py-4">
+    <Button variant="outline" size="sm" class="rounded-full border-border/50 bg-background/70 px-4 text-foreground hover:bg-muted/40" @click="addMarkdownSection">{{ labels.addMarkdown }}</Button>
+    <Button v-if="!hasFieldsType()" variant="outline" size="sm" class="rounded-full border-border/50 bg-background/70 px-4 text-foreground hover:bg-muted/40" @click="addFieldsSection">{{ labels.addFields }}</Button>
   </div>
 </template>
 

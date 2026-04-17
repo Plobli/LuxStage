@@ -1,7 +1,7 @@
 <template>
-  <div class="relative">
+  <div class="relative h-full min-h-10 w-full flex items-center px-1.5">
     <Input
-      :value="modelValue"
+      :model-value="displayValue"
       @input="onInput"
       @focus="open = true"
       @blur="onBlur"
@@ -12,8 +12,8 @@
       @keydown="$emit('keydown', $event)"
       :placeholder="placeholder"
       :style="badgeStyle || {}"
-      :class="badgeStyle ? 'font-semibold' : 'bg-muted text-muted-foreground placeholder:text-muted-foreground/60'"
-      class="focus-visible:ring-0 focus-visible:bg-muted/80 text-xs rounded-full px-2 py-0.5 border border-transparent focus-visible:border-border w-16 text-center h-6 shadow-none"
+      :class="inputClass"
+      class="h-7 w-full rounded-full border border-border/30 px-2 py-0 text-center text-[11px] shadow-none focus-visible:bg-muted/60 focus-visible:border-border/50 focus-visible:ring-0"
       v-bind="inputAttrs"
     />
     <ul
@@ -56,6 +56,29 @@ const open = ref(false)
 const activeIdx = ref(0)
 
 const badgeStyle = computed(() => filterBadgeStyle(props.modelValue))
+const displayValue = computed(() => {
+  const raw = (props.modelValue || '').trim().toUpperCase()
+  if (!raw) return ''
+  const exact = ALL_FILTERS.find(f => f.code === raw || f.altCode === raw)
+  if (exact) return exact.displayCode
+  if (/^\d+$/.test(raw)) {
+    const normalizedLee = `L${raw.padStart(3, '0')}`
+    const normalizedRosco = `R${raw.padStart(2, '0')}`
+    const match = ALL_FILTERS.find(f => f.code === normalizedLee || f.altCode === normalizedLee || f.code === normalizedRosco || f.altCode === normalizedRosco)
+    if (match) return match.displayCode
+  }
+  if (/^[LR]\d+$/.test(raw)) {
+    const prefix = raw[0]
+    const normalized = prefix === 'L' ? `L${raw.slice(1).padStart(3, '0')}` : `R${raw.slice(1).padStart(2, '0')}`
+    const match = ALL_FILTERS.find(f => f.code === normalized || f.altCode === normalized)
+    if (match) return match.displayCode
+  }
+  return props.modelValue
+})
+const inputClass = computed(() => {
+  if (!badgeStyle.value) return 'text-muted-foreground placeholder:text-muted-foreground/35 bg-muted/35'
+  return 'font-semibold text-current placeholder:text-current/55'
+})
 
 const filtered = computed(() => {
   const q = (props.modelValue || '').toUpperCase()

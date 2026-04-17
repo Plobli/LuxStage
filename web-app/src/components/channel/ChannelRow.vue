@@ -2,21 +2,19 @@
   <ContextMenu>
     <ContextMenuTrigger as-child>
       <TableRow
-        :data-ch-key="ch.channel + '|' + ch.address"
+        :data-ch-key="stableRowKey"
         :data-ch-pos="ch.position"
         :data-nav-row="rowIndex"
-        class="border-t border-border group/row hover:bg-muted/30 transition-colors"
+        class="group/row border-t border-border/60 bg-card transition-colors"
       >
-        <!-- Drag handle -->
         <TableCell class="w-8 py-0 pl-1 pr-0 align-middle">
-          <div class="drag-handle no-print cursor-grab active:cursor-grabbing flex items-center justify-center size-6 rounded text-muted-foreground/30 group-hover/row:text-muted-foreground hover:bg-muted transition-colors">
+          <div class="drag-handle no-print flex size-6 cursor-grab items-center justify-center rounded-sm text-muted-foreground/25 transition-colors active:cursor-grabbing group-hover/row:text-muted-foreground/70 hover:bg-muted/40">
             <GripVertical class="size-3.5" />
           </div>
         </TableCell>
 
-        <!-- Channel number + address -->
-        <TableCell class="py-1.5 pr-4 pl-0 align-middle">
-          <div class="flex items-center gap-1.5">
+        <TableCell class="py-0 pr-0 pl-0 align-middle border-l border-border/40 h-full">
+          <div class="grid h-full min-h-10 grid-cols-[5.5ch_auto_8ch] items-stretch">
             <Input
               v-model="ch.channel"
               @focus="emit('recordFocus')"
@@ -31,22 +29,21 @@
                 dupChannelNrs.has(ch.channel) ? 'ring-1 ring-yellow-400/60' : '',
                 channelStatusClass,
               ]"
-              class="bg-background/50 border border-border/40 hover:border-border focus-visible:bg-background focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring text-lg font-bold font-mono px-1.5 py-0 w-[5.5ch] text-center shadow-sm h-8 transition-colors cursor-pointer"
+              class="h-full min-h-10 w-full self-stretch cursor-pointer rounded-none border-0 bg-transparent px-2 py-0 text-center font-mono text-base font-semibold shadow-none transition-colors placeholder:text-muted-foreground/30 focus-visible:ring-0"
             />
-            <span class="text-muted-foreground/30 font-mono text-sm select-none">/</span>
+            <span class="select-none self-stretch flex items-center justify-center font-mono text-sm text-muted-foreground/30">/</span>
             <Input
               v-model="ch.address"
               @focus="emit('recordFocus')"
               @input="emit('change')"
               @blur="emit('commitFocus')"
               @click.stop
-              class="bg-background/50 border border-border/40 hover:border-border focus-visible:bg-background focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring text-xs text-muted-foreground px-1.5 py-0 w-[8ch] text-center shadow-sm h-8 transition-colors"
+              class="h-full min-h-10 w-full self-stretch rounded-none border-0 bg-transparent px-2 py-0 text-center text-xs text-muted-foreground shadow-none placeholder:text-muted-foreground/25 focus-visible:ring-0"
             />
           </div>
         </TableCell>
 
-        <!-- Color -->
-        <TableCell class="px-4 py-2 align-middle">
+        <TableCell class="px-0 py-0 align-middle border-l border-border/40 h-full">
           <ColorAutocomplete
             :modelValue="ch.color"
             @update:modelValue="emit('pushSnapshot'); ch.color = $event; emit('change')"
@@ -56,21 +53,19 @@
           />
         </TableCell>
 
-          <!-- Device -->
-          <TableCell class="px-3 py-2 align-middle">
-            <ChannelTextarea
-              v-model="ch.device"
-              :data-nav-row="rowIndex"
-              data-nav-col="2"
-              @focus="emit('recordFocus')"
-              @input="emit('change')"
-              @blur="emit('commitFocus')"
-              @keydown="onKeydownCol2"
-            />
-          </TableCell>
+        <TableCell class="px-0 py-0 align-middle border-l border-border/40 h-full">
+          <ChannelTextarea
+            v-model="ch.device"
+            :data-nav-row="rowIndex"
+            data-nav-col="2"
+            @focus="emit('recordFocus')"
+            @input="emit('change')"
+            @blur="emit('commitFocus')"
+            @keydown="onKeydownCol2"
+          />
+        </TableCell>
 
-        <!-- Notes -->
-        <TableCell class="px-3 py-2 align-middle">
+        <TableCell class="px-0 py-0 align-middle border-l border-border/40 h-full">
           <ChannelTextarea
             v-model="ch.notes"
             :data-nav-row="rowIndex"
@@ -82,12 +77,11 @@
           />
         </TableCell>
 
-        <!-- Delete -->
-        <TableCell class="w-10 pl-1 pr-1 align-middle text-center">
+        <TableCell class="w-10 pl-1 pr-1 align-middle text-center border-l border-border/40">
           <Button
             variant="ghost"
             size="icon"
-            class="no-print size-7 text-muted-foreground opacity-0 group-hover/row:opacity-100 hover:bg-red-500/10 hover:text-red-400 transition-all"
+            class="no-print size-7 rounded-sm text-muted-foreground opacity-0 transition-all group-hover/row:opacity-100 hover:bg-red-500/10 hover:text-red-400"
             @click="emit('delete', ch)"
             :title="deleteTitle"
           >
@@ -157,5 +151,10 @@ const channelStatusClass = computed(() => {
   if (props.channelStatus === 'active') return 'text-green-400'
   if (props.channelStatus === 'eos') return 'text-amber-400'
   return 'text-foreground'
+})
+
+const stableRowKey = computed(() => {
+  if (props.ch?.__rowKey) return props.ch.__rowKey
+  return `${props.ch?.channel || ''}|${props.ch?.address || ''}`
 })
 </script>

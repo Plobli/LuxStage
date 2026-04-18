@@ -245,7 +245,7 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, nextTick, onMounted, onBeforeUnmount, defineAsyncComponent } from 'vue'
 import { Loader2 } from 'lucide-vue-next'
 import { useDebounceFn } from '@vueuse/core'
 import { useRouter } from 'vue-router'
@@ -264,8 +264,8 @@ import { api } from '../api/client.js'
 import { fetchShowSections, saveShowSections, fetchShowSectionDefs } from '../api/sections.js'
 import ChannelTable from '../components/channel/ChannelTable.vue'
 import SectionEditor from '../components/show/SectionEditor.vue'
-import EosMergePreviewDialog from '../components/EosMergePreviewDialog.vue'
-import FloorplanEditor from '../components/FloorplanEditor.vue'
+const EosMergePreviewDialog = defineAsyncComponent(() => import('../components/EosMergePreviewDialog.vue'))
+const FloorplanEditor = defineAsyncComponent(() => import('../components/FloorplanEditor.vue'))
 import { fetchShowFloorplan, saveShowFloorplan, saveShowFloorplanSnapshot, uploadShowFloorplanImage, deleteShowFloorplanImage } from '../api/floorplan.js'
 
 const props = defineProps({ id: { type: String, required: true } })

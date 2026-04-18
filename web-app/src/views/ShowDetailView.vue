@@ -67,7 +67,7 @@
         <!-- Sidebar Scrollable Content -->
         <div class="flex-1 min-h-0 overflow-y-auto">
           <!-- Sections -->
-          <div class="p-4 border-b border-border">
+          <div class="p-4 border-b border-border/60">
             <SectionEditor
               :showId="props.id"
               :sectionDefs="sectionDefs"

@@ -1,5 +1,5 @@
 <template>
-  <div class="overflow-hidden rounded-2xl border border-border/50 bg-background/35">
+  <div class="overflow-hidden bg-background/35" :class="$attrs.class ?? 'rounded-2xl border border-border/50'">
     <!-- Toolbar -->
     <div v-if="editor" class="flex flex-wrap items-center gap-1 border-b border-border/40 bg-muted/10 px-3 py-2">
       <Toggle
@@ -50,6 +50,7 @@
 </template>
 
 <script setup>
+defineOptions({ inheritAttrs: false })
 import { watch, onBeforeUnmount } from 'vue'
 import { Toggle } from '@/components/ui/toggle'
 import { Separator } from '@/components/ui/separator'

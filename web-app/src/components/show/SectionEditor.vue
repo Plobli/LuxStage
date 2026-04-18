@@ -5,7 +5,7 @@
       v-for="sec in sortedSections"
       :key="sec.id"
       :data-section-id="sec.id"
-      class="group/sec relative overflow-hidden rounded-[24px] border border-border/60 bg-card/95 shadow-[0_20px_60px_rgba(0,0,0,0.22)] backdrop-blur-sm"
+      class="group/sec relative overflow-hidden rounded-3xl border border-border/60 bg-card/95 shadow-[0_20px_60px_rgba(0,0,0,0.22)] backdrop-blur-sm"
     >
       <div class="border-b border-border/50 bg-muted/10 px-5 py-4">
         <div class="flex items-center gap-3">
@@ -27,61 +27,103 @@
         </div>
       </div>
 
-      <div class="px-5 py-5">
-        <!-- kv-table: echte Tabelle mit direkten rows -->
-        <div v-if="sec.type === 'kv-table'">
-          <!-- Tabellen-Header -->
-          <div class="mb-1 grid grid-cols-[2rem_minmax(180px,0.9fr)_minmax(0,1.4fr)_2.5rem] items-center border-b border-border/50 pb-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/70">
-            <div></div>
-            <div class="px-3">{{ labels.fieldLabel }}</div>
-            <div class="px-3">{{ labels.fieldValue }}</div>
-            <div></div>
-          </div>
+      <!-- kv-table: echte <table>, identisch zur Kanaltabelle -->
+      <div v-if="sec.type === 'kv-table'">
+        <!-- Header -->
+        <div class="sticky top-0 z-10 border-b border-border/90 bg-muted/60 backdrop-blur supports-backdrop-filter:bg-muted/55">
+          <table class="w-full table-fixed border-collapse">
+            <colgroup>
+              <col class="w-8" />
+              <col />
+              <col />
+              <col class="w-10" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th class="px-1 py-2"></th>
+                <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/90">{{ labels.fieldLabel }}</th>
+                <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/90">{{ labels.fieldValue }}</th>
+                <th class="px-1 py-2"></th>
+              </tr>
+            </thead>
+          </table>
+        </div>
 
-          <!-- Zeilen -->
-          <div :data-kv-sortable="sec.id">
-            <div
+        <!-- Zeilen -->
+        <table class="w-full table-fixed border-collapse bg-card" :data-kv-sortable="sec.id">
+          <colgroup>
+            <col class="w-8" />
+            <col />
+            <col />
+            <col class="w-10" />
+          </colgroup>
+          <tbody>
+            <tr
               v-for="row in sortedRows(sec)"
               :key="row.id"
               :data-row-id="row.id"
-              class="grid min-h-11 grid-cols-[2rem_minmax(180px,0.9fr)_minmax(0,1.4fr)_2.5rem] items-stretch border-b border-border/30 last:border-0"
+              class="group/row border-t border-border/60 bg-card transition-colors"
             >
-              <span class="kv-drag-handle inline-flex cursor-grab items-center justify-center text-muted-foreground/40 transition-colors hover:text-foreground active:cursor-grabbing">
-                <GripVertical class="size-4" />
-              </span>
-              <Input
-                :value="row.label"
-                :placeholder="labels.fieldLabel"
-                @input="row.label = $event.target.value"
-                @change="persistKvRows(sec)"
-                class="h-full rounded-none border-0 border-r border-border/30 bg-transparent px-3 py-0 text-sm font-medium text-foreground shadow-none placeholder:text-muted-foreground/35 focus-visible:ring-0"
-              />
-              <Input
-                :value="row.value"
-                @input="row.value = $event.target.value"
-                @change="persistKvRows(sec)"
-                class="h-full rounded-none border-0 bg-transparent px-3 py-0 text-sm text-foreground shadow-none placeholder:text-muted-foreground/30 focus-visible:ring-0"
-              />
-              <Button variant="ghost" size="icon" class="h-full w-full rounded-none text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-400" @click="deleteKvRow(sec, row.id)">
-                <X class="size-4" />
-              </Button>
-            </div>
-          </div>
+              <td class="w-8 py-0 pl-1 pr-0 align-middle">
+                <div class="kv-drag-handle drag-handle no-print flex size-6 cursor-grab items-center justify-center rounded-sm text-muted-foreground/70 opacity-0 transition-all active:cursor-grabbing group-hover/row:opacity-100 hover:bg-muted/40">
+                  <GripVertical class="size-3.5" />
+                </div>
+              </td>
+              <td class="py-0 px-0 align-middle border-l border-border/40 h-full">
+                <Input
+                  :value="row.label"
+                  :placeholder="labels.fieldLabel"
+                  @input="row.label = $event.target.value"
+                  @change="persistKvRows(sec)"
+                  class="h-full min-h-10 w-full rounded-none border-0 bg-transparent px-3 py-0 text-sm font-medium text-foreground shadow-none placeholder:text-muted-foreground/35 focus-visible:ring-0"
+                />
+              </td>
+              <td class="py-0 px-0 align-middle border-l border-border/40 h-full">
+                <Input
+                  :value="row.value"
+                  @input="row.value = $event.target.value"
+                  @change="persistKvRows(sec)"
+                  class="h-full min-h-10 w-full rounded-none border-0 bg-transparent px-3 py-0 text-sm text-foreground shadow-none placeholder:text-muted-foreground/30 focus-visible:ring-0"
+                />
+              </td>
+              <td class="w-10 pl-1 pr-1 align-middle text-center border-l border-border/40">
+                <Button variant="ghost" size="icon" class="size-7 rounded-sm text-muted-foreground opacity-0 transition-all group-hover/row:opacity-100 hover:bg-red-500/10 hover:text-red-400" @click="deleteKvRow(sec, row.id)">
+                  <X class="size-4" />
+                </Button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
-          <Button variant="outline" size="sm" class="mt-3 rounded-full border-border/50 bg-background/70 px-4 text-foreground hover:bg-muted/40" @click="addKvRow(sec)">{{ labels.fieldAdd }}</Button>
-        </div>
+        <table class="w-full table-fixed border-collapse">
+          <colgroup>
+            <col class="w-8" />
+            <col />
+            <col />
+            <col class="w-10" />
+          </colgroup>
+          <tbody>
+            <tr class="border-t border-border/60 bg-card">
+              <td colspan="4" class="px-4 py-1.5">
+                <Button variant="ghost" size="sm" class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground hover:bg-muted/60 hover:text-foreground" @click="addKvRow(sec)">{{ labels.fieldAdd }}</Button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
+      <div v-else>
         <MarkdownEditor
-          v-else
           :modelValue="sectionContents.get(sec.id) ?? ''"
           @update:modelValue="onSectionChange(sec.id, $event)"
+          class="rounded-none border-0 border-t border-border/60"
         />
       </div>
     </section>
   </div>
 
   <!-- Fallback: single setup editor (when no sections defined) -->
-  <section v-if="sortedSections.length === 0" class="mb-8 overflow-hidden rounded-[24px] border border-dashed border-border/60 bg-card/95">
+  <section v-if="sortedSections.length === 0" class="mb-8 overflow-hidden rounded-3xl border border-dashed border-border/60 bg-card/95">
     <div class="border-b border-border/50 bg-muted/10 px-5 py-4">
       <slot name="setup-heading" />
     </div>
@@ -266,11 +308,13 @@ watch(
     }
     // Neue/geänderte Sections initialisieren
     for (const sec of props.sectionDefs.filter(s => s.type === 'kv-table')) {
-      const el = document.querySelector(`[data-kv-sortable="${sec.id}"]`)
+      const tableEl = document.querySelector(`[data-kv-sortable="${sec.id}"]`)
+      const el = tableEl?.querySelector('tbody') ?? tableEl
       if (!el) continue
       kvSortableInstances.get(sec.id)?.destroy()
       const instance = Sortable.create(el, {
         handle: '.kv-drag-handle',
+        draggable: 'tr',
         animation: 150,
         onEnd(evt) {
           const sectionId = sec.id

@@ -8,7 +8,7 @@
         class="group/row border-t border-border/60 bg-card transition-colors"
       >
         <TableCell class="w-8 py-0 pl-1 pr-0 align-middle">
-          <div class="drag-handle no-print flex size-6 cursor-grab items-center justify-center rounded-sm text-muted-foreground/25 transition-colors active:cursor-grabbing group-hover/row:text-muted-foreground/70 hover:bg-muted/40">
+          <div class="drag-handle no-print flex size-6 cursor-grab items-center justify-center rounded-sm text-muted-foreground/70 opacity-0 transition-all active:cursor-grabbing group-hover/row:opacity-100 hover:bg-muted/40">
             <GripVertical class="size-3.5" />
           </div>
         </TableCell>

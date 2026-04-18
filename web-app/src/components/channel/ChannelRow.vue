@@ -14,7 +14,7 @@
         </TableCell>
 
         <TableCell class="py-0 pr-0 pl-0 align-middle border-l border-border/40 h-full">
-          <div class="grid h-full min-h-10 grid-cols-[5.5ch_auto_8ch] items-stretch">
+          <div class="grid h-full min-h-10 grid-cols-[8ch_auto_7ch] items-stretch">
             <Input
               v-model="ch.channel"
               @focus="emit('recordFocus')"
@@ -29,16 +29,16 @@
                 dupChannelNrs.has(ch.channel) ? 'ring-1 ring-yellow-400/60' : '',
                 channelStatusClass,
               ]"
-              class="h-full min-h-10 w-full self-stretch cursor-pointer rounded-none border-0 bg-transparent px-2 py-0 text-center font-mono text-xl font-semibold shadow-none transition-colors placeholder:text-muted-foreground/30 focus-visible:ring-0"
+              class="h-full min-h-10 w-full self-stretch cursor-pointer rounded-none border-0 bg-transparent px-1 py-0 text-center font-mono text-xl font-semibold shadow-none transition-colors placeholder:text-muted-foreground/30 focus-visible:ring-0"
             />
-            <span class="select-none self-stretch flex items-center justify-center font-mono text-sm text-muted-foreground/30">/</span>
+            <span class="select-none self-stretch flex items-center justify-center font-mono text-sm text-muted-foreground/30 w-3">/</span>
             <Input
               v-model="ch.address"
               @focus="emit('recordFocus')"
               @input="emit('change')"
               @blur="emit('commitFocus')"
               @click.stop
-              class="h-full min-h-10 w-full self-stretch rounded-none border-0 bg-transparent px-2 py-0 text-center text-xs text-muted-foreground shadow-none placeholder:text-muted-foreground/25 focus-visible:ring-0"
+              class="h-full min-h-10 w-full self-stretch rounded-none border-0 bg-transparent px-1 py-0 text-center text-xs text-muted-foreground shadow-none placeholder:text-muted-foreground/25 focus-visible:ring-0"
             />
           </div>
         </TableCell>

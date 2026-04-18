@@ -17,6 +17,10 @@ services:
       DATA_PATH: /app/data
       # Kommasepariert: http://luxstage.local,http://192.168.1.100,https://example.com
       CORS_ORIGINS: ${CORS_ORIGINS:-}
+      # Pflicht: Admin-Passwort für ersten Start
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      # Optional: Tech-Passwort
+      TECH_PASSWORD: ${TECH_PASSWORD:-}
       # Optional: ANTHROPIC_API_KEY für KI-Features
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     healthcheck:

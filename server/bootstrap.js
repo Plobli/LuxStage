@@ -20,22 +20,13 @@ if (!adminPassword) {
   console.error('FEHLER: ADMIN_PASSWORD fehlt.')
   process.exit(1)
 }
-if (!techPassword) {
-  console.error('FEHLER: TECH_PASSWORD fehlt.')
-  process.exit(1)
-}
 
 const insert = dbContainer.db.prepare(
   'INSERT OR IGNORE INTO users (username, password, role) VALUES (?, ?, ?)'
 )
 
-const [adminHash, techHash] = await Promise.all([
-  bcrypt.hash(adminPassword, BCRYPT_COST),
-  bcrypt.hash(techPassword,  BCRYPT_COST),
-])
-
+const adminHash = await bcrypt.hash(adminPassword, BCRYPT_COST)
 const adminResult = insert.run('admin', adminHash, 'admin')
-const techResult  = insert.run('tech',  techHash,  'techniker')
 
 if (adminResult.changes > 0) {
   console.log('  ✓  Nutzer "admin" angelegt (Rolle: admin)')
@@ -43,10 +34,14 @@ if (adminResult.changes > 0) {
   console.log('  –  Nutzer "admin" existiert bereits, wird nicht überschrieben')
 }
 
-if (techResult.changes > 0) {
-  console.log('  ✓  Nutzer "tech" angelegt (Rolle: techniker)')
-} else {
-  console.log('  –  Nutzer "tech" existiert bereits, wird nicht überschrieben')
+if (techPassword) {
+  const techHash = await bcrypt.hash(techPassword, BCRYPT_COST)
+  const techResult = insert.run('tech', techHash, 'techniker')
+  if (techResult.changes > 0) {
+    console.log('  ✓  Nutzer "tech" angelegt (Rolle: techniker)')
+  } else {
+    console.log('  –  Nutzer "tech" existiert bereits, wird nicht überschrieben')
+  }
 }
 
 dbContainer.db.close()

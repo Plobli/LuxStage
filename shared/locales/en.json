@@ -264,7 +264,8 @@
   "editor.list.ordered": "1. List",
 
   "tab.channels": "Channels",
-  "tab.info": "Info & Photos",
+  "tab.info": "Info",
+  "tab.photos": "Photos",
   "tab.floorplan": "Floor Plan",
 
   "nav.import": "Import",

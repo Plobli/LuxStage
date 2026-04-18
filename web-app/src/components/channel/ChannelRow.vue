@@ -29,7 +29,7 @@
                 dupChannelNrs.has(ch.channel) ? 'ring-1 ring-yellow-400/60' : '',
                 channelStatusClass,
               ]"
-              class="h-full min-h-10 w-full self-stretch cursor-pointer rounded-none border-0 bg-transparent px-2 py-0 text-center font-mono text-base font-semibold shadow-none transition-colors placeholder:text-muted-foreground/30 focus-visible:ring-0"
+              class="h-full min-h-10 w-full self-stretch cursor-pointer rounded-none border-0 bg-transparent px-2 py-0 text-center font-mono text-xl font-semibold shadow-none transition-colors placeholder:text-muted-foreground/30 focus-visible:ring-0"
             />
             <span class="select-none self-stretch flex items-center justify-center font-mono text-sm text-muted-foreground/30">/</span>
             <Input
@@ -148,7 +148,7 @@ function onKeydownCol2(e) { props.onKeydownFn?.(e, props.rowIndex, 2, 4, null) }
 function onKeydownCol3(e) { props.onKeydownFn?.(e, props.rowIndex, 3, 4, props.onAddRow) }
 
 const channelStatusClass = computed(() => {
-  if (props.channelStatus === 'active') return 'text-green-400'
+  if (props.channelStatus === 'active') return 'text-green-600 dark:text-green-400'
   if (props.channelStatus === 'eos') return 'text-amber-400'
   return 'text-foreground'
 })

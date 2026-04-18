@@ -17,6 +17,7 @@
         back: t('action.back'),
         tabChannels: t('tab.channels'),
         tabInfo: t('tab.info'),
+        tabPhotos: t('tab.photos'),
         tabFloorplan: t('tab.floorplan'),
         undo: t('action.undo'),
         redo: t('action.redo'),
@@ -56,75 +57,7 @@
       :class="{ 'opacity-40 pointer-events-none select-none': !isOnline }"
       class="flex flex-1 min-h-0 overflow-hidden"
     >
-      <!-- Left Sidebar: Info + Photos (hidden on mobile when not active) -->
-      <aside
-        class="flex flex-col border-r-8 border-border bg-card shrink-0 overflow-hidden transition-all"
-        :class="[
-          mobileTab === 'info' ? 'flex w-full' : 'hidden lg:flex lg:w-96 xl:w-132'
-        ]"
-      >
-
-        <!-- Sidebar Scrollable Content -->
-        <div class="flex-1 min-h-0 overflow-y-auto">
-          <!-- Sections -->
-          <div>
-            <SectionEditor
-              :showId="props.id"
-              :sectionDefs="sectionDefs"
-              :sectionContents="sectionContents"
-              :setupMarkdown="setupMarkdown"
-              :labels="{
-                titlePlaceholder: t('sections.title.placeholder'),
-                fieldLabel: t('sections.field.label'),
-                fieldValue: t('sections.field.value'),
-                fieldAdd: t('sections.field.add'),
-                addMarkdown: t('sections.add.markdown'),
-                addFields: t('sections.add.fields'),
-              }"
-              @update:sectionDefs="sectionDefs = $event"
-              @update:sectionContents="sectionContents = $event"
-              @update:setupMarkdown="onSetupChange($event)"
-              @pushSnapshot="pushSnapshot"
-              @sectionChange="persistSectionsDebounced"
-            >
-              <template #setup-heading>
-                <div class="flex items-center gap-2 mb-3">
-                  <span class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                    {{ t('show.setup') }}
-                  </span>
-                </div>
-              </template>
-            </SectionEditor>
-          </div>
-
-          <!-- Photos -->
-          <div>
-            <div class="flex min-h-10 items-center justify-between border-b border-border/90 bg-muted/60 px-4 backdrop-blur supports-backdrop-filter:bg-muted/55">
-              <span class="text-sm font-semibold text-accent">{{ t('show.photos') }}</span>
-              <span v-if="photos.length > 0" class="text-xs tabular-nums text-muted-foreground">
-                {{ photos.length }}
-              </span>
-            </div>
-            <div class="p-4">
-            <PhotoGallery
-              :showId="props.id"
-              :photos="photos"
-              :labels="{
-                add: t('photo.add'),
-                empty: t('photo.empty'),
-                delete: t('action.delete'),
-                captionPlaceholder: t('photo.caption.placeholder'),
-                channelLabel: 'Kanal:',
-                channelPlaceholder: 'z. B. 42',
-              }"
-              @update:photos="photos = $event"
-            />
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      <!-- ── Right Content Area ──────────────────────────────────────────── -->
+      <!-- ── Content Area ──────────────────────────────────────────── -->
       <div class="flex flex-1 min-w-0 min-h-0 flex-col overflow-hidden">
 
         <!-- Channels View -->
@@ -134,7 +67,7 @@
         >
 
           <!-- Channel Table Header -->
-          <div class="shrink-0 flex min-h-10 items-center border-b border-border/90 bg-muted/60 px-4 backdrop-blur supports-backdrop-filter:bg-muted/55">
+          <div class="shrink-0 flex min-h-10 items-center border-b border-border/90 bg-muted px-4">
             <span class="text-sm font-semibold text-accent">{{ t('tab.channels') }}</span>
           </div>
 
@@ -170,6 +103,34 @@
           </div>
         </div>
 
+        <!-- Photos View -->
+        <div
+          v-show="mobileTab === 'photos'"
+          class="flex flex-col flex-1 min-h-0 overflow-hidden"
+        >
+          <div class="shrink-0 flex min-h-10 items-center justify-between border-b border-border/90 bg-muted px-4">
+            <span class="text-sm font-semibold text-accent">{{ t('show.photos') }}</span>
+            <span v-if="photos.length > 0" class="text-xs tabular-nums text-muted-foreground">
+              {{ photos.length }}
+            </span>
+          </div>
+          <div class="flex-1 min-h-0 overflow-y-auto p-4">
+            <PhotoGallery
+              :showId="props.id"
+              :photos="photos"
+              :labels="{
+                add: t('photo.add'),
+                empty: t('photo.empty'),
+                delete: t('action.delete'),
+                captionPlaceholder: t('photo.caption.placeholder'),
+                channelLabel: 'Kanal:',
+                channelPlaceholder: 'z. B. 42',
+              }"
+              @update:photos="photos = $event"
+            />
+          </div>
+        </div>
+
         <!-- Floorplan View -->
         <div
           v-show="mobileTab === 'floorplan'"
@@ -193,30 +154,30 @@
           </div>
         </div>
 
-        <!-- Info View (mobile only — on desktop shown in sidebar) -->
+        <!-- Info View -->
         <div
           v-show="mobileTab === 'info'"
-          class="flex-1 min-h-0 overflow-y-auto lg:hidden p-4"
+          class="flex-1 min-h-0 overflow-y-auto"
         >
-          <SectionEditor
-            :showId="props.id"
-            :sectionDefs="sectionDefs"
-            :sectionContents="sectionContents"
-            :setupMarkdown="setupMarkdown"
-            :labels="{
-              titlePlaceholder: t('sections.title.placeholder'),
-              fieldLabel: t('sections.field.label'),
-              fieldValue: t('sections.field.value'),
-              fieldAdd: t('sections.field.add'),
-              addMarkdown: t('sections.add.markdown'),
-              addFields: t('sections.add.fields'),
-            }"
-            @update:sectionDefs="sectionDefs = $event"
-            @update:sectionContents="sectionContents = $event"
-            @update:setupMarkdown="onSetupChange($event)"
-            @pushSnapshot="pushSnapshot"
-            @sectionChange="persistSectionsDebounced"
-          />
+            <SectionEditor
+              :showId="props.id"
+              :sectionDefs="sectionDefs"
+              :sectionContents="sectionContents"
+              :setupMarkdown="setupMarkdown"
+              :labels="{
+                titlePlaceholder: t('sections.title.placeholder'),
+                fieldLabel: t('sections.field.label'),
+                fieldValue: t('sections.field.value'),
+                fieldAdd: t('sections.field.add'),
+                addMarkdown: t('sections.add.markdown'),
+                addFields: t('sections.add.fields'),
+              }"
+              @update:sectionDefs="sectionDefs = $event"
+              @update:sectionContents="sectionContents = $event"
+              @update:setupMarkdown="onSetupChange($event)"
+              @pushSnapshot="pushSnapshot"
+              @sectionChange="persistSectionsDebounced"
+            />
         </div>
 
       </div>
@@ -250,7 +211,7 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick, onMounted, onBeforeUnmount, defineAsyncComponent } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount, defineAsyncComponent } from 'vue'
 import { Loader2 } from 'lucide-vue-next'
 import { useDebounceFn } from '@vueuse/core'
 import { useRouter } from 'vue-router'
@@ -294,7 +255,9 @@ const search = ref('')
 const setupSaving = ref(false)
 const channelsSaving = ref(false)
 
-const mobileTab = ref('channels')
+const TAB_KEY = `show-tab-${props.id}`
+const mobileTab = ref(sessionStorage.getItem(TAB_KEY) || 'channels')
+watch(mobileTab, (tab) => sessionStorage.setItem(TAB_KEY, tab))
 
 const floorplan = ref({ image_url: null, canvas_data: null })
 let floorplanSaveTimer = null

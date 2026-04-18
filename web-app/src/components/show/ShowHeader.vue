@@ -9,14 +9,17 @@
     <!-- Tab-Switcher -->
     <div class="flex mr-2">
       <Tabs :model-value="modelValue" @update:model-value="emit('update:modelValue', $event)" class="w-auto">
-        <TabsList class="bg-muted/50 p-1 h-8">
-          <TabsTrigger value="channels" class="text-xs px-3 py-1">
+        <TabsList class="bg-muted h-10 p-1 gap-0.5">
+          <TabsTrigger value="channels" class="text-sm px-4 py-1.5 font-medium">
             {{ labels.tabChannels }}
           </TabsTrigger>
-          <TabsTrigger value="info" class="text-xs px-3 py-1">
+          <TabsTrigger value="info" class="text-sm px-4 py-1.5 font-medium">
             {{ labels.tabInfo }}
           </TabsTrigger>
-          <TabsTrigger value="floorplan" class="text-xs px-3 py-1">
+          <TabsTrigger value="photos" class="text-sm px-4 py-1.5 font-medium">
+            {{ labels.tabPhotos }}
+          </TabsTrigger>
+          <TabsTrigger value="floorplan" class="text-sm px-4 py-1.5 font-medium">
             {{ labels.tabFloorplan }}
           </TabsTrigger>
         </TabsList>
@@ -185,7 +188,7 @@ defineProps({
     type: Object,
     default: () => ({
       back: 'Zurück',
-      tabChannels: 'Kanäle', tabInfo: 'Info', tabFloorplan: 'Grundriss',
+      tabChannels: 'Kanäle', tabInfo: 'Info', tabPhotos: 'Fotos', tabFloorplan: 'Grundriss',
       undo: 'Rückgängig', redo: 'Wiederholen',
       dupAddress: 'Doppelte Adresse', dupChannel: 'Doppelter Kanal',
       search: 'Suchen',

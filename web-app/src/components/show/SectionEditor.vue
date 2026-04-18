@@ -7,10 +7,7 @@
       :data-section-id="sec.id"
       class="group/sec relative border-b border-border/60"
     >
-      <div class="shrink-0 flex min-h-10 items-center gap-3 border-b border-border/90 bg-muted/60 px-4 backdrop-blur supports-backdrop-filter:bg-muted/55">
-          <div class="section-drag-handle flex size-6 cursor-grab items-center justify-center rounded-sm text-muted-foreground/50 transition-colors active:cursor-grabbing hover:bg-muted/40 shrink-0">
-            <GripVertical class="size-3.5" />
-          </div>
+      <div class="shrink-0 sticky top-0 z-10 flex min-h-10 items-center gap-3 border-b border-border/90 bg-muted px-4">
           <Input
             :value="sec.title"
             :placeholder="labels.titlePlaceholder"
@@ -26,7 +23,7 @@
       <!-- kv-table: echte <table>, identisch zur Kanaltabelle -->
       <div v-if="sec.type === 'kv-table'">
         <!-- Header -->
-        <div class="shrink-0 sticky top-0 z-10 border-b border-border/90 bg-muted/60 shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_8px_rgba(0,0,0,0.10)] backdrop-blur supports-backdrop-filter:bg-muted/55">
+        <div class="shrink-0 sticky top-10 z-10 border-b border-border/90 bg-muted shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_8px_rgba(0,0,0,0.10)]">
           <div class="grid min-h-8 grid-cols-[2rem_1fr_1fr_2.5rem] items-center px-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/90">
             <div></div>
             <div>{{ labels.fieldLabel }}</div>
@@ -110,7 +107,7 @@
 
   <!-- Fallback: single setup editor (when no sections defined) -->
   <section v-if="sortedSections.length === 0" class="border-b border-border/60">
-    <div class="border-b border-border/90 bg-muted/60 px-4 py-2.5 backdrop-blur supports-backdrop-filter:bg-muted/55">
+    <div class="border-b border-border/90 bg-muted px-4 py-2.5">
       <slot name="setup-heading" />
     </div>
     <MarkdownEditor :modelValue="setupMarkdown" @update:modelValue="emit('update:setupMarkdown', $event)" class="rounded-none border-0 border-t border-border/60" />

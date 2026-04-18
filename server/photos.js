@@ -97,7 +97,7 @@ export async function listPhotos(slug) {
   // Alle vorhandenen Dateien im Verzeichnis
   let files
   try {
-    files = (await fs.readdir(dir)).filter(f => /\.(jpg|jpeg|png|gif|webp)$/i.test(f))
+    files = (await fs.readdir(dir)).filter(f => /\.(jpg|jpeg|png|gif|webp)$/i.test(f) && !f.endsWith('_thumb.jpg'))
   } catch { return [] }
 
   // Reihenfolge aus DB

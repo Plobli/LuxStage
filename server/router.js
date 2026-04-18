@@ -886,6 +886,21 @@ export async function router(req, res) {
       return json(res, 200, { ok: true })
     }
 
+    // ── Show — Grundriss-Snapshot abrufen ────────────────────────────────────
+    if (method === 'GET' && pathname.match(/^\/api\/shows\/([^/]+)\/floorplan\/snapshot$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const showId = pathname.split('/')[3]
+      const show = db.readShow(showId)
+      if (!show) return notFound(res)
+      const snapshotPath = floorplan.getFloorplanSnapshotPath(show.id)
+      try {
+        const buf = await import('node:fs/promises').then(m => m.readFile(snapshotPath))
+        res.writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': buf.length, 'Cache-Control': 'no-cache' })
+        res.end(buf)
+      } catch { return notFound(res) }
+      return
+    }
+
     // ── Show — Grundriss-Snapshot speichern ──────────────────────────────────
     if (method === 'PUT' && pathname.match(/^\/api\/shows\/([^/]+)\/floorplan\/snapshot$/)) {
       const user = requireAuth(req, res); if (!user) return

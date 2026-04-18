@@ -30,7 +30,7 @@ const server = http.createServer((req, res) => {
   router(req, res)
 })
 
-server.listen(config.port, () => {
+server.listen(config.port, '0.0.0.0', () => {
   console.log(`LuxStage Server v${pkg.version} läuft auf Port ${config.port}`)
   console.log(`Datenpfad: ${config.dataPath}`)
   startHistoryJob()

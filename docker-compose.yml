@@ -1,11 +1,14 @@
 services:
   luxstage:
     build: .
+    container_name: luxstage
     restart: unless-stopped
     ports:
       - 3030:3000
     volumes:
       - luxstage-data:/app/data
+    networks:
+      - default
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -30,4 +33,9 @@ services:
       start_period: 10s
 volumes:
   luxstage-data: null
-networks: {}
+
+networks:
+  caddy:
+    external: true
+  default:
+    name: luxstage-server_default

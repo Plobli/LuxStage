@@ -58,7 +58,7 @@
     >
       <!-- Left Sidebar: Info + Photos (hidden on mobile when not active) -->
       <aside
-        class="flex flex-col border-r border-border bg-card shrink-0 overflow-hidden transition-all"
+        class="flex flex-col border-r-8 border-border bg-card shrink-0 overflow-hidden transition-all"
         :class="[
           mobileTab === 'info' ? 'flex w-full' : 'hidden lg:flex lg:w-96 xl:w-132'
         ]"
@@ -67,7 +67,7 @@
         <!-- Sidebar Scrollable Content -->
         <div class="flex-1 min-h-0 overflow-y-auto">
           <!-- Sections -->
-          <div class="p-4 border-b border-border/60">
+          <div>
             <SectionEditor
               :showId="props.id"
               :sectionDefs="sectionDefs"
@@ -98,15 +98,14 @@
           </div>
 
           <!-- Photos -->
-          <div class="p-4">
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                {{ t('show.photos') }}
-              </span>
-              <span v-if="photos.length > 0" class="text-xs tabular-nums text-muted-foreground bg-muted rounded-full px-2 py-0.5">
+          <div>
+            <div class="flex min-h-10 items-center justify-between border-b border-border/90 bg-muted/60 px-4 backdrop-blur supports-backdrop-filter:bg-muted/55">
+              <span class="text-sm font-semibold text-accent">{{ t('show.photos') }}</span>
+              <span v-if="photos.length > 0" class="text-xs tabular-nums text-muted-foreground">
                 {{ photos.length }}
               </span>
             </div>
+            <div class="p-4">
             <PhotoGallery
               :showId="props.id"
               :photos="photos"
@@ -120,6 +119,7 @@
               }"
               @update:photos="photos = $event"
             />
+            </div>
           </div>
         </div>
       </aside>
@@ -132,6 +132,11 @@
           v-show="mobileTab === 'channels'"
           class="flex flex-col flex-1 min-h-0 overflow-hidden"
         >
+
+          <!-- Channel Table Header -->
+          <div class="shrink-0 flex min-h-10 items-center border-b border-border/90 bg-muted/60 px-4 backdrop-blur supports-backdrop-filter:bg-muted/55">
+            <span class="text-sm font-semibold text-accent">{{ t('tab.channels') }}</span>
+          </div>
 
           <!-- Channel Table -->
           <div class="flex-1 min-h-0 overflow-hidden">
@@ -585,8 +590,6 @@ const groupedChannels = computed(() => {
   }
   return [...map.entries()].map(([position, channels]) => ({ position, channels }))
 })
-
-const totalVisible = computed(() => groupedChannels.value.reduce((s, g) => s + g.channels.length, 0))
 
 // ── Kanal löschen ──────────────────────────────────────────────────────────
 async function deleteChannel(ch) {

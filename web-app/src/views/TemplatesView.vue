@@ -30,122 +30,34 @@
 
           <!-- Kanaltabelle -->
           <TabsContent value="channels" class="mt-0 outline-none">
-            <div class="overflow-hidden border border-border rounded-lg bg-card">
-              <Table>
-            <TableHeader class="sticky top-0 z-10 bg-muted/50">
-              <TableRow>
-                <TableHead class="w-16">{{ t('field.channel') }}</TableHead>
-                <TableHead class="w-24">{{ t('field.color') }}</TableHead>
-                <TableHead class="w-[30ch]">{{ t('field.device') }}</TableHead>
-                <TableHead class="w-[30ch]">{{ t('field.position') }}</TableHead>
-                <TableHead>{{ t('field.notes') }}</TableHead>
-                <TableHead class="w-12"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody v-for="group in groupedChannels" :key="group.position">
-              <TableRow class="bg-muted/30 hover:bg-muted/30">
-                <TableCell colspan="6" class="py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                  {{ group.position || t('channel.no_category') }}
-                  <span class="ml-2 font-normal normal-case text-muted-foreground/70">{{ group.channels.length }}</span>
-                </TableCell>
-              </TableRow>
-              <TableRow
-                v-for="ch in group.channels"
-                :key="ch.channel"
-                class="group/row"
-              >
-                <TableCell class="align-top py-3">
-                  <div class="flex flex-col items-center gap-1">
-                    <Input
-                      :model-value="ch.channel"
-                      @update:model-value="ch.channel = $event; persist()"
-                      class="h-10 text-xl font-bold font-mono px-1 text-center border-transparent hover:border-border focus:border-border bg-transparent shadow-none"
-                    />
-                    <Input
-                      :model-value="ch.address"
-                      @update:model-value="ch.address = $event; persist()"
-                      class="h-6 text-xs text-muted-foreground px-1 text-center border-transparent hover:border-border focus:border-border bg-transparent shadow-none"
-                    />
-                  </div>
-                </TableCell>
-                <TableCell class="align-top py-3">
-                  <ColorAutocomplete
-                    :modelValue="ch.color"
-                    @update:modelValue="ch.color = $event"
-                    @change="persist()"
-                    :placeholder="t('field.color')"
-                  />
-                </TableCell>
-                <TableCell class="align-top py-3">
-                  <Textarea :model-value="ch.device" @update:model-value="ch.device = $event; persist()" class="min-h-[60px] resize-none" />
-                </TableCell>
-                <TableCell class="align-top py-3">
-                  <Input
-                    :model-value="ch.position"
-                    @update:model-value="ch.position = $event; persist()"
-                    class="h-[60px]"
-                  />
-                </TableCell>
-                <TableCell class="align-top py-3">
-                  <Textarea :model-value="ch.notes" @update:model-value="ch.notes = $event; persist()" class="min-h-[60px] resize-none" />
-                </TableCell>
-                <TableCell class="align-top py-3 pr-4">
-                  <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover/row:opacity-100 transition-opacity" @click="deleteChannel(ch)" :title="t('action.delete')">✕</Button>
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell colspan="6" class="py-2">
-                  <Button variant="ghost" size="sm" class="text-muted-foreground hover:text-foreground" @click="startAdd(group.position)">+ {{ t('channel.add') }}</Button>
-                </TableCell>
-              </TableRow>
-              <TableRow v-if="addingToPosition === group.position" class="bg-muted/30" @keydown.escape="addingToPosition = null" @keydown.enter.prevent="confirmAdd">
-                <TableCell class="align-top py-3">
-                  <div class="flex flex-col items-center gap-1">
-                    <Input autofocus class="h-10 text-xl font-bold font-mono px-1 text-center" v-model="addForm.channel" :placeholder="t('show.channel.nr')" />
-                    <Input class="h-6 text-xs text-muted-foreground px-1 text-center" v-model="addForm.address" />
-                  </div>
-                </TableCell>
-                <TableCell class="align-top py-3">
-                  <ColorAutocomplete
-                    v-model="addForm.color"
-                    @change="() => {}"
-                    :placeholder="t('field.color')"
-                  />
-                </TableCell>
-                <TableCell class="align-top py-3"><Textarea class="min-h-[60px] resize-none" v-model="addForm.device" /></TableCell>
-                <TableCell class="align-top py-3"><Input class="h-[60px]" v-model="addForm.position" /></TableCell>
-                <TableCell class="align-top py-3"><Textarea class="min-h-[60px] resize-none" v-model="addForm.notes" /></TableCell>
-                <TableCell class="align-top py-3 pr-4"><Button variant="ghost" size="icon" class="h-8 w-8 text-green-500 hover:text-green-600 hover:bg-green-500/10" @click="confirmAdd">✓</Button></TableCell>
-              </TableRow>
-            </TableBody>
-            <TableBody v-if="groupedChannels.length === 0">
-              <TableRow v-if="addingToPosition === ''" class="bg-muted/30" @keydown.escape="addingToPosition = null" @keydown.enter.prevent="confirmAdd">
-                <TableCell class="align-top py-3">
-                  <div class="flex flex-col items-center gap-1">
-                    <Input autofocus class="h-10 text-xl font-bold font-mono px-1 text-center" v-model="addForm.channel" :placeholder="t('show.channel.nr')" />
-                    <Input class="h-6 text-xs text-muted-foreground px-1 text-center" v-model="addForm.address" />
-                  </div>
-                </TableCell>
-                <TableCell class="align-top py-3">
-                  <ColorAutocomplete
-                    v-model="addForm.color"
-                    @change="() => {}"
-                    :placeholder="t('field.color')"
-                  />
-                </TableCell>
-                <TableCell class="align-top py-3"><Textarea class="min-h-[60px] resize-none" v-model="addForm.device" /></TableCell>
-                <TableCell class="align-top py-3"><Input class="h-[60px]" v-model="addForm.position" /></TableCell>
-                <TableCell class="align-top py-3"><Textarea class="min-h-[60px] resize-none" v-model="addForm.notes" /></TableCell>
-                <TableCell class="align-top py-3 pr-4"><Button variant="ghost" size="icon" class="h-8 w-8 text-green-500 hover:text-green-600 hover:bg-green-500/10" @click="confirmAdd">✓</Button></TableCell>
-              </TableRow>
-              <TableRow v-else>
-                <TableCell colspan="6" class="py-8 text-center">
-                  <span class="text-sm text-muted-foreground">{{ t('channel.list.empty') }}</span>
-                  <Button variant="outline" size="sm" class="ml-3" @click="startAdd('')">+ {{ t('channel.add') }}</Button>
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+            <div class="h-[calc(100vh-16rem)] overflow-hidden rounded-lg border border-border">
+              <ChannelTable
+                :channels="detailChannels"
+                :groupedChannels="groupedChannels"
+                :dupChannelNrs="emptySet"
+                :channelStatusFn="() => 'default'"
+                :toggleChannelStatusFn="() => {}"
+                :labels="{
+                  channel: t('field.channel'),
+                  color: t('field.color'),
+                  device: t('field.device'),
+                  notes: t('field.notes'),
+                  editPosition: t('channel.position.edit'),
+                  noCategory: t('channel.no_category'),
+                  add: t('channel.add'),
+                  delete: t('action.delete'),
+                  empty: t('channel.list.empty'),
+                  channelNr: t('show.channel.nr'),
+                  addressExample: t('show.channel.address.example'),
+                }"
+                class="h-full"
+                @change="persist()"
+                @pushSnapshot="() => {}"
+                @recordFocus="() => {}"
+                @commitFocus="() => {}"
+                @deleteChannel="deleteChannel($event)"
+                @reorder="detailChannels.splice(0, detailChannels.length, ...$event)"
+              />
             </div>
           </TabsContent>
 
@@ -339,8 +251,8 @@ import { useConfirm } from '../composables/useConfirm.js'
 import { fetchTemplates, fetchTemplateChannels, saveTemplate, uploadTemplate, deleteTemplate } from '../api/templates.js'
 import { fetchTemplateSections, saveTemplateSections } from '../api/sections.js'
 import { templateDisplayName } from '../utils/templateName.js'
-import ColorAutocomplete from '../components/ColorAutocomplete.vue'
 import { uuid } from '../utils/uuid.js'
+import ChannelTable from '../components/channel/ChannelTable.vue'
 import { fetchTemplateFloorplan, uploadTemplateFloorplanImage, deleteTemplateFloorplanImage } from '../api/floorplan.js'
 import { api } from '../api/client.js'
 
@@ -351,7 +263,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from '@/components/ui/select'
 
 const { t } = useLocale()
@@ -378,11 +289,11 @@ const detailSaving = ref(false)
 const activeTab = ref('channels')
 const templateSections = ref([])
 const sectionsSaving = ref(false)
-const addingToPosition = ref(null)
-const addForm = ref({})
 const floorplanImageUrl = ref(null)
 const floorplanUploading = ref(false)
 const floorplanError = ref('')
+
+const emptySet = new Set()
 
 const groupedChannels = computed(() => {
   const sorted = [...detailChannels.value].sort((a, b) => Number(a.channel) - Number(b.channel))
@@ -466,7 +377,6 @@ async function openDetail(name) {
   editingName.value = name
   detailLoading.value = true
   activeTab.value = 'channels'
-  addingToPosition.value = null
   const [channels, sections] = await Promise.all([
     fetchTemplateChannels(name),
     fetchTemplateSections(name),
@@ -526,18 +436,6 @@ async function persistSections() {
 
 async function deleteChannel(ch) {
   detailChannels.value = detailChannels.value.filter(c => c.channel !== ch.channel)
-  await persist()
-}
-
-function startAdd(position) {
-  addingToPosition.value = position
-  addForm.value = { channel: '', address: '', device: '', position, color: '', notes: '' }
-}
-
-async function confirmAdd() {
-  if (!addForm.value.channel.trim()) return
-  detailChannels.value.push({ ...addForm.value })
-  addingToPosition.value = null
   await persist()
 }
 

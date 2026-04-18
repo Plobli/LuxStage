@@ -1,7 +1,7 @@
 <template>
-  <div class="flex h-full flex-col overflow-hidden border border-border/60 bg-card shadow-sm">
-    <div class="shrink-0 sticky top-0 z-20 border-b border-border/90 bg-muted/60 shadow-[0_1px_0_rgba(255,255,255,0.06),0_8px_24px_rgba(0,0,0,0.28)] backdrop-blur supports-[backdrop-filter]:bg-muted/55">
-      <div class="grid grid-cols-[2rem_9rem_7rem_minmax(14rem,22%)_minmax(16rem,1fr)_2.5rem] items-center px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/90">
+  <div class="flex h-full flex-col overflow-hidden bg-card">
+    <div class="shrink-0 sticky top-0 z-20 border-b border-border/90 bg-muted/60 shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_8px_rgba(0,0,0,0.10)] backdrop-blur supports-backdrop-filter:bg-muted/55">
+      <div class="grid min-h-8 grid-cols-[2rem_9rem_7rem_minmax(14rem,22%)_minmax(16rem,1fr)_2.5rem] items-center px-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/90">
         <div></div>
         <div>{{ labels.channel }}</div>
         <div class="px-0">{{ labels.color }}</div>

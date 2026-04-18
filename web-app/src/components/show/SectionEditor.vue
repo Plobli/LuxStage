@@ -1,52 +1,38 @@
 <template>
   <!-- Sections (inline editor) -->
-  <div ref="sortableSectionsEl" class="mb-6 space-y-4">
+  <div ref="sortableSectionsEl">
     <section
       v-for="sec in sortedSections"
       :key="sec.id"
       :data-section-id="sec.id"
-      class="group/sec relative overflow-hidden rounded-3xl border border-border/60 bg-card/95 shadow-[0_20px_60px_rgba(0,0,0,0.22)] backdrop-blur-sm"
+      class="group/sec relative border-b border-border/60"
     >
-      <div class="border-b border-border/50 bg-muted/10 px-5 py-4">
-        <div class="flex items-center gap-3">
+      <div class="shrink-0 flex min-h-10 items-center gap-3 border-b border-border/90 bg-muted/60 px-4 backdrop-blur supports-backdrop-filter:bg-muted/55">
+          <div class="section-drag-handle flex size-6 cursor-grab items-center justify-center rounded-sm text-muted-foreground/50 transition-colors active:cursor-grabbing hover:bg-muted/40 shrink-0">
+            <GripVertical class="size-3.5" />
+          </div>
           <Input
             :value="sec.title"
             :placeholder="labels.titlePlaceholder"
             @input="sec.title = $event.target.value"
             @change="persistSectionDefs"
-            class="h-10 min-w-[10rem] flex-1 border-0 bg-transparent px-0 text-base font-semibold text-foreground shadow-none placeholder:text-muted-foreground/40 focus-visible:ring-0"
+            class="h-7 min-w-40 flex-1 border-0 bg-transparent px-0 text-sm font-semibold text-accent shadow-none placeholder:text-muted-foreground/40 focus-visible:ring-0"
           />
-          <div class="flex items-center gap-1.5">
-            <span class="section-drag-handle inline-flex size-8 cursor-grab items-center justify-center rounded-full border border-border/40 bg-background/60 text-muted-foreground transition-colors hover:border-border/70 hover:text-foreground active:cursor-grabbing shrink-0">
-              <GripVertical class="size-4" />
-            </span>
-            <Button variant="ghost" size="icon" class="h-8 w-8 rounded-full text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-400 shrink-0" @click="deleteSectionDef(sortedSections.indexOf(sec))">
-              <X class="size-4" />
-            </Button>
-          </div>
-        </div>
+          <Button variant="ghost" size="icon" class="size-6 rounded-sm text-muted-foreground/50 transition-colors hover:bg-red-500/10 hover:text-red-400 shrink-0" @click="deleteSectionDef(sortedSections.indexOf(sec))">
+            <X class="size-4" />
+          </Button>
       </div>
 
       <!-- kv-table: echte <table>, identisch zur Kanaltabelle -->
       <div v-if="sec.type === 'kv-table'">
         <!-- Header -->
-        <div class="sticky top-0 z-10 border-b border-border/90 bg-muted/60 backdrop-blur supports-backdrop-filter:bg-muted/55">
-          <table class="w-full table-fixed border-collapse">
-            <colgroup>
-              <col class="w-8" />
-              <col />
-              <col />
-              <col class="w-10" />
-            </colgroup>
-            <thead>
-              <tr>
-                <th class="px-1 py-2"></th>
-                <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/90">{{ labels.fieldLabel }}</th>
-                <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/90">{{ labels.fieldValue }}</th>
-                <th class="px-1 py-2"></th>
-              </tr>
-            </thead>
-          </table>
+        <div class="shrink-0 sticky top-0 z-10 border-b border-border/90 bg-muted/60 shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_8px_rgba(0,0,0,0.10)] backdrop-blur supports-backdrop-filter:bg-muted/55">
+          <div class="grid min-h-8 grid-cols-[2rem_1fr_1fr_2.5rem] items-center px-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/90">
+            <div></div>
+            <div>{{ labels.fieldLabel }}</div>
+            <div>{{ labels.fieldValue }}</div>
+            <div></div>
+          </div>
         </div>
 
         <!-- Zeilen -->
@@ -123,19 +109,17 @@
   </div>
 
   <!-- Fallback: single setup editor (when no sections defined) -->
-  <section v-if="sortedSections.length === 0" class="mb-8 overflow-hidden rounded-3xl border border-dashed border-border/60 bg-card/95">
-    <div class="border-b border-border/50 bg-muted/10 px-5 py-4">
+  <section v-if="sortedSections.length === 0" class="border-b border-border/60">
+    <div class="border-b border-border/90 bg-muted/60 px-4 py-2.5 backdrop-blur supports-backdrop-filter:bg-muted/55">
       <slot name="setup-heading" />
     </div>
-    <div class="px-5 py-5">
-      <MarkdownEditor :modelValue="setupMarkdown" @update:modelValue="emit('update:setupMarkdown', $event)" />
-    </div>
+    <MarkdownEditor :modelValue="setupMarkdown" @update:modelValue="emit('update:setupMarkdown', $event)" class="rounded-none border-0 border-t border-border/60" />
   </section>
 
   <!-- Add section buttons -->
-  <div class="mb-6 flex items-center gap-2 border-t border-border/50 py-4">
-    <Button variant="outline" size="sm" class="rounded-full border-border/50 bg-background/70 px-4 text-foreground hover:bg-muted/40" @click="addMarkdownSection">{{ labels.addMarkdown }}</Button>
-    <Button v-if="!hasKvTableType()" variant="outline" size="sm" class="rounded-full border-border/50 bg-background/70 px-4 text-foreground hover:bg-muted/40" @click="addKvTableSection">{{ labels.addFields }}</Button>
+  <div class="flex items-center gap-2 border-b border-border/60 px-4 py-2">
+    <Button variant="ghost" size="sm" class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground hover:bg-muted/60 hover:text-foreground" @click="addMarkdownSection">{{ labels.addMarkdown }}</Button>
+    <Button v-if="!hasKvTableType()" variant="ghost" size="sm" class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground hover:bg-muted/60 hover:text-foreground" @click="addKvTableSection">{{ labels.addFields }}</Button>
   </div>
 </template>
 

@@ -3,8 +3,8 @@
  * Lädt de.json / en.json aus shared/locales/
  */
 import { ref, computed } from 'vue'
-import de from '../../../shared/locales/de.json'
-import en from '../../../shared/locales/en.json'
+import de from '@shared/locales/de.json'
+import en from '@shared/locales/en.json'
 
 const messages = { de, en }
 const locale = ref(localStorage.getItem('locale') || 'de')

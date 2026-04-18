@@ -4,6 +4,7 @@ FROM node:22-alpine AS web-builder
 WORKDIR /build/web-app
 COPY web-app/package*.json ./
 RUN npm ci --silent
+COPY shared/ /build/shared/
 COPY web-app/ ./
 RUN npm run build
 
@@ -18,6 +19,7 @@ COPY server/package*.json ./
 RUN npm ci --omit=dev --silent
 
 COPY server/ ./
+COPY shared/ /app/shared/
 
 # router.js erwartet ../web-app/dist relativ zu server/
 COPY --from=web-builder /build/web-app/dist /app/web-app/dist

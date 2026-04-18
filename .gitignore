@@ -3,6 +3,7 @@ dist/
 .DS_Store
 .env
 .env.*
+!.env.example
 
 # PocketBase
 pocketbase/pb_data/
@@ -24,6 +25,20 @@ docs/superpowers/
 
 # Design-Dateien
 *.af
+*.png
+*.jpg
+!webapp-mockup.png
+
+# Interne Entwicklungsdokumente
+docs/
+web-app/docs/
+
+# Heroku / sonstige Deployment-Artefakte
+Procfile
+
+# Root package.json (Überbleibsel, gehört nicht ins Repo)
+/package.json
+/package-lock.json
 
 # Local dev scripts
 start.sh

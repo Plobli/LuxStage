@@ -120,6 +120,7 @@ import { Archive, Loader2 } from 'lucide-vue-next'
 import { useLocale } from '../composables/useLocale.js'
 import { fetchShows, createShow, archiveShow } from '../api/shows.js'
 import { fetchTemplates, fetchTemplateChannels } from '../api/templates.js'
+import { cached, invalidate } from '../api/cache.js'
 import { saveChannels } from '../api/channels.js'
 import { templateDisplayName } from '../utils/templateName.js'
 
@@ -188,7 +189,10 @@ const groupedShows = computed(() => {
 })
 
 onMounted(async () => {
-  const [s, tpls] = await Promise.all([fetchShows(), fetchTemplates()])
+  const [s, tpls] = await Promise.all([
+    cached('shows', fetchShows),
+    cached('templates', fetchTemplates),
+  ])
   shows.value = s
   templates.value = tpls
   loading.value = false
@@ -200,6 +204,7 @@ async function handleCreate() {
   try {
     const content = `---\nid: ${id}\nname: ${form.value.name || id}\ndatum: ${form.value.datum || new Date().toISOString().slice(0, 10)}\n${form.value.template ? `template: ${form.value.template}\n` : ''}---\n\n`
     await createShow({ id, name: form.value.name || id, datum: form.value.datum || new Date().toISOString().slice(0, 10), content, template: form.value.template || undefined })
+    invalidate('shows')
     const newShow = { id, name: form.value.name || id, datum: form.value.datum || new Date().toISOString().slice(0, 10), template: form.value.template || '' }
     shows.value.push(newShow)
     if (form.value.template) {
@@ -224,6 +229,7 @@ async function archive(showId) {
   const removed = shows.value.splice(idx, 1)[0]
   try {
     await archiveShow(showId)
+    invalidate('shows')
   } catch (e) {
     console.error('Failed to archive show:', e)
     shows.value.splice(idx, 0, removed)

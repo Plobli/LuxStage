@@ -41,6 +41,7 @@ export async function savePhotoCaption(showId, filename, caption, channelNumber 
   return api.put(`/api/shows/${showId}/photo-captions/${encodeURIComponent(filename)}`, { caption, channelNumber })
 }
 
-export function getPhotoUrl(showId, filename) {
-  return api.url(`/api/shows/${showId}/photos/${filename}`)
+export function getPhotoUrl(showId, filename, { thumb = false } = {}) {
+  const url = api.url(`/api/shows/${showId}/photos/${filename}`)
+  return thumb ? url + '&thumb=1' : url
 }

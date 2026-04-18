@@ -377,15 +377,26 @@ export async function router(req, res) {
       const parts = pathname.split('/')
       const slug = parts[3]
       const filename = path.basename(decodeURIComponent(parts[5]))
-      const filePath = photos.getPhotoPath(slug, filename)
+      const thumb = params.thumb === '1'
+      const filePath = thumb
+        ? photos.getPhotoThumbPath(slug, filename)
+        : photos.getPhotoPath(slug, filename)
       try {
-        const stat = await fs.promises.stat(filePath)
+        // Bei fehlendem Thumbnail auf Originalbild zurückfallen + Thumbnail nachholen
+        let resolvedPath = filePath
+        if (thumb) {
+          try { await fs.promises.access(filePath) } catch {
+            resolvedPath = photos.getPhotoPath(slug, filename)
+            photos.ensureThumbs(slug).catch(() => {})
+          }
+        }
+        const stat = await fs.promises.stat(resolvedPath)
         res.writeHead(200, {
-          'Content-Type': mimeFromFilename(filename) || 'image/jpeg',
+          'Content-Type': 'image/jpeg',
           'Content-Length': stat.size,
           'Cache-Control': 'public, max-age=86400',
         })
-        fs.createReadStream(filePath).pipe(res)
+        fs.createReadStream(resolvedPath).pipe(res)
       } catch { return notFound(res) }
       return
     }

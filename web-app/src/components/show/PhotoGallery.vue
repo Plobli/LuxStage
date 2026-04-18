@@ -33,7 +33,7 @@
       <ul role="list" class="grid grid-cols-2 gap-3 xl:grid-cols-3">
         <li v-for="filename in photos" :key="filename" class="relative group flex flex-col gap-2 rounded-xl border border-border bg-card p-2">
           <div class="aspect-[4/3] block w-full overflow-hidden rounded-lg bg-muted cursor-pointer" @click="openLightbox(filename)">
-            <img :src="photoUrl(filename)" :alt="filename" class="pointer-events-none h-full w-full object-cover transition-opacity duration-200 group-hover:opacity-80" />
+            <img :src="photoUrl(filename, { thumb: true })" :alt="filename" loading="lazy" class="pointer-events-none h-full w-full object-cover transition-opacity duration-200 group-hover:opacity-80" />
           </div>
           <Button
             variant="destructive"
@@ -187,8 +187,8 @@ const photoCols = computed(() => {
   return 3
 })
 
-function photoUrl(filename) {
-  return getPhotoUrl(props.showId, filename)
+function photoUrl(filename, { thumb = false } = {}) {
+  return getPhotoUrl(props.showId, filename, { thumb })
 }
 
 watch(() => [props.showId, ...props.photos], () => {

@@ -263,7 +263,7 @@ import { fetchShow, updateMeta, restoreHistory, createSnapshot } from '../api/sh
 import { fetchChannels, saveChannels, downloadChannelsCsv, parseChannelsCsv, mergeChannels } from '../api/channels.js'
 import { fetchPhotos } from '../api/photos.js'
 import PhotoGallery from '../components/show/PhotoGallery.vue'
-import HistorySlideOver from '../components/show/HistorySlideOver.vue'
+const HistorySlideOver = defineAsyncComponent(() => import('../components/show/HistorySlideOver.vue'))
 import { subscribeShow, isOnline } from '../api/client.js'
 import { api } from '../api/client.js'
 import { fetchShowSections, saveShowSections, fetchShowSectionDefs } from '../api/sections.js'

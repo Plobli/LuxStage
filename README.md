@@ -76,6 +76,65 @@ Das `tech`-Passwort wird am Ende der Installation angezeigt.
 
 ---
 
+## Installation (Docker)
+
+Für Server, NAS oder beliebige Linux-Maschinen mit Docker.
+
+### Voraussetzungen
+
+- Docker und Docker Compose installiert
+- Port `3000` erreichbar (oder nach Wunsch anpassen)
+
+### Installieren
+
+```bash
+git clone https://github.com/Plobli/LuxStage.git
+cd LuxStage
+cp .env.example .env
+```
+
+`.env` bearbeiten:
+
+```env
+# Zufälligen Secret erzeugen: openssl rand -hex 32
+JWT_SECRET=dein-geheimer-schluessel
+
+# Alle Origins, von denen die Web-App aufgerufen wird (kommasepariert)
+CORS_ORIGINS=http://192.168.1.100:3000,http://luxstage.local,https://luxstage.example.com
+```
+
+Starten:
+
+```bash
+docker compose up -d
+```
+
+LuxStage ist danach unter `http://<server-ip>:3000` erreichbar.
+
+### Daten
+
+Die SQLite-Datenbank und alle Uploads liegen im Docker Volume `luxstage-data`. Es wird beim ersten Start automatisch angelegt und bleibt beim Update erhalten.
+
+### Update
+
+```bash
+git pull
+docker compose build --no-cache
+docker compose up -d
+```
+
+### Reverse Proxy (optional)
+
+Um LuxStage ohne Port-Angabe oder mit HTTPS erreichbar zu machen, Caddy als Reverse Proxy vorschalten:
+
+```
+luxstage.example.com {
+    reverse_proxy localhost:3000
+}
+```
+
+---
+
 ## iOS-App einrichten
 
 1. App aus dem App Store installieren *(Link folgt)*

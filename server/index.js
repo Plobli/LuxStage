@@ -6,11 +6,15 @@ import { startHistoryJob } from './history.js'
 
 const pkg = JSON.parse(fs.readFileSync(new URL('./package.json', import.meta.url)))
 
-const corsOrigin = process.env.CORS_ORIGIN || ''
+const corsOrigins = (process.env.CORS_ORIGINS || process.env.CORS_ORIGIN || '')
+  .split(',').map(s => s.trim()).filter(Boolean)
 
 const server = http.createServer((req, res) => {
   // CORS — Wildcard explizit verboten (würde CSRF via ?token= ermöglichen)
-  if (corsOrigin && corsOrigin !== '*') res.setHeader('Access-Control-Allow-Origin', corsOrigin)
+  const origin = req.headers['origin'] || ''
+  if (corsOrigins.length > 0 && corsOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin)
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return }

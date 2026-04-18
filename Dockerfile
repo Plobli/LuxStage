@@ -20,10 +20,12 @@ RUN npm ci --omit=dev --silent
 
 COPY server/ ./
 COPY shared/ /app/shared/
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
 # router.js erwartet ../web-app/dist relativ zu server/
 COPY --from=web-builder /build/web-app/dist /app/web-app/dist
 
 EXPOSE 3000
 
-CMD ["node", "index.js"]
+ENTRYPOINT ["/app/entrypoint.sh"]

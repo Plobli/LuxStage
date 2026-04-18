@@ -504,13 +504,15 @@ export async function router(req, res) {
         path: photos.getPhotoPath(slug, f),
         caption: captionsMap[f]?.caption ?? '',
       }))
-      generatePDF(
+      const floorplanSnapshotPath = floorplan.getFloorplanSnapshotPath(show.id)
+      await generatePDF(
         show,
         channels,
         sectionsMap,
         templateSections,
         photoEntries,
-        res
+        res,
+        { snapshotPath: floorplanSnapshotPath }
       )
       return
     }
@@ -870,6 +872,23 @@ export async function router(req, res) {
       const { canvas_data } = body
       if (typeof canvas_data !== 'string') return json(res, 400, { error: 'canvas_data fehlt' })
       db.upsertShowFloorplanData(show.id, canvas_data)
+      return json(res, 200, { ok: true })
+    }
+
+    // ── Show — Grundriss-Snapshot speichern ──────────────────────────────────
+    if (method === 'PUT' && pathname.match(/^\/api\/shows\/([^/]+)\/floorplan\/snapshot$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const showId = pathname.split('/')[3]
+      const show = db.readShow(showId)
+      if (!show) return notFound(res)
+      const body = await readJsonBody(req, res); if (body === null) return
+      const { data_url } = body
+      if (typeof data_url !== 'string' || !data_url.startsWith('data:image/')) {
+        return json(res, 400, { error: 'data_url fehlt oder ungültig' })
+      }
+      const base64 = data_url.replace(/^data:image\/\w+;base64,/, '')
+      const buffer = Buffer.from(base64, 'base64')
+      await floorplan.saveFloorplanSnapshot(show.id, buffer)
       return json(res, 200, { ok: true })
     }
 

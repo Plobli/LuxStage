@@ -62,30 +62,21 @@ const { t } = useLocale()
 const props = defineProps({ modelValue: { type: String, default: '' } })
 const emit = defineEmits(['update:modelValue'])
 
-let externalValue = props.modelValue
-let settingContent = false   // verhindert Echo während setContent()
-
 const editor = useEditor({
   extensions: [StarterKit, Markdown],
   content: props.modelValue,
   editorProps: { attributes: { class: 'tiptap' } },
   onUpdate({ editor }) {
-    if (settingContent) return
     const md = editor.storage.markdown.getMarkdown()
-    if (md === externalValue) return
     emit('update:modelValue', md)
   },
 })
 
 watch(() => props.modelValue, (val) => {
-  if (!editor.value) return
+  if (!editor.value || editor.value.isFocused) return
   const current = editor.value.storage.markdown.getMarkdown()
-  if (val !== current) {
-    externalValue = val
-    settingContent = true
-    editor.value.commands.setContent(val, false, { preserveWhitespace: 'full' })
-    settingContent = false
-  }
+  if (val === current) return
+  editor.value.commands.setContent(val, false, { preserveWhitespace: 'full' })
 }, { flush: 'post' })
 
 onBeforeUnmount(() => editor.value?.destroy())

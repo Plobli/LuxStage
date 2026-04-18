@@ -60,3 +60,7 @@ export function fetchShowFloorplan(showId) {
 export function saveShowFloorplan(showId, canvasData) {
   return api.put(`/api/shows/${showId}/floorplan`, { canvas_data: canvasData })
 }
+
+export function saveShowFloorplanSnapshot(showId, dataUrl) {
+  return api.put(`/api/shows/${showId}/floorplan/snapshot`, { data_url: dataUrl })
+}

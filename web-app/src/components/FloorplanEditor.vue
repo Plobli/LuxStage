@@ -614,7 +614,7 @@ const props = defineProps({
   initialCanvasData: { type: String, default: null },
   channels: { type: Array, default: () => [] }
 })
-const emit = defineEmits(['change', 'jump-to-channel', 'upload-image', 'delete-image'])
+const emit = defineEmits(['change', 'jump-to-channel', 'upload-image', 'delete-image', 'snapshot'])
 
 // --------------- State ---------------
 const activeTool = ref('select')
@@ -847,6 +847,7 @@ function fitToContainer() {
 watch(() => props.imageUrl, (url) => {
   if (!url) { bgImage.value = null; return }
   const img = new Image()
+  img.crossOrigin = 'anonymous'
   img.onload = () => {
     // Set fixed logical stage size based on image aspect ratio (max 2000px wide)
     const MAX = 2000
@@ -1361,23 +1362,34 @@ function pushHistory() {
   historyIndex.value = history.value.length - 1
 }
 
+function captureSnapshot() {
+  const stage = stageRef.value?.getNode()
+  if (!stage) return null
+  try {
+    return stage.toDataURL({ pixelRatio: 1, x: 0, y: 0, width: stageSize.value.width, height: stageSize.value.height })
+  } catch { return null }
+}
+
 function undo() {
   if (historyIndex.value <= 0) return
   historyIndex.value--
   parseData(history.value[historyIndex.value])
-  emit('change', history.value[historyIndex.value])
+  const canvasData = history.value[historyIndex.value]
+  nextTick(() => emit('change', canvasData, captureSnapshot()))
 }
 
 function redo() {
   if (historyIndex.value >= history.value.length - 1) return
   historyIndex.value++
   parseData(history.value[historyIndex.value])
-  emit('change', history.value[historyIndex.value])
+  const canvasData = history.value[historyIndex.value]
+  nextTick(() => emit('change', canvasData, captureSnapshot()))
 }
 
 function emitChange() {
   pushHistory()
-  emit('change', exportData())
+  const canvasData = exportData()
+  emit('change', canvasData, captureSnapshot())
 }
 
 // --------------- PNG / PDF Export ---------------

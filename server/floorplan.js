@@ -44,6 +44,19 @@ export function floorplanUrl(imagePath) {
   return `/api/floorplans/images/${imagePath}`
 }
 
+export async function saveFloorplanSnapshot(showId, buffer) {
+  const dir = path.join(floorplansDir(), showId)
+  await fs.mkdir(dir, { recursive: true })
+  const finalPath = path.join(dir, 'snapshot.png')
+  const tmpPath = `${finalPath}.tmp`
+  await fs.writeFile(tmpPath, buffer)
+  await fs.rename(tmpPath, finalPath)
+}
+
+export function getFloorplanSnapshotPath(showId) {
+  return path.join(floorplansDir(), showId, 'snapshot.png')
+}
+
 export async function serveFloorplanImage(imagePath, res) {
   const base = floorplansDir()
   const full = path.resolve(base, imagePath)
@@ -61,6 +74,7 @@ export async function serveFloorplanImage(imagePath, res) {
     : 'image/jpeg'
   res.setHeader('Content-Type', mime)
   res.setHeader('Cache-Control', 'public, max-age=86400')
+  res.setHeader('Access-Control-Allow-Origin', '*')
   res.end(buffer)
   return true
 }

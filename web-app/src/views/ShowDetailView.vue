@@ -266,7 +266,7 @@ import ChannelTable from '../components/channel/ChannelTable.vue'
 import SectionEditor from '../components/show/SectionEditor.vue'
 import EosMergePreviewDialog from '../components/EosMergePreviewDialog.vue'
 import FloorplanEditor from '../components/FloorplanEditor.vue'
-import { fetchShowFloorplan, saveShowFloorplan, uploadShowFloorplanImage, deleteShowFloorplanImage } from '../api/floorplan.js'
+import { fetchShowFloorplan, saveShowFloorplan, saveShowFloorplanSnapshot, uploadShowFloorplanImage, deleteShowFloorplanImage } from '../api/floorplan.js'
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
@@ -640,9 +640,12 @@ async function loadFloorplan() {
   if (data) floorplan.value = data
 }
 
-function onFloorplanChange(canvasData) {
+function onFloorplanChange(canvasData, snapshotDataUrl) {
   floorplan.value = { ...floorplan.value, canvas_data: canvasData }
   saveShowFloorplan(props.id, canvasData).catch(() => {})
+  if (snapshotDataUrl) {
+    saveShowFloorplanSnapshot(props.id, snapshotDataUrl).catch(() => {})
+  }
 }
 
 async function onFloorplanImageUpload(file) {

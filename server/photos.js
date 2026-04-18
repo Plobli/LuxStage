@@ -27,14 +27,57 @@ export async function savePhoto(slug, filename, buffer) {
   const outPath = path.join(dir, outName)
   const tmpPath = `${outPath}.tmp`
 
-  await sharp(buffer)
-    .rotate()
+  const sharpInstance = sharp(buffer).rotate()
+
+  await sharpInstance
+    .clone()
     .resize({ width: config.photoMaxWidth, withoutEnlargement: true })
     .jpeg({ quality: config.photoQuality })
     .toFile(tmpPath)
-
   await fs.rename(tmpPath, outPath)
+
+  // Thumbnail generieren
+  const thumbPath = path.join(dir, thumbName(outName))
+  const tmpThumb = `${thumbPath}.tmp`
+  await sharpInstance
+    .clone()
+    .resize({ width: config.photoThumbWidth, withoutEnlargement: true })
+    .jpeg({ quality: config.photoThumbQuality })
+    .toFile(tmpThumb)
+  await fs.rename(tmpThumb, thumbPath)
+
   return outName
+}
+
+function thumbName(filename) {
+  return filename.replace(/\.jpg$/i, '_thumb.jpg')
+}
+
+export function getPhotoThumbPath(slug, filename) {
+  const dir = photosDir(slug)
+  return path.join(dir, thumbName(path.basename(filename)))
+}
+
+/** Thumbnails für alle vorhandenen Fotos einer Show nachgenerieren (Migration) */
+export async function ensureThumbs(slug) {
+  const dir = photosDir(slug)
+  let files
+  try {
+    files = (await fs.readdir(dir)).filter(f => /\.jpg$/i.test(f) && !f.endsWith('_thumb.jpg'))
+  } catch { return }
+  for (const file of files) {
+    const thumbPath = path.join(dir, thumbName(file))
+    try { await fs.access(thumbPath); continue } catch { /* fehlt, generieren */ }
+    try {
+      const buf = await fs.readFile(path.join(dir, file))
+      const tmp = `${thumbPath}.tmp`
+      await sharp(buf)
+        .resize({ width: config.photoThumbWidth, withoutEnlargement: true })
+        .jpeg({ quality: config.photoThumbQuality })
+        .toFile(tmp)
+      await fs.rename(tmp, thumbPath)
+    } catch { /* einzelne Fehler ignorieren */ }
+  }
 }
 
 export async function listPhotos(slug) {
@@ -54,7 +97,7 @@ export async function listPhotos(slug) {
   // Alle vorhandenen Dateien im Verzeichnis
   let files
   try {
-    files = (await fs.readdir(dir)).filter(f => /\.(jpg|jpeg|png|gif|webp)$/i.test(f))
+    files = (await fs.readdir(dir)).filter(f => /\.(jpg|jpeg|png|gif|webp)$/i.test(f) && !f.endsWith('_thumb.jpg'))
   } catch { return [] }
 
   // Reihenfolge aus DB

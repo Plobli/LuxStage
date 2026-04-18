@@ -1,56 +1,59 @@
 <template>
-  <div>
+  <div class="overflow-hidden bg-background/35" :class="$attrs.class ?? 'rounded-2xl border border-border/50'">
     <!-- Toolbar -->
-    <div v-if="editor" class="flex items-center gap-0.5 mb-2 flex-wrap">
-      <button
-        type="button"
+    <div v-if="editor" class="flex flex-wrap items-center gap-1 border-b border-border/40 bg-muted/10 px-3 py-2">
+      <Toggle
+        size="sm"
+        :pressed="editor.isActive('bold')"
         @mousedown.prevent="editor.chain().focus().toggleBold().run()"
-        :class="editor.isActive('bold') ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'"
-        class="rounded px-2 py-1 text-sm font-bold transition-colors"
+        class="h-8 rounded-full px-3 font-bold data-[state=on]:bg-background data-[state=on]:text-foreground"
         :title="t('editor.bold')"
-      >B</button>
-      <button
-        type="button"
+      >B</Toggle>
+      <Toggle
+        size="sm"
+        :pressed="editor.isActive('italic')"
         @mousedown.prevent="editor.chain().focus().toggleItalic().run()"
-        :class="editor.isActive('italic') ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'"
-        class="rounded px-2 py-1 text-sm italic transition-colors"
+        class="h-8 rounded-full px-3 italic data-[state=on]:bg-background data-[state=on]:text-foreground"
         :title="t('editor.italic')"
-      >I</button>
-      <div class="w-px h-4 bg-white/10 mx-1" />
-      <button
-        type="button"
+      >I</Toggle>
+      <Separator orientation="vertical" class="mx-1 h-4" />
+      <Toggle
+        size="sm"
+        :pressed="editor.isActive('heading', { level: 3 })"
         @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 3 }).run()"
-        :class="editor.isActive('heading', { level: 3 }) ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'"
-        class="rounded px-2 py-1 text-sm font-semibold transition-colors"
+        class="h-8 rounded-full px-3 font-semibold data-[state=on]:bg-background data-[state=on]:text-foreground"
         :title="t('editor.heading')"
-      >H</button>
-      <div class="w-px h-4 bg-white/10 mx-1" />
-      <button
-        type="button"
+      >H</Toggle>
+      <Separator orientation="vertical" class="mx-1 h-4" />
+      <Toggle
+        size="sm"
+        :pressed="editor.isActive('bulletList')"
         @mousedown.prevent="editor.chain().focus().toggleBulletList().run()"
-        :class="editor.isActive('bulletList') ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'"
-        class="rounded px-2 py-1 text-sm transition-colors"
+        class="h-8 rounded-full px-3 data-[state=on]:bg-background data-[state=on]:text-foreground"
         :title="t('editor.list.bullet')"
-      >≡</button>
-      <button
-        type="button"
+      >≡</Toggle>
+      <Toggle
+        size="sm"
+        :pressed="editor.isActive('orderedList')"
         @mousedown.prevent="editor.chain().focus().toggleOrderedList().run()"
-        :class="editor.isActive('orderedList') ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'"
-        class="rounded px-2 py-1 text-sm transition-colors"
+        class="h-8 rounded-full px-3 data-[state=on]:bg-background data-[state=on]:text-foreground"
         :title="t('editor.list.ordered')"
-      >1.</button>
+      >1.</Toggle>
     </div>
 
     <!-- Editor Content -->
     <EditorContent
       :editor="editor"
-      class="tiptap-content min-h-[80px] text-sm text-gray-200 focus-within:outline-none [&_.tiptap]:outline-none [&_.tiptap]:min-h-[80px] [&_.tiptap_p]:my-1 [&_.tiptap_h3]:text-sm [&_.tiptap_h3]:font-semibold [&_.tiptap_h3]:text-white [&_.tiptap_h3]:mt-3 [&_.tiptap_h3]:mb-1 [&_.tiptap_ul]:list-disc [&_.tiptap_ul]:pl-4 [&_.tiptap_ol]:list-decimal [&_.tiptap_ol]:pl-4 [&_.tiptap_li]:my-0.5 [&_.tiptap_strong]:text-white [&_.tiptap_strong]:font-semibold [&_.tiptap_em]:italic"
+      class="tiptap-content min-h-[120px] bg-transparent px-4 py-4 text-sm text-foreground focus-within:outline-none [&_.tiptap]:min-h-[120px] [&_.tiptap]:outline-none [&_.tiptap]:text-foreground [&_.tiptap_p]:my-1.5 [&_.tiptap_h3]:mb-1 [&_.tiptap_h3]:mt-3 [&_.tiptap_h3]:text-sm [&_.tiptap_h3]:font-semibold [&_.tiptap_h3]:text-foreground [&_.tiptap_ul]:list-disc [&_.tiptap_ul]:pl-5 [&_.tiptap_ol]:list-decimal [&_.tiptap_ol]:pl-5 [&_.tiptap_li]:my-1 [&_.tiptap_strong]:font-semibold [&_.tiptap_strong]:text-foreground [&_.tiptap_em]:italic"
     />
   </div>
 </template>
 
 <script setup>
+defineOptions({ inheritAttrs: false })
 import { watch, onBeforeUnmount } from 'vue'
+import { Toggle } from '@/components/ui/toggle'
+import { Separator } from '@/components/ui/separator'
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import { useLocale } from '../composables/useLocale.js'
 import StarterKit from '@tiptap/starter-kit'
@@ -60,30 +63,21 @@ const { t } = useLocale()
 const props = defineProps({ modelValue: { type: String, default: '' } })
 const emit = defineEmits(['update:modelValue'])
 
-let externalValue = props.modelValue
-let settingContent = false   // verhindert Echo während setContent()
-
 const editor = useEditor({
   extensions: [StarterKit, Markdown],
   content: props.modelValue,
   editorProps: { attributes: { class: 'tiptap' } },
   onUpdate({ editor }) {
-    if (settingContent) return
     const md = editor.storage.markdown.getMarkdown()
-    if (md === externalValue) return
     emit('update:modelValue', md)
   },
 })
 
 watch(() => props.modelValue, (val) => {
-  if (!editor.value) return
+  if (!editor.value || editor.value.isFocused) return
   const current = editor.value.storage.markdown.getMarkdown()
-  if (val !== current) {
-    externalValue = val
-    settingContent = true
-    editor.value.commands.setContent(val, false, { preserveWhitespace: 'full' })
-    settingContent = false
-  }
+  if (val === current) return
+  editor.value.commands.setContent(val, false, { preserveWhitespace: 'full' })
 }, { flush: 'post' })
 
 onBeforeUnmount(() => editor.value?.destroy())

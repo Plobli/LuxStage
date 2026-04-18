@@ -42,6 +42,12 @@ const routes = [
       { path: 'update', name: 'settings-update', component: () => import('../views/settings/UpdateView.vue') },
     ],
   },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'not-found',
+    component: () => import('../views/NotFoundView.vue'),
+    meta: { public: true },
+  },
 ]
 
 export const router = createRouter({

@@ -35,6 +35,12 @@ read -rp "Hostname [luxstage]: " HOSTNAME
 HOSTNAME="${HOSTNAME:-luxstage}"
 [[ $HOSTNAME =~ ^[a-zA-Z0-9._-]+$ ]] || fail "Ungültiger Hostname."
 
+read -rp "Externe Domain (optional, z. B. https://luxstage.example.com): " EXTERNAL_DOMAIN
+EXTERNAL_DOMAIN="${EXTERNAL_DOMAIN:-}"
+if [[ -n "$EXTERNAL_DOMAIN" ]]; then
+  [[ $EXTERNAL_DOMAIN =~ ^https?:// ]] || fail "Domain muss mit http:// oder https:// beginnen."
+fi
+
 MIN_PW_LEN=8
 set +e
 ADMIN_PASSWORD=""
@@ -70,6 +76,7 @@ DATA_DIR="$INSTALL_DIR/data"
 echo ""
 echo "  Systemnutzer: $SERVICE_USER"
 echo "  Hostname:     $HOSTNAME"
+echo "  Externe Domain: ${EXTERNAL_DOMAIN:-–}"
 echo "  Verzeichnis:  $INSTALL_DIR"
 echo ""
 
@@ -186,10 +193,27 @@ ok "Datenverzeichnis bereit: $DATA_DIR"
 
 # ── Nutzer in DB anlegen ──────────────────────────────────────────────────────
 step "Lege Nutzer in Datenbank an..."
-sudo -i -u "$SERVICE_USER" bash -c \
-  "ADMIN_PASSWORD='$ADMIN_PASSWORD' TECH_PASSWORD='$TECH_PASSWORD' JWT_SECRET='$JWT_SECRET' DATA_PATH='$DATA_DIR' \
-   . \$HOME/.nvm/nvm.sh && node '$INSTALL_DIR/server/bootstrap.js'"
+BOOTSTRAPSCRIPT=$(mktemp /tmp/luxstage-bootstrap.XXXXXX.sh)
+chmod 755 "$BOOTSTRAPSCRIPT"
+cat > "$BOOTSTRAPSCRIPT" << BSEOF
+#!/usr/bin/env bash
+set -e
+export ADMIN_PASSWORD='$ADMIN_PASSWORD'
+export TECH_PASSWORD='$TECH_PASSWORD'
+export JWT_SECRET='$JWT_SECRET'
+export DATA_PATH='$DATA_DIR'
+. "\$HOME/.nvm/nvm.sh"
+node '$INSTALL_DIR/server/bootstrap.js'
+BSEOF
+sudo -i -u "$SERVICE_USER" bash "$BOOTSTRAPSCRIPT"
+rm -f "$BOOTSTRAPSCRIPT"
 ok "Nutzer angelegt"
+
+# ── CORS_ORIGINS zusammenstellen ─────────────────────────────────────────────
+SERVER_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+CORS_ORIGINS_VALUE="http://$HOSTNAME.local"
+[ -n "$SERVER_IP" ] && CORS_ORIGINS_VALUE="$CORS_ORIGINS_VALUE,http://$SERVER_IP"
+[ -n "$EXTERNAL_DOMAIN" ] && CORS_ORIGINS_VALUE="$CORS_ORIGINS_VALUE,$EXTERNAL_DOMAIN"
 
 # ── PM2 Ecosystem-Datei ───────────────────────────────────────────────────────
 step "Erstelle PM2-Konfiguration..."
@@ -204,7 +228,7 @@ module.exports = {
       PORT: 3000,
       JWT_SECRET: '$JWT_SECRET',
       DATA_PATH: '$DATA_DIR',
-      CORS_ORIGIN: 'http://$HOSTNAME.local',
+      CORS_ORIGINS: '$CORS_ORIGINS_VALUE',
     }
   }]
 }
@@ -224,11 +248,18 @@ ok "LuxStage läuft und startet automatisch beim Booten"
 
 # ── Caddy konfigurieren ───────────────────────────────────────────────────────
 step "Konfiguriere Caddy..."
-tee /etc/caddy/Caddyfile > /dev/null << EOF
-http://$HOSTNAME.local {
-    reverse_proxy localhost:3000
-}
-EOF
+{
+  echo "http://$HOSTNAME.local {"
+  echo "    reverse_proxy localhost:3000"
+  echo "}"
+  if [ -n "$EXTERNAL_DOMAIN" ]; then
+    DOMAIN_HOST="${EXTERNAL_DOMAIN#*://}"
+    echo ""
+    echo "$DOMAIN_HOST {"
+    echo "    reverse_proxy localhost:3000"
+    echo "}"
+  fi
+} | tee /etc/caddy/Caddyfile > /dev/null
 systemctl restart caddy
 ok "Caddy konfiguriert"
 
@@ -237,6 +268,8 @@ echo ""
 echo -e "  ${GREEN}✓  LuxStage wurde erfolgreich installiert.${RESET}"
 echo ""
 echo "     Erreichbar unter:  http://$HOSTNAME.local"
+[ -n "$EXTERNAL_DOMAIN" ] && echo "                        $EXTERNAL_DOMAIN"
+[ -n "$SERVER_IP" ]       && echo "                        http://$SERVER_IP"
 echo "     Login:             admin / $ADMIN_PASSWORD"
 echo "     Tech-Login:        tech  / $TECH_PASSWORD"
 echo ""

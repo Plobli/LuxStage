@@ -5,67 +5,61 @@
     </div>
 
     <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-[480px]">
-      <div class="bg-gray-800/50 px-6 py-12 outline -outline-offset-1 outline-white/10 sm:rounded-lg sm:px-12">
+      <Card class="px-6 py-8 sm:px-12">
 
         <!-- Login-Formular -->
         <form v-if="!showReset" class="space-y-6" @submit.prevent="handleLogin">
-          <div>
-            <label for="username" class="block text-sm/6 font-medium text-white">{{ t('auth.username') }}</label>
-            <div class="mt-2">
-              <input
-                v-model="username"
-                id="username"
-                type="text"
-                autocomplete="username"
-                required
-                class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-accent sm:text-sm/6"
-              />
-            </div>
+          <div class="space-y-2">
+            <Label for="username">{{ t('auth.username') }}</Label>
+            <Input
+              v-model="username"
+              id="username"
+              type="text"
+              autocomplete="username"
+              required
+            />
           </div>
 
-          <div>
-            <label for="password" class="block text-sm/6 font-medium text-white">{{ t('auth.password') }}</label>
-            <div class="mt-2">
-              <input
-                v-model="password"
-                id="password"
-                type="password"
-                autocomplete="current-password"
-                required
-                class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-accent sm:text-sm/6"
-              />
-            </div>
+          <div class="space-y-2">
+            <Label for="password">{{ t('auth.password') }}</Label>
+            <Input
+              v-model="password"
+              id="password"
+              type="password"
+              autocomplete="current-password"
+              required
+            />
           </div>
 
-          <div v-if="error" class="text-sm text-red-400">{{ t('auth.login.error') }}</div>
+          <Alert v-if="error" variant="destructive">
+            <AlertDescription>{{ t('auth.login.error') }}</AlertDescription>
+          </Alert>
 
-          <div>
-            <button
-              type="submit"
-              :disabled="loading"
-              class="flex w-full justify-center rounded-md bg-accent px-3 py-1.5 text-sm/6 font-semibold text-white hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-50"
-            >
-              {{ loading ? '…' : t('auth.login.submit') }}
-            </button>
-          </div>
+          <Button
+            type="submit"
+            :disabled="loading"
+            class="w-full"
+          >
+            {{ loading ? '…' : t('auth.login.submit') }}
+          </Button>
 
           <div class="text-center">
-            <button type="button" @click="showReset = true" class="text-sm text-gray-400 hover:text-white">
+            <Button variant="link" type="button" @click="showReset = true" class="text-sm text-muted-foreground hover:text-foreground">
               {{ t('auth.reset') }}
-            </button>
+            </Button>
           </div>
         </form>
 
         <!-- Passwort-Reset-Hinweis -->
         <div v-else class="space-y-6">
-          <h2 class="text-base/7 font-semibold text-white">{{ t('auth.reset.title') }}</h2>
-          <p class="text-sm text-gray-400">{{ t('auth.reset.hint') }}</p>
-          <button type="button" @click="showReset = false" class="text-sm text-accent hover:text-accent-hover">
+          <h2 class="text-base/7 font-semibold text-foreground">{{ t('auth.reset.title') }}</h2>
+          <p class="text-sm text-muted-foreground">{{ t('auth.reset.hint') }}</p>
+          <Button variant="link" type="button" @click="showReset = false" class="text-sm p-0 h-auto text-primary hover:text-primary/80">
             ← {{ t('auth.reset.back') }}
-          </button>
+          </Button>
         </div>
 
-      </div>
+      </Card>
     </div>
   </div>
 </template>
@@ -75,6 +69,11 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { login } from '../api/client.js'
 import { useLocale } from '../composables/useLocale.js'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 const router = useRouter()
 const { t } = useLocale()

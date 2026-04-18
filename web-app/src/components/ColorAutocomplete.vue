@@ -1,24 +1,24 @@
 <template>
-  <div class="relative">
-    <input
-      :value="modelValue"
+  <div class="relative h-full min-h-10 w-full flex items-center px-1.5">
+    <Input
+      :model-value="displayValue"
       @input="onInput"
-      @focus="open = true"
+      @focus="onFocus"
       @blur="onBlur"
-      @keydown.down.prevent="moveDown"
-      @keydown.up.prevent="moveUp"
-      @keydown.enter.prevent="selectActive"
+      @keydown.down="open && filtered.length ? (moveDown(), $event.preventDefault()) : null"
+      @keydown.up="open && filtered.length ? (moveUp(), $event.preventDefault()) : null"
+      @keydown.enter.prevent="open && filtered.length ? selectActive() : null"
       @keydown.escape="open = false"
       @keydown="$emit('keydown', $event)"
       :placeholder="placeholder"
       :style="badgeStyle || {}"
-      :class="badgeStyle ? 'font-semibold' : 'bg-white/10 text-gray-400 placeholder:text-gray-600'"
-      class="focus:outline-none text-xs rounded-full px-2 py-0.5 border-0 w-16 text-center"
+      :class="inputClass"
+      class="h-7 w-full rounded-full border border-border/30 px-2 py-0 text-center text-[11px] shadow-none focus-visible:bg-muted/60 focus-visible:border-border/50 focus-visible:ring-0"
       v-bind="inputAttrs"
     />
     <ul
       v-if="open && filtered.length > 0"
-      class="absolute left-0 top-full mt-1 z-50 w-72 max-h-48 overflow-y-auto rounded-md bg-gray-900 ring-1 ring-white/10 shadow-xl text-sm"
+      class="absolute left-0 top-full mt-1 z-50 w-72 max-h-48 overflow-y-auto rounded-md bg-popover text-popover-foreground border border-border shadow-xl text-sm"
     >
       <li
         v-for="(f, idx) in filtered"
@@ -26,22 +26,23 @@
         @mousedown.prevent="select(f)"
         :class="[
           'flex items-center gap-2 px-3 py-1.5 cursor-pointer',
-          idx === activeIdx ? 'bg-white/10' : 'hover:bg-white/5'
+          idx === activeIdx ? 'bg-muted' : 'hover:bg-muted/50'
         ]"
       >
         <span
-          class="size-4 rounded-full shrink-0 ring-1 ring-white/10"
+          class="size-4 rounded-full shrink-0 border border-border/50"
           :style="f.hex ? { backgroundColor: f.hex } : { backgroundColor: '#555' }"
         />
-        <span class="text-white font-mono text-xs">{{ f.displayCode }}</span>
-        <span class="text-gray-400 text-xs truncate">{{ f.name }}</span>
+        <span class="text-foreground font-mono text-xs">{{ f.displayCode }}</span>
+        <span class="text-muted-foreground text-xs truncate">{{ f.name }}</span>
       </li>
     </ul>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { Input } from '@/components/ui/input'
 import { ALL_FILTERS, filterBadgeStyle } from '../utils/filterColors.js'
 
 const props = defineProps({
@@ -53,8 +54,47 @@ const emit = defineEmits(['update:modelValue', 'change', 'keydown'])
 
 const open = ref(false)
 const activeIdx = ref(0)
+const isEditing = ref(false)
+
+// Lokaler Eingabe-Buffer: wird nur während der Eingabe verwendet
+const localInput = ref('')
+
+function resolveDisplayCode(value) {
+  const raw = (value || '').trim().toUpperCase()
+  if (!raw) return ''
+  const exact = ALL_FILTERS.find(f => f.code === raw || f.altCode === raw)
+  if (exact) return exact.displayCode
+  if (/^\d+$/.test(raw)) {
+    const normalizedLee = `L${raw.padStart(3, '0')}`
+    const normalizedRosco = `R${raw.padStart(2, '0')}`
+    const match = ALL_FILTERS.find(f => f.code === normalizedLee || f.altCode === normalizedLee || f.code === normalizedRosco || f.altCode === normalizedRosco)
+    if (match) return match.displayCode
+  }
+  if (/^[LR]\d+$/.test(raw)) {
+    const prefix = raw[0]
+    const normalized = prefix === 'L' ? `L${raw.slice(1).padStart(3, '0')}` : `R${raw.slice(1).padStart(2, '0')}`
+    const match = ALL_FILTERS.find(f => f.code === normalized || f.altCode === normalized)
+    if (match) return match.displayCode
+  }
+  return value
+}
+
+// Während der Eingabe: roher Tipp-Wert; sonst: formatierter Display-Code
+const displayValue = computed(() => {
+  if (isEditing.value) return localInput.value
+  return resolveDisplayCode(props.modelValue)
+})
 
 const badgeStyle = computed(() => filterBadgeStyle(props.modelValue))
+const inputClass = computed(() => {
+  if (!badgeStyle.value) return 'text-muted-foreground placeholder:text-muted-foreground/35 bg-muted/35'
+  return 'font-semibold text-current placeholder:text-current/55'
+})
+
+// Wenn modelValue von außen gesetzt wird (z.B. nach Select), localInput synchronisieren
+watch(() => props.modelValue, (val) => {
+  if (!isEditing.value) localInput.value = resolveDisplayCode(val)
+})
 
 const filtered = computed(() => {
   const q = (props.modelValue || '').toUpperCase()
@@ -101,14 +141,25 @@ const filtered = computed(() => {
   return results.slice(0, 12)
 })
 
+function onFocus() {
+  isEditing.value = true
+  localInput.value = props.modelValue || ''
+  open.value = true
+}
+
 function onInput(e) {
+  localInput.value = e.target.value
   emit('update:modelValue', e.target.value)
   open.value = true
   activeIdx.value = 0
 }
 
 function onBlur() {
-  setTimeout(() => { open.value = false }, 150)
+  setTimeout(() => {
+    open.value = false
+    isEditing.value = false
+    localInput.value = resolveDisplayCode(props.modelValue)
+  }, 150)
   emit('change')
 }
 

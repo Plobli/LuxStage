@@ -75,17 +75,26 @@ function _copyTemplateToShow(templateId, showId) {
       VALUES (?, ?, ?, ?, ?)
     `).run(newDefId, showId, tDef.title, tDef.type, tDef.sort_order)
 
-    const tFields = dbContainer.db.prepare('SELECT * FROM template_section_fields WHERE section_id = ? ORDER BY sort_order').all(tDef.id)
-    for (const tField of tFields) {
-      dbContainer.db.prepare(`
-        INSERT INTO section_fields (id, section_id, key, label, unit, sort_order)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `).run(randomUUID(), newDefId, tField.key, tField.label, tField.unit, tField.sort_order)
+    if (tDef.type === 'kv-table') {
+      const tRows = dbContainer.db.prepare('SELECT * FROM template_section_kv_rows WHERE section_id = ? ORDER BY sort_order').all(tDef.id)
+      for (const tRow of tRows) {
+        dbContainer.db.prepare(`
+          INSERT INTO section_kv_rows (id, section_id, label, value, sort_order)
+          VALUES (?, ?, ?, ?, ?)
+        `).run(randomUUID(), newDefId, tRow.label, tRow.value, tRow.sort_order)
+      }
+    } else {
+      const tFields = dbContainer.db.prepare('SELECT * FROM template_section_fields WHERE section_id = ? ORDER BY sort_order').all(tDef.id)
+      for (const tField of tFields) {
+        dbContainer.db.prepare(`
+          INSERT INTO section_fields (id, section_id, key, label, unit, sort_order)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `).run(randomUUID(), newDefId, tField.key, tField.label, tField.unit, tField.sort_order)
+      }
+      // Leerer Content-Eintrag nur für markdown/fields
+      dbContainer.db.prepare('INSERT INTO section_contents (section_id, show_id, content) VALUES (?, ?, ?)')
+        .run(newDefId, showId, tDef.type === 'fields' ? '{}' : '')
     }
-
-    // Leerer Content-Eintrag
-    dbContainer.db.prepare('INSERT INTO section_contents (section_id, show_id, content) VALUES (?, ?, ?)')
-      .run(newDefId, showId, tDef.type === 'fields' ? '{}' : '')
   }
 }
 
@@ -185,34 +194,65 @@ export function readShowSectionDefs(slug) {
   const show = readShow(slug)
   if (!show) return []
   const defs = dbContainer.db.prepare('SELECT * FROM section_defs WHERE show_id = ? ORDER BY sort_order').all(show.id)
-  return defs.map(def => ({
-    id: def.id,
-    title: def.title,
-    type: def.type,
-    order: def.sort_order,
-    fields: dbContainer.db.prepare('SELECT * FROM section_fields WHERE section_id = ? ORDER BY sort_order')
-      .all(def.id)
-      .map(f => ({ id: f.id, key: f.key, label: f.label, unit: f.unit })),
-  }))
+  return defs.map(def => {
+    if (def.type === 'kv-table') {
+      return {
+        id: def.id,
+        title: def.title,
+        type: def.type,
+        order: def.sort_order,
+        rows: dbContainer.db.prepare('SELECT * FROM section_kv_rows WHERE section_id = ? ORDER BY sort_order')
+          .all(def.id)
+          .map(r => ({ id: r.id, label: r.label, value: r.value, sort_order: r.sort_order })),
+      }
+    }
+    return {
+      id: def.id,
+      title: def.title,
+      type: def.type,
+      order: def.sort_order,
+      fields: dbContainer.db.prepare('SELECT * FROM section_fields WHERE section_id = ? ORDER BY sort_order')
+        .all(def.id)
+        .map(f => ({ id: f.id, key: f.key, label: f.label, unit: f.unit })),
+    }
+  })
 }
 
 export function writeShowSectionDefs(slug, defs, editedBy = null) {
   const show = readShow(slug)
   if (!show) throw new Error(`Show not found: ${slug}`)
   const tx = dbContainer.db.transaction(() => {
+    // Bestehende section_contents retten, bevor CASCADE sie löscht
+    const savedContents = dbContainer.db.prepare(
+      'SELECT section_id, content FROM section_contents WHERE show_id = ?'
+    ).all(show.id)
+    const contentMap = new Map(savedContents.map(r => [r.section_id, r.content]))
+
     dbContainer.db.prepare('DELETE FROM section_defs WHERE show_id = ?').run(show.id)
     for (let i = 0; i < defs.length; i++) {
       const def = defs[i]
       dbContainer.db.prepare('INSERT INTO section_defs (id, show_id, title, type, sort_order) VALUES (?, ?, ?, ?, ?)')
         .run(def.id, show.id, def.title, def.type, def.order ?? i)
-      const fields = def.fields ?? []
-      for (let j = 0; j < fields.length; j++) {
-        const f = fields[j]
-        dbContainer.db.prepare('INSERT INTO section_fields (id, section_id, key, label, unit, sort_order) VALUES (?, ?, ?, ?, ?, ?)')
-          .run(f.id ?? randomUUID(), def.id, f.key, f.label ?? '', f.unit ?? '', j)
+      if (def.type === 'kv-table') {
+        const rows = def.rows ?? []
+        for (let j = 0; j < rows.length; j++) {
+          const r = rows[j]
+          dbContainer.db.prepare('INSERT INTO section_kv_rows (id, section_id, label, value, sort_order) VALUES (?, ?, ?, ?, ?)')
+            .run(r.id ?? randomUUID(), def.id, r.label ?? '', r.value ?? '', r.sort_order ?? j)
+        }
+      } else {
+        const fields = def.fields ?? []
+        for (let j = 0; j < fields.length; j++) {
+          const f = fields[j]
+          dbContainer.db.prepare('INSERT INTO section_fields (id, section_id, key, label, unit, sort_order) VALUES (?, ?, ?, ?, ?, ?)')
+            .run(f.id ?? randomUUID(), def.id, f.key, f.label ?? '', f.unit ?? '', j)
+        }
+        // Vorhandenen Content wiederherstellen; nur wenn neu, leeren Eintrag anlegen
+        const existingContent = contentMap.get(def.id)
+        const fallback = def.type === 'fields' ? '{}' : ''
+        dbContainer.db.prepare('INSERT INTO section_contents (section_id, show_id, content) VALUES (?, ?, ?)')
+          .run(def.id, show.id, existingContent ?? fallback)
       }
-      dbContainer.db.prepare('INSERT OR IGNORE INTO section_contents (section_id, show_id, content) VALUES (?, ?, ?)')
-        .run(def.id, show.id, def.type === 'fields' ? '{}' : '')
     }
     dbContainer.db.prepare('UPDATE shows SET updated_at = ? WHERE id = ?').run(now(), show.id)
     if (editedBy) touchLastEdited(show.id, editedBy)
@@ -294,15 +334,28 @@ export function readTemplateSections(name) {
   const tpl = dbContainer.db.prepare('SELECT * FROM templates WHERE name = ?').get(name)
   if (!tpl) return []
   const defs = dbContainer.db.prepare('SELECT * FROM template_section_defs WHERE template_id = ? ORDER BY sort_order').all(tpl.id)
-  return defs.map(def => ({
-    id: def.id,
-    title: def.title,
-    type: def.type,
-    order: def.sort_order,
-    fields: dbContainer.db.prepare('SELECT * FROM template_section_fields WHERE section_id = ? ORDER BY sort_order')
-      .all(def.id)
-      .map(f => ({ id: f.id, key: f.key, label: f.label, unit: f.unit })),
-  }))
+  return defs.map(def => {
+    if (def.type === 'kv-table') {
+      return {
+        id: def.id,
+        title: def.title,
+        type: def.type,
+        order: def.sort_order,
+        rows: dbContainer.db.prepare('SELECT * FROM template_section_kv_rows WHERE section_id = ? ORDER BY sort_order')
+          .all(def.id)
+          .map(r => ({ id: r.id, label: r.label, value: r.value, sort_order: r.sort_order })),
+      }
+    }
+    return {
+      id: def.id,
+      title: def.title,
+      type: def.type,
+      order: def.sort_order,
+      fields: dbContainer.db.prepare('SELECT * FROM template_section_fields WHERE section_id = ? ORDER BY sort_order')
+        .all(def.id)
+        .map(f => ({ id: f.id, key: f.key, label: f.label, unit: f.unit })),
+    }
+  })
 }
 
 export function writeTemplateSections(name, defs) {
@@ -318,10 +371,18 @@ export function writeTemplateSections(name, defs) {
       const def = defs[i]
       dbContainer.db.prepare('INSERT INTO template_section_defs (id, template_id, title, type, sort_order) VALUES (?, ?, ?, ?, ?)')
         .run(def.id ?? randomUUID(), tpl.id, def.title, def.type, def.order ?? i)
-      for (let j = 0; j < (def.fields ?? []).length; j++) {
-        const f = def.fields[j]
-        dbContainer.db.prepare('INSERT INTO template_section_fields (id, section_id, key, label, unit, sort_order) VALUES (?, ?, ?, ?, ?, ?)')
-          .run(f.id ?? randomUUID(), def.id, f.key, f.label ?? '', f.unit ?? '', j)
+      if (def.type === 'kv-table') {
+        for (let j = 0; j < (def.rows ?? []).length; j++) {
+          const r = def.rows[j]
+          dbContainer.db.prepare('INSERT INTO template_section_kv_rows (id, section_id, label, value, sort_order) VALUES (?, ?, ?, ?, ?)')
+            .run(r.id ?? randomUUID(), def.id, r.label ?? '', r.value ?? '', r.sort_order ?? j)
+        }
+      } else {
+        for (let j = 0; j < (def.fields ?? []).length; j++) {
+          const f = def.fields[j]
+          dbContainer.db.prepare('INSERT INTO template_section_fields (id, section_id, key, label, unit, sort_order) VALUES (?, ?, ?, ?, ?, ?)')
+            .run(f.id ?? randomUUID(), def.id, f.key, f.label ?? '', f.unit ?? '', j)
+        }
       }
     }
   })

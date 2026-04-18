@@ -1,37 +1,39 @@
 <template>
-  <div class="divide-y divide-white/10">
+  <div class="divide-y divide-border">
     <div class="grid max-w-7xl grid-cols-1 gap-x-8 gap-y-10 px-4 py-16 sm:px-6 md:grid-cols-3 lg:px-8">
       <div>
-        <h2 class="text-base/7 font-semibold text-white">{{ t('settings.server') }}</h2>
-        <p class="mt-1 text-sm/6 text-gray-400">{{ t('settings.server_url.label') }}</p>
+        <h2 class="text-base/7 font-semibold text-foreground">{{ t('settings.server') }}</h2>
+        <p class="mt-1 text-sm/6 text-muted-foreground">{{ t('settings.server_url.label') }}</p>
       </div>
       <div class="md:col-span-2 space-y-6 sm:max-w-xl">
-        <div>
-          <label class="block text-sm/6 font-medium text-white mb-2">{{ t('settings.server_url') }}</label>
-          <input
+        <div class="space-y-2">
+          <Label for="server-url">{{ t('settings.server_url') }}</Label>
+          <Input
+            id="server-url"
             v-model="serverUrl"
             type="url"
             :placeholder="t('settings.server_url.placeholder')"
             @change="applyServer"
-            class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-sm text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-accent"
           />
         </div>
-        <dl class="divide-y divide-white/5 text-sm/6">
+        <dl class="divide-y divide-border text-sm/6">
           <div class="py-3 flex justify-between">
-            <dt class="text-gray-400">{{ t('settings.status.version.app') }}</dt>
-            <dd class="text-gray-300">{{ appVersion }}</dd>
+            <dt class="text-muted-foreground">{{ t('settings.status.version.app') }}</dt>
+            <dd class="text-foreground">{{ appVersion }}</dd>
           </div>
           <div class="py-3 flex justify-between">
-            <dt class="text-gray-400">{{ t('settings.status.version.server') }}</dt>
+            <dt class="text-muted-foreground">{{ t('settings.status.version.server') }}</dt>
             <dd>
-              <span v-if="status" class="text-gray-300">{{ status.version }}</span>
-              <span v-else-if="statusError" class="text-red-400">{{ t('error.network') }}</span>
-              <span v-else class="text-gray-500">…</span>
+              <span v-if="status" class="text-foreground">{{ status.version }}</span>
+              <Alert v-else-if="statusError" variant="destructive" class="py-1 px-2 text-xs h-auto">
+                <AlertDescription>{{ t('error.network') }}</AlertDescription>
+              </Alert>
+              <span v-else class="text-muted-foreground">…</span>
             </dd>
           </div>
           <div v-if="status" class="py-3 flex justify-between">
-            <dt class="text-gray-400">{{ t('settings.status.disk') }}</dt>
-            <dd class="text-gray-300">{{ status.diskFree }}</dd>
+            <dt class="text-muted-foreground">{{ t('settings.status.disk') }}</dt>
+            <dd class="text-foreground">{{ status.diskFree }}</dd>
           </div>
         </dl>
       </div>
@@ -41,6 +43,9 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useLocale } from '../../composables/useLocale.js'
 import { setServerUrl, api } from '../../api/client.js'
 

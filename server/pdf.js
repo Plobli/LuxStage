@@ -61,7 +61,8 @@ function contrastColor(hex) {
 // sectionsMap: Map<sectionId, contentString>  (from db.readShowSections)
 // templateSections: [{ id, title, order, type }]
 // photoEntries: [{ path, caption }]  — Fotos mit optionaler Beschreibung
-export async function generatePDF(show, channels, sectionsMap, templateSections, photoEntries, res) {
+// floorplan: { imagePath, canvasData } — optionaler Grundriss
+export async function generatePDF(show, channels, sectionsMap, templateSections, photoEntries, res, floorplan = null) {
   const fm = { name: show.name, datum: show.datum, venue: show.untertitel }
   const grouped = groupByPosition(channels)
 
@@ -91,16 +92,22 @@ export async function generatePDF(show, channels, sectionsMap, templateSections,
   let pageNum = 0
   function addFooter() {
     pageNum++
-    const y = pageH - PAGE_MARGIN - mm(4)
+    const curPageH = doc.page.height
+    const curPageW = doc.page.width
+    const curUsableW = curPageW - PAGE_MARGIN * 2
+    const fy = curPageH - PAGE_MARGIN - mm(4)
+    // doc.y temporär weit oben setzen damit pdfkit kein continueOnNewPage auslöst
+    const savedY = doc.y
+    doc.y = PAGE_MARGIN
     doc.font(FONT_NORMAL).fontSize(7).fillColor('#888888')
-      .text(`${fm.name || ''} — ${fmt(fm.datum)}`, PAGE_MARGIN, y, { width: usableW / 2 })
-      .text(`Seite ${pageNum}  |  ${printedAt}`, PAGE_MARGIN + usableW / 2, y, {
-        width: usableW / 2, align: 'right'
-      })
+      .text(`${fm.name || ''} — ${fmt(fm.datum)}`, PAGE_MARGIN, fy, { width: curUsableW / 2, lineBreak: false })
+    doc.text(`Seite ${pageNum}  |  ${printedAt}`, PAGE_MARGIN + curUsableW / 2, fy, {
+      width: curUsableW / 2, align: 'right', lineBreak: false
+    })
     doc.fillColor('black')
+    doc.y = savedY
   }
   addFooter()
-  doc.on('pageAdded', addFooter)
 
   // ── Titel ────────────────────────────────────────────────────────────────
   doc.font(FONT_BOLD).fontSize(16).fillColor('black')
@@ -152,6 +159,7 @@ export async function generatePDF(show, channels, sectionsMap, templateSections,
     const minNeeded = GROUP_H + ROW_MIN_H + ROW_MIN_H
     if (y + minNeeded > printableBottom) {
       doc.addPage()
+      addFooter()
       y = PAGE_MARGIN
     }
 
@@ -177,6 +185,7 @@ export async function generatePDF(show, channels, sectionsMap, templateSections,
       const rowH = calcRowHeight(doc, rowCols)
       if (y + rowH > printableBottom) {
         doc.addPage()
+        addFooter()
         y = PAGE_MARGIN
         // Gruppen-Header wiederholen
         doc.rect(PAGE_MARGIN, y, usableW, GROUP_H).fill('#f0f0f0')
@@ -199,6 +208,7 @@ export async function generatePDF(show, channels, sectionsMap, templateSections,
 
   if (validPhotos.length > 0) {
     doc.addPage()
+    addFooter()
     y = PAGE_MARGIN
 
     // Überschrift
@@ -221,6 +231,7 @@ export async function generatePDF(show, channels, sectionsMap, templateSections,
     for (let i = 0; i < validPhotos.length; i++) {
       if (photoOnPage > 0 && photoOnPage % PHOTOS_PER_PAGE === 0) {
         doc.addPage()
+        addFooter()
         y = PAGE_MARGIN
         row = 0
         col = 0
@@ -247,20 +258,44 @@ export async function generatePDF(show, channels, sectionsMap, templateSections,
     }
   }
 
+  // ── Grundriss ─────────────────────────────────────────────────────────────
+  if (floorplan?.snapshotPath) {
+    let snapshotBuffer = null
+    try { snapshotBuffer = fs.readFileSync(floorplan.snapshotPath) } catch {}
+    if (snapshotBuffer) {
+      doc.addPage({ size: 'A4', layout: 'landscape' })
+      pageNum++
+      const lPageW = doc.page.width
+      const lPageH = doc.page.height
+      const lUsableW = lPageW - PAGE_MARGIN * 2
+      const lPrintableBottom = lPageH - PAGE_MARGIN - mm(8)
+      const imgY = PAGE_MARGIN + mm(9)
+      doc.image(snapshotBuffer, PAGE_MARGIN, imgY, {
+        fit: [lUsableW, lPrintableBottom - imgY],
+        align: 'center',
+        valign: 'top',
+      })
+    }
+  }
+
   doc.end()
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
+
+const MAX_ROW_H = mm(40) // Sicherheitsgrenze gegen pdfkit Stack Overflow
 
 function calcRowHeight(doc, cols) {
   doc.font(FONT_NORMAL).fontSize(8)
   let maxH = ROW_MIN_H
   for (const col of cols) {
     if (!col.wrap || !col.text) continue
-    const h = doc.heightOfString(col.text, { width: col.w - mm(2) }) + mm(2.6)
+    const w = col.w - mm(2)
+    if (w <= 0) continue
+    const h = doc.heightOfString(col.text, { width: w }) + mm(2.6)
     if (h > maxH) maxH = h
   }
-  return maxH
+  return Math.min(maxH, MAX_ROW_H)
 }
 
 function drawRow(doc, y, usableW, cols, isHeader) {
@@ -417,20 +452,20 @@ function renderSetupBlocks(doc, blocks, margin, usableW) {
     if (block.type === 'heading') {
       if (block.level <= 2) {
         doc.moveDown(0.5)
-        doc.font(FONT_BOLD).fontSize(11).text(block.text, margin, doc.y)
+        doc.font(FONT_BOLD).fontSize(11).text(block.text, margin, doc.y, { width: usableW, lineBreak: true })
         doc.moveTo(margin, doc.y + 1).lineTo(margin + usableW, doc.y + 1).stroke('#cccccc')
         doc.moveDown(0.3)
       } else {
         doc.moveDown(0.3)
-        doc.font(FONT_BOLD).fontSize(9).text(block.text, margin, doc.y)
+        doc.font(FONT_BOLD).fontSize(9).text(block.text, margin, doc.y, { width: usableW, lineBreak: true })
         doc.moveDown(0.1)
       }
     } else if (block.type === 'text') {
-      doc.font(FONT_NORMAL).fontSize(8.5).text(block.text, margin, doc.y, { width: usableW })
+      doc.font(FONT_NORMAL).fontSize(8.5).text(block.text, margin, doc.y, { width: usableW, lineBreak: true })
     } else if (block.type === 'list') {
       for (const item of block.items) {
         doc.font(FONT_NORMAL).fontSize(8.5)
-          .text('•  ' + item, margin + mm(3), doc.y, { width: usableW - mm(3), lineGap: 1 })
+          .text('•  ' + item, margin + mm(3), doc.y, { width: usableW - mm(3), lineGap: 1, lineBreak: true })
       }
     } else if (block.type === 'table') {
       const rows = block.rows

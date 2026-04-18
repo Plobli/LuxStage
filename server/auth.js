@@ -79,7 +79,9 @@ export function authenticate(req) {
   const url = new URL(req.url, 'http://localhost')
   const downloadToken = url.searchParams.get('token')
   if (downloadToken) {
-    return redeemDownloadToken(downloadToken)
+    const redeemed = redeemDownloadToken(downloadToken)
+    if (redeemed) return redeemed
+    try { return jwt.verify(downloadToken, config.jwtSecret) } catch {}
   }
 
   return null

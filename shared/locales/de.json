@@ -173,6 +173,7 @@
   "sections.type.markdown": "Textfeld",
   "sections.type.fields": "Felder",
   "sections.field.label": "Label",
+  "sections.field.value": "Wert",
   "sections.field.unit": "Einheit",
   "sections.field.add": "+ Feld",
   "sections.new": "Abschnitt",
@@ -263,7 +264,8 @@
   "editor.list.ordered": "1. Liste",
 
   "tab.channels": "Kanäle",
-  "tab.info": "Info & Fotos",
+  "tab.info": "Info",
+  "tab.photos": "Fotos",
   "tab.floorplan": "Grundriss",
 
   "nav.import": "Importieren",

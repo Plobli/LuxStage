@@ -1,0 +1,409 @@
+<template>
+  <!-- Sections (inline editor) -->
+  <div ref="sortableSectionsEl">
+    <section
+      v-for="sec in sortedSections"
+      :key="sec.id"
+      :data-section-id="sec.id"
+      class="group/sec relative border-b border-border/60"
+    >
+      <div class="shrink-0 sticky top-0 z-10 flex min-h-10 items-center gap-3 border-b border-border/90 bg-muted px-4">
+          <Input
+            :value="sec.title"
+            :placeholder="labels.titlePlaceholder"
+            @input="sec.title = $event.target.value"
+            @change="persistSectionDefs"
+            class="h-7 min-w-40 flex-1 border-0 bg-transparent px-0 text-sm font-semibold text-accent shadow-none placeholder:text-muted-foreground/40 focus-visible:ring-0"
+          />
+          <Button variant="ghost" size="icon" class="size-6 rounded-sm text-muted-foreground/50 transition-colors hover:bg-red-500/10 hover:text-red-400 shrink-0" @click="deleteSectionDef(sortedSections.indexOf(sec))">
+            <X class="size-4" />
+          </Button>
+      </div>
+
+      <!-- kv-table: echte <table>, identisch zur Kanaltabelle -->
+      <div v-if="sec.type === 'kv-table'">
+        <!-- Header -->
+        <div class="shrink-0 sticky top-10 z-10 border-b border-border/90 bg-muted shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_8px_rgba(0,0,0,0.10)]">
+          <div class="grid min-h-8 grid-cols-[2rem_1fr_1fr_2.5rem] items-center px-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/90">
+            <div></div>
+            <div>{{ labels.fieldLabel }}</div>
+            <div>{{ labels.fieldValue }}</div>
+            <div></div>
+          </div>
+        </div>
+
+        <!-- Zeilen -->
+        <table class="w-full table-fixed border-collapse bg-card" :data-kv-sortable="sec.id">
+          <colgroup>
+            <col class="w-8" />
+            <col />
+            <col />
+            <col class="w-10" />
+          </colgroup>
+          <tbody>
+            <tr
+              v-for="row in sortedRows(sec)"
+              :key="row.id"
+              :data-row-id="row.id"
+              class="group/row border-t border-border/60 bg-card transition-colors"
+            >
+              <td class="w-8 py-0 pl-1 pr-0 align-middle">
+                <div class="kv-drag-handle drag-handle no-print flex size-6 cursor-grab items-center justify-center rounded-sm text-muted-foreground/70 opacity-0 transition-all active:cursor-grabbing group-hover/row:opacity-100 hover:bg-muted/40">
+                  <GripVertical class="size-3.5" />
+                </div>
+              </td>
+              <td class="py-0 px-0 align-middle border-l border-border/40 h-full">
+                <Input
+                  :value="row.label"
+                  :placeholder="labels.fieldLabel"
+                  @input="row.label = $event.target.value"
+                  @change="persistKvRows(sec)"
+                  class="h-full min-h-10 w-full rounded-none border-0 bg-transparent px-3 py-0 text-sm font-medium text-foreground shadow-none placeholder:text-muted-foreground/35 focus-visible:ring-0"
+                />
+              </td>
+              <td class="py-0 px-0 align-middle border-l border-border/40 h-full">
+                <Input
+                  :value="row.value"
+                  @input="row.value = $event.target.value"
+                  @change="persistKvRows(sec)"
+                  class="h-full min-h-10 w-full rounded-none border-0 bg-transparent px-3 py-0 text-sm text-foreground shadow-none placeholder:text-muted-foreground/30 focus-visible:ring-0"
+                />
+              </td>
+              <td class="w-10 pl-1 pr-1 align-middle text-center border-l border-border/40">
+                <Button variant="ghost" size="icon" class="size-7 rounded-sm text-muted-foreground opacity-0 transition-all group-hover/row:opacity-100 hover:bg-red-500/10 hover:text-red-400" @click="deleteKvRow(sec, row.id)">
+                  <X class="size-4" />
+                </Button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <table class="w-full table-fixed border-collapse">
+          <colgroup>
+            <col class="w-8" />
+            <col />
+            <col />
+            <col class="w-10" />
+          </colgroup>
+          <tbody>
+            <tr class="border-t border-border/60 bg-card">
+              <td colspan="4" class="px-4 py-1.5">
+                <Button variant="ghost" size="sm" class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground hover:bg-muted/60 hover:text-foreground" @click="addKvRow(sec)">{{ labels.fieldAdd }}</Button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div v-else>
+        <MarkdownEditor
+          :modelValue="sectionContents.get(sec.id) ?? ''"
+          @update:modelValue="onSectionChange(sec.id, $event)"
+          class="rounded-none border-0 border-t border-border/60"
+        />
+      </div>
+    </section>
+  </div>
+
+  <!-- Fallback: single setup editor (when no sections defined) -->
+  <section v-if="sortedSections.length === 0" class="border-b border-border/60">
+    <div class="border-b border-border/90 bg-muted px-4 py-2.5">
+      <slot name="setup-heading" />
+    </div>
+    <MarkdownEditor :modelValue="setupMarkdown" @update:modelValue="emit('update:setupMarkdown', $event)" class="rounded-none border-0 border-t border-border/60" />
+  </section>
+
+  <!-- Add section buttons -->
+  <div class="flex items-center gap-2 border-b border-border/60 px-4 py-2">
+    <Button variant="ghost" size="sm" class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground hover:bg-muted/60 hover:text-foreground" @click="addMarkdownSection">{{ labels.addMarkdown }}</Button>
+    <Button v-if="!hasKvTableType()" variant="ghost" size="sm" class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground hover:bg-muted/60 hover:text-foreground" @click="addKvTableSection">{{ labels.addFields }}</Button>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
+import { GripVertical, X } from 'lucide-vue-next'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import Sortable from 'sortablejs'
+import MarkdownEditor from '../MarkdownEditor.vue'
+import { useConfirm } from '../../composables/useConfirm.js'
+import { useLocale } from '../../composables/useLocale.js'
+import { saveShowSectionDefs } from '../../api/sections.js'
+import { uuid } from '../../utils/uuid.js'
+
+const props = defineProps({
+  showId: { type: String, required: true },
+  sectionDefs: { type: Array, required: true },
+  sectionContents: { type: Map, required: true },
+  setupMarkdown: { type: String, default: '' },
+  labels: {
+    type: Object,
+    default: () => ({
+      titlePlaceholder: 'Abschnitt',
+      fieldLabel: 'Feld',
+      fieldValue: 'Wert',
+      fieldAdd: '+ Feld hinzufügen',
+      addMarkdown: '+ Textabschnitt',
+      addFields: '+ Felder',
+    }),
+  },
+})
+
+const emit = defineEmits([
+  'update:sectionDefs',
+  'update:sectionContents',
+  'update:setupMarkdown',
+  'pushSnapshot',
+  'sectionChange',
+])
+
+const { confirm } = useConfirm()
+const { t } = useLocale()
+
+const sortableSectionsEl = ref(null)
+
+// ── Migration: fields → kv-table ──────────────────────────────────────────
+// Konvertiert 'fields'-Sections zu 'kv-table'.
+// Repariert außerdem 'kv-table'-Sections die leere rows haben aber noch
+// Werte in sectionContents (als JSON) besitzen – Übergangsfall nach fehlgeschlagener
+// erster Migration.
+function migrateAndRepair(defs, contentsMap) {
+  let changed = false
+  const newDefs = defs.map(sec => {
+    // Fall 1: alter fields-Typ → kv-table
+    if (sec.type === 'fields') {
+      changed = true
+      const rawJson = contentsMap.get(sec.id) ?? '{}'
+      let valueObj = {}
+      try { valueObj = JSON.parse(rawJson) } catch {}
+      const rows = (sec.fields ?? [])
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+        .map((f, i) => ({
+          id: f.id ?? uuid(),
+          label: f.label ?? '',
+          value: valueObj[f.key] ?? '',
+          sort_order: i,
+        }))
+      return { id: sec.id, title: sec.title, type: 'kv-table', order: sec.order, rows }
+    }
+
+    // Fall 2: bereits kv-table, aber rows leer und in sectionContents noch
+    // ein JSON-Objekt mit Werten → erster Migrations-Versuch schlug fehl
+    if (sec.type === 'kv-table' && (sec.rows ?? []).length === 0) {
+      const rawJson = contentsMap.get(sec.id) ?? ''
+      if (!rawJson) return sec
+      let valueObj = null
+      try { valueObj = JSON.parse(rawJson) } catch {}
+      // Nur reparieren wenn es ein nicht-leeres Objekt ist (kein Array, kein leeres {})
+      if (!valueObj || typeof valueObj !== 'object' || Array.isArray(valueObj)) return sec
+      const entries = Object.entries(valueObj)
+      if (entries.length === 0) return sec
+      changed = true
+      const rows = entries.map(([key, value], i) => ({
+        id: uuid(),
+        label: key,   // key ist hier der Feldname (best-effort Fallback)
+        value: String(value ?? ''),
+        sort_order: i,
+      }))
+      return { ...sec, rows }
+    }
+
+    return sec
+  })
+  return { defs: newDefs, changed }
+}
+
+// Migration beim Laden, sobald beide Props befüllt sind.
+watch(
+  [() => props.sectionDefs, () => props.sectionContents],
+  ([defs, contents]) => {
+    const needsMigration = defs.some(s => s.type === 'fields')
+    const needsRepair = defs.some(
+      s => s.type === 'kv-table' && (s.rows ?? []).length === 0 && contents.get(s.id)
+    )
+    if (!needsMigration && !needsRepair) return
+
+    // Warten bis sectionContents geladen – wenn es sections gibt die einen
+    // content-Eintrag haben sollten, aber die Map noch leer ist.
+    const contentSections = defs.filter(s => s.type === 'markdown' || s.type === 'fields')
+    if (contentSections.length > 0 && contents.size === 0) return
+
+    const { defs: migrated, changed } = migrateAndRepair(defs, contents)
+    if (changed) {
+      emit('update:sectionDefs', migrated)
+      saveShowSectionDefs(props.showId, migrated)
+    }
+  },
+  { immediate: true }
+)
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+const sortedSections = computed(() =>
+  [...props.sectionDefs].sort((a, b) => a.order - b.order)
+)
+
+function sortedRows(sec) {
+  return [...(sec.rows ?? [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+}
+
+// ── SortableJS for sections ────────────────────────────────────────────────
+let sortableInstance = null
+
+function initSectionsSortable() {
+  sortableInstance?.destroy()
+  sortableInstance = null
+  if (!sortableSectionsEl.value) return
+  sortableInstance = Sortable.create(sortableSectionsEl.value, {
+    handle: '.section-drag-handle',
+    animation: 150,
+    onEnd() {
+      const els = sortableSectionsEl.value.querySelectorAll('[data-section-id]')
+      const newOrder = [...els].map(el => el.getAttribute('data-section-id'))
+      const reordered = newOrder.map((id, i) => {
+        const sec = props.sectionDefs.find(s => s.id === id)
+        return { ...sec, order: i }
+      })
+      emit('update:sectionDefs', reordered)
+      persistSectionDefs(reordered)
+    }
+  })
+}
+
+watch(() => props.sectionDefs.length, () => nextTick(initSectionsSortable), { immediate: true })
+watch(sortableSectionsEl, (el) => { if (el) nextTick(initSectionsSortable) })
+
+// ── SortableJS for kv-table rows ───────────────────────────────────────────
+const kvSortableInstances = new Map()
+
+watch(
+  () => props.sectionDefs.map(s => s.type === 'kv-table' ? (s.rows?.length ?? 0) : 0).join(','),
+  async () => {
+    await nextTick()
+    // Destroy alte Instanzen für nicht mehr existierende Sections
+    for (const [id, inst] of kvSortableInstances) {
+      if (!props.sectionDefs.find(s => s.id === id)) {
+        inst.destroy()
+        kvSortableInstances.delete(id)
+      }
+    }
+    // Neue/geänderte Sections initialisieren
+    for (const sec of props.sectionDefs.filter(s => s.type === 'kv-table')) {
+      const tableEl = document.querySelector(`[data-kv-sortable="${sec.id}"]`)
+      const el = tableEl?.querySelector('tbody') ?? tableEl
+      if (!el) continue
+      kvSortableInstances.get(sec.id)?.destroy()
+      const instance = Sortable.create(el, {
+        handle: '.kv-drag-handle',
+        draggable: 'tr',
+        animation: 150,
+        onEnd(evt) {
+          const sectionId = sec.id
+          const newDefs = props.sectionDefs.map(s => {
+            if (s.id !== sectionId) return s
+            const rows = [...(s.rows ?? [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+            const moved = rows.splice(evt.oldIndex, 1)[0]
+            rows.splice(evt.newIndex, 0, moved)
+            rows.forEach((r, i) => { r.sort_order = i })
+            return { ...s, rows }
+          })
+          emit('update:sectionDefs', newDefs)
+          persistSectionDefs(newDefs)
+        }
+      })
+      kvSortableInstances.set(sec.id, instance)
+    }
+  },
+  { immediate: true }
+)
+
+onBeforeUnmount(() => {
+  sortableInstance?.destroy()
+  for (const inst of kvSortableInstances.values()) inst.destroy()
+})
+
+// ── Section content changes (markdown) ────────────────────────────────────
+function onSectionChange(id, value) {
+  const newMap = new Map(props.sectionContents)
+  newMap.set(id, value)
+  emit('update:sectionContents', newMap)
+  emit('sectionChange')
+}
+
+// ── kv-table row persistence ───────────────────────────────────────────────
+// Rows werden direkt in sectionDefs gehalten (sec.rows).
+// Persistenz läuft über saveShowSectionDefs (section_defs + section_fields wird
+// nicht mehr verwendet – der Server speichert rows über section_contents als JSON-Array).
+function persistKvRows(sec) {
+  // rows sind schon in-place mutiert (v-model-ähnlich über @input).
+  // Wir emittieren sectionDefs damit Parent-State aktuell bleibt,
+  // und triggern sectionChange für den debounced save.
+  const newDefs = props.sectionDefs.map(s => s.id === sec.id ? { ...s, rows: sec.rows } : s)
+  emit('update:sectionDefs', newDefs)
+  persistSectionDefs(newDefs)
+}
+
+// ── Section def management ─────────────────────────────────────────────────
+async function persistSectionDefs(sectionDefs = props.sectionDefs) {
+  await saveShowSectionDefs(props.showId, sectionDefs)
+}
+
+async function addMarkdownSection() {
+  emit('pushSnapshot')
+  const id = uuid()
+  const newDefs = [...props.sectionDefs, { id, title: '', type: 'markdown', order: props.sectionDefs.length }]
+  emit('update:sectionDefs', newDefs)
+  await saveShowSectionDefs(props.showId, newDefs)
+}
+
+async function addKvTableSection() {
+  emit('pushSnapshot')
+  const id = uuid()
+  const newDefs = [...props.sectionDefs, { id, title: '', type: 'kv-table', order: props.sectionDefs.length, rows: [] }]
+  emit('update:sectionDefs', newDefs)
+  await saveShowSectionDefs(props.showId, newDefs)
+}
+
+async function deleteSectionDef(idx) {
+  const ok = await confirm({ t, titleKey: 'action.delete', confirmKey: 'action.delete', cancelKey: 'action.cancel' })
+  if (!ok) return
+  emit('pushSnapshot')
+  const targetId = sortedSections.value[idx]?.id
+  if (!targetId) return
+  const newDefs = props.sectionDefs
+    .filter(s => s.id !== targetId)
+    .map((s, i) => ({ ...s, order: i }))
+  emit('update:sectionDefs', newDefs)
+  await saveShowSectionDefs(props.showId, newDefs)
+}
+
+function addKvRow(sec) {
+  emit('pushSnapshot')
+  const newRow = { id: uuid(), label: '', value: '', sort_order: (sec.rows?.length ?? 0) }
+  const newDefs = props.sectionDefs.map(s => {
+    if (s.id !== sec.id) return s
+    return { ...s, rows: [...(s.rows ?? []), newRow] }
+  })
+  emit('update:sectionDefs', newDefs)
+  persistSectionDefs(newDefs)
+}
+
+async function deleteKvRow(sec, rowId) {
+  const ok = await confirm({ t, titleKey: 'action.delete', confirmKey: 'action.delete', cancelKey: 'action.cancel' })
+  if (!ok) return
+  emit('pushSnapshot')
+  const newDefs = props.sectionDefs.map(s => {
+    if (s.id !== sec.id) return s
+    const rows = (s.rows ?? [])
+      .filter(r => r.id !== rowId)
+      .map((r, i) => ({ ...r, sort_order: i }))
+    return { ...s, rows }
+  })
+  emit('update:sectionDefs', newDefs)
+  persistSectionDefs(newDefs)
+}
+
+function hasKvTableType() {
+  return props.sectionDefs.some(s => s.type === 'kv-table')
+}
+</script>

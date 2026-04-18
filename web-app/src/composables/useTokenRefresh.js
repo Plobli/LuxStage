@@ -5,17 +5,21 @@
  * abläuft. Falls ja, POST /api/auth/refresh und Token ersetzen.
  * Schlägt der Refresh fehl (401), wird der Nutzer ausgeloggt.
  */
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, getCurrentInstance } from 'vue'
 import { useRouter } from 'vue-router'
-import { getToken, setToken, clearToken } from '../api/client.js'
+import { getToken, setToken, clearToken, BASE } from '../api/client.js'
 import { jwtDecode } from '../api/jwtDecode.js'
 
 const CHECK_INTERVAL_MS = 5 * 60 * 1000   // alle 5 Minuten prüfen
 const REFRESH_THRESHOLD_MS = 30 * 60 * 1000 // erneuern wenn < 30 Min. verbleiben
 
 export function useTokenRefresh() {
+  const instance = getCurrentInstance()
+  if (!instance) return
+
   const router = useRouter()
   let intervalId = null
+  let mounted = false // Guard gegen Redirects nach onUnmounted
 
   async function tryRefresh() {
     const token = getToken()
@@ -26,10 +30,10 @@ export function useTokenRefresh() {
 
     const msUntilExpiry = payload.exp * 1000 - Date.now()
 
-    // Bereits abgelaufen → ausloggen
+    // Bereits abgelaufen → ausloggen (nur wenn Komponente noch gemountet)
     if (msUntilExpiry <= 0) {
       clearToken()
-      router.push('/login')
+      if (mounted) router.push('/login')
       return
     }
 
@@ -38,11 +42,12 @@ export function useTokenRefresh() {
 
     // Token erneuern
     try {
-      const BASE = localStorage.getItem('server_url') || window.location.origin
-      const res = await fetch(BASE + '/api/auth/refresh', {
+      const res = await fetch(BASE() + '/api/auth/refresh', {
         method: 'POST',
         headers: { Authorization: 'Bearer ' + token },
       })
+      // Nach dem await prüfen ob die Komponente noch lebt
+      if (!mounted) return
       if (res.status === 401) {
         clearToken()
         router.push('/login')
@@ -50,7 +55,7 @@ export function useTokenRefresh() {
       }
       if (res.ok) {
         const { token: newToken } = await res.json()
-        setToken(newToken)
+        if (mounted) setToken(newToken)
       }
     } catch {
       // Netzwerkfehler → still ignorieren, beim nächsten Tick erneut versuchen
@@ -58,11 +63,13 @@ export function useTokenRefresh() {
   }
 
   onMounted(() => {
-    tryRefresh()
+    mounted = true
+    void tryRefresh()
     intervalId = setInterval(tryRefresh, CHECK_INTERVAL_MS)
   })
 
   onUnmounted(() => {
+    mounted = false
     clearInterval(intervalId)
   })
 }

@@ -73,7 +73,7 @@ export async function login(username, password) {
   return token
 }
 
-export function logout() { clearToken() }
+export async function logout() { clearToken() }
 
 export async function changePassword(currentPassword, newPassword) {
   const res = await fetch(BASE() + '/api/auth/change-password', {
@@ -128,7 +128,7 @@ export function subscribeChannels(showId, onUpdate) {
   const url = BASE() + `/api/shows/${showId}/events`
   const es = new EventSource(url + '?token=' + getToken() + '&device=web')
   es.addEventListener('channels-updated', (e) => onUpdate(JSON.parse(e.data)))
-  es.onerror = () => es.close()
+  es.onerror = () => {} // Browser reconnect automatically – nicht manuell schließen
   return () => es.close()
 }
 
@@ -137,6 +137,6 @@ export function subscribeSections(showId, onUpdate) {
   const url = BASE() + `/api/shows/${showId}/events`
   const es = new EventSource(url + '?token=' + getToken() + '&device=web')
   es.addEventListener('sections-updated', (e) => onUpdate(JSON.parse(e.data)))
-  es.onerror = () => es.close()
+  es.onerror = () => {} // Browser reconnect automatically – nicht manuell schließen
   return () => es.close()
 }

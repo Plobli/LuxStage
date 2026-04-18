@@ -17,5 +17,7 @@ export const config = {
   lockTimeout: 10 * 60 * 1000, // 10 Minuten in ms
   photoMaxWidth: 1500,
   photoQuality: 70,
+  photoThumbWidth: 400,
+  photoThumbQuality: 60,
   anthropicApiKey: process.env.ANTHROPIC_API_KEY || null,
 }

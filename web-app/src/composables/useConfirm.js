@@ -13,8 +13,14 @@ export function useConfirmDialog() {
 
 export function useConfirm() {
   function confirm({ t, titleKey, titleParams, messageKey, messageParams, confirmKey = 'action.delete', cancelKey = 'action.cancel' }) {
+    // If a dialog is already open, dismiss it as cancelled before opening the new one
+    if (open.value && resolveFn) {
+      const prev = resolveFn
+      resolveFn = null
+      prev(false)
+    }
     return new Promise((resolve) => {
-      title.value = t(titleKey, titleParams ?? messageParams)
+      title.value = t(titleKey, titleParams)
       message.value = messageKey ? t(messageKey, messageParams) : ''
       confirmLabel.value = t(confirmKey)
       cancelLabel.value = t(cancelKey)
@@ -26,9 +32,10 @@ export function useConfirm() {
 }
 
 export function resolveConfirm(value) {
-  open.value = false
   if (resolveFn) {
-    resolveFn(value)
+    const fn = resolveFn
     resolveFn = null
+    open.value = false
+    fn(value)
   }
 }

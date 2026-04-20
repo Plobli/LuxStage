@@ -254,7 +254,7 @@ export async function router(req, res) {
       const user = requireAuth(req, res); if (!user) return
       const id = pathname.split('/')[3]
       const device = params.device || 'web'
-      subscribe(id, res, user.username, device)
+      subscribe(id, res, user.username, device, db.getChecks)
       return // res bleibt offen
     }
 
@@ -263,6 +263,24 @@ export async function router(req, res) {
       const user = requireAuth(req, res); if (!user) return
       const id = pathname.split('/')[3]
       return json(res, 200, { users: getPresence(id) })
+    }
+
+    // ── Shows — Lighting Checks ────────────────────────────────────────────
+    if (method === 'GET' && pathname.match(/^\/api\/shows\/([^/]+)\/checks$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const slug = pathname.split('/')[3]
+      return json(res, 200, { checks: db.getChecks(slug) })
+    }
+
+    if (method === 'PATCH' && pathname.match(/^\/api\/shows\/([^/]+)\/checks$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const slug = pathname.split('/')[3]
+      const body = await readJsonBody(req, res); if (body === null) return
+      const { channelId, checked } = body
+      if (!channelId || typeof checked !== 'boolean') return json(res, 400, { error: 'channelId und checked erforderlich' })
+      db.setCheck(slug, channelId, checked, user.username)
+      broadcast(slug, 'checks-updated', { checks: db.getChecks(slug) })
+      return json(res, 200, { ok: true })
     }
 
     // ── Shows — Wiederherstellen ───────────────────────────────────────────

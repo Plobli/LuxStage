@@ -156,6 +156,23 @@ function _initSchema(database) {
 
 _initSchema(dbContainer.db)
 
+// lighting_checks: Einleucht-Status pro Show (TTL 6h, kein FK-Constraint damit alte Shows sauber bleiben)
+const lightingChecksExists = dbContainer.db.prepare(
+  "SELECT name FROM sqlite_master WHERE type='table' AND name='lighting_checks'"
+).get()
+if (!lightingChecksExists) {
+  dbContainer.db.exec(`
+    CREATE TABLE lighting_checks (
+      show_id    TEXT NOT NULL,
+      channel_id TEXT NOT NULL,
+      checked_by TEXT NOT NULL,
+      checked_at INTEGER NOT NULL,
+      PRIMARY KEY (show_id, channel_id)
+    );
+    CREATE INDEX idx_lighting_checks_show ON lighting_checks(show_id);
+  `)
+}
+
 // Spalten nachträglich hinzufügen falls noch nicht vorhanden (bestehende DBs)
 const showCols = dbContainer.db.pragma('table_info(shows)').map(c => c.name)
 if (!showCols.includes('eos_active_channels')) {

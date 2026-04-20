@@ -10,7 +10,7 @@ function initShow(showId) {
   if (!clients.has(showId)) clients.set(showId, new Map())
 }
 
-export function subscribe(showId, res, username, device) {
+export function subscribe(showId, res, username, device, getChecksFn) {
   initShow(showId)
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
@@ -21,6 +21,13 @@ export function subscribe(showId, res, username, device) {
 
   const map = clients.get(showId)
   map.set(res, { username, device })
+
+  // Aktuellen Check-State sofort an den neuen Client senden
+  if (getChecksFn) {
+    const checks = getChecksFn(showId)
+    const msg = `event: checks-updated\ndata: ${JSON.stringify({ checks })}\n\n`
+    try { res.write(msg) } catch { /* ignore */ }
+  }
 
   // Neue Presence sofort an alle senden
   broadcastPresence(showId)

@@ -540,3 +540,28 @@ export function upsertShowFloorplanData(showId, canvasData) {
     ).run(randomUUID(), showId, canvasData, now())
   }
 }
+
+// ── Lighting Checks ─────────────────────────────────────────────────────────
+
+const CHECK_TTL_MS = 6 * 60 * 60 * 1000 // 6 Stunden
+
+export function getChecks(showSlug) {
+  const cutoff = now() - CHECK_TTL_MS
+  return dbContainer.db.prepare(
+    'SELECT channel_id FROM lighting_checks WHERE show_id = ? AND checked_at >= ?'
+  ).all(showSlug, cutoff).map(r => r.channel_id)
+}
+
+export function setCheck(showSlug, channelId, checked, username) {
+  if (checked) {
+    dbContainer.db.prepare(`
+      INSERT INTO lighting_checks (show_id, channel_id, checked_by, checked_at)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(show_id, channel_id) DO UPDATE SET checked_by = excluded.checked_by, checked_at = excluded.checked_at
+    `).run(showSlug, channelId, username, now())
+  } else {
+    dbContainer.db.prepare(
+      'DELETE FROM lighting_checks WHERE show_id = ? AND channel_id = ?'
+    ).run(showSlug, channelId)
+  }
+}

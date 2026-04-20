@@ -552,6 +552,10 @@ export function getChecks(showSlug) {
   ).all(showSlug, cutoff).map(r => r.channel_id)
 }
 
+export function clearChecks(showSlug) {
+  dbContainer.db.prepare('DELETE FROM lighting_checks WHERE show_id = ?').run(showSlug)
+}
+
 export function setCheck(showSlug, channelId, checked, username) {
   if (checked) {
     dbContainer.db.prepare(`

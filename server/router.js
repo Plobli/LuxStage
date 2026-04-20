@@ -272,6 +272,14 @@ export async function router(req, res) {
       return json(res, 200, { checks: db.getChecks(slug) })
     }
 
+    if (method === 'DELETE' && pathname.match(/^\/api\/shows\/([^/]+)\/checks$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const slug = pathname.split('/')[3]
+      db.clearChecks(slug)
+      broadcast(slug, 'checks-updated', { checks: [] })
+      return json(res, 200, { ok: true })
+    }
+
     if (method === 'PATCH' && pathname.match(/^\/api\/shows\/([^/]+)\/checks$/)) {
       const user = requireAuth(req, res); if (!user) return
       const slug = pathname.split('/')[3]

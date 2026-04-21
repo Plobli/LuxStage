@@ -1,7 +1,7 @@
 <template>
   <div class="flex h-full flex-col overflow-hidden bg-card">
     <div class="shrink-0 sticky top-0 z-20 border-b border-border/90 bg-muted shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_8px_rgba(0,0,0,0.10)]">
-      <div class="grid min-h-8 grid-cols-[2rem_10rem_7rem_minmax(14rem,22%)_minmax(16rem,1fr)_2.5rem] items-center px-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/90">
+      <div v-if="!isMobile" class="grid min-h-8 grid-cols-[2rem_10rem_7rem_minmax(14rem,22%)_minmax(16rem,1fr)_2.5rem] items-center px-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/90">
         <div></div>
         <div>{{ labels.channel }}</div>
         <div class="px-0">{{ labels.color }}</div>
@@ -11,175 +11,218 @@
       </div>
     </div>
 
-    <div class="flex-1 min-h-0 overflow-y-auto bg-card">
-      <Table class="table-fixed border-collapse">
-        <colgroup>
-          <col class="w-8" />
-          <col class="w-40" />
-          <col class="w-28" />
-          <col class="w-[22%]" />
-          <col />
-          <col class="w-10" />
-        </colgroup>
-        <TableBody ref="tbodyEl">
-          <template v-for="item in virtualItems" :key="item.id">
+    <div ref="tbodyEl" class="flex-1 min-h-0 overflow-y-auto bg-card">
+      <template v-for="item in virtualItems" :key="item.id">
 
-            <TableRow
-              v-if="item.type === 'header'"
-              class="border-0 bg-muted hover:bg-muted"
-              data-no-drag
-              :data-pos="item.group.position"
-            >
-              <TableCell colspan="6" class="px-4 py-1">
-                <div class="flex items-center justify-end gap-3">
-                  <div class="flex min-w-0 items-center gap-2">
-                    <template v-if="editingPosition === item.group.position">
-                      <Input
-                        v-model="editingPositionValue"
-                        autofocus
-                        @blur="savePosition"
-                        @keydown.enter="savePosition"
-                        @keydown.escape="editingPosition = null"
-                        class="h-6 w-80 rounded-none border-0 border-b border-primary/30 bg-transparent px-0 text-[11px] font-semibold text-foreground shadow-none focus-visible:ring-0"
-                      />
-                    </template>
-                    <template v-else>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        class="h-auto p-0 text-right text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/85 hover:bg-transparent hover:text-foreground"
-                        :title="labels.editPosition"
-                        @click="startEditPosition(item.group.position)"
-                      >{{ item.group.position || labels.noCategory }}</Button>
-                      <span class="text-[11px] text-muted-foreground/70">{{ item.group.channels.length }}</span>
-                    </template>
-                  </div>
-                </div>
-              </TableCell>
-            </TableRow>
-
-            <ChannelRow
-              v-else-if="item.type === 'channel'"
-              :ch="item.ch"
-              :rowIndex="rowIndexOf(item.ch)"
-              :dupChannelNrs="dupChannelNrs"
-              :channelStatus="channelStatus(item.ch)"
-              :colorPlaceholder="labels.color"
-              :deleteTitle="labels.delete"
-              :onKeydownFn="onKeydownFn"
-              :onAddRow="() => startAdd(item.group.position)"
-              @change="emit('change')"
-              @recordFocus="emit('recordFocus')"
-              @commitFocus="emit('commitFocus')"
-              @pushSnapshot="emit('pushSnapshot')"
-              @toggleStatus="toggleChannelStatus(item.ch)"
-              @delete="emit('deleteChannel', item.ch)"
-              @insertAfter="insertAfter(item.ch)"
-            />
-
-
-            <TableRow
-              v-else-if="item.type === 'add-btn'"
-              class="border-t border-border/60 bg-card hover:bg-card"
-              data-no-drag
-            >
-              <TableCell colspan="6" class="px-4 py-1.5">
+        <!-- Header row (group position) -->
+        <div
+          v-if="item.type === 'header'"
+          class="border-0 bg-muted"
+          data-no-drag
+          :data-pos="item.group.position"
+        >
+          <div v-if="isMobile" class="flex items-center justify-end gap-3 px-3 py-1">
+            <div class="flex min-w-0 items-center gap-2">
+              <template v-if="editingPosition === item.group.position">
+                <Input
+                  v-model="editingPositionValue"
+                  autofocus
+                  @blur="savePosition"
+                  @keydown.enter="savePosition"
+                  @keydown.escape="editingPosition = null"
+                  class="h-6 flex-1 rounded-none border-0 border-b border-primary/30 bg-transparent px-0 text-[11px] font-semibold text-foreground shadow-none focus-visible:ring-0"
+                />
+              </template>
+              <template v-else>
                 <Button
                   variant="ghost"
                   size="sm"
-                  class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-                  @click="startAdd(item.group.position)"
-                >+ {{ labels.add }}</Button>
-              </TableCell>
-            </TableRow>
+                  class="h-auto min-w-0 p-0 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/85 hover:bg-transparent hover:text-foreground"
+                  :title="labels.editPosition"
+                  @click="startEditPosition(item.group.position)"
+                >{{ item.group.position || labels.noCategory }}</Button>
+                <span class="shrink-0 text-[11px] text-muted-foreground/70">({{ item.group.channels.length }})</span>
+              </template>
+            </div>
+          </div>
+          <div v-else class="flex items-center justify-end gap-3 px-4 py-1">
+            <div class="flex min-w-0 items-center gap-2">
+              <template v-if="editingPosition === item.group.position">
+                <Input
+                  v-model="editingPositionValue"
+                  autofocus
+                  @blur="savePosition"
+                  @keydown.enter="savePosition"
+                  @keydown.escape="editingPosition = null"
+                  class="h-6 w-80 rounded-none border-0 border-b border-primary/30 bg-transparent px-0 text-[11px] font-semibold text-foreground shadow-none focus-visible:ring-0"
+                />
+              </template>
+              <template v-else>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  class="h-auto p-0 text-right text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/85 hover:bg-transparent hover:text-foreground"
+                  :title="labels.editPosition"
+                  @click="startEditPosition(item.group.position)"
+                >{{ item.group.position || labels.noCategory }}</Button>
+                <span class="text-[11px] text-muted-foreground/70">{{ item.group.channels.length }}</span>
+              </template>
+            </div>
+          </div>
+        </div>
 
-            <TableRow
-              v-else-if="item.type === 'add-form'"
-              class="border-t border-border/60 bg-card hover:bg-card"
-              data-no-drag
-              @keydown.escape="addingPosition = null"
-              @keydown.enter.prevent="saveAdd"
-            >
-              <TableCell colspan="6" class="px-3 py-1.5">
-                <div class="grid grid-cols-[2rem_10rem_7rem_minmax(14rem,22%)_minmax(16rem,1fr)_2.5rem] items-center gap-0">
-                  <div></div>
-                  <div class="px-3">
-                    <div class="flex items-center gap-1.5">
-                      <Input
-                        autofocus
-                        v-model="addForm.channel"
-                        :placeholder="labels.channelNr"
-                        class="h-7 w-[5.5ch] border-0 bg-transparent px-1 py-0 text-center font-mono text-base font-semibold leading-none text-foreground shadow-none placeholder:text-muted-foreground/35 focus-visible:bg-muted/20 focus-visible:ring-0"
-                      />
-                      <span class="select-none font-mono text-sm text-muted-foreground/30">/</span>
-                      <Input
-                        v-model="addForm.address"
-                        :placeholder="labels.addressExample"
-                        class="h-7 w-[8ch] border-0 bg-transparent px-1 py-0 text-center text-xs text-muted-foreground shadow-none placeholder:text-muted-foreground/25 focus-visible:bg-muted/20 focus-visible:ring-0"
-                      />
-                    </div>
-                  </div>
-                  <div class="px-2">
-                    <ColorAutocomplete v-model="addForm.color" @change="() => {}" :placeholder="labels.color" />
-                  </div>
-                  <div class="px-2">
-                    <Textarea
-                      v-model="addForm.device"
-                      rows="1"
-                      class="h-8 min-h-8 w-full resize-none border-0 bg-transparent px-2 py-1.5 text-sm leading-none text-foreground shadow-none transition-colors placeholder:text-muted-foreground/25 hover:bg-muted/10 focus-visible:bg-muted/20 focus-visible:outline-none focus-visible:ring-0"
-                    />
-                  </div>
-                  <div class="px-2">
-                    <Textarea
-                      v-model="addForm.notes"
-                      rows="1"
-                      class="h-8 min-h-8 w-full resize-none border-0 bg-transparent px-2 py-1.5 text-sm leading-none text-foreground shadow-none transition-colors placeholder:text-muted-foreground/25 hover:bg-muted/10 focus-visible:bg-muted/20 focus-visible:outline-none focus-visible:ring-0"
-                    />
-                  </div>
-                  <div class="flex justify-center">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      class="size-8 rounded-sm text-green-500 hover:bg-green-500/10 hover:text-green-600"
-                      @click="saveAdd"
-                    ><Check class="size-4" /></Button>
-                  </div>
-                </div>
-              </TableCell>
-            </TableRow>
+        <!-- Channel row -->
+        <ChannelRow
+          v-else-if="item.type === 'channel'"
+          :ch="item.ch"
+          :rowIndex="rowIndexOf(item.ch)"
+          :dupChannelNrs="dupChannelNrs"
+          :channelStatus="channelStatus(item.ch)"
+          :colorPlaceholder="labels.color"
+          :deleteTitle="labels.delete"
+          :onKeydownFn="onKeydownFn"
+          :onAddRow="() => startAdd(item.group.position)"
+          @change="emit('change')"
+          @recordFocus="emit('recordFocus')"
+          @commitFocus="emit('commitFocus')"
+          @pushSnapshot="emit('pushSnapshot')"
+          @toggleStatus="toggleChannelStatus(item.ch)"
+          @delete="emit('deleteChannel', item.ch)"
+          @insertAfter="insertAfter(item.ch)"
+        />
 
-            <TableRow
-              v-else-if="item.type === 'empty'"
-              class="hover:bg-transparent"
-              data-no-drag
-            >
-              <TableCell colspan="6" class="px-4 py-10">
-                <div class="flex flex-col items-center gap-3 rounded-md border border-dashed border-border/60 bg-muted/5 px-6 py-8">
-                  <p class="text-sm text-muted-foreground">{{ labels.empty }}</p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    class="h-8 rounded-sm border border-border/50 px-3 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                    @click="startAdd('')"
-                  >+ {{ labels.add }}</Button>
-                </div>
-              </TableCell>
-            </TableRow>
+        <!-- Add button row -->
+        <div
+          v-else-if="item.type === 'add-btn'"
+          class="border-t border-border/60 bg-card px-3 py-1.5"
+          data-no-drag
+        >
+          <Button
+            variant="ghost"
+            size="sm"
+            class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+            @click="startAdd(item.group.position)"
+          >+ {{ labels.add }}</Button>
+        </div>
 
-          </template>
-        </TableBody>
-      </Table>
+        <!-- Add form row -->
+        <div
+          v-else-if="item.type === 'add-form'"
+          class="border-t border-border/60 bg-card px-3 py-1.5"
+          data-no-drag
+          @keydown.escape="addingPosition = null"
+          @keydown.enter.prevent="saveAdd"
+        >
+          <!-- Mobile add form -->
+          <div v-if="isMobile" class="flex flex-col gap-1.5">
+            <div class="flex items-center gap-1.5">
+              <Input
+                autofocus
+                v-model="addForm.channel"
+                :placeholder="labels.channelNr"
+                class="h-8 w-[5.5ch] border-0 bg-transparent px-1 py-0 text-center font-mono text-base font-semibold leading-none text-foreground shadow-none placeholder:text-muted-foreground/35 focus-visible:bg-muted/20 focus-visible:ring-0"
+              />
+              <span class="select-none font-mono text-sm text-muted-foreground/30">/</span>
+              <Input
+                v-model="addForm.address"
+                :placeholder="labels.addressExample"
+                class="h-8 w-[8ch] border-0 bg-transparent px-1 py-0 text-center text-xs text-muted-foreground shadow-none placeholder:text-muted-foreground/25 focus-visible:bg-muted/20 focus-visible:ring-0"
+              />
+              <div class="flex-1">
+                <ColorAutocomplete v-model="addForm.color" @change="() => {}" :placeholder="labels.color" />
+              </div>
+            </div>
+            <div class="flex gap-1.5">
+              <Textarea
+                v-model="addForm.device"
+                rows="1"
+                :placeholder="labels.device"
+                class="h-8 min-h-8 flex-1 resize-none border-0 bg-transparent px-2 py-1.5 text-sm leading-none text-foreground shadow-none transition-colors placeholder:text-muted-foreground/25 hover:bg-muted/10 focus-visible:bg-muted/20 focus-visible:outline-none focus-visible:ring-0"
+              />
+              <Textarea
+                v-model="addForm.notes"
+                rows="1"
+                :placeholder="labels.notes"
+                class="h-8 min-h-8 flex-1 resize-none border-0 bg-transparent px-2 py-1.5 text-sm leading-none text-foreground shadow-none transition-colors placeholder:text-muted-foreground/25 hover:bg-muted/10 focus-visible:bg-muted/20 focus-visible:outline-none focus-visible:ring-0"
+              />
+            </div>
+          </div>
+          <!-- Desktop add form -->
+          <div v-else class="grid grid-cols-[2rem_10rem_7rem_minmax(14rem,22%)_minmax(16rem,1fr)_2.5rem] items-center gap-0">
+            <div></div>
+            <div class="px-3">
+              <div class="flex items-center gap-1.5">
+                <Input
+                  autofocus
+                  v-model="addForm.channel"
+                  :placeholder="labels.channelNr"
+                  class="h-7 w-[5.5ch] border-0 bg-transparent px-1 py-0 text-center font-mono text-base font-semibold leading-none text-foreground shadow-none placeholder:text-muted-foreground/35 focus-visible:bg-muted/20 focus-visible:ring-0"
+                />
+                <span class="select-none font-mono text-sm text-muted-foreground/30">/</span>
+                <Input
+                  v-model="addForm.address"
+                  :placeholder="labels.addressExample"
+                  class="h-7 w-[8ch] border-0 bg-transparent px-1 py-0 text-center text-xs text-muted-foreground shadow-none placeholder:text-muted-foreground/25 focus-visible:bg-muted/20 focus-visible:ring-0"
+                />
+              </div>
+            </div>
+            <div class="px-2">
+              <ColorAutocomplete v-model="addForm.color" @change="() => {}" :placeholder="labels.color" />
+            </div>
+            <div class="px-2">
+              <Textarea
+                v-model="addForm.device"
+                rows="1"
+                class="h-8 min-h-8 w-full resize-none border-0 bg-transparent px-2 py-1.5 text-sm leading-none text-foreground shadow-none transition-colors placeholder:text-muted-foreground/25 hover:bg-muted/10 focus-visible:bg-muted/20 focus-visible:outline-none focus-visible:ring-0"
+              />
+            </div>
+            <div class="px-2">
+              <Textarea
+                v-model="addForm.notes"
+                rows="1"
+                class="h-8 min-h-8 w-full resize-none border-0 bg-transparent px-2 py-1.5 text-sm leading-none text-foreground shadow-none transition-colors placeholder:text-muted-foreground/25 hover:bg-muted/10 focus-visible:bg-muted/20 focus-visible:outline-none focus-visible:ring-0"
+              />
+            </div>
+            <div class="flex justify-center">
+              <Button
+                size="icon"
+                variant="ghost"
+                class="size-8 rounded-sm text-green-500 hover:bg-green-500/10 hover:text-green-600"
+                @click="saveAdd"
+              ><Check class="size-4" /></Button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty state -->
+        <div
+          v-else-if="item.type === 'empty'"
+          class="px-4 py-10"
+          data-no-drag
+        >
+          <div class="flex flex-col items-center gap-3 rounded-md border border-dashed border-border/60 bg-muted/5 px-6 py-8">
+            <p class="text-sm text-muted-foreground">{{ labels.empty }}</p>
+            <Button
+              variant="ghost"
+              size="sm"
+              class="h-8 rounded-sm border border-border/50 px-3 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+              @click="startAdd('')"
+            >+ {{ labels.add }}</Button>
+          </div>
+        </div>
+
+      </template>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
+import { useIsMobile } from '@/composables/useBreakpoint.js'
 import { Check } from 'lucide-vue-next'
 import Sortable from 'sortablejs'
 import ChannelRow from './ChannelRow.vue'
 import ColorAutocomplete from '../ColorAutocomplete.vue'
-import { Table, TableRow, TableBody, TableCell } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
@@ -200,6 +243,8 @@ const props = defineProps({
     }),
   },
 })
+
+const isMobile = useIsMobile()
 
 const emit = defineEmits([
   'change',

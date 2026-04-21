@@ -8,11 +8,11 @@ const pkg = JSON.parse(fs.readFileSync(new URL('./package.json', import.meta.url
 
 const corsOrigins = (process.env.CORS_ORIGINS || process.env.CORS_ORIGIN || '')
   .split(',').map(s => s.trim()).filter(Boolean)
+const isDev = process.env.NODE_ENV !== 'production'
 
 const server = http.createServer((req, res) => {
-  // CORS — Wildcard explizit verboten (würde CSRF via ?token= ermöglichen)
   const origin = req.headers['origin'] || ''
-  if (corsOrigins.length > 0 && corsOrigins.includes(origin)) {
+  if (isDev || (corsOrigins.length > 0 && corsOrigins.includes(origin))) {
     res.setHeader('Access-Control-Allow-Origin', origin)
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')

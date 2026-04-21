@@ -33,7 +33,9 @@ export default defineConfig({
     },
   },
   server: {
+    host: '0.0.0.0',
     port: 5173,
+    allowedHosts: ['macbookohnenamen.mara-ulmer.ts.net'],
     proxy: {
       '/api': {
         target: process.env.VITE_SERVER_URL || 'http://localhost:3000',

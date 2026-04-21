@@ -67,7 +67,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { login } from '../api/client.js'
+import { login, api, isOnline } from '../api/client.js'
 import { useLocale } from '../composables/useLocale.js'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -83,11 +83,21 @@ const error = ref(false)
 const loading = ref(false)
 const showReset = ref(false)
 
+async function pingServer() {
+  try {
+    await api.get('/api/status')
+    isOnline.value = true
+  } catch {
+    isOnline.value = false
+  }
+}
+
 async function handleLogin() {
   error.value = false
   loading.value = true
   try {
     await login(username.value, password.value)
+    await pingServer()
     router.push('/')
   } catch {
     error.value = true

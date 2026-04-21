@@ -190,7 +190,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 
-defineProps({
+const props = defineProps({
   modelValue: { type: String, default: 'channels' }, // active tab
   showName: { type: String, default: '' },
   showDate: { type: String, default: '' },

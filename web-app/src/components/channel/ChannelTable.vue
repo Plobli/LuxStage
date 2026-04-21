@@ -11,16 +11,21 @@
       </div>
     </div>
 
-    <div ref="tbodyEl" class="flex-1 min-h-0 overflow-y-auto bg-card">
-      <template v-for="item in virtualItems" :key="item.id">
-
-        <!-- Header row (group position) -->
-        <div
-          v-if="item.type === 'header'"
-          class="border-0 bg-muted"
-          data-no-drag
-          :data-pos="item.group.position"
-        >
+    <RecycleScroller
+      ref="scrollerEl"
+      :items="virtualItems"
+      :item-size="itemSize"
+      :key-field="'id'"
+      class="flex-1 min-h-0 bg-card"
+    >
+      <template #default="{ item }">
+        <template v-if="item.type === 'header'">
+          <!-- Header row (group position) -->
+          <div
+            class="border-0 bg-muted"
+            data-no-drag
+            :data-pos="item.group.position"
+          >
           <div v-if="isMobile" class="flex items-center justify-end gap-3 px-3 py-1">
             <div class="flex min-w-0 items-center gap-2">
               <template v-if="editingPosition === item.group.position">
@@ -70,49 +75,52 @@
             </div>
           </div>
         </div>
+        </template>
 
-        <!-- Channel row -->
-        <ChannelRow
-          v-else-if="item.type === 'channel'"
-          :ch="item.ch"
-          :rowIndex="rowIndexOf(item.ch)"
-          :dupChannelNrs="dupChannelNrs"
-          :channelStatus="channelStatus(item.ch)"
-          :colorPlaceholder="labels.color"
-          :deleteTitle="labels.delete"
-          :onKeydownFn="onKeydownFn"
-          :onAddRow="() => startAdd(item.group.position)"
-          @change="emit('change')"
-          @recordFocus="emit('recordFocus')"
-          @commitFocus="emit('commitFocus')"
-          @pushSnapshot="emit('pushSnapshot')"
-          @toggleStatus="toggleChannelStatus(item.ch)"
-          @delete="emit('deleteChannel', item.ch)"
-          @insertAfter="insertAfter(item.ch)"
-        />
+        <template v-else-if="item.type === 'channel'">
+          <!-- Channel row -->
+          <ChannelRow
+            :ch="item.ch"
+            :rowIndex="rowIndexOf(item.ch)"
+            :dupChannelNrs="dupChannelNrs"
+            :channelStatus="channelStatus(item.ch)"
+            :colorPlaceholder="labels.color"
+            :deleteTitle="labels.delete"
+            :onKeydownFn="onKeydownFn"
+            :onAddRow="() => startAdd(item.group.position)"
+            @change="emit('change')"
+            @recordFocus="emit('recordFocus')"
+            @commitFocus="emit('commitFocus')"
+            @pushSnapshot="emit('pushSnapshot')"
+            @toggleStatus="toggleChannelStatus(item.ch)"
+            @delete="emit('deleteChannel', item.ch)"
+            @insertAfter="insertAfter(item.ch)"
+          />
+        </template>
 
-        <!-- Add button row -->
-        <div
-          v-else-if="item.type === 'add-btn'"
-          class="border-t border-border/60 bg-card px-3 py-1.5"
-          data-no-drag
-        >
-          <Button
-            variant="ghost"
-            size="sm"
-            class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-            @click="startAdd(item.group.position)"
-          >+ {{ labels.add }}</Button>
-        </div>
+        <template v-else-if="item.type === 'add-btn'">
+          <!-- Add button row -->
+          <div
+            class="border-t border-border/60 bg-card px-3 py-1.5"
+            data-no-drag
+          >
+            <Button
+              variant="ghost"
+              size="sm"
+              class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+              @click="startAdd(item.group.position)"
+            >+ {{ labels.add }}</Button>
+          </div>
+        </template>
 
-        <!-- Add form row -->
-        <div
-          v-else-if="item.type === 'add-form'"
-          class="border-t border-border/60 bg-card px-3 py-1.5"
-          data-no-drag
-          @keydown.escape="addingPosition = null"
-          @keydown.enter.prevent="saveAdd"
-        >
+        <template v-else-if="item.type === 'add-form'">
+          <!-- Add form row -->
+          <div
+            class="border-t border-border/60 bg-card px-3 py-1.5"
+            data-no-drag
+            @keydown.escape="addingPosition = null"
+            @keydown.enter.prevent="saveAdd"
+          >
           <!-- Mobile add form -->
           <div v-if="isMobile" class="flex flex-col gap-1.5">
             <div class="flex items-center gap-1.5">
@@ -192,32 +200,35 @@
               ><Check class="size-4" /></Button>
             </div>
           </div>
-        </div>
-
-        <!-- Empty state -->
-        <div
-          v-else-if="item.type === 'empty'"
-          class="px-4 py-10"
-          data-no-drag
-        >
-          <div class="flex flex-col items-center gap-3 rounded-md border border-dashed border-border/60 bg-muted/5 px-6 py-8">
-            <p class="text-sm text-muted-foreground">{{ labels.empty }}</p>
-            <Button
-              variant="ghost"
-              size="sm"
-              class="h-8 rounded-sm border border-border/50 px-3 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-              @click="startAdd('')"
-            >+ {{ labels.add }}</Button>
           </div>
-        </div>
+        </template>
 
+        <template v-else-if="item.type === 'empty'">
+          <!-- Empty state -->
+          <div
+            class="px-4 py-10"
+            data-no-drag
+          >
+            <div class="flex flex-col items-center gap-3 rounded-md border border-dashed border-border/60 bg-muted/5 px-6 py-8">
+              <p class="text-sm text-muted-foreground">{{ labels.empty }}</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                class="h-8 rounded-sm border border-border/50 px-3 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                @click="startAdd('')"
+              >+ {{ labels.add }}</Button>
+            </div>
+          </div>
+        </template>
       </template>
-    </div>
+    </RecycleScroller>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
+import { RecycleScroller } from 'vue-virtual-scroller'
+import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 import { useIsMobile } from '@/composables/useBreakpoint.js'
 import { Check } from 'lucide-vue-next'
 import Sortable from 'sortablejs'
@@ -245,6 +256,7 @@ const props = defineProps({
 })
 
 const isMobile = useIsMobile()
+const itemSize = isMobile.value ? 100 : 56
 
 const emit = defineEmits([
   'change',
@@ -366,14 +378,15 @@ function insertAfter(ch) {
 }
 
 // ── SortableJS ─────────────────────────────────────────────────────────────
-const tbodyEl = ref(null)
+const scrollerEl = ref(null)
 let sortableInstance = null
 
 function initSortable() {
   sortableInstance?.destroy()
   sortableInstance = null
-  const el = tbodyEl.value?.$el || tbodyEl.value
+  const el = scrollerEl.value?.$el
   if (!el) return
+
   sortableInstance = Sortable.create(el, {
     handle: '.drag-handle',
     filter: '[data-no-drag]',
@@ -383,11 +396,11 @@ function initSortable() {
       const keyToChannel = new Map(props.channels.map(c => [ensureStableChannelKey(c), c]))
       const reordered = []
       let currentPos = ''
-      for (const tr of el.rows || el.children) {
-        if (tr.hasAttribute('data-no-drag') && 'pos' in tr.dataset) {
-          currentPos = tr.dataset.pos
+      for (const child of el.children) {
+        if (child.hasAttribute('data-no-drag') && child.dataset.pos) {
+          currentPos = child.dataset.pos
         }
-        const key = tr.dataset.chKey
+        const key = child.dataset.chKey
         if (key && keyToChannel.has(key)) {
           const ch = keyToChannel.get(key)
           ch.position = currentPos
@@ -405,12 +418,17 @@ function initSortable() {
         emit('reorder', reordered)
       }
       emit('change')
-      nextTick(initSortable)
     },
   })
 }
 
-watch(() => props.channels.length, () => nextTick(initSortable))
-watch(tbodyEl, (el) => { if (el) nextTick(initSortable) }, { immediate: true })
+watch(() => props.channels.length, () => {
+  nextTick(initSortable)
+})
+
+watch(scrollerEl, (el) => {
+  if (el) nextTick(initSortable)
+}, { immediate: true })
+
 onBeforeUnmount(() => { sortableInstance?.destroy() })
 </script>

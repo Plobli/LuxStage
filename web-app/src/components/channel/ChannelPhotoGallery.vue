@@ -1,5 +1,36 @@
 <template>
-  <div class="space-y-2 text-xs">
+  <div class="space-y-2 text-xs relative z-0" @click.stop>
+    <!-- Add Photo -->
+    <div class="flex gap-1 relative z-10">
+      <input
+        type="text"
+        v-model="newPhotoFilename"
+        placeholder="Foto hinzufügen..."
+        class="flex-1 text-[11px] px-1.5 py-1 rounded border border-border/40 bg-background placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/50 h-7"
+        @keydown.enter="addPhoto"
+        @click.stop
+      />
+      <button
+        @click="addPhoto"
+        :disabled="!newPhotoFilename.trim()"
+        class="px-2 h-7 rounded bg-primary/80 hover:bg-primary text-primary-foreground text-[11px] font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      >
+        +
+      </button>
+    </div>
+
+    <!-- Available Photos -->
+    <select
+      v-if="availablePhotos.length > 0"
+      @change="quickAddPhoto"
+      class="w-full text-[11px] px-1.5 py-1 rounded border border-border/40 bg-background h-7 relative z-10"
+    >
+      <option value="">Verfügbare Fotos ({{ availablePhotos.length }})</option>
+      <option v-for="photo in availablePhotos" :key="photo" :value="photo">
+        {{ photo }}
+      </option>
+    </select>
+
     <!-- Photo List -->
     <div v-if="photos.length > 0" class="space-y-1">
       <div
@@ -29,36 +60,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Add Photo -->
-    <div class="flex gap-1">
-      <input
-        type="text"
-        v-model="newPhotoFilename"
-        placeholder="Foto hinzufügen..."
-        class="flex-1 text-[11px] px-1.5 py-1 rounded border border-border/40 bg-background placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/50 h-7"
-        @keydown.enter="addPhoto"
-      />
-      <button
-        @click="addPhoto"
-        :disabled="!newPhotoFilename.trim()"
-        class="px-2 h-7 rounded bg-primary/80 hover:bg-primary text-primary-foreground text-[11px] font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-      >
-        +
-      </button>
-    </div>
-
-    <!-- Available Photos -->
-    <select
-      v-if="availablePhotos.length > 0"
-      @change="quickAddPhoto"
-      class="w-full text-[11px] px-1.5 py-1 rounded border border-border/40 bg-background h-7"
-    >
-      <option value="">Verfügbare Fotos ({{ availablePhotos.length }})</option>
-      <option v-for="photo in availablePhotos" :key="photo" :value="photo">
-        {{ photo }}
-      </option>
-    </select>
   </div>
 </template>
 

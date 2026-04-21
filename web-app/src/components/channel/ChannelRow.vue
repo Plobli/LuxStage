@@ -157,19 +157,6 @@
               @keydown="onKeydownCol3"
             />
           </div>
-          <!-- Row 4: Photos (collapsible) -->
-          <details class="border-t border-t-border/30 border-l-2 border-l-border/40 w-full">
-            <summary class="text-xs font-medium text-muted-foreground px-3 py-1.5 cursor-pointer hover:bg-muted/20 select-none">
-              📷 Fotos
-            </summary>
-            <div class="px-3 py-2 bg-muted/10 border-t border-t-border/20">
-              <ChannelPhotoGallery
-                :showId="ch.show_id"
-                :channelId="ch.id"
-                :allPhotos="props.allShowPhotos || []"
-              />
-            </div>
-          </details>
         </div>
       </div>
     </ContextMenuTrigger>
@@ -195,7 +182,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import ColorAutocomplete from '../ColorAutocomplete.vue'
 import ChannelTextarea from './ChannelTextarea.vue'
-import ChannelPhotoGallery from './ChannelPhotoGallery.vue'
 import { useIsMobile } from '@/composables/useBreakpoint.js'
 import {
   ContextMenu,
@@ -214,7 +200,6 @@ const props = defineProps({
   deleteTitle: { type: String, default: '' },
   onKeydownFn: { type: Function, default: null },
   onAddRow: { type: Function, default: null },
-  allShowPhotos: { type: Array, default: () => [] },
 })
 
 const emit = defineEmits([

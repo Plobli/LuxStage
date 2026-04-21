@@ -72,14 +72,31 @@
     <!-- Right side -->
     <div class="flex items-center gap-x-3 shrink-0">
       <!-- Presence: aktive Nutzer -->
-      <div v-if="presence.length > 1" class="flex items-center -space-x-1.5">
-        <div
-          v-for="u in presence.slice(0, 4)"
-          :key="u.username"
-          :title="u.username + (u.devices.includes('ios') ? ' (iOS)' : '')"
-          class="size-6 rounded-full bg-muted ring-2 ring-background flex items-center justify-center text-[10px] font-semibold text-foreground uppercase"
-        >{{ u.username[0] }}</div>
-        <div v-if="presence.length > 4" class="size-6 rounded-full bg-muted ring-2 ring-background flex items-center justify-center text-[9px] text-muted-foreground">+{{ presence.length - 4 }}</div>
+      <div v-if="presenceWithActivity.length > 1" class="flex items-center -space-x-1.5">
+        <TooltipProvider>
+          <Tooltip v-for="u in presenceWithActivity.slice(0, 4)" :key="u.username">
+            <TooltipTrigger asChild>
+              <div
+                :style="{ backgroundColor: userColor(u.username) }"
+                :class="{ 'ring-2 ring-green-400/80': u.isActive }"
+                class="size-6 rounded-full ring-2 ring-background flex items-center justify-center text-[10px] font-semibold text-white uppercase relative transition-all"
+              >
+                {{ u.username[0] }}
+                <div v-if="u.isActive" class="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full bg-green-400 ring-1 ring-background" />
+                <span v-if="u.devices.includes('ios')" class="absolute -top-1 -right-1 text-xs">📱</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <div class="text-sm">
+                <p class="font-semibold">{{ u.username }}</p>
+                <p class="text-xs text-muted-foreground">
+                  {{ u.devices.includes('ios') ? 'iOS' : 'Web' }}{{ u.devices.length > 1 ? ' + ' + (u.devices.length - 1) : '' }}
+                </p>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <div v-if="presenceWithActivity.length > 4" class="size-6 rounded-full bg-muted ring-2 ring-background flex items-center justify-center text-[9px] text-muted-foreground">+{{ presenceWithActivity.length - 4 }}</div>
       </div>
       <Badge v-if="dupAddressWarning" variant="outline" class="text-yellow-400 border-yellow-500/30 bg-yellow-500/10 text-xs">
         <AlertTriangle class="size-3 mr-1" />{{ labels.dupAddress }}
@@ -152,7 +169,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { Search, Undo2, Redo2, ArrowLeft, ChevronDown, AlertTriangle } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -215,4 +232,22 @@ const emit = defineEmits([
 
 const eosFileInput = ref(null)
 const csvImportInput = ref(null)
+
+const colorMap = ['#3b82f6', '#a855f7', '#22c55e', '#f97316', '#ec4899', '#14b8a6', '#6366f1', '#06b6d4']
+
+function userColor(username) {
+  let hash = 0
+  for (let i = 0; i < username.length; i++) {
+    hash = ((hash << 5) - hash) + username.charCodeAt(i)
+    hash |= 0
+  }
+  return colorMap[Math.abs(hash) % colorMap.length]
+}
+
+const presenceWithActivity = computed(() => {
+  return props.presence.map(u => ({
+    ...u,
+    isActive: u.lastActivityAt && Date.now() - new Date(u.lastActivityAt).getTime() < 30000
+  }))
+})
 </script>

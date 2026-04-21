@@ -20,7 +20,7 @@ export function subscribe(showId, res, username, device, getChecksFn) {
   res.write(':\n\n') // Verbindung bestätigen
 
   const map = clients.get(showId)
-  map.set(res, { username, device })
+  map.set(res, { username, device, lastActivityAt: new Date().toISOString() })
 
   // Aktuellen Check-State sofort an den neuen Client senden
   if (getChecksFn) {
@@ -50,15 +50,24 @@ export function broadcast(showId, event, data) {
 function broadcastPresence(showId) {
   const map = clients.get(showId)
   if (!map) return
-  // Aggregate: username → [devices]
+  // Aggregate: username → {devices, lastActivityAt}
   const byUser = new Map()
-  for (const { username, device } of map.values()) {
-    if (!byUser.has(username)) byUser.set(username, new Set())
-    byUser.get(username).add(device)
+  for (const { username, device, lastActivityAt } of map.values()) {
+    if (!byUser.has(username)) {
+      byUser.set(username, { devices: new Set(), lastActivityAt })
+    } else {
+      const entry = byUser.get(username)
+      entry.lastActivityAt = new Date(Math.max(
+        new Date(entry.lastActivityAt).getTime(),
+        new Date(lastActivityAt).getTime()
+      )).toISOString()
+    }
+    byUser.get(username).devices.add(device)
   }
-  const users = Array.from(byUser.entries()).map(([username, devices]) => ({
+  const users = Array.from(byUser.entries()).map(([username, { devices, lastActivityAt }]) => ({
     username,
     devices: Array.from(devices),
+    lastActivityAt,
   }))
   broadcast(showId, 'presence-updated', { users })
 }
@@ -67,13 +76,22 @@ export function getPresence(showId) {
   const map = clients.get(showId)
   if (!map?.size) return []
   const byUser = new Map()
-  for (const { username, device } of map.values()) {
-    if (!byUser.has(username)) byUser.set(username, new Set())
-    byUser.get(username).add(device)
+  for (const { username, device, lastActivityAt } of map.values()) {
+    if (!byUser.has(username)) {
+      byUser.set(username, { devices: new Set(), lastActivityAt })
+    } else {
+      const entry = byUser.get(username)
+      entry.lastActivityAt = new Date(Math.max(
+        new Date(entry.lastActivityAt).getTime(),
+        new Date(lastActivityAt).getTime()
+      )).toISOString()
+    }
+    byUser.get(username).devices.add(device)
   }
-  return Array.from(byUser.entries()).map(([username, devices]) => ({
+  return Array.from(byUser.entries()).map(([username, { devices, lastActivityAt }]) => ({
     username,
     devices: Array.from(devices),
+    lastActivityAt,
   }))
 }
 

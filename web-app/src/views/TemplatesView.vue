@@ -37,6 +37,7 @@
                 :dupChannelNrs="emptySet"
                 :channelStatusFn="() => 'default'"
                 :toggleChannelStatusFn="() => {}"
+                :allShowPhotos="[]"
                 :labels="{
                   channel: t('field.channel'),
                   color: t('field.color'),

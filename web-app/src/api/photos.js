@@ -45,3 +45,21 @@ export function getPhotoUrl(showId, filename, { thumb = false } = {}) {
   const url = api.url(`/api/shows/${showId}/photos/${filename}`)
   return thumb ? url + '&thumb=1' : url
 }
+
+// ── Channel Photos ──────────────────────────────────────────────────────
+
+export async function fetchChannelPhotos(showId, channelId) {
+  return api.get(`/api/shows/${showId}/channels/${channelId}/photos`)
+}
+
+export async function addChannelPhoto(showId, channelId, filename) {
+  return api.post(`/api/shows/${showId}/channels/${channelId}/photos`, { filename })
+}
+
+export async function removeChannelPhoto(showId, channelId, filename) {
+  return api.delete(`/api/shows/${showId}/channels/${channelId}/photos/${encodeURIComponent(filename)}`)
+}
+
+export async function reorderChannelPhotos(showId, channelId, filenames) {
+  return api.put(`/api/shows/${showId}/channels/${channelId}/photos/reorder`, { photos: filenames })
+}

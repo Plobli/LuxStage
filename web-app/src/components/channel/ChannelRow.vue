@@ -96,7 +96,7 @@
         </div>
 
         <!-- Mobile: Compact stacked layout -->
-        <div v-if="isMobile" class="flex flex-col gap-0 py-0 px-0">
+        <div v-if="isMobile" class="flex flex-col gap-0 py-0 px-0 w-full">
           <!-- Row 1: Channel / Address | Color -->
           <div class="flex gap-2 items-center px-3 py-1.5 border-l-2 border-l-border/40">
             <div class="flex items-center gap-0.5 flex-1">
@@ -123,7 +123,7 @@
                 class="w-16 h-8 rounded border-0 bg-transparent px-1 py-0 text-center text-xs text-muted-foreground shadow-none placeholder:text-muted-foreground/25 focus-visible:ring-0"
               />
             </div>
-            <div class="flex-shrink-0 w-28">
+            <div class="shrink-0 w-28">
               <ColorAutocomplete
                 :modelValue="ch.color"
                 @update:modelValue="emit('pushSnapshot'); ch.color = $event; emit('change')"
@@ -157,6 +157,19 @@
               @keydown="onKeydownCol3"
             />
           </div>
+          <!-- Row 4: Photos (collapsible) -->
+          <details class="border-t border-t-border/30 border-l-2 border-l-border/40 w-full">
+            <summary class="text-xs font-medium text-muted-foreground px-3 py-1.5 cursor-pointer hover:bg-muted/20 select-none">
+              📷 Fotos
+            </summary>
+            <div class="px-3 py-2 bg-muted/10 border-t border-t-border/20">
+              <ChannelPhotoGallery
+                :showId="ch.show_id"
+                :channelId="ch.id"
+                :allPhotos="props.allShowPhotos || []"
+              />
+            </div>
+          </details>
         </div>
       </div>
     </ContextMenuTrigger>
@@ -176,12 +189,13 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { GripVertical, X, Plus } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
+import { GripVertical, X, Plus, ChevronDown } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import ColorAutocomplete from '../ColorAutocomplete.vue'
 import ChannelTextarea from './ChannelTextarea.vue'
+import ChannelPhotoGallery from './ChannelPhotoGallery.vue'
 import { useIsMobile } from '@/composables/useBreakpoint.js'
 import {
   ContextMenu,
@@ -200,6 +214,7 @@ const props = defineProps({
   deleteTitle: { type: String, default: '' },
   onKeydownFn: { type: Function, default: null },
   onAddRow: { type: Function, default: null },
+  allShowPhotos: { type: Array, default: () => [] },
 })
 
 const emit = defineEmits([

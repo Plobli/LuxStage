@@ -397,6 +397,49 @@ export async function router(req, res) {
       return json(res, 200, { ok: true })
     }
 
+    // ── Channel Fotos — Alle lesen ────────────────────────────────────────
+    if (method === 'GET' && pathname.match(/^\/api\/shows\/([^/]+)\/channels\/([^/]+)\/photos$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const channelId = pathname.split('/')[5]
+      const photoList = db.readChannelPhotos(channelId)
+      return json(res, 200, { photos: photoList })
+    }
+
+    // ── Channel Fotos — Hinzufügen ─────────────────────────────────────────
+    if (method === 'POST' && pathname.match(/^\/api\/shows\/([^/]+)\/channels\/([^/]+)\/photos$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const channelId = pathname.split('/')[5]
+      const body = await readJsonBody(req, res); if (body === null) return
+      const { filename } = body
+      if (!filename || filename !== path.basename(filename) || filename.includes('..')) {
+        return json(res, 400, { error: 'Ungültiger Dateiname' })
+      }
+      db.addChannelPhoto(channelId, filename)
+      return json(res, 201, { ok: true })
+    }
+
+    // ── Channel Fotos — Löschen ────────────────────────────────────────────
+    if (method === 'DELETE' && pathname.match(/^\/api\/shows\/([^/]+)\/channels\/([^/]+)\/photos\/(.+)$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const channelId = pathname.split('/')[5]
+      const filename = path.basename(decodeURIComponent(pathname.split('/')[7]))
+      db.removeChannelPhoto(channelId, filename)
+      return json(res, 200, { ok: true })
+    }
+
+    // ── Channel Fotos — Reordern ───────────────────────────────────────────
+    if (method === 'PUT' && pathname.match(/^\/api\/shows\/([^/]+)\/channels\/([^/]+)\/photos\/reorder$/)) {
+      const user = requireAuth(req, res); if (!user) return
+      const channelId = pathname.split('/')[5]
+      const body = await readJsonBody(req, res); if (body === null) return
+      const { photos: filenames } = body
+      if (!Array.isArray(filenames)) {
+        return json(res, 400, { error: 'Photos muss ein Array sein' })
+      }
+      db.reorderChannelPhotos(channelId, filenames)
+      return json(res, 200, { ok: true })
+    }
+
     // ── Fotos — Ausliefern ─────────────────────────────────────────────────
     if (method === 'GET' && pathname.match(/^\/api\/shows\/([^/]+)\/photos\/(.+)$/)) {
       const user = requireAuth(req, res); if (!user) return

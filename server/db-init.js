@@ -230,6 +230,23 @@ if (!photoCols.includes('channel_number')) {
   dbContainer.db.exec("ALTER TABLE photo_descriptions ADD COLUMN channel_number TEXT NOT NULL DEFAULT ''")
 }
 
+// channel_photos: Mehrere Fotos pro Kanal zuordnen
+const channelPhotosExists = dbContainer.db.prepare(
+  "SELECT name FROM sqlite_master WHERE type='table' AND name='channel_photos'"
+).get()
+if (!channelPhotosExists) {
+  dbContainer.db.exec(`
+    CREATE TABLE channel_photos (
+      id         TEXT PRIMARY KEY,
+      channel_id TEXT NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+      filename   TEXT NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      UNIQUE(channel_id, filename)
+    );
+    CREATE INDEX idx_channel_photos_channel ON channel_photos(channel_id);
+  `)
+}
+
 // template_floorplans and show_floorplan_layers
 const tplFloorplanTables = dbContainer.db.prepare(
   "SELECT name FROM sqlite_master WHERE type='table' AND name='template_floorplans'"

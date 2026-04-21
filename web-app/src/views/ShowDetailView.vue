@@ -80,6 +80,7 @@
               :channelStatusFn="channelStatus"
               :toggleChannelStatusFn="toggleChannelStatus"
               :onKeydownFn="onKeydown"
+              :allShowPhotos="photos"
               :labels="{
                 channel: t('field.channel'),
                 color: t('field.color'),

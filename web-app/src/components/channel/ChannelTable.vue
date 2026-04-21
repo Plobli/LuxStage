@@ -82,6 +82,7 @@
           :deleteTitle="labels.delete"
           :onKeydownFn="onKeydownFn"
           :onAddRow="() => startAdd(item.group.position)"
+          :allShowPhotos="allShowPhotos"
           @change="emit('change')"
           @recordFocus="emit('recordFocus')"
           @commitFocus="emit('commitFocus')"
@@ -234,6 +235,7 @@ const props = defineProps({
   channelStatusFn: { type: Function, required: true },
   toggleChannelStatusFn: { type: Function, required: true },
   onKeydownFn: { type: Function, default: null },
+  allShowPhotos: { type: Array, default: () => [] },
   labels: {
     type: Object,
     default: () => ({

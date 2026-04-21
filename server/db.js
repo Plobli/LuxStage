@@ -569,3 +569,35 @@ export function setCheck(showSlug, channelId, checked, username) {
     ).run(showSlug, channelId)
   }
 }
+
+// ── Channel Photos ──────────────────────────────────────────────────────────
+
+export function readChannelPhotos(channelId) {
+  return dbContainer.db.prepare(
+    'SELECT filename FROM channel_photos WHERE channel_id = ? ORDER BY sort_order'
+  ).all(channelId).map(r => r.filename)
+}
+
+export function addChannelPhoto(channelId, filename) {
+  dbContainer.db.prepare(`
+    INSERT OR IGNORE INTO channel_photos (id, channel_id, filename, sort_order)
+    VALUES (?, ?, ?, (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM channel_photos WHERE channel_id = ?))
+  `).run(randomUUID(), channelId, filename, channelId)
+}
+
+export function removeChannelPhoto(channelId, filename) {
+  dbContainer.db.prepare(
+    'DELETE FROM channel_photos WHERE channel_id = ? AND filename = ?'
+  ).run(channelId, filename)
+}
+
+export function reorderChannelPhotos(channelId, filenames) {
+  const tx = dbContainer.db.transaction(() => {
+    for (let i = 0; i < filenames.length; i++) {
+      dbContainer.db.prepare(
+        'UPDATE channel_photos SET sort_order = ? WHERE channel_id = ? AND filename = ?'
+      ).run(i, channelId, filenames[i])
+    }
+  })
+  tx()
+}

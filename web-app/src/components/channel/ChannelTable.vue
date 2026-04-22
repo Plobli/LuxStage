@@ -11,14 +11,8 @@
       </div>
     </div>
 
-    <RecycleScroller
-      ref="scrollerEl"
-      :items="virtualItems"
-      :item-size="itemSize"
-      :key-field="'id'"
-      class="flex-1 min-h-0 bg-card"
-    >
-      <template #default="{ item }">
+    <div class="flex-1 min-h-0 overflow-y-auto bg-card channel-list">
+      <template v-for="item of virtualItems" :key="item.id">
         <template v-if="item.type === 'header'">
           <!-- Header row (group position) -->
           <div
@@ -221,14 +215,12 @@
           </div>
         </template>
       </template>
-    </RecycleScroller>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
-import { RecycleScroller } from 'vue-virtual-scroller'
-import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 import { useIsMobile } from '@/composables/useBreakpoint.js'
 import { Check } from 'lucide-vue-next'
 import Sortable from 'sortablejs'
@@ -256,7 +248,6 @@ const props = defineProps({
 })
 
 const isMobile = useIsMobile()
-const itemSize = isMobile.value ? 100 : 56
 
 const emit = defineEmits([
   'change',
@@ -378,13 +369,12 @@ function insertAfter(ch) {
 }
 
 // ── SortableJS ─────────────────────────────────────────────────────────────
-const scrollerEl = ref(null)
 let sortableInstance = null
 
 function initSortable() {
   sortableInstance?.destroy()
   sortableInstance = null
-  const el = scrollerEl.value?.$el
+  const el = document.querySelector('.channel-list')
   if (!el) return
 
   sortableInstance = Sortable.create(el, {
@@ -425,10 +415,6 @@ function initSortable() {
 watch(() => props.channels.length, () => {
   nextTick(initSortable)
 })
-
-watch(scrollerEl, (el) => {
-  if (el) nextTick(initSortable)
-}, { immediate: true })
 
 onBeforeUnmount(() => { sortableInstance?.destroy() })
 </script>

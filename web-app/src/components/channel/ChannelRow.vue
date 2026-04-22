@@ -134,7 +134,7 @@
             </div>
           </div>
           <!-- Row 2: Device -->
-          <div class="text-xs px-3 py-1.5 border-t border-t-border/30 border-l-2 border-l-border/40">
+          <div class="text-xs px-3 py-1.5 border-t border-t-border/30 border-l-2 border-l-border/40 flex items-center">
             <ChannelTextarea
               v-model="ch.device"
               :data-nav-row="rowIndex"
@@ -146,7 +146,7 @@
             />
           </div>
           <!-- Row 3: Notes -->
-          <div class="text-xs px-3 py-1.5 border-t border-t-border/30 border-l-2 border-l-border/40">
+          <div class="text-xs px-3 py-1.5 border-t border-t-border/30 border-l-2 border-l-border/40 flex items-center">
             <ChannelTextarea
               v-model="ch.notes"
               :data-nav-row="rowIndex"

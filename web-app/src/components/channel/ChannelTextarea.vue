@@ -12,7 +12,7 @@
 </template>
 
 <script setup>
-import { nextTick, onMounted, ref, watch } from 'vue'
+import { nextTick, onMounted, ref, watch, onBeforeUnmount } from 'vue'
 import { Textarea } from '@/components/ui/textarea'
 
 defineOptions({ inheritAttrs: false })
@@ -33,7 +33,7 @@ function getNativeTextarea() {
 function autoResize() {
   const el = getNativeTextarea()
   if (!el) return
-  el.style.height = 'auto'
+  el.style.height = '1px'
   el.style.height = `${Math.max(40, el.scrollHeight)}px`
 }
 
@@ -53,6 +53,26 @@ function handleBlur(event) {
   nextTick(autoResize)
 }
 
+let intersectionObserver = null
+
 watch(() => props.modelValue, () => nextTick(autoResize))
-onMounted(() => nextTick(autoResize))
+onMounted(() => {
+  const el = getNativeTextarea()
+  if (!el) return
+
+  intersectionObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        nextTick(autoResize)
+      }
+    })
+  }, { threshold: 0.1 })
+
+  intersectionObserver.observe(el)
+  nextTick(autoResize)
+})
+
+onBeforeUnmount(() => {
+  intersectionObserver?.disconnect()
+})
 </script>

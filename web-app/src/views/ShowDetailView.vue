@@ -66,11 +66,6 @@
           class="flex flex-col flex-1 min-h-0 overflow-hidden"
         >
 
-          <!-- Channel Table Header -->
-          <div class="shrink-0 flex min-h-10 items-center border-b border-border/90 bg-muted px-4">
-            <span class="text-sm font-semibold text-accent">{{ t('tab.channels') }}</span>
-          </div>
-
           <!-- Channel Table -->
           <div class="flex-1 min-h-0 overflow-hidden">
             <ChannelTable
@@ -330,6 +325,7 @@ const persistSetupDebounced = useDebounceFn(async () => {
   setupSaving.value = true
   try {
     await updateMeta(props.id, { ...meta.value, setupMarkdown: pendingSetupMd })
+    meta.value.datum = new Date().toISOString().split('T')[0]
   } finally {
     setupSaving.value = false
   }
@@ -347,6 +343,7 @@ async function persistSetup(md) {
   setupSaving.value = true
   try {
     await updateMeta(props.id, { ...meta.value, setupMarkdown: md })
+    meta.value.datum = new Date().toISOString().split('T')[0]
   } finally {
     setupSaving.value = false
   }
@@ -568,7 +565,10 @@ async function deleteChannel(ch) {
 let ignoreSseCount = 0
 const persistChannels = useDebounceFn(async () => {
   ignoreSseCount++
-  try { await saveChannels(props.id, channels.value) }
+  try {
+    await saveChannels(props.id, channels.value)
+    meta.value.datum = new Date().toISOString().split('T')[0]
+  }
   finally { channelsSaving.value = false }
 }, 50)
 
@@ -585,6 +585,7 @@ const persistSectionsDebounced = useDebounceFn(async () => {
   try {
     const sections = [...sectionContents.value.entries()].map(([id, content]) => ({ id, content }))
     await saveShowSections(props.id, sections)
+    meta.value.datum = new Date().toISOString().split('T')[0]
   } finally {
     sectionsSaving.value = false
   }
@@ -596,6 +597,7 @@ async function persistSections() {
   try {
     const sections = [...sectionContents.value.entries()].map(([id, content]) => ({ id, content }))
     await saveShowSections(props.id, sections)
+    meta.value.datum = new Date().toISOString().split('T')[0]
   } finally {
     sectionsSaving.value = false
   }

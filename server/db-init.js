@@ -44,6 +44,8 @@ function _initSchema(database) {
       sort_order INTEGER NOT NULL DEFAULT 0
     );
 
+    CREATE INDEX IF NOT EXISTS idx_channels_show ON channels(show_id);
+
     CREATE TABLE IF NOT EXISTS section_defs (
       id         TEXT PRIMARY KEY,
       show_id    TEXT NOT NULL REFERENCES shows(id) ON DELETE CASCADE,
@@ -51,6 +53,8 @@ function _initSchema(database) {
       type       TEXT,
       sort_order INTEGER NOT NULL DEFAULT 0
     );
+
+    CREATE INDEX IF NOT EXISTS idx_section_defs_show ON section_defs(show_id);
 
     CREATE TABLE IF NOT EXISTS section_fields (
       id         TEXT PRIMARY KEY,
@@ -61,12 +65,16 @@ function _initSchema(database) {
       sort_order INTEGER NOT NULL DEFAULT 0
     );
 
+    CREATE INDEX IF NOT EXISTS idx_section_fields_section ON section_fields(section_id);
+
     CREATE TABLE IF NOT EXISTS section_contents (
       section_id TEXT NOT NULL REFERENCES section_defs(id) ON DELETE CASCADE,
       show_id    TEXT NOT NULL REFERENCES shows(id) ON DELETE CASCADE,
       content    TEXT,
       PRIMARY KEY (section_id, show_id)
     );
+
+    CREATE INDEX IF NOT EXISTS idx_section_contents_show ON section_contents(show_id);
 
     CREATE TABLE IF NOT EXISTS templates (
       id   TEXT PRIMARY KEY,
@@ -147,9 +155,10 @@ function _initSchema(database) {
     );
 
     CREATE TABLE IF NOT EXISTS users (
-      username TEXT PRIMARY KEY,
-      password TEXT NOT NULL,
-      role     TEXT NOT NULL DEFAULT 'techniker'
+      username                  TEXT PRIMARY KEY,
+      password                  TEXT NOT NULL,
+      role                      TEXT NOT NULL DEFAULT 'techniker',
+      requires_password_change  INTEGER NOT NULL DEFAULT 0
     );
   `)
 }

@@ -88,7 +88,7 @@ export function authenticate(req) {
 }
 
 export function requireAuth(req, res) {
-  const user = authenticate(req)
+  const user = req.user ?? authenticate(req)
   if (!user) {
     res.writeHead(401, { 'Content-Type': 'application/json' })
     res.end(JSON.stringify({ error: 'Nicht angemeldet' }))

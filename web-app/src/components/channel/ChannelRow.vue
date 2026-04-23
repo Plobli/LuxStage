@@ -1,7 +1,5 @@
 <template>
-  <ContextMenu>
-    <ContextMenuTrigger as-child>
-      <div
+  <div
         :data-ch-key="stableRowKey"
         :data-ch-pos="ch.position"
         :data-nav-row="rowIndex"
@@ -159,37 +157,16 @@
           </div>
         </div>
       </div>
-    </ContextMenuTrigger>
-
-    <ContextMenuContent>
-      <ContextMenuItem @select="emit('insertAfter', ch)">
-        <Plus class="size-4 mr-2 text-muted-foreground" />
-        Zeile darunter einfügen
-      </ContextMenuItem>
-      <ContextMenuSeparator />
-      <ContextMenuItem class="text-red-400 focus:text-red-300 focus:bg-red-950/40" @select="emit('delete', ch)">
-        <X class="size-4 mr-2" />
-        {{ deleteTitle || 'Löschen' }}
-      </ContextMenuItem>
-    </ContextMenuContent>
-  </ContextMenu>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
-import { GripVertical, X, Plus, ChevronDown } from 'lucide-vue-next'
+import { computed } from 'vue'
+import { GripVertical, X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import ColorAutocomplete from '../ColorAutocomplete.vue'
 import ChannelTextarea from './ChannelTextarea.vue'
 import { useIsMobile } from '@/composables/useBreakpoint.js'
-import {
-  ContextMenu,
-  ContextMenuTrigger,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-} from '@/components/ui/context-menu/index.js'
 
 const props = defineProps({
   ch: { type: Object, required: true },
@@ -204,7 +181,7 @@ const props = defineProps({
 
 const emit = defineEmits([
   'change', 'recordFocus', 'commitFocus', 'pushSnapshot',
-  'toggleStatus', 'delete', 'insertAfter',
+  'toggleStatus', 'delete',
 ])
 
 const isMobile = useIsMobile()

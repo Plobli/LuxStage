@@ -1,0 +1,138 @@
+import path from 'node:path'
+import fs from 'node:fs'
+import * as db from '../db.js'
+import * as photosLib from '../photos.js'
+import { requireAdmin } from '../auth.js'
+import { readBody, readBodyBuffer, readJsonBody, json, notFound } from '../helpers.js'
+
+const SHOW_PHOTOS        = /^\/api\/shows\/([^/]+)\/photos$/
+const SHOW_PHOTO_FILE    = /^\/api\/shows\/([^/]+)\/photos\/(.+)$/
+const SHOW_PHOTO_ORDER   = /^\/api\/shows\/([^/]+)\/photo-order$/
+const SHOW_PHOTO_CAPS    = /^\/api\/shows\/([^/]+)\/photo-captions$/
+const SHOW_PHOTO_CAP     = /^\/api\/shows\/([^/]+)\/photo-captions\/(.+)$/
+const CHAN_PHOTOS         = /^\/api\/shows\/([^/]+)\/channels\/([^/]+)\/photos$/
+const CHAN_PHOTO_REORDER  = /^\/api\/shows\/([^/]+)\/channels\/([^/]+)\/photos\/reorder$/
+const CHAN_PHOTO_FILE     = /^\/api\/shows\/([^/]+)\/channels\/([^/]+)\/photos\/(.+)$/
+
+export async function photoRoutes(req, res, pathname, params) {
+  const { method } = req
+  let m
+
+  if (m = SHOW_PHOTOS.exec(pathname)) {
+    const id = m[1]
+    if (method === 'GET') {
+      return json(res, 200, await photosLib.listPhotos(id))
+    }
+    if (method === 'POST') {
+      const ct = req.headers['content-type'] || ''
+      const boundaryMatch = ct.match(/boundary=(.+)/)
+      if (!boundaryMatch) return json(res, 400, { error: 'Kein Boundary' })
+      const body = await photosLib.parseMultipart(req)
+      const parts = photosLib.extractFileFromMultipart(body, boundaryMatch[1])
+      const saved = await Promise.all(parts.map(part => photosLib.savePhoto(id, part.filename, part.data)))
+      return json(res, 201, { saved })
+    }
+  }
+
+  if (m = SHOW_PHOTO_ORDER.exec(pathname)) {
+    if (method === 'PUT') {
+      const user = requireAdmin(req, res); if (!user) return
+      const id = m[1]
+      const body = JSON.parse(await readBody(req))
+      await photosLib.savePhotoOrder(id, body.order)
+      return json(res, 200, { ok: true })
+    }
+  }
+
+  if (m = SHOW_PHOTO_CAPS.exec(pathname)) {
+    if (method === 'GET') {
+      return json(res, 200, db.readPhotoDescriptions(m[1]))
+    }
+  }
+
+  if (m = SHOW_PHOTO_CAP.exec(pathname)) {
+    if (method === 'PUT') {
+      const id = m[1]
+      const filename = decodeURIComponent(m[2])
+      if (filename !== path.basename(filename) || filename.includes('..')) {
+        return json(res, 400, { error: 'Ungültiger Dateiname' })
+      }
+      const body = await readJsonBody(req, res); if (body === null) return
+      const { caption, channelNumber } = body
+      db.writePhotoDescription(id, filename, caption ?? '', channelNumber ?? '')
+      return json(res, 200, { ok: true })
+    }
+  }
+
+  if (m = CHAN_PHOTO_REORDER.exec(pathname)) {
+    if (method === 'PUT') {
+      const channelId = m[2]
+      const body = await readJsonBody(req, res); if (body === null) return
+      const { photos: filenames } = body
+      if (!Array.isArray(filenames)) return json(res, 400, { error: 'Photos muss ein Array sein' })
+      db.reorderChannelPhotos(channelId, filenames)
+      return json(res, 200, { ok: true })
+    }
+  }
+
+  if (m = CHAN_PHOTOS.exec(pathname)) {
+    const channelId = m[2]
+    if (method === 'GET') {
+      return json(res, 200, { photos: db.readChannelPhotos(channelId) })
+    }
+    if (method === 'POST') {
+      const body = await readJsonBody(req, res); if (body === null) return
+      const { filename } = body
+      if (!filename || filename !== path.basename(filename) || filename.includes('..')) {
+        return json(res, 400, { error: 'Ungültiger Dateiname' })
+      }
+      db.addChannelPhoto(channelId, filename)
+      return json(res, 201, { ok: true })
+    }
+  }
+
+  if (m = CHAN_PHOTO_FILE.exec(pathname)) {
+    if (method === 'DELETE') {
+      const channelId = m[2]
+      const filename = path.basename(decodeURIComponent(m[3]))
+      db.removeChannelPhoto(channelId, filename)
+      return json(res, 200, { ok: true })
+    }
+  }
+
+  if (m = SHOW_PHOTO_FILE.exec(pathname)) {
+    const slug = m[1]
+    const filename = path.basename(decodeURIComponent(m[2]))
+    if (method === 'DELETE') {
+      const user = requireAdmin(req, res); if (!user) return
+      await photosLib.deletePhoto(slug, filename)
+      db.deletePhotoDescription(slug, filename)
+      return json(res, 200, { ok: true })
+    }
+    if (method === 'GET') {
+      const thumb = params.thumb === '1'
+      const filePath = thumb
+        ? photosLib.getPhotoThumbPath(slug, filename)
+        : photosLib.getPhotoPath(slug, filename)
+      try {
+        let resolvedPath = filePath
+        if (thumb) {
+          try { await fs.promises.access(filePath) } catch {
+            resolvedPath = photosLib.getPhotoPath(slug, filename)
+            photosLib.ensureThumbs(slug).catch(() => {})
+          }
+        }
+        const stat = await fs.promises.stat(resolvedPath)
+        res.writeHead(200, {
+          'Content-Type': 'image/jpeg',
+          'Content-Length': stat.size,
+          'Cache-Control': 'public, max-age=86400',
+        })
+        fs.createReadStream(resolvedPath).pipe(res)
+      } catch { return notFound(res) }
+      return
+    }
+  }
+
+  return null
+}

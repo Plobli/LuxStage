@@ -1,6 +1,6 @@
 import http from 'node:http'
 import fs from 'node:fs'
-import { handler } from './router-new.js'
+import { router } from './router.js'
 import { config } from './config.js'
 import { startHistoryJob } from './history.js'
 
@@ -27,7 +27,7 @@ const server = http.createServer((req, res) => {
   res.setHeader('Content-Security-Policy',
     "default-src 'self'; img-src 'self' blob: data:; script-src 'self'; style-src 'self' 'unsafe-inline'")
 
-  handler(req, res)
+  router(req, res)
 })
 
 server.listen(config.port, '0.0.0.0', () => {

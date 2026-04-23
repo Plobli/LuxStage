@@ -47,34 +47,7 @@ export function broadcast(showId, event, data) {
   }
 }
 
-function broadcastPresence(showId) {
-  const map = clients.get(showId)
-  if (!map) return
-  // Aggregate: username → {devices, lastActivityAt}
-  const byUser = new Map()
-  for (const { username, device, lastActivityAt } of map.values()) {
-    if (!byUser.has(username)) {
-      byUser.set(username, { devices: new Set(), lastActivityAt })
-    } else {
-      const entry = byUser.get(username)
-      entry.lastActivityAt = new Date(Math.max(
-        new Date(entry.lastActivityAt).getTime(),
-        new Date(lastActivityAt).getTime()
-      )).toISOString()
-    }
-    byUser.get(username).devices.add(device)
-  }
-  const users = Array.from(byUser.entries()).map(([username, { devices, lastActivityAt }]) => ({
-    username,
-    devices: Array.from(devices),
-    lastActivityAt,
-  }))
-  broadcast(showId, 'presence-updated', { users })
-}
-
-export function getPresence(showId) {
-  const map = clients.get(showId)
-  if (!map?.size) return []
+function aggregatePresence(map) {
   const byUser = new Map()
   for (const { username, device, lastActivityAt } of map.values()) {
     if (!byUser.has(username)) {
@@ -93,6 +66,18 @@ export function getPresence(showId) {
     devices: Array.from(devices),
     lastActivityAt,
   }))
+}
+
+function broadcastPresence(showId) {
+  const map = clients.get(showId)
+  if (!map) return
+  broadcast(showId, 'presence-updated', { users: aggregatePresence(map) })
+}
+
+export function getPresence(showId) {
+  const map = clients.get(showId)
+  if (!map?.size) return []
+  return aggregatePresence(map)
 }
 
 // Heartbeat: tote Sockets entfernen, Verbindungsabbrüche durch Reverse-Proxies verhindern

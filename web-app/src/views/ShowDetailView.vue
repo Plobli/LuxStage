@@ -207,28 +207,32 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount, defineAsyncComponent } from 'vue'
+import { ref, watch, nextTick, onMounted, onBeforeUnmount, defineAsyncComponent } from 'vue'
 import { Loader2 } from 'lucide-vue-next'
 import { useDebounceFn } from '@vueuse/core'
 import { useRouter } from 'vue-router'
 import { useLocale } from '../composables/useLocale.js'
 import { useConfirm } from '../composables/useConfirm.js'
 import { useKeyboardNav } from '../composables/useKeyboardNav.js'
-import { useUndoRedo } from '../composables/useUndoRedo.js'
+
+import { useShowPhotos } from '../composables/useShowPhotos.js'
+import { useShowSections } from '../composables/useShowSections.js'
+import { useShowPresence } from '../composables/useShowPresence.js'
+import { useShowChannels } from '../composables/useShowChannels.js'
+import { useShowFloorplan } from '../composables/useShowFloorplan.js'
+
 import ShowHeader from '../components/show/ShowHeader.vue'
 import { fetchShow, updateMeta, restoreHistory, createSnapshot } from '../api/shows.js'
-import { fetchChannels, saveChannels, downloadChannelsCsv, parseChannelsCsv, mergeChannels } from '../api/channels.js'
-import { fetchPhotos } from '../api/photos.js'
+import { downloadChannelsCsv } from '../api/channels.js'
 import PhotoGallery from '../components/show/PhotoGallery.vue'
 const HistorySlideOver = defineAsyncComponent(() => import('../components/show/HistorySlideOver.vue'))
-import { subscribeShow, isOnline } from '../api/client.js'
+import { isOnline } from '../api/client.js'
 import { api } from '../api/client.js'
-import { fetchShowSections, saveShowSections, fetchShowSectionDefs } from '../api/sections.js'
+
 import ChannelTable from '../components/channel/ChannelTable.vue'
 import SectionEditor from '../components/show/SectionEditor.vue'
 const EosMergePreviewDialog = defineAsyncComponent(() => import('../components/EosMergePreviewDialog.vue'))
 const FloorplanEditor = defineAsyncComponent(() => import('../components/FloorplanEditor.vue'))
-import { fetchShowFloorplan, saveShowFloorplan, saveShowFloorplanSnapshot, uploadShowFloorplanImage, deleteShowFloorplanImage } from '../api/floorplan.js'
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
@@ -236,91 +240,28 @@ const { t } = useLocale()
 const { confirm } = useConfirm()
 const { onKeydown } = useKeyboardNav()
 
-// ── State ──────────────────────────────────────────────────────────────────
+// ── Globals ────────────────────────────────────────────────────────────────
 const loading = ref(true)
 const meta = ref({})
 const setupMarkdown = ref('')
-const eosActiveChannels = ref(null)
-const eosMergePreview = ref({ open: false, newActive: [], nowGone: [], untouched: [] })
-let _eosMergeResolve = null
-const channels = ref([])
-const photos = ref([])
-
-const historyOpen = ref(false)
-const search = ref('')
 const setupSaving = ref(false)
-const channelsSaving = ref(false)
+const historyOpen = ref(false)
 
 const TAB_KEY = `show-tab-${props.id}`
 const mobileTab = ref(sessionStorage.getItem(TAB_KEY) || 'channels')
 watch(mobileTab, (tab) => sessionStorage.setItem(TAB_KEY, tab))
 
-const floorplan = ref({ image_url: null, canvas_data: null })
-let floorplanSaveTimer = null
+// ── Composables ────────────────────────────────────────────────────────────
+const { photos, loadPhotos } = useShowPhotos(props.id)
+const { floorplan, loadFloorplan, onFloorplanChange, onFloorplanImageUpload, onFloorplanImageDelete } = useShowFloorplan(props.id)
 
-const sectionDefs = ref([])
-const sectionContents = ref(new Map())
-const sectionsSaving = ref(false)
+const {
+  sectionDefs, sectionContents, sectionsSaving,
+  persistSectionsDebounced, persistSections,
+  loadSections, handleSectionsSse
+} = useShowSections(props.id, meta)
 
-// ── Undo/Redo ──────────────────────────────────────────────────────────────
-const { initSnapshot, recordFocus, commitFocus, pushSnapshot, undo, redo, canUndo, canRedo } =
-  useUndoRedo(
-    () => ({
-      channels: channels.value,
-      sectionContents: [...sectionContents.value.entries()],
-      sectionDefs: sectionDefs.value,
-      meta: meta.value,
-      setupMarkdown: setupMarkdown.value,
-    }),
-    (snap) => {
-      channels.value = snap.channels
-      sectionContents.value = new Map(snap.sectionContents)
-      sectionDefs.value = snap.sectionDefs
-      meta.value = snap.meta
-      setupMarkdown.value = snap.setupMarkdown
-    },
-    () => {
-      persistChannels?.cancel?.()
-      persistSetupDebounced?.cancel?.()
-      persistSectionsDebounced?.cancel?.()
-    },
-    () => {
-      channelsSaving.value = true
-      persistChannels()
-      persistSetup(setupMarkdown.value)
-      persistSections()
-    },
-    `undoredo-${props.id}`
-  )
-
-function onUndoRedoKeydown(e) {
-  const focused = document.activeElement
-  const isEditing = focused && (
-    focused.tagName === 'INPUT' ||
-    focused.tagName === 'TEXTAREA' ||
-    focused.isContentEditable
-  )
-  if (isEditing) return
-
-  const isMac = navigator.userAgentData?.platform === 'macOS' || /Mac/.test(navigator.userAgent)
-  const mod = isMac ? e.metaKey : e.ctrlKey
-
-  if (mod && !e.shiftKey && e.key === 'z') {
-    e.preventDefault()
-    undo()
-  } else if (
-    (mod && e.shiftKey && e.key === 'z') ||
-    (mod && e.shiftKey && e.key === 'Z') ||
-    (!isMac && mod && e.key === 'y')
-  ) {
-    e.preventDefault()
-    redo()
-  }
-}
-
-// ── Editor ─────────────────────────────────────────────────────────────────
 let pendingSetupMd = null
-
 const persistSetupDebounced = useDebounceFn(async () => {
   setupSaving.value = true
   try {
@@ -331,117 +272,40 @@ const persistSetupDebounced = useDebounceFn(async () => {
   }
 }, 50)
 
+const {
+  channels, channelsSaving, search, eosActiveChannels, eosMergePreview,
+  dupWarning, dupChannelWarning, dupChannelNrs, groupedChannels,
+  scheduleChannelsSave, persistChannels, deleteChannel,
+  onCsvImportSelected, onEosFileSelected, resolveEosMergePreview,
+  channelStatus, toggleChannelStatus,
+  initSnapshot, recordFocus, commitFocus, pushSnapshot,
+  undo, redo, canUndo, canRedo, onUndoRedoKeydown,
+  loadChannels, handleChannelsSse
+} = useShowChannels({
+  showId: props.id,
+  meta,
+  setupMarkdown,
+  sectionContents,
+  sectionDefs,
+  persistSetupDebounced,
+  persistSectionsDebounced,
+  persistSections,
+  t,
+  confirm
+})
+
+const { presence, initPresence, cleanupPresence } = useShowPresence(props.id, {
+  onChannels: handleChannelsSse,
+  onSections: handleSectionsSse
+})
+
+// ── Editor ─────────────────────────────────────────────────────────────────
 function onSetupChange(md) {
   recordFocus()
   pendingSetupMd = md
   setupSaving.value = true
   persistSetupDebounced()
   nextTick(() => commitFocus())
-}
-
-async function persistSetup(md) {
-  setupSaving.value = true
-  try {
-    await updateMeta(props.id, { ...meta.value, setupMarkdown: md })
-    meta.value.datum = new Date().toISOString().split('T')[0]
-  } finally {
-    setupSaving.value = false
-  }
-}
-
-async function persistEosChannels() {
-  await updateMeta(props.id, { ...meta.value, setupMarkdown: setupMarkdown.value, eosActiveChannels: eosActiveChannels.value })
-}
-
-async function onEosFileSelected(e) {
-  const file = e.target.files?.[0]
-  if (!file) return
-  e.target.value = ''
-
-  const text = await file.text()
-  const { activeChannels, error } = parseEosCsv(text)
-
-  if (error) {
-    window.alert(t(error))
-    return
-  }
-
-  const channelsWithNotes = new Set(
-    channels.value.filter(ch => (ch.notes ?? '').trim().length > 0).map(ch => String(ch.channel))
-  )
-
-  function chLabel(nr) {
-    const ch = channels.value.find(c => String(c.channel) === nr)
-    if (!ch) return ''
-    return [ch.device, ch.position].filter(Boolean).join(' / ')
-  }
-
-  const prev = eosActiveChannels.value ?? []
-  const prevTracked = prev.map(ch => ch.startsWith('-') ? ch.slice(1) : ch)
-    .filter(nr => !channelsWithNotes.has(nr))
-
-  const newActiveNrs  = activeChannels.filter(nr => !channelsWithNotes.has(nr))
-  const nowGoneNrs    = prevTracked.filter(nr => !activeChannels.includes(nr))
-  const untouchedNrs  = activeChannels.filter(nr => channelsWithNotes.has(nr))
-
-  const ok = await new Promise(resolve => {
-    _eosMergeResolve = resolve
-    eosMergePreview.value = {
-      open: true,
-      newActive:  newActiveNrs.map(nr => ({ nr, label: chLabel(nr) })),
-      nowGone:    nowGoneNrs.map(nr => ({ nr, label: chLabel(nr) })),
-      untouched:  untouchedNrs.map(nr => ({ nr, label: chLabel(nr) })),
-    }
-  })
-  eosMergePreview.value.open = false
-  if (!ok) return
-
-  const existingNrs = new Set(channels.value.map(ch => String(ch.channel)))
-  const missingNrs = newActiveNrs.filter(nr => !existingNrs.has(nr))
-  if (missingNrs.length > 0) {
-    const newChannels = missingNrs.map(nr => ({ channel: nr, address: '', device: '', position: '', color: '', notes: '' }))
-    channels.value = [...channels.value, ...newChannels]
-      .sort((a, b) => parseInt(a.channel) - parseInt(b.channel))
-    await saveChannels(props.id, channels.value)
-  }
-
-  eosActiveChannels.value = [
-    ...newActiveNrs,
-    ...nowGoneNrs.map(nr => `-${nr}`),
-  ]
-  await persistEosChannels()
-}
-
-function resolveEosMergePreview(value) {
-  _eosMergeResolve?.(value)
-  _eosMergeResolve = null
-}
-
-function channelStatus(ch) {
-  const notes = (ch.notes ?? '').trim()
-  if (notes.length > 0) return 'active'
-  const nr = String(ch.channel)
-  if (!eosActiveChannels.value) return 'default'
-  if (eosActiveChannels.value.includes(nr)) return 'eos'
-  if (eosActiveChannels.value.includes(`-${nr}`)) return 'default'
-  return 'default'
-}
-
-async function toggleChannelStatus(ch) {
-  if (!eosActiveChannels.value) return
-  const nr = String(ch.channel)
-  const status = channelStatus(ch)
-  if (status === 'active') return
-
-  if (status === 'eos') {
-    eosActiveChannels.value = eosActiveChannels.value.map(c => c === nr ? `-${nr}` : c)
-  } else {
-    const hasInactive = eosActiveChannels.value.includes(`-${nr}`)
-    if (hasInactive) {
-      eosActiveChannels.value = eosActiveChannels.value.map(c => c === `-${nr}` ? nr : c)
-    }
-  }
-  await persistEosChannels()
 }
 
 // ── History ─────────────────────────────────────────────────────────────────
@@ -452,57 +316,8 @@ function openHistory() {
 async function doRestoreHistory(entry) {
   pushSnapshot()
   await restoreHistory(props.id, entry.id)
-  const [chs, sections] = await Promise.all([
-    fetchChannels(props.id),
-    fetchShowSections(props.id),
-  ])
-  channels.value = Array.isArray(chs) ? chs : []
-  for (const { id, content } of (Array.isArray(sections) ? sections : [])) {
-    sectionContents.value.set(id, content)
-  }
+  await Promise.all([loadChannels(), loadSections()])
   historyOpen.value = false
-}
-
-// ── CSV Import ─────────────────────────────────────────────────────────────
-function onCsvImportSelected(event) {
-  const file = event.target.files?.[0]
-  if (!file) return
-  const reader = new FileReader()
-  reader.onload = e => {
-    const imported = parseChannelsCsv(e.target.result)
-    if (imported.length === 0) return
-    pushSnapshot()
-    channels.value = mergeChannels(channels.value, imported)
-    scheduleChannelsSave()
-  }
-  reader.readAsText(file)
-  event.target.value = ''
-}
-
-// ── Eos CSV Parser ─────────────────────────────────────────────────────────
-function parseEosCsv(text) {
-  const lines = text.split(/\r?\n/)
-  if (lines[0].trim() !== 'START_LEVELS') {
-    return { activeChannels: null, error: 'eos.import.error.invalid' }
-  }
-  const headerIdx = lines.findIndex(l => l.startsWith('TARGET_TYPE,'))
-  if (headerIdx === -1) return { activeChannels: null, error: 'eos.import.error.parse' }
-  const headers = lines[headerIdx].split(',')
-  const colChannel   = headers.indexOf('CHANNEL')
-  const colParamType = headers.indexOf('PARAMETER_TYPE_AS_TEXT')
-  const colLevel     = headers.indexOf('LEVEL')
-  if (colChannel === -1 || colParamType === -1 || colLevel === -1) {
-    return { activeChannels: null, error: 'eos.import.error.parse' }
-  }
-  const active = new Set()
-  for (let i = headerIdx + 1; i < lines.length; i++) {
-    const cols = lines[i].split(',')
-    if (cols[colParamType] === 'Intens' && parseFloat(cols[colLevel]) > 0) {
-      const ch = (cols[colChannel] ?? '').trim()
-      if (ch) active.add(ch)
-    }
-  }
-  return { activeChannels: [...active], error: null }
 }
 
 // ── PDF ────────────────────────────────────────────────────────────────────
@@ -511,151 +326,26 @@ async function openPdf() {
   window.open(url, '_blank')
 }
 
-// ── Duplikat-Warnungen ─────────────────────────────────────────────────────
-const dupWarning = computed(() => {
-  const addresses = channels.value.map(c => c.address).filter(Boolean)
-  return addresses.length !== new Set(addresses).size
-})
-
-const dupChannelNrs = computed(() => {
-  const seen = new Set()
-  const dups = new Set()
-  for (const ch of channels.value) {
-    if (ch.channel && seen.has(ch.channel)) dups.add(ch.channel)
-    seen.add(ch.channel)
-  }
-  return dups
-})
-
-const dupChannelWarning = computed(() => dupChannelNrs.value.size > 0)
-
-// ── Kanäle gruppiert ───────────────────────────────────────────────────────
-const groupedChannels = computed(() => {
-  const q = search.value.toLowerCase()
-  let chs = q
-    ? [...channels.value].sort((a, b) => parseInt(a.channel) - parseInt(b.channel))
-    : [...channels.value]
-  if (q) {
-    chs = chs.filter(ch =>
-      ch.channel?.includes(q) ||
-      ch.device?.toLowerCase().includes(q) ||
-      ch.notes?.toLowerCase().includes(q) ||
-      ch.position?.toLowerCase().includes(q)
-    )
-  }
-  const map = new Map()
-  for (const ch of chs) {
-    const pos = ch.position || ''
-    if (!map.has(pos)) map.set(pos, [])
-    map.get(pos).push(ch)
-  }
-  return [...map.entries()].map(([position, channels]) => ({ position, channels }))
-})
-
-// ── Kanal löschen ──────────────────────────────────────────────────────────
-async function deleteChannel(ch) {
-  const ok = await confirm({ t, titleKey: 'show.channel.delete.confirm', messageParams: { channel: ch.channel }, confirmKey: 'action.delete', cancelKey: 'action.cancel' })
-  if (!ok) return
-  pushSnapshot()
-  channels.value = channels.value.filter(c => c !== ch)
-  scheduleChannelsSave()
-}
-
-// ── Kanäle speichern ───────────────────────────────────────────────────────
-let ignoreSseCount = 0
-const persistChannels = useDebounceFn(async () => {
-  ignoreSseCount++
-  try {
-    await saveChannels(props.id, channels.value)
-    meta.value.datum = new Date().toISOString().split('T')[0]
-  }
-  finally { channelsSaving.value = false }
-}, 50)
-
-function scheduleChannelsSave() {
-  channelsSaving.value = true
-  persistChannels()
-}
-
-// ── Sections ───────────────────────────────────────────────────────────────
-let ignoreSectionsSseCount = 0
-const persistSectionsDebounced = useDebounceFn(async () => {
-  sectionsSaving.value = true
-  ignoreSectionsSseCount++
-  try {
-    const sections = [...sectionContents.value.entries()].map(([id, content]) => ({ id, content }))
-    await saveShowSections(props.id, sections)
-    meta.value.datum = new Date().toISOString().split('T')[0]
-  } finally {
-    sectionsSaving.value = false
-  }
-}, 50)
-
-async function persistSections() {
-  sectionsSaving.value = true
-  ignoreSectionsSseCount++
-  try {
-    const sections = [...sectionContents.value.entries()].map(([id, content]) => ({ id, content }))
-    await saveShowSections(props.id, sections)
-    meta.value.datum = new Date().toISOString().split('T')[0]
-  } finally {
-    sectionsSaving.value = false
-  }
-}
-
-// ── Floorplan ─────────────────────────────────────────────────────────────
-async function loadFloorplan() {
-  const data = await fetchShowFloorplan(props.id).catch(() => null)
-  if (data) floorplan.value = data
-}
-
-function onFloorplanChange(canvasData, snapshotDataUrl) {
-  floorplan.value = { ...floorplan.value, canvas_data: canvasData }
-  saveShowFloorplan(props.id, canvasData).catch(() => {})
-  if (snapshotDataUrl) {
-    saveShowFloorplanSnapshot(props.id, snapshotDataUrl).catch(() => {})
-  }
-}
-
-async function onFloorplanImageUpload(file) {
-  const result = await uploadShowFloorplanImage(props.id, file)
-  if (result?.image_url) {
-    floorplan.value = { ...floorplan.value, image_url: result.image_url }
-  }
-}
-
-async function onFloorplanImageDelete() {
-  await deleteShowFloorplanImage(props.id)
-  floorplan.value = { ...floorplan.value, image_url: null }
-}
-
 function jumpToChannel(_channelNum) {
   mobileTab.value = 'channels'
 }
 
 // ── Laden ──────────────────────────────────────────────────────────────────
-let unsubscribeSSE = null
 let snapshotInterval = null
-const presence = ref([])
 
 onMounted(async () => {
   try {
-    const [showData, chs, photoList, sections, defs] = await Promise.all([
+    const [showData] = await Promise.all([
       fetchShow(props.id),
-      fetchChannels(props.id),
-      fetchPhotos(props.id),
-      fetchShowSections(props.id),
-      fetchShowSectionDefs(props.id),
+      loadChannels(),
+      loadPhotos(),
+      loadSections()
     ])
 
     meta.value = { name: showData.name, datum: showData.datum, template: showData.template, untertitel: showData.untertitel, spielzeit: showData.spielzeit }
     setupMarkdown.value = showData.setupMarkdown ?? ''
     eosActiveChannels.value = showData.eosActiveChannels ?? null
-    channels.value = Array.isArray(chs) ? chs : []
-    photos.value = photoList
 
-    sectionContents.value = new Map((Array.isArray(sections) ? sections : []).map(s => [s.id, s.content]))
-    sectionDefs.value = Array.isArray(defs) ? defs : []
   } catch (e) {
     console.error('Ladefehler:', e)
   } finally {
@@ -667,36 +357,18 @@ onMounted(async () => {
   snapshotInterval = setInterval(() => createSnapshot(props.id).catch(() => {}), 10 * 60 * 1000)
 
   loadFloorplan().catch(() => {})
-
-  unsubscribeSSE = subscribeShow(props.id, {
-    onChannels: async () => {
-      if (ignoreSseCount > 0) { ignoreSseCount--; return }
-      channels.value = await fetchChannels(props.id)
-    },
-    onSections: async () => {
-      if (ignoreSectionsSseCount > 0) { ignoreSectionsSseCount--; return }
-      const sections = await fetchShowSections(props.id)
-      for (const { id, content } of (Array.isArray(sections) ? sections : [])) {
-        sectionContents.value.set(id, content)
-      }
-    },
-    onPresence: ({ users }) => {
-      presence.value = users
-    },
-  })
+  initPresence()
 
   await nextTick()
-
   window.addEventListener('keydown', onUndoRedoKeydown)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onUndoRedoKeydown)
-  unsubscribeSSE?.()
+  cleanupPresence()
   clearInterval(snapshotInterval)
   persistSetupDebounced?.flush?.()
   persistChannels?.flush?.()
   persistSectionsDebounced?.flush?.()
-  if (floorplanSaveTimer) { clearTimeout(floorplanSaveTimer) }
 })
 </script>

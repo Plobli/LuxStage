@@ -36,9 +36,7 @@ web-app/docs/
 # Heroku / sonstige Deployment-Artefakte
 Procfile
 
-# Root package.json (Überbleibsel, gehört nicht ins Repo)
-/package.json
-/package-lock.json
+# (Removed root package.json ignore since we are now a monorepo)
 
 # Local dev scripts
 start.sh

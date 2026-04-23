@@ -1,0 +1,12 @@
+{
+  "name": "luxstage-monorepo",
+  "version": "1.1.0",
+  "private": true,
+  "workspaces": [
+    "server",
+    "web-app"
+  ],
+  "dependencies": {
+    "better-sqlite3": "^12.8.0"
+  }
+}

@@ -15,13 +15,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Build Web-App
         run: |
-          cd web-app
           npm ci
-          npm run build
+          npm run build -w web-app
 
       - name: Create Release Archive
         run: |

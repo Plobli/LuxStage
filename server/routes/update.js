@@ -44,7 +44,7 @@ export async function updateRoutes(req, res, pathname, params) {
     const user = requireAdmin(req, res); if (!user) return
     const tag = params.branch || 'main'
     try {
-      const pkg = JSON.parse(await fsp.readFile(path.join(repoDir, 'server', 'package.json'), 'utf8'))
+      const pkg = JSON.parse(await fsp.readFile(path.join(repoDir, 'package.json'), 'utf8'))
       const currentVer = pkg.version
 
       if (tag === 'main') {

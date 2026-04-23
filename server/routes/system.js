@@ -4,7 +4,7 @@ import { json } from '../helpers.js'
 import { streamBackup, restoreBackup } from '../backup.js'
 import { config } from '../config.js'
 
-const { version } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url)))
+const { version } = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url)))
 
 export async function systemRoutes(req, res, pathname) {
   const { method } = req

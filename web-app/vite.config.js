@@ -3,8 +3,19 @@ import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 import { readFileSync } from 'fs'
+import { execSync } from 'child_process'
 
-const { version } = JSON.parse(readFileSync('../package.json', 'utf-8'))
+let { version } = JSON.parse(readFileSync('../package.json', 'utf-8'))
+const isRelease = process.env.GITHUB_REF_TYPE === 'tag'
+
+if (!isRelease) {
+  try {
+    const buildNum = execSync('git rev-list --count HEAD', { stdio: 'pipe' }).toString().trim()
+    version = `${version} Build ${buildNum}`
+  } catch (e) {
+    version = `${version} Build dev`
+  }
+}
 
 export default defineConfig({
   plugins: [tailwindcss(), vue()],
@@ -25,7 +36,6 @@ export default defineConfig({
         manualChunks: {
           'vendor-vue': ['vue', 'vue-router'],
           'vendor-ui': ['reka-ui'],
-          'vendor-konva': ['konva', 'vue-konva'],
           'vendor-tiptap': ['@tiptap/starter-kit', '@tiptap/vue-3', 'tiptap-markdown'],
         },
       },

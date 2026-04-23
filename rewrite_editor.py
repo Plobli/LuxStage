@@ -1,4 +1,6 @@
-<template>
+import os
+
+content = """<template>
   <div class="relative flex h-full overflow-hidden bg-background text-foreground">
     <!-- Left Toolbar -->
     <div class="w-[56px] bg-muted/30 border-r border-border flex flex-col items-center py-2 gap-1 z-10 shrink-0">
@@ -64,7 +66,7 @@
     >
       <div 
         class="absolute origin-top-left" 
-        :style="{ transform: `translate(${containerOffsetX}px, ${containerOffsetY}px) scale(${stageScale}) translate(${panOffset.x}px, ${panOffset.y}px)`, width: stageSize.width + 'px', height: stageSize.height + 'px' }"
+        :style="{ transform: `translate(${containerOffsetX}px, ${containerOffsetY}px) translate(${panOffset.x}px, ${panOffset.y}px) scale(${stageScale})`, width: stageSize.width + 'px', height: stageSize.height + 'px' }"
       >
         <svg ref="svgRef" :width="stageSize.width" :height="stageSize.height" class="absolute inset-0 overflow-visible" style="user-select: none;">
           <defs>
@@ -116,9 +118,7 @@
               <!-- Selection indicator -->
               <rect v-if="selectedIds.has(el.id)" :x="-pillW(el.channel)/2 - 4" :y="-22" :width="pillW(el.channel) + 8" :height="44" rx="22" fill="none" stroke="#dc3740" stroke-width="2" stroke-dasharray="4,3" />
               <!-- Arrow -->
-              <line :x1="getArrowPoints(el.channel, el.rotation).x1" :y1="getArrowPoints(el.channel, el.rotation).y1" 
-                    :x2="getArrowPoints(el.channel, el.rotation).x2" :y2="getArrowPoints(el.channel, el.rotation).y2" 
-                    stroke="#dc3740" stroke-width="3" marker-end="url(#arrowhead)" />
+              <line x1="0" y1="0" :x2="pillW(el.channel)/3 + 35" y2="0" stroke="#dc3740" stroke-width="3" marker-end="url(#arrowhead)" />
               <!-- Pill -->
               <rect :x="-pillW(el.channel)/2" y="-18" :width="pillW(el.channel)" :height="36" rx="18" fill="#dc3740" stroke="#dc3740" stroke-width="2" />
               <!-- Text -->
@@ -456,41 +456,6 @@ const floatingPanelPos = computed(() => {
 function pillW(_channel) { return 62 }
 function typeLabel(type) { return { line: 'Linie', rect: 'Rechteck', ellipse: 'Ellipse', text: 'Text', channel: 'Kanal' }[type] || type }
 
-function getArrowPoints(channel, rot) {
-  const rad = (rot || 0) * Math.PI / 180
-  const w = pillW(channel)
-  const r = 18
-  const flatW = w / 2 - r
-
-  const dx = Math.cos(rad)
-  const dy = Math.sin(rad)
-
-  let bx = 0, by = 0
-  if (Math.abs(dy) > 0.001) {
-    const yEdge = dy > 0 ? r : -r
-    const xIntersect = yEdge * dx / dy
-    if (xIntersect >= -flatW && xIntersect <= flatW) {
-      bx = xIntersect
-      by = yEdge
-    }
-  }
-
-  if (bx === 0 && by === 0) {
-    const cx = dx > 0 ? flatW : -flatW
-    const B = -2 * dx * cx
-    const C = cx * cx - r * r
-    const disc = B * B - 4 * C
-    if (disc >= 0) {
-      const t = (-B + Math.sqrt(disc)) / 2
-      bx = t * dx
-      by = t * dy
-    }
-  }
-
-  const len = 40
-  return { x1: bx, y1: by, x2: bx + dx * len, y2: by + dy * len }
-}
-
 function fitToContainer() { panOffset.value = { x: 0, y: 0 } }
 
 watch(() => props.imageUrl, (url) => {
@@ -530,11 +495,11 @@ const gridHorizontalLines = computed(() => {
 function snap(val) { return snapToGrid.value ? Math.round(val / GRID_SIZE) * GRID_SIZE : val }
 
 function getPointerPos(e) {
-  if (!svgRef.value) return { x: 0, y: 0 }
-  const rect = svgRef.value.getBoundingClientRect()
+  const CTM = svgRef.value.getScreenCTM()
+  if (!CTM) return { x: 0, y: 0 }
   return {
-    x: (e.clientX - rect.left) / stageScale.value,
-    y: (e.clientY - rect.top) / stageScale.value
+    x: (e.clientX - CTM.e) / CTM.a,
+    y: (e.clientY - CTM.f) / CTM.d
   }
 }
 
@@ -557,7 +522,7 @@ function getTransform(el) {
   else if (el.type === 'ellipse') { cx = el.x; cy = el.y } 
   else if (el.type === 'text') { cx = el.x; cy = el.y } 
   else if (el.type === 'channel') {
-    return `translate(${el.x}, ${el.y})`
+    return `translate(${el.x}, ${el.y}) rotate(${rot})`
   }
   return `rotate(${rot} ${cx} ${cy})`
 }
@@ -925,3 +890,7 @@ watch(() => props.initialCanvasData, (newVal) => {
 .fade-panel-enter-active, .fade-panel-leave-active { transition: opacity 0.12s ease, transform 0.12s ease; }
 .fade-panel-enter-from, .fade-panel-leave-to { opacity: 0; transform: scale(0.95); }
 </style>
+"""
+
+with open('/Users/christopher/Projekte/LuxStage-Projekt/LuxStage/web-app/src/components/FloorplanEditor.vue', 'w') as f:
+    f.write(content)

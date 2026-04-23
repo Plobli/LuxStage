@@ -1,8 +1,24 @@
-import { ref, computed } from 'vue'
+import { ref, computed, type Ref } from 'vue'
 import { useDebounceFn } from '@vueuse/core'
-import { fetchChannels, saveChannels, mergeChannels, parseChannelsCsv } from '../api/channels.js'
-import { updateMeta } from '../api/shows.js'
-import { useUndoRedo } from './useUndoRedo.js'
+import { fetchChannels, saveChannels, mergeChannels, parseChannelsCsv, type Channel } from '../api/channels'
+import { updateMeta } from '../api/shows'
+import { useUndoRedo } from './useUndoRedo'
+import { type SectionDef } from './useShowSections'
+
+export interface EosMergePreview {
+  open: boolean;
+  newActive: { nr: string, label: string }[];
+  nowGone: { nr: string, label: string }[];
+  untouched: { nr: string, label: string }[];
+}
+
+export interface UndoRedoState {
+  channels: Channel[];
+  sectionContents: [string, string][];
+  sectionDefs: SectionDef[];
+  meta: any;
+  setupMarkdown: string;
+}
 
 export function useShowChannels({ 
   showId, 
@@ -15,14 +31,25 @@ export function useShowChannels({
   persistSections,
   t, 
   confirm 
+}: {
+  showId: string;
+  meta: Ref<any>;
+  setupMarkdown: Ref<string>;
+  sectionContents: Ref<Map<string, string>>;
+  sectionDefs: Ref<SectionDef[]>;
+  persistSetupDebounced: any;
+  persistSectionsDebounced: any;
+  persistSections: () => Promise<void>;
+  t: (key: string, params?: any) => string;
+  confirm: (opts: any) => Promise<boolean>;
 }) {
-  const channels = ref([])
+  const channels = ref<Channel[]>([])
   const channelsSaving = ref(false)
   const search = ref('')
   
-  const eosActiveChannels = ref(null)
-  const eosMergePreview = ref({ open: false, newActive: [], nowGone: [], untouched: [] })
-  let _eosMergeResolve = null
+  const eosActiveChannels = ref<string[] | null>(null)
+  const eosMergePreview = ref<EosMergePreview>({ open: false, newActive: [], nowGone: [], untouched: [] })
+  let _eosMergeResolve: ((v: boolean) => void) | null = null
   let ignoreSseCount = 0
 
   const persistChannels = useDebounceFn(async () => {
@@ -35,13 +62,13 @@ export function useShowChannels({
     }
   }, 50)
 
-  function scheduleChannelsSave() {
+  function scheduleChannelsSave(): void {
     channelsSaving.value = true
     persistChannels()
   }
 
   const { initSnapshot, recordFocus, commitFocus, pushSnapshot, undo, redo, canUndo, canRedo } =
-    useUndoRedo(
+    useUndoRedo<UndoRedoState>(
       () => ({
         channels: channels.value,
         sectionContents: [...sectionContents.value.entries()],
@@ -57,7 +84,7 @@ export function useShowChannels({
         setupMarkdown.value = snap.setupMarkdown
       },
       () => {
-        persistChannels?.cancel?.()
+        (persistChannels as any)?.cancel?.()
         persistSetupDebounced?.cancel?.()
         persistSectionsDebounced?.cancel?.()
       },
@@ -70,16 +97,16 @@ export function useShowChannels({
       `undoredo-${showId}`
     )
 
-  function onUndoRedoKeydown(e) {
+  function onUndoRedoKeydown(e: KeyboardEvent): void {
     const focused = document.activeElement
     const isEditing = focused && (
       focused.tagName === 'INPUT' ||
       focused.tagName === 'TEXTAREA' ||
-      focused.isContentEditable
+      (focused as HTMLElement).isContentEditable
     )
     if (isEditing) return
 
-    const isMac = navigator.userAgentData?.platform === 'macOS' || /Mac/.test(navigator.userAgent)
+    const isMac = (navigator as any).userAgentData?.platform === 'macOS' || /Mac/.test(navigator.userAgent)
     const mod = isMac ? e.metaKey : e.ctrlKey
 
     if (mod && !e.shiftKey && e.key === 'z') {
@@ -101,8 +128,8 @@ export function useShowChannels({
   })
 
   const dupChannelNrs = computed(() => {
-    const seen = new Set()
-    const dups = new Set()
+    const seen = new Set<string>()
+    const dups = new Set<string>()
     for (const ch of channels.value) {
       if (ch.channel && seen.has(ch.channel)) dups.add(ch.channel)
       seen.add(ch.channel)
@@ -125,16 +152,16 @@ export function useShowChannels({
         ch.position?.toLowerCase().includes(q)
       )
     }
-    const map = new Map()
+    const map = new Map<string, Channel[]>()
     for (const ch of chs) {
       const pos = ch.position || ''
       if (!map.has(pos)) map.set(pos, [])
-      map.get(pos).push(ch)
+      map.get(pos)!.push(ch)
     }
     return [...map.entries()].map(([position, channels]) => ({ position, channels }))
   })
 
-  async function deleteChannel(ch) {
+  async function deleteChannel(ch: Channel): Promise<void> {
     const ok = await confirm({ t, titleKey: 'show.channel.delete.confirm', messageParams: { channel: ch.channel }, confirmKey: 'action.delete', cancelKey: 'action.cancel' })
     if (!ok) return
     pushSnapshot()
@@ -142,12 +169,12 @@ export function useShowChannels({
     scheduleChannelsSave()
   }
 
-  function onCsvImportSelected(event) {
+  function onCsvImportSelected(event: any): void {
     const file = event.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
     reader.onload = e => {
-      const imported = parseChannelsCsv(e.target.result)
+      const imported = parseChannelsCsv(e.target?.result as string)
       if (imported.length === 0) return
       pushSnapshot()
       channels.value = mergeChannels(channels.value, imported)
@@ -157,7 +184,7 @@ export function useShowChannels({
     event.target.value = ''
   }
 
-  function parseEosCsv(text) {
+  function parseEosCsv(text: string): { activeChannels: string[] | null, error: string | null } {
     const lines = text.split(/\r?\n/)
     if (lines[0].trim() !== 'START_LEVELS') {
       return { activeChannels: null, error: 'eos.import.error.invalid' }
@@ -171,7 +198,7 @@ export function useShowChannels({
     if (colChannel === -1 || colParamType === -1 || colLevel === -1) {
       return { activeChannels: null, error: 'eos.import.error.parse' }
     }
-    const active = new Set()
+    const active = new Set<string>()
     for (let i = headerIdx + 1; i < lines.length; i++) {
       const cols = lines[i].split(',')
       if (cols[colParamType] === 'Intens' && parseFloat(cols[colLevel]) > 0) {
@@ -182,11 +209,11 @@ export function useShowChannels({
     return { activeChannels: [...active], error: null }
   }
 
-  async function persistEosChannels() {
+  async function persistEosChannels(): Promise<void> {
     await updateMeta(showId, { ...meta.value, setupMarkdown: setupMarkdown.value, eosActiveChannels: eosActiveChannels.value })
   }
 
-  async function onEosFileSelected(e) {
+  async function onEosFileSelected(e: any): Promise<void> {
     const file = e.target.files?.[0]
     if (!file) return
     e.target.value = ''
@@ -194,8 +221,8 @@ export function useShowChannels({
     const text = await file.text()
     const { activeChannels, error } = parseEosCsv(text)
 
-    if (error) {
-      window.alert(t(error))
+    if (error || !activeChannels) {
+      window.alert(t(error || 'eos.import.error.parse'))
       return
     }
 
@@ -203,7 +230,7 @@ export function useShowChannels({
       channels.value.filter(ch => (ch.notes ?? '').trim().length > 0).map(ch => String(ch.channel))
     )
 
-    function chLabel(nr) {
+    function chLabel(nr: string): string {
       const ch = channels.value.find(c => String(c.channel) === nr)
       if (!ch) return ''
       return [ch.device, ch.position].filter(Boolean).join(' / ')
@@ -217,7 +244,7 @@ export function useShowChannels({
     const nowGoneNrs    = prevTracked.filter(nr => !activeChannels.includes(nr))
     const untouchedNrs  = activeChannels.filter(nr => channelsWithNotes.has(nr))
 
-    const ok = await new Promise(resolve => {
+    const ok = await new Promise<boolean>(resolve => {
       _eosMergeResolve = resolve
       eosMergePreview.value = {
         open: true,
@@ -232,7 +259,7 @@ export function useShowChannels({
     const existingNrs = new Set(channels.value.map(ch => String(ch.channel)))
     const missingNrs = newActiveNrs.filter(nr => !existingNrs.has(nr))
     if (missingNrs.length > 0) {
-      const newChannels = missingNrs.map(nr => ({ channel: nr, address: '', device: '', position: '', color: '', notes: '' }))
+      const newChannels: Channel[] = missingNrs.map(nr => ({ channel: nr, address: '', device: '', position: '', color: '', notes: '' }))
       channels.value = [...channels.value, ...newChannels]
         .sort((a, b) => parseInt(a.channel) - parseInt(b.channel))
       await saveChannels(showId, channels.value)
@@ -245,12 +272,12 @@ export function useShowChannels({
     await persistEosChannels()
   }
 
-  function resolveEosMergePreview(value) {
+  function resolveEosMergePreview(value: boolean): void {
     _eosMergeResolve?.(value)
     _eosMergeResolve = null
   }
 
-  function channelStatus(ch) {
+  function channelStatus(ch: Channel): 'active' | 'eos' | 'default' {
     const notes = (ch.notes ?? '').trim()
     if (notes.length > 0) return 'active'
     const nr = String(ch.channel)
@@ -260,7 +287,7 @@ export function useShowChannels({
     return 'default'
   }
 
-  async function toggleChannelStatus(ch) {
+  async function toggleChannelStatus(ch: Channel): Promise<void> {
     if (!eosActiveChannels.value) return
     const nr = String(ch.channel)
     const status = channelStatus(ch)
@@ -277,12 +304,12 @@ export function useShowChannels({
     await persistEosChannels()
   }
 
-  async function loadChannels() {
+  async function loadChannels(): Promise<void> {
     const chs = await fetchChannels(showId)
     channels.value = Array.isArray(chs) ? chs : []
   }
 
-  async function handleChannelsSse() {
+  async function handleChannelsSse(): Promise<void> {
     if (ignoreSseCount > 0) { ignoreSseCount--; return }
     const chs = await fetchChannels(showId)
     channels.value = Array.isArray(chs) ? chs : []
@@ -319,3 +346,4 @@ export function useShowChannels({
     handleChannelsSse
   }
 }
+

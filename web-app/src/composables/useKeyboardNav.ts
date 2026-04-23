@@ -11,7 +11,13 @@ export function useKeyboardNav() {
   // col 3 is the notes textarea — Enter should insert a newline there, not navigate
   const NOTES_COL = 3
 
-  function onKeydown(e, rowIdx, colIdx, totalCols, onAddRow) {
+  function onKeydown(
+    e: KeyboardEvent, 
+    rowIdx: number, 
+    colIdx: number, 
+    totalCols: number, 
+    onAddRow?: () => void
+  ): void {
     if (e.key === 'Tab') {
       e.preventDefault()
       const nextCol = e.shiftKey ? colIdx - 1 : colIdx + 1
@@ -43,13 +49,14 @@ export function useKeyboardNav() {
     }
   }
 
-  function focusCell(rowIdx, colIdx) {
+  function focusCell(rowIdx: number, colIdx: number): boolean {
     const el = document.querySelector(
       `[data-nav-row="${rowIdx}"] [data-nav-col="${colIdx}"]`
-    )
+    ) as HTMLElement | null
     if (el) { el.focus(); return true }
     return false
   }
 
   return { onKeydown }
 }
+

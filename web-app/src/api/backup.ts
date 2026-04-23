@@ -1,16 +1,15 @@
 /**
- * backup.js — ZIP-Backup-Download und -Restore
+ * backup.ts — ZIP-Backup-Download und -Restore
  */
-import { api, getToken } from './client.js'
+import { api, getToken, BASE } from './client'
 
-export async function downloadBackup() {
+export async function downloadBackup(): Promise<void> {
   const url = await api.downloadUrl('/api/backup')
   window.location.href = url
 }
 
-export async function uploadRestore(file) {
-  const BASE = localStorage.getItem('server_url') || window.location.origin
-  const res = await fetch(BASE + '/api/restore', {
+export async function uploadRestore(file: File): Promise<any> {
+  const res = await fetch(BASE() + '/api/restore', {
     method: 'POST',
     headers: {
       'Authorization': 'Bearer ' + (getToken() || ''),
@@ -24,3 +23,4 @@ export async function uploadRestore(file) {
   }
   return res.json()
 }
+

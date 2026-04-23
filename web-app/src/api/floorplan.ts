@@ -1,19 +1,19 @@
-// LuxStage/web-app/src/api/floorplan.js
-import { api, BASE, getToken } from './client.js'
+// LuxStage/web-app/src/api/floorplan.ts
+import { api, BASE, getToken } from './client'
 
-export function fetchTemplateFloorplan(templateId) {
+export function fetchTemplateFloorplan(templateId: string): Promise<any> {
   return api.get(`/api/templates/${templateId}/floorplan`)
 }
 
-export function deleteTemplateFloorplanImage(templateId) {
+export function deleteTemplateFloorplanImage(templateId: string): Promise<any> {
   return api.delete(`/api/templates/${templateId}/floorplan/image`)
 }
 
-export function uploadTemplateFloorplanImage(templateId, file) {
+export function uploadTemplateFloorplanImage(templateId: string, file: File): Promise<any> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
     xhr.open('POST', `${BASE()}/api/templates/${templateId}/floorplan/image`)
-    xhr.setRequestHeader('Authorization', 'Bearer ' + getToken())
+    xhr.setRequestHeader('Authorization', 'Bearer ' + (getToken() || ''))
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) resolve(JSON.parse(xhr.responseText))
       else {
@@ -29,11 +29,11 @@ export function uploadTemplateFloorplanImage(templateId, file) {
   })
 }
 
-export function uploadShowFloorplanImage(showId, file) {
+export function uploadShowFloorplanImage(showId: string, file: File): Promise<any> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
     xhr.open('POST', `${BASE()}/api/shows/${showId}/floorplan/image`)
-    xhr.setRequestHeader('Authorization', 'Bearer ' + getToken())
+    xhr.setRequestHeader('Authorization', 'Bearer ' + (getToken() || ''))
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) resolve(JSON.parse(xhr.responseText))
       else {
@@ -49,18 +49,19 @@ export function uploadShowFloorplanImage(showId, file) {
   })
 }
 
-export function deleteShowFloorplanImage(showId) {
+export function deleteShowFloorplanImage(showId: string): Promise<any> {
   return api.delete(`/api/shows/${showId}/floorplan/image`)
 }
 
-export function fetchShowFloorplan(showId) {
+export function fetchShowFloorplan(showId: string): Promise<any> {
   return api.get(`/api/shows/${showId}/floorplan`)
 }
 
-export function saveShowFloorplan(showId, canvasData) {
+export function saveShowFloorplan(showId: string, canvasData: any): Promise<any> {
   return api.put(`/api/shows/${showId}/floorplan`, { canvas_data: canvasData })
 }
 
-export function saveShowFloorplanSnapshot(showId, dataUrl) {
+export function saveShowFloorplanSnapshot(showId: string, dataUrl: string): Promise<any> {
   return api.put(`/api/shows/${showId}/floorplan/snapshot`, { data_url: dataUrl })
 }
+

@@ -5,25 +5,25 @@
 import { ref } from 'vue'
 
 /** Reaktiver Online-Status — true wenn der LuxStage-Server erreichbar ist */
-export const isOnline = ref(true)
+export const isOnline = ref<boolean>(true)
 
 const DEV_SERVER = import.meta.env.VITE_SERVER_URL || null
-export const BASE = () => localStorage.getItem('server_url') || DEV_SERVER || window.location.origin
+export const BASE = (): string => localStorage.getItem('server_url') || DEV_SERVER || window.location.origin
 const TOKEN_KEY = 'luxstage_token'
 
-export function getToken() { return localStorage.getItem(TOKEN_KEY) }
-export function setToken(t) { localStorage.setItem(TOKEN_KEY, t) }
-export function clearToken() { localStorage.removeItem(TOKEN_KEY) }
-export function isLoggedIn() { return !!getToken() }
+export function getToken(): string | null { return localStorage.getItem(TOKEN_KEY) }
+export function setToken(t: string): void { localStorage.setItem(TOKEN_KEY, t) }
+export function clearToken(): void { localStorage.removeItem(TOKEN_KEY) }
+export function isLoggedIn(): boolean { return !!getToken() }
 
-function headers(extra = {}) {
-  const h = { 'Content-Type': 'application/json', ...extra }
+function headers(extra: Record<string, string> = {}): Record<string, string> {
+  const h: Record<string, string> = { 'Content-Type': 'application/json', ...extra }
   const t = getToken()
   if (t) h['Authorization'] = 'Bearer ' + t
   return h
 }
 
-async function request(method, path, body) {
+async function request(method: string, path: string, body?: any): Promise<any> {
   const res = await fetch(BASE() + path, {
     method,
     headers: headers(),
@@ -39,18 +39,18 @@ async function request(method, path, body) {
 }
 
 export const api = {
-  get:    (path)        => request('GET', path),
-  post:   (path, body)  => request('POST', path, body),
-  put:    (path, body)  => request('PUT', path, body),
-  delete: (path)        => request('DELETE', path),
+  get:    (path: string)        => request('GET', path),
+  post:   (path: string, body: any)  => request('POST', path, body),
+  put:    (path: string, body: any)  => request('PUT', path, body),
+  delete: (path: string)        => request('DELETE', path),
 
   /** Synchrone URL mit langlebigem JWT — nur für Inline-Ressourcen (img src, SSE).
    *  Für einmalige Downloads (PDF, Backup) stattdessen downloadUrl() nutzen. */
-  url: (path) => BASE() + path + '?token=' + (getToken() || ''),
+  url: (path: string): string => BASE() + path + '?token=' + (getToken() || ''),
 
   /** Async URL mit kurzlebigem Einmal-Token (60s TTL) für Downloads (PDF, Backup).
    *  Verhindert, dass der langlebige JWT in Server-Logs landet. */
-  downloadUrl: async (path) => {
+  downloadUrl: async (path: string): Promise<string> => {
     const res = await fetch(BASE() + '/api/auth/download-token', {
       method: 'POST',
       headers: headers(),
@@ -61,7 +61,7 @@ export const api = {
   },
 }
 
-export async function login(username, password) {
+export async function login(username: string, password: string): Promise<string> {
   const res = await fetch(BASE() + '/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -73,9 +73,9 @@ export async function login(username, password) {
   return token
 }
 
-export async function logout() { clearToken() }
+export async function logout(): Promise<void> { clearToken() }
 
-export async function changePassword(currentPassword, newPassword) {
+export async function changePassword(currentPassword: string, newPassword: string): Promise<any> {
   const res = await fetch(BASE() + '/api/auth/change-password', {
     method: 'POST',
     headers: headers(),
@@ -88,11 +88,11 @@ export async function changePassword(currentPassword, newPassword) {
   return res.json()
 }
 
-export function listUsers() { return api.get('/api/users') }
-export function createUser(username, password, role) { return api.post('/api/users', { username, password, role }) }
-export function deleteUser(username) { return api.delete(`/api/users/${username}`) }
+export function listUsers(): Promise<any[]> { return api.get('/api/users') }
+export function createUser(username: string, password: string, role: string): Promise<any> { return api.post('/api/users', { username, password, role }) }
+export function deleteUser(username: string): Promise<any> { return api.delete(`/api/users/${username}`) }
 
-export async function resetPassword(username) {
+export async function resetPassword(username: string): Promise<any> {
   const res = await fetch(BASE() + '/api/auth/reset-password', {
     method: 'POST',
     headers: headers(),
@@ -105,7 +105,7 @@ export async function resetPassword(username) {
   return res.json()
 }
 
-export function setServerUrl(url) {
+export function setServerUrl(url: string): void {
   localStorage.setItem('server_url', url.replace(/\/$/, ''))
 }
 
@@ -113,13 +113,14 @@ export function setServerUrl(url) {
  * Gemeinsame SSE-Verbindung pro Show.
  * Gibt { onChannels, onSections, onPresence, close } zurück.
  */
-export function subscribeShow(showId, { onChannels, onSections, onPresence } = {}) {
+export function subscribeShow(showId: string, { onChannels, onSections, onPresence }: { onChannels?: (data: any) => void, onSections?: (data: any) => void, onPresence?: (data: any) => void } = {}): () => void {
   const url = BASE() + `/api/shows/${showId}/events?token=${getToken()}&device=web`
   const es = new EventSource(url)
-  if (onChannels) es.addEventListener('channels-updated', (e) => onChannels(JSON.parse(e.data)))
-  if (onSections) es.addEventListener('sections-updated', (e) => onSections(JSON.parse(e.data)))
-  if (onPresence) es.addEventListener('presence-updated', (e) => onPresence(JSON.parse(e.data)))
+  if (onChannels) es.addEventListener('channels-updated', (e: any) => onChannels(JSON.parse(e.data)))
+  if (onSections) es.addEventListener('sections-updated', (e: any) => onSections(JSON.parse(e.data)))
+  if (onPresence) es.addEventListener('presence-updated', (e: any) => onPresence(JSON.parse(e.data)))
   es.onerror = () => {} // reconnect automatically
   return () => es.close()
 }
+
 

@@ -1,17 +1,18 @@
-import { api } from './client.js'
+import { api } from './client'
+import { type Channel } from './channels'
 
-export const fetchTemplates = ()     => api.get('/api/templates')
-export const deleteTemplate = (name) => api.delete(`/api/templates/${name}`)
+export const fetchTemplates = (): Promise<any[]> => api.get('/api/templates')
+export const deleteTemplate = (name: string): Promise<any> => api.delete(`/api/templates/${name}`)
 
-export async function fetchTemplateChannels(name) {
+export async function fetchTemplateChannels(name: string): Promise<Channel[]> {
   return api.get(`/api/templates/${encodeURIComponent(name)}/channels`)
 }
 
-export async function saveTemplate(name, channels) {
+export async function saveTemplate(name: string, channels: Channel[]): Promise<any> {
   return api.put(`/api/templates/${name}`, channels)
 }
 
-export async function uploadTemplate({ name, text }) {
+export async function uploadTemplate({ name, text }: { name: string, text: string }): Promise<any> {
   // CSV-Text von Datei-Upload: parsen und als Array senden
   const cleanName = name.replace(/\.csv$/i, '')
   const lines = text.trim().split('\n').filter(Boolean)
@@ -24,3 +25,4 @@ export async function uploadTemplate({ name, text }) {
   })
   return api.put(`/api/templates/${encodeURIComponent(cleanName)}`, channels)
 }
+

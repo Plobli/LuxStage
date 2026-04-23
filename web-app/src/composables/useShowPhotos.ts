@@ -1,10 +1,10 @@
 import { ref } from 'vue'
-import { fetchPhotos } from '../api/photos.js'
+import { fetchPhotos } from '../api/photos'
 
-export function useShowPhotos(showId) {
-  const photos = ref([])
+export function useShowPhotos(showId: string) {
+  const photos = ref<any[]>([])
 
-  async function loadPhotos() {
+  async function loadPhotos(): Promise<any[]> {
     const photoList = await fetchPhotos(showId)
     photos.value = photoList || []
     return photos.value
@@ -15,3 +15,4 @@ export function useShowPhotos(showId) {
     loadPhotos
   }
 }
+

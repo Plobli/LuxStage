@@ -1,7 +1,8 @@
 /** Minimaler JWT-Payload-Decoder (kein Package nötig) */
-export function jwtDecode(token) {
+export function jwtDecode(token: string): any {
   try {
     const payload = token.split('.')[1]
     return JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))
   } catch { return null }
 }
+

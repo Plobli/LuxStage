@@ -7,21 +7,21 @@
  */
 import { onMounted, onUnmounted, getCurrentInstance } from 'vue'
 import { useRouter } from 'vue-router'
-import { getToken, setToken, clearToken, BASE } from '../api/client.js'
-import { jwtDecode } from '../api/jwtDecode.js'
+import { getToken, setToken, clearToken, BASE } from '../api/client'
+import { jwtDecode } from '../api/jwtDecode'
 
 const CHECK_INTERVAL_MS = 5 * 60 * 1000   // alle 5 Minuten prüfen
 const REFRESH_THRESHOLD_MS = 30 * 60 * 1000 // erneuern wenn < 30 Min. verbleiben
 
-export function useTokenRefresh() {
+export function useTokenRefresh(): void {
   const instance = getCurrentInstance()
   if (!instance) return
 
   const router = useRouter()
-  let intervalId = null
+  let intervalId: any = null
   let mounted = false // Guard gegen Redirects nach onUnmounted
 
-  async function tryRefresh() {
+  async function tryRefresh(): Promise<void> {
     const token = getToken()
     if (!token) return
 
@@ -70,6 +70,7 @@ export function useTokenRefresh() {
 
   onUnmounted(() => {
     mounted = false
-    clearInterval(intervalId)
+    if (intervalId) clearInterval(intervalId)
   })
 }
+

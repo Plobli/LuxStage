@@ -1,15 +1,20 @@
 import { ref } from 'vue'
-import { fetchShowFloorplan, saveShowFloorplan, saveShowFloorplanSnapshot, uploadShowFloorplanImage, deleteShowFloorplanImage } from '../api/floorplan.js'
+import { fetchShowFloorplan, saveShowFloorplan, saveShowFloorplanSnapshot, uploadShowFloorplanImage, deleteShowFloorplanImage } from '../api/floorplan'
 
-export function useShowFloorplan(showId) {
-  const floorplan = ref({ image_url: null, canvas_data: null })
+export interface FloorplanData {
+  image_url: string | null;
+  canvas_data: any | null;
+}
 
-  async function loadFloorplan() {
+export function useShowFloorplan(showId: string) {
+  const floorplan = ref<FloorplanData>({ image_url: null, canvas_data: null })
+
+  async function loadFloorplan(): Promise<void> {
     const data = await fetchShowFloorplan(showId).catch(() => null)
     if (data) floorplan.value = data
   }
 
-  function onFloorplanChange(canvasData, snapshotDataUrl) {
+  function onFloorplanChange(canvasData: any, snapshotDataUrl?: string): void {
     floorplan.value = { ...floorplan.value, canvas_data: canvasData }
     saveShowFloorplan(showId, canvasData).catch(() => {})
     if (snapshotDataUrl) {
@@ -17,14 +22,14 @@ export function useShowFloorplan(showId) {
     }
   }
 
-  async function onFloorplanImageUpload(file) {
+  async function onFloorplanImageUpload(file: File): Promise<void> {
     const result = await uploadShowFloorplanImage(showId, file)
     if (result?.image_url) {
       floorplan.value = { ...floorplan.value, image_url: result.image_url }
     }
   }
 
-  async function onFloorplanImageDelete() {
+  async function onFloorplanImageDelete(): Promise<void> {
     await deleteShowFloorplanImage(showId)
     floorplan.value = { ...floorplan.value, image_url: null }
   }
@@ -37,3 +42,4 @@ export function useShowFloorplan(showId) {
     onFloorplanImageDelete
   }
 }
+

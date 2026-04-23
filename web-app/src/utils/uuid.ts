@@ -1,4 +1,4 @@
-export function uuid() {
+export function uuid(): string {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID()
   }
@@ -8,3 +8,4 @@ export function uuid() {
     return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16)
   })
 }
+

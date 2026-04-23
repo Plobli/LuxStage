@@ -1,25 +1,31 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { execFile } from 'node:child_process'
 import { requireAdmin } from '../auth.js'
 import { readJsonBody, json } from '../helpers.js'
 import { config } from '../config.js'
 
 const repoDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
+const nvmDir = process.env.NVM_DIR || path.join(process.env.HOME, '.nvm')
+const nvmInit = `export NVM_DIR="${nvmDir}" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"`
+
+function run(cmd, env = {}, maxBuffer = 1024 * 1024) {
+  return new Promise((resolve, reject) =>
+    execFile('/bin/bash', ['-c', `${nvmInit} && ${cmd}`],
+      { maxBuffer, env: { ...process.env, ...env } },
+      (err, stdout, stderr) => {
+        if (err) { err.stderr = stderr; reject(err) } else { resolve(stdout.trim()) }
+      }
+    )
+  )
+}
 
 export async function updateRoutes(req, res, pathname, params) {
   const { method } = req
 
   if (method === 'GET' && pathname === '/api/update/branches') {
     const user = requireAdmin(req, res); if (!user) return
-    const { execFile } = await import('node:child_process')
-    const nvmDir = process.env.NVM_DIR || path.join(process.env.HOME, '.nvm')
-    const nvmInit = `export NVM_DIR="${nvmDir}" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"`
-    const run = (cmd, env = {}) => new Promise((resolve, reject) => {
-      execFile('/bin/bash', ['-c', `${nvmInit} && ${cmd}`], { maxBuffer: 1024 * 1024, env: { ...process.env, ...env } }, (err, stdout) => {
-        if (err) { reject(err) } else { resolve(stdout.trim()) }
-      })
-    })
     try {
       await run('git -C "$REPO_DIR" fetch --prune --quiet', { REPO_DIR: repoDir })
       const out = await run('git -C "$REPO_DIR" branch -r', { REPO_DIR: repoDir })
@@ -34,14 +40,6 @@ export async function updateRoutes(req, res, pathname, params) {
 
   if (method === 'GET' && pathname === '/api/update/check') {
     const user = requireAdmin(req, res); if (!user) return
-    const { execFile } = await import('node:child_process')
-    const nvmDir = process.env.NVM_DIR || path.join(process.env.HOME, '.nvm')
-    const nvmInit = `export NVM_DIR="${nvmDir}" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"`
-    const run = (cmd, env = {}) => new Promise((resolve, reject) => {
-      execFile('/bin/bash', ['-c', `${nvmInit} && ${cmd}`], { maxBuffer: 1024 * 1024, env: { ...process.env, ...env } }, (err, stdout) => {
-        if (err) { reject(err) } else { resolve(stdout.trim()) }
-      })
-    })
     const branch = params.branch || 'main'
     if (!/^[a-zA-Z0-9_./-]+$/.test(branch)) return json(res, 400, { error: 'Ungültiger Branch-Name' })
     try {
@@ -58,7 +56,6 @@ export async function updateRoutes(req, res, pathname, params) {
 
   if (method === 'POST' && pathname === '/api/update') {
     const user = requireAdmin(req, res); if (!user) return
-    const { execFile } = await import('node:child_process')
     const fsp = await import('node:fs/promises')
     const distDir  = path.join(repoDir, 'web-app', 'dist')
     const distNew  = path.join(repoDir, 'web-app', 'dist-new')
@@ -77,14 +74,6 @@ export async function updateRoutes(req, res, pathname, params) {
       'Access-Control-Allow-Origin': '*',
     })
     const sendEvent = (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
-
-    const nvmDir = process.env.NVM_DIR || path.join(process.env.HOME, '.nvm')
-    const nvmInit = `export NVM_DIR="${nvmDir}" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"`
-    const run = (cmd, env = {}) => new Promise((resolve, reject) => {
-      execFile('/bin/bash', ['-c', `${nvmInit} && ${cmd}`], { maxBuffer: 10 * 1024 * 1024, env: { ...process.env, ...env } }, (err, stdout, stderr) => {
-        if (err) { err.stderr = stderr; reject(err) } else { resolve(stdout) }
-      })
-    })
 
     let oldCommit = ''
     const log = []
@@ -132,7 +121,7 @@ export async function updateRoutes(req, res, pathname, params) {
       step('Web-App-Abhängigkeiten installiert')
 
       await fsp.rm(distNew, { recursive: true, force: true }).catch(() => {})
-      await run('cd "$REPO_DIR/web-app" && npm run build -- --outDir dist-new', { ...baseEnv, VITE_OUTDIR: 'dist-new' })
+      await run('cd "$REPO_DIR/web-app" && npm run build -- --outDir dist-new', { ...baseEnv, VITE_OUTDIR: 'dist-new' }, 10 * 1024 * 1024)
       step('Web-App gebaut')
 
       await fsp.access(path.join(distNew, 'index.html'))

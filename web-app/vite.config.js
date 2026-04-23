@@ -27,7 +27,6 @@ export default defineConfig({
           'vendor-ui': ['radix-vue', 'reka-ui'],
           'vendor-konva': ['konva', 'vue-konva'],
           'vendor-tiptap': ['@tiptap/starter-kit', '@tiptap/vue-3', '@tiptap/extension-placeholder', 'tiptap-markdown'],
-          'vendor-pdf': ['jspdf'],
         },
       },
     },

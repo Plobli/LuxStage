@@ -123,20 +123,3 @@ export function subscribeShow(showId, { onChannels, onSections, onPresence } = {
   return () => es.close()
 }
 
-/** @deprecated Nutze subscribeShow() */
-export function subscribeChannels(showId, onUpdate) {
-  const url = BASE() + `/api/shows/${showId}/events`
-  const es = new EventSource(url + '?token=' + getToken() + '&device=web')
-  es.addEventListener('channels-updated', (e) => onUpdate(JSON.parse(e.data)))
-  es.onerror = () => {} // Browser reconnect automatically – nicht manuell schließen
-  return () => es.close()
-}
-
-/** @deprecated Nutze subscribeShow() */
-export function subscribeSections(showId, onUpdate) {
-  const url = BASE() + `/api/shows/${showId}/events`
-  const es = new EventSource(url + '?token=' + getToken() + '&device=web')
-  es.addEventListener('sections-updated', (e) => onUpdate(JSON.parse(e.data)))
-  es.onerror = () => {} // Browser reconnect automatically – nicht manuell schließen
-  return () => es.close()
-}

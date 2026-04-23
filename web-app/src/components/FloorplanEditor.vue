@@ -310,28 +310,8 @@ import { Slider } from '@/components/ui/slider'
 import { Separator } from '@/components/ui/separator'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 
-const ToolBtn = defineComponent({
-  props: { active: Boolean, disabled: Boolean, variant: String, title: String },
-  emits: ['click'],
-  setup(props, { slots, emit }) {
-    return () => h(Button, {
-      title: props.title, disabled: props.disabled,
-      variant: props.variant === 'danger' ? 'destructive' : (props.active ? 'default' : 'ghost'),
-      size: 'icon', onClick: () => !props.disabled && emit('click'), class: 'w-10 h-10'
-    }, slots.default)
-  }
-})
-
-const PanelBtn = defineComponent({
-  props: { title: String, class: String },
-  emits: ['click'],
-  setup(props, { slots, emit }) {
-    return () => h(Button, {
-      variant: 'outline', size: 'sm', title: props.title,
-      onClick: () => emit('click'), class: ['h-7 text-xs px-2', props.class]
-    }, slots.default)
-  }
-})
+import ToolBtn from '@/components/ui/ToolBtn.vue'
+import PanelBtn from '@/components/ui/PanelBtn.vue'
 
 const props = defineProps({ imageUrl: { type: String, default: null }, initialCanvasData: { type: String, default: null }, channels: { type: Array, default: () => [] } })
 const emit = defineEmits(['change', 'jump-to-channel', 'upload-image', 'delete-image', 'snapshot'])

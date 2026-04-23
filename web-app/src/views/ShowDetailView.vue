@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col h-screen bg-background overflow-hidden">
+  <div class="flex flex-col h-dvh bg-background overflow-hidden">
 
     <!-- ── Top Navigation Bar ─────────────────────────────────────────────── -->
     <ShowHeader

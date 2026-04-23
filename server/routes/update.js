@@ -1,18 +1,19 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { execFile } from 'node:child_process'
 import { requireAdmin } from '../auth.js'
 import { readJsonBody, json } from '../helpers.js'
 import { config } from '../config.js'
+import fs from 'node:fs'
+import fsp from 'node:fs/promises'
+import unzipper from 'unzipper'
+import { execFile } from 'node:child_process'
 
 const repoDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
-
-const nvmDir = process.env.NVM_DIR || path.join(process.env.HOME, '.nvm')
-const nvmInit = `export NVM_DIR="${nvmDir}" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"`
+const GITHUB_REPO = 'Plobli/LuxStage'
 
 function run(cmd, env = {}, maxBuffer = 1024 * 1024) {
   return new Promise((resolve, reject) =>
-    execFile('/bin/bash', ['-c', `${nvmInit} && ${cmd}`],
+    execFile('/bin/bash', ['-c', cmd],
       { maxBuffer, env: { ...process.env, ...env } },
       (err, stdout, stderr) => {
         if (err) { err.stderr = stderr; reject(err) } else { resolve(stdout.trim()) }
@@ -27,12 +28,13 @@ export async function updateRoutes(req, res, pathname, params) {
   if (method === 'GET' && pathname === '/api/update/branches') {
     const user = requireAdmin(req, res); if (!user) return
     try {
-      await run('git -C "$REPO_DIR" fetch --prune --quiet', { REPO_DIR: repoDir })
-      const out = await run('git -C "$REPO_DIR" branch -r', { REPO_DIR: repoDir })
-      const branches = out.split('\n')
-        .map(b => b.trim().replace(/^origin\//, ''))
-        .filter(b => b && !b.startsWith('HEAD'))
-      return json(res, 200, { branches })
+      const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases`, {
+        headers: { 'User-Agent': 'LuxStage-Updater' }
+      })
+      if (!response.ok) throw new Error('GitHub API Error')
+      const releases = await response.json()
+      const branches = releases.map(r => r.tag_name)
+      return json(res, 200, { branches: branches.length ? branches : ['main'] })
     } catch (err) {
       return json(res, 200, { branches: ['main'], error: err.message })
     }
@@ -40,32 +42,41 @@ export async function updateRoutes(req, res, pathname, params) {
 
   if (method === 'GET' && pathname === '/api/update/check') {
     const user = requireAdmin(req, res); if (!user) return
-    const branch = params.branch || 'main'
-    if (!/^[a-zA-Z0-9_./-]+$/.test(branch)) return json(res, 400, { error: 'Ungültiger Branch-Name' })
+    const tag = params.branch || 'main'
     try {
-      await run('git -C "$REPO_DIR" fetch --no-tags origin "$TARGET_BRANCH" --quiet', { REPO_DIR: repoDir, TARGET_BRANCH: branch })
-      const behind = await run('git -C "$REPO_DIR" rev-list "HEAD..origin/$TARGET_BRANCH" --count', { REPO_DIR: repoDir, TARGET_BRANCH: branch })
-      const commits = parseInt(behind, 10)
-      if (commits === 0) return json(res, 200, { available: false, branch })
-      const log = await run('git -C "$REPO_DIR" log HEAD..origin/"$TARGET_BRANCH" --oneline --no-decorate', { REPO_DIR: repoDir, TARGET_BRANCH: branch })
-      return json(res, 200, { available: true, commits, log, branch })
+      const pkg = JSON.parse(await fsp.readFile(path.join(repoDir, 'server', 'package.json'), 'utf8'))
+      const currentVer = pkg.version
+
+      if (tag === 'main') {
+         return json(res, 200, { available: false, branch: tag, error: "Wähle ein Release (z.B. v1.21.0) für das Update aus." })
+      }
+      
+      const cleanTag = tag.replace(/^v/, '')
+      const isNewer = cleanTag !== currentVer
+      
+      if (!isNewer) return json(res, 200, { available: false, branch: tag })
+      
+      const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/tags/${tag}`, {
+        headers: { 'User-Agent': 'LuxStage-Updater' }
+      })
+      if (!response.ok) throw new Error('Release nicht gefunden')
+      const release = await response.json()
+      
+      return json(res, 200, { available: true, commits: 1, log: release.name + '\n' + (release.body || ''), branch: tag })
     } catch (err) {
-      return json(res, 200, { available: false, branch, error: err.message })
+      return json(res, 200, { available: false, branch: tag, error: err.message })
     }
   }
 
   if (method === 'POST' && pathname === '/api/update') {
     const user = requireAdmin(req, res); if (!user) return
-    const fsp = await import('node:fs/promises')
-    const distDir  = path.join(repoDir, 'web-app', 'dist')
-    const distNew  = path.join(repoDir, 'web-app', 'dist-new')
-    const distOld  = path.join(repoDir, 'web-app', 'dist-old')
     const dbPath   = path.join(config.dataPath, 'luxstage.db')
     const dbSnap   = path.join(config.dataPath, 'luxstage-preupdate.db')
+    const tmpZip   = path.join(repoDir, 'tmp-release.zip')
 
     const bodyJson = await readJsonBody(req, res); if (bodyJson === null) return
-    const branch = bodyJson.branch || 'main'
-    if (!/^[a-zA-Z0-9_./-]+$/.test(branch)) return json(res, 400, { error: 'Ungültiger Branch-Name' })
+    const tag = bodyJson.branch || 'main'
+    if (!/^[a-zA-Z0-9_.-]+$/.test(tag)) return json(res, 400, { error: 'Ungültiger Tag-Name' })
 
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
@@ -74,74 +85,49 @@ export async function updateRoutes(req, res, pathname, params) {
       'Access-Control-Allow-Origin': '*',
     })
     const sendEvent = (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
-
-    let oldCommit = ''
     const log = []
     const step = (msg) => { log.push(msg); console.log('[update]', msg); sendEvent('log', { msg }) }
 
-    const rollback = async (reason) => {
-      step(`Rollback: ${reason}`)
-      try { await run('git -C "$REPO_DIR" reset --hard "$OLD_COMMIT"', { REPO_DIR: repoDir, OLD_COMMIT: oldCommit }) } catch {}
-      try { await fsp.rm(distNew, { recursive: true, force: true }) } catch {}
-      try {
-        const distOldExists = await fsp.access(distOld).then(() => true).catch(() => false)
-        if (distOldExists) {
-          await fsp.rm(distDir, { recursive: true, force: true }).catch(() => {})
-          await fsp.rename(distOld, distDir)
-        }
-      } catch {}
-      sendEvent('done', { error: reason, log })
-      res.end()
-    }
-
-    const baseEnv = { REPO_DIR: repoDir, TARGET_BRANCH: branch }
     try {
-      await run('git -C "$REPO_DIR" config pull.ff only', baseEnv).catch(() => {})
-      await run('git -C "$REPO_DIR" config user.email "luxstage@localhost"', baseEnv).catch(() => {})
-      await run('git -C "$REPO_DIR" config user.name "LuxStage"', baseEnv).catch(() => {})
-
-      oldCommit = (await run('git -C "$REPO_DIR" rev-parse HEAD', baseEnv)).trim()
-      step(`Aktueller Commit: ${oldCommit.slice(0, 8)}`)
-
-      await run('cp "$DB_PATH" "$DB_SNAP"', { DB_PATH: dbPath, DB_SNAP: dbSnap })
+      if (tag === 'main') throw new Error('Release-basiertes Update erfordert einen GitHub Tag (z.B. v1.0.0).')
+      
+      step(`Starte Update auf Version ${tag}...`)
+      await fsp.copyFile(dbPath, dbSnap).catch(() => {})
       step('DB-Snapshot erstellt')
 
-      await run('git -C "$REPO_DIR" fetch --no-tags origin "$TARGET_BRANCH"', baseEnv)
-      await run('git -C "$REPO_DIR" reset --hard "origin/$TARGET_BRANCH"', baseEnv)
-      step(`git reset --hard origin/${branch}`)
-      step(`git pull (${branch}): Reset auf Remote-Stand`)
+      const zipUrl = `https://github.com/${GITHUB_REPO}/releases/download/${tag}/luxstage-release.zip`
+      step(`Lade Release herunter...`)
+      
+      const response = await fetch(zipUrl)
+      if (!response.ok) throw new Error(`Download fehlgeschlagen: HTTP ${response.status}`)
+      
+      const buffer = await response.arrayBuffer()
+      await fsp.writeFile(tmpZip, Buffer.from(buffer))
+      
+      step('Entpacke Dateien über das aktuelle Verzeichnis...')
+      await new Promise((resolve, reject) => {
+         fs.createReadStream(tmpZip).pipe(unzipper.Extract({ path: repoDir }))
+           .on('close', resolve)
+           .on('error', reject)
+      })
+      step('Dateien erfolgreich entpackt.')
 
-      const newCommit = (await run('git -C "$REPO_DIR" rev-parse HEAD', baseEnv)).trim()
-      if (newCommit === oldCommit) step('Bereits aktuell')
-
-      await run('npm install --prefix "$REPO_DIR/server"', baseEnv)
-      step('Server-Abhängigkeiten installiert')
-
-      await run('npm install --include=dev --prefix "$REPO_DIR/web-app"', baseEnv)
-      step('Web-App-Abhängigkeiten installiert')
-
-      await fsp.rm(distNew, { recursive: true, force: true }).catch(() => {})
-      await run('cd "$REPO_DIR/web-app" && npm run build -- --outDir dist-new', { ...baseEnv, VITE_OUTDIR: 'dist-new' }, 10 * 1024 * 1024)
-      step('Web-App gebaut')
-
-      await fsp.access(path.join(distNew, 'index.html'))
-      step('Build-Validierung OK')
-
-      await fsp.rm(distOld, { recursive: true, force: true }).catch(() => {})
-      const distExists = await fsp.access(distDir).then(() => true).catch(() => false)
-      if (distExists) await fsp.rename(distDir, distOld)
-      await fsp.rename(distNew, distDir)
-      step('dist atomar ersetzt')
-
-      fsp.rm(distOld, { recursive: true, force: true }).catch(() => {})
-      fsp.unlink(dbSnap).catch(() => {})
+      step('Installiere Server-Abhängigkeiten...')
+      await run(`cd "${path.join(repoDir, 'server')}" && npm install --omit=dev`)
+      
+      step('Aufräumen...')
+      await fsp.unlink(tmpZip).catch(()=>{})
+      await fsp.unlink(dbSnap).catch(()=>{})
 
       step('Neustart...')
       sendEvent('done', { log })
       res.end()
       setTimeout(() => process.exit(0), 500)
     } catch (err) {
-      await rollback(err.message + (err.stderr ? '\n' + err.stderr : ''))
+      step(`Fehler: ${err.message}`)
+      await fsp.unlink(tmpZip).catch(()=>{})
+      sendEvent('done', { error: err.message, log })
+      res.end()
     }
     return
   }

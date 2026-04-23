@@ -1,0 +1,36 @@
+name: Release LuxStage
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build Web-App
+        run: |
+          cd web-app
+          npm ci
+          npm run build
+
+      - name: Create Release Archive
+        run: |
+          # Wir zippen den Server-Quellcode (ohne node_modules wegen nativer Bindings)
+          # und das fertig gebaute Web-App Dist-Verzeichnis.
+          zip -r luxstage-release.zip server web-app/dist package.json package-lock.json -x "server/node_modules/*" "*/.DS_Store"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: luxstage-release.zip
+          generate_release_notes: true

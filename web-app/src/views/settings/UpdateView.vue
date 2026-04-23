@@ -8,9 +8,9 @@
       <div class="md:col-span-2 space-y-4 sm:max-w-xl">
         <div class="flex items-center gap-3">
           <Label class="text-sm shrink-0">{{ t('settings.update.branch') }}</Label>
-          <Select v-model="selectedBranch" @update:modelValue="onBranchChange" :disabled="updating">
+          <Select v-model="selectedBranch" @update:modelValue="onBranchChange" :disabled="updating || !availableBranches.length">
             <SelectTrigger class="w-45">
-              <SelectValue />
+              <SelectValue :placeholder="t('settings.update.branch')" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem v-for="b in availableBranches" :key="b" :value="b">{{ b }}</SelectItem>
@@ -95,8 +95,8 @@ const updateLog = ref([])
 const checkLoading = ref(false)
 const checkResult = ref(null)
 const checkError = ref(false)
-const selectedBranch = ref('main')
-const availableBranches = ref(['main'])
+const selectedBranch = ref('')
+const availableBranches = ref([])
 const logEl = ref(null)
 
 // Auto-scroll beim neuen Log-Eintrag
@@ -109,7 +109,11 @@ watch(updateLog, () => {
 async function loadBranches() {
   try {
     const { branches } = await api.get('/api/update/branches')
-    if (branches?.length) availableBranches.value = branches
+    if (branches?.length) {
+      availableBranches.value = branches
+      selectedBranch.value = branches[0]
+      checkForUpdate()
+    }
   } catch { /* ignore */ }
 }
 
@@ -194,5 +198,5 @@ async function doUpdate() {
   }
 }
 
-onMounted(() => { loadBranches(); checkForUpdate() })
+onMounted(() => loadBranches())
 </script>

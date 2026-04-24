@@ -4,7 +4,7 @@ import { router } from './router.js'
 import { config } from './config.js'
 import { startHistoryJob } from './history.js'
 
-const pkg = JSON.parse(fs.readFileSync(new URL('./package.json', import.meta.url)))
+const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url)))
 
 const corsOrigins = (process.env.CORS_ORIGINS || process.env.CORS_ORIGIN || '')
   .split(',').map(s => s.trim()).filter(Boolean)

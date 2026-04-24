@@ -97,7 +97,7 @@ fi
 
 # ── Build-Tools für native Node-Module (bcrypt, sharp) ───────────────────────
 step "Installiere Build-Tools..."
-apt-get install -y build-essential python3
+apt-get install -y build-essential python3 unzip
 ok "Build-Tools installiert"
 
 # ── Caddy installieren ────────────────────────────────────────────────────────

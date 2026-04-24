@@ -61,16 +61,16 @@ export const api = {
   },
 }
 
-export async function login(username: string, password: string): Promise<string> {
+export async function login(username: string, password: string): Promise<{ requiresPasswordChange: boolean }> {
   const res = await fetch(BASE() + '/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password }),
   })
   if (!res.ok) throw new Error('Ungültige Anmeldedaten')
-  const { token } = await res.json()
+  const { token, requiresPasswordChange } = await res.json()
   setToken(token)
-  return token
+  return { requiresPasswordChange: !!requiresPasswordChange }
 }
 
 export async function logout(): Promise<void> { clearToken() }
@@ -89,8 +89,12 @@ export async function changePassword(currentPassword: string, newPassword: strin
 }
 
 export function listUsers(): Promise<any[]> { return api.get('/api/users') }
-export function createUser(username: string, password: string, role: string): Promise<any> { return api.post('/api/users', { username, password, role }) }
+export function createUser(username: string, role: string): Promise<any> { return api.post('/api/users', { username, role }) }
 export function deleteUser(username: string): Promise<any> { return api.delete(`/api/users/${username}`) }
+
+export function getSmtpConfig(): Promise<any> { return api.get('/api/smtp') }
+export function saveSmtpConfig(cfg: object): Promise<any> { return api.post('/api/smtp', cfg) }
+export function testSmtpConfig(to: string): Promise<any> { return api.post('/api/smtp/test', { to }) }
 
 export async function resetPassword(username: string): Promise<any> {
   const res = await fetch(BASE() + '/api/auth/reset-password', {

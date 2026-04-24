@@ -14,8 +14,8 @@
             <Input
               v-model="username"
               id="username"
-              type="text"
-              autocomplete="username"
+              type="email"
+              autocomplete="email"
               required
             />
           </div>
@@ -96,9 +96,9 @@ async function handleLogin() {
   error.value = false
   loading.value = true
   try {
-    await login(username.value, password.value)
+    const { requiresPasswordChange } = await login(username.value, password.value)
     await pingServer()
-    router.push('/')
+    router.push(requiresPasswordChange ? { path: '/settings/account', query: { forceChange: '1' } } : '/')
   } catch {
     error.value = true
   } finally {

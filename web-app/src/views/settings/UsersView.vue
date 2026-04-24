@@ -31,17 +31,13 @@
     <div class="grid max-w-7xl grid-cols-1 gap-x-8 gap-y-10 px-4 py-16 sm:px-6 md:grid-cols-3 lg:px-8">
       <div>
         <h2 class="text-base/7 font-semibold text-foreground">{{ t('settings.users.new') }}</h2>
-        <p class="mt-1 text-sm/6 text-muted-foreground">Legt einen neuen Benutzer mit Benutzername, Passwort und Rolle an.</p>
+        <p class="mt-1 text-sm/6 text-muted-foreground">Legt einen neuen Benutzer an. Das initiale Passwort wird automatisch generiert und per E-Mail zugestellt.</p>
       </div>
       <form class="md:col-span-2" @submit.prevent="doCreateUser">
         <div class="space-y-4 sm:max-w-xl">
           <div class="space-y-2">
             <Label for="new-username">{{ t('settings.users.username') }}</Label>
-            <Input id="new-username" v-model="newUsername" type="text" required pattern="[a-zA-Z0-9_-]+" />
-          </div>
-          <div class="space-y-2">
-            <Label for="new-password">{{ t('settings.users.password') }}</Label>
-            <Input id="new-password" v-model="newPassword" type="password" required minlength="8" />
+            <Input id="new-username" v-model="newUsername" type="email" required autocomplete="off" />
           </div>
           <div class="space-y-2">
             <Label for="new-role">{{ t('settings.users.role') }}</Label>
@@ -116,7 +112,6 @@ const { confirm } = useConfirm()
 const users = ref([])
 const deleteMsg = ref('')
 const newUsername = ref('')
-const newPassword = ref('')
 const newRole = ref('techniker')
 const usersMsg = ref('')
 const usersLoading = ref(false)
@@ -132,9 +127,9 @@ async function doCreateUser() {
   usersMsg.value = ''
   usersLoading.value = true
   try {
-    await createUser(newUsername.value, newPassword.value, newRole.value)
+    await createUser(newUsername.value, newRole.value)
     usersMsg.value = t('settings.users.success')
-    newUsername.value = ''; newPassword.value = ''; newRole.value = 'techniker'
+    newUsername.value = ''; newRole.value = 'techniker'
     await loadUsers()
   } catch (e) {
     usersMsg.value = t('settings.users.error', { message: e.message })

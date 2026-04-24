@@ -1,6 +1,8 @@
+import { randomBytes } from 'node:crypto'
 import * as db from '../db.js'
 import { requireAdmin } from '../auth.js'
 import { readJsonBody, json } from '../helpers.js'
+import { sendWelcomeEmail } from '../email.js'
 
 const USER_ID = /^\/api\/users\/([^/]+)$/
 
@@ -15,11 +17,12 @@ export async function userRoutes(req, res, pathname) {
   if (method === 'POST' && pathname === '/api/users') {
     const admin = requireAdmin(req, res); if (!admin) return
     const body = await readJsonBody(req, res); if (body === null) return
-    const { username, password, role } = body
-    if (!username || !/^[a-zA-Z0-9_-]+$/.test(username)) return json(res, 400, { error: 'Ungültiger Benutzername' })
-    if (!password || password.length < 8) return json(res, 400, { error: 'Passwort zu kurz (min. 8 Zeichen)' })
+    const { username, role } = body
+    if (!username || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(username)) return json(res, 400, { error: 'Ungültige E-Mail-Adresse' })
     if (!['admin', 'techniker'].includes(role)) return json(res, 400, { error: 'Ungültige Rolle' })
-    await db.createUser(username, password, role)
+    const password = randomBytes(8).toString('hex')
+    await db.createUser(username, password, role, username)
+    sendWelcomeEmail(username, username, password).catch(err => console.error('[email] Willkommens-Email fehlgeschlagen:', err))
     return json(res, 201, { ok: true })
   }
 

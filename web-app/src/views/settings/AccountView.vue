@@ -1,6 +1,13 @@
 <template>
   <div class="divide-y divide-border">
 
+    <!-- Force-change Banner -->
+    <div v-if="forceChange" class="px-4 py-4 sm:px-6 lg:px-8 bg-amber-50 dark:bg-amber-950/30">
+      <Alert variant="destructive">
+        <AlertDescription>{{ t('settings.account.force_change') }}</AlertDescription>
+      </Alert>
+    </div>
+
     <!-- Passwort ändern -->
     <div class="grid max-w-7xl grid-cols-1 gap-x-8 gap-y-10 px-4 py-16 sm:px-6 md:grid-cols-3 lg:px-8">
       <div>
@@ -68,8 +75,8 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useLocale } from '../../composables/useLocale.js'
 import { usePhotoSettings } from '../../composables/usePhotoSettings.js'
 import { logout, changePassword } from '../../api/client.js'
@@ -82,6 +89,8 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 const { t } = useLocale()
 const { photosPerPage, VALID } = usePhotoSettings()
 const router = useRouter()
+const route = useRoute()
+const forceChange = computed(() => route.query.forceChange === '1')
 
 const pwCurrent = ref('')
 const pwNew = ref('')
@@ -98,6 +107,7 @@ async function doChangePassword() {
     await changePassword(pwCurrent.value, pwNew.value)
     pwMsg.value = t('settings.account.change_password.success')
     pwCurrent.value = ''; pwNew.value = ''; pwConfirm.value = ''
+    if (forceChange.value) router.replace('/')
   } catch (e) {
     pwMsg.value = e.message.includes('403') || e.message.toLowerCase().includes('falsch')
       ? t('settings.account.change_password.error.wrong')

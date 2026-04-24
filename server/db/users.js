@@ -18,14 +18,19 @@ export async function changePassword(username, newPassword, requiresChange = 0) 
 }
 
 export function listUsers() {
-  return dbContainer.db.prepare('SELECT username, role FROM users').all()
-    .map(u => ({ username: u.username, role: u.role, source: 'db' }))
+  return dbContainer.db.prepare('SELECT username, role, email FROM users').all()
+    .map(u => ({ username: u.username, role: u.role, email: u.email || '', source: 'db' }))
 }
 
-export async function createUser(username, password, role) {
+export function getUserEmail(username) {
+  const row = dbContainer.db.prepare('SELECT email FROM users WHERE username = ?').get(username)
+  return row?.email || null
+}
+
+export async function createUser(username, password, role, email = '') {
   const hash = await hashPassword(password)
-  dbContainer.db.prepare('INSERT INTO users (username, password, role) VALUES (?, ?, ?) ON CONFLICT(username) DO UPDATE SET password = excluded.password, role = excluded.role')
-    .run(username, hash, role)
+  dbContainer.db.prepare('INSERT INTO users (username, password, role, email, requires_password_change) VALUES (?, ?, ?, ?, 1) ON CONFLICT(username) DO UPDATE SET password = excluded.password, role = excluded.role, email = excluded.email, requires_password_change = 1')
+    .run(username, hash, role, email)
 }
 
 export function deleteUser(username) {

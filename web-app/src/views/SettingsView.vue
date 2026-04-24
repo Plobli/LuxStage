@@ -40,9 +40,10 @@ const isAdmin = computed(() => {
 const nav = computed(() => [
   { to: '/settings/account', label: t('settings.account') },
   { to: '/settings/display', label: t('settings.language') },
-  { to: '/settings/server', label: t('settings.server') },
   { to: '/settings/backup', label: t('settings.backup') },
+  ...(isAdmin.value ? [{ to: '/settings/server', label: t('settings.server') }] : []),
   ...(isAdmin.value ? [{ to: '/settings/users', label: 'Benutzerverwaltung' }] : []),
+  ...(isAdmin.value ? [{ to: '/settings/smtp', label: t('settings.smtp') }] : []),
   ...(isAdmin.value ? [{ to: '/settings/update', label: t('settings.update') }] : []),
 ])
 

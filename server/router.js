@@ -13,6 +13,7 @@ import { templateRoutes } from './routes/templates.js'
 import { floorplanRoutes } from './routes/floorplan.js'
 import { historyRoutes } from './routes/history.js'
 import { systemRoutes } from './routes/system.js'
+import { smtpRoutes } from './routes/smtp.js'
 import { updateRoutes } from './routes/update.js'
 import { pdfRoutes } from './routes/pdf.js'
 
@@ -93,6 +94,7 @@ export async function router(req, res) {
       // Reihenfolge: spezifische Prefixe zuerst
       if (pathname.startsWith('/api/auth/'))         { const r = await authRoutes(req, res, pathname);          if (nil(r)) notFound(res); return }
       if (pathname.startsWith('/api/users'))          { const r = await userRoutes(req, res, pathname);          if (nil(r)) notFound(res); return }
+      if (pathname.startsWith('/api/smtp'))           { const r = await smtpRoutes(req, res, pathname);          if (nil(r)) notFound(res); return }
       if (pathname.startsWith('/api/update'))         { const r = await updateRoutes(req, res, pathname, params); if (nil(r)) notFound(res); return }
       if (pathname.startsWith('/api/floorplans/'))    { const r = await floorplanRoutes(req, res, pathname);     if (nil(r)) notFound(res); return }
       if (pathname.startsWith('/api/templates'))      { const r = await templateRoutes(req, res, pathname);      if (nil(r)) notFound(res); return }

@@ -19,7 +19,7 @@
     </div>
 
     <!-- Backup wiederherstellen -->
-    <div class="grid max-w-7xl grid-cols-1 gap-x-8 gap-y-10 px-4 py-16 sm:px-6 md:grid-cols-3 lg:px-8">
+    <div v-if="isAdmin" class="grid max-w-7xl grid-cols-1 gap-x-8 gap-y-10 px-4 py-16 sm:px-6 md:grid-cols-3 lg:px-8">
       <div>
         <h2 class="text-base/7 font-semibold text-foreground">{{ t('settings.backup.restore') }}</h2>
         <p class="mt-1 text-sm/6 text-muted-foreground">{{ t('settings.backup.restore.hint') }}</p>
@@ -54,15 +54,23 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useLocale } from '../../composables/useLocale.js'
 import { useConfirm } from '../../composables/useConfirm.js'
 import { downloadBackup, uploadRestore } from '../../api/backup.js'
+import { jwtDecode } from '../../api/jwtDecode.js'
 
 const { t } = useLocale()
 const { confirm } = useConfirm()
+
+const isAdmin = computed(() => {
+  try {
+    const token = localStorage.getItem('luxstage_token')
+    return token ? jwtDecode(token)?.role === 'admin' : false
+  } catch { return false }
+})
 
 const restoreFile = ref(null)
 const restoreLoading = ref(false)

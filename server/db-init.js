@@ -158,7 +158,13 @@ function _initSchema(database) {
       username                  TEXT PRIMARY KEY,
       password                  TEXT NOT NULL,
       role                      TEXT NOT NULL DEFAULT 'techniker',
-      requires_password_change  INTEGER NOT NULL DEFAULT 0
+      requires_password_change  INTEGER NOT NULL DEFAULT 0,
+      email                     TEXT NOT NULL DEFAULT ''
+    );
+
+    CREATE TABLE IF NOT EXISTS settings (
+      key   TEXT PRIMARY KEY,
+      value TEXT NOT NULL DEFAULT ''
     );
   `)
 }
@@ -199,6 +205,9 @@ if (!userCols.includes('role')) {
 }
 if (!userCols.includes('requires_password_change')) {
   dbContainer.db.exec("ALTER TABLE users ADD COLUMN requires_password_change INTEGER NOT NULL DEFAULT 0")
+}
+if (!userCols.includes('email')) {
+  dbContainer.db.exec("ALTER TABLE users ADD COLUMN email TEXT NOT NULL DEFAULT ''")
 }
 // section_kv_rows: Zeilen für kv-table Sections
 const kvRowsTableExists = dbContainer.db.prepare(

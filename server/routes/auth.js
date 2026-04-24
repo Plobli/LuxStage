@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { login, signToken, requireAdmin, issueDownloadToken } from '../auth.js'
 import * as db from '../db.js'
 import { readJsonBody, json } from '../helpers.js'
+import { sendPasswordResetEmail } from '../email.js'
 
 const loginAttempts = new Map()
 const MAX_LOGIN_ATTEMPTS = 10
@@ -73,6 +74,10 @@ export async function authRoutes(req, res, pathname) {
     if (!allUsers.find(u => u.username === username)) return json(res, 404, { error: 'Benutzer nicht gefunden' })
     const newPassword = randomBytes(6).toString('hex')
     await db.changePassword(username, newPassword, 1)
+    const email = db.getUserEmail(username)
+    if (email) {
+      sendPasswordResetEmail(email, username, newPassword).catch(err => console.error('[email] Reset-Email fehlgeschlagen:', err))
+    }
     return json(res, 200, { newPassword })
   }
 

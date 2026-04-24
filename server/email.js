@@ -43,7 +43,7 @@ export async function sendWelcomeEmail(email, username, initialPassword) {
   await sendMail(
     email,
     'Willkommen bei LuxStage',
-    `Hallo ${username},\n\ndein LuxStage-Account wurde erstellt.\n\nE-Mail: ${username}\nPasswort: ${initialPassword}\n\nBitte melde dich an und ändere dein Passwort beim ersten Login.\n\nLuxStage`
+    `Hallo,\n\ndein LuxStage-Account wurde erstellt.\n\nE-Mail: ${username}\nPasswort: ${initialPassword}\n\nZum Anmelden: ${config.appUrl}\n\nBitte melde dich an und ändere dein Passwort beim ersten Login.\n\nLuxStage`
   )
 }
 
@@ -62,6 +62,6 @@ export async function sendTestEmail(to, cfg) {
     from: cfg.from,
     to,
     subject: 'LuxStage – Test-Mail',
-    text: 'Die SMTP-Konfiguration funktioniert.',
+    text: `Die SMTP-Konfiguration funktioniert. Zum Anmelden: ${config.appUrl}`,
   })
 }

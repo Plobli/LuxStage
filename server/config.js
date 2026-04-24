@@ -13,6 +13,7 @@ export const config = {
   port: parseInt(process.env.PORT || '3000'),
   dataPath: process.env.DATA_PATH || path.join(__dirname, '..', 'data'),
   jwtSecret,
+  appUrl: process.env.APP_URL || 'http://localhost:5173',
   // Rollen: admin (alles), techniker (shows lesen/schreiben, keine templates/backup/update)
   lockTimeout: 10 * 60 * 1000, // 10 Minuten in ms
   photoMaxWidth: 1500,

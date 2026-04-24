@@ -19,7 +19,7 @@ if [ ! -t 0 ] || [ "$(id -u)" -ne 0 ]; then
 fi
 
 # ── Konstanten ────────────────────────────────────────────────────────────────
-REPO_URL="https://github.com/Plobli/luxstage"
+GITHUB_REPO="Plobli/LuxStage"
 
 # ── Preflight ─────────────────────────────────────────────────────────────────
 step "Prüfe Voraussetzungen..."
@@ -138,7 +138,7 @@ set -e
 cd "\$HOME"
 NVM_DIR="\$HOME/.nvm"
 INSTALL_DIR="$INSTALL_DIR"
-REPO_URL="$REPO_URL"
+GITHUB_REPO="$GITHUB_REPO"
 
 # nvm + Node.js 22
 if [ ! -d "\$NVM_DIR" ]; then
@@ -154,21 +154,17 @@ echo "node_ok:\$(node -v)"
 npm install -g pm2 --silent
 echo "pm2_ok"
 
-# Repository
-if [ -d "\$INSTALL_DIR/.git" ]; then
-  git -C "\$INSTALL_DIR" pull
-else
-  git clone "\$REPO_URL" "\$INSTALL_DIR"
+# Download Latest Release
+echo "  →  Lade aktuellste Release herunter..."
+LATEST_RELEASE_URL=\$(curl -s https://api.github.com/repos/Plobli/LuxStage/releases/latest | grep -o '"browser_download_url": "[^"]*luxstage-release.zip[^"]*"' | cut -d'"' -f4)
+if [ -z "\$LATEST_RELEASE_URL" ]; then
+  echo "Fehler: Release-Download-URL nicht gefunden"
+  exit 1
 fi
+curl -fsSL "\$LATEST_RELEASE_URL" -o /tmp/luxstage-release.zip
+unzip -q /tmp/luxstage-release.zip -d "\$INSTALL_DIR"
+rm -f /tmp/luxstage-release.zip
 echo "repo_ok"
-
-# Web-App bauen
-echo "  →  Installiere Web-App-Abhängigkeiten..."
-cd "\$INSTALL_DIR/web-app"
-npm install --silent
-echo "  →  Baue Web-App (kann 1-2 Minuten dauern)..."
-npm run build
-echo "webapp_ok"
 
 # Server-Abhängigkeiten
 echo "  →  Installiere Server-Abhängigkeiten..."

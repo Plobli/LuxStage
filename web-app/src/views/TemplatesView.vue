@@ -10,6 +10,7 @@
         </Button>
         <template v-if="renamingName">
           <input
+            ref="renameInput"
             v-model="renameValue"
             class="text-2xl font-semibold bg-transparent border-b border-primary outline-none text-foreground w-64"
             autofocus
@@ -22,6 +23,7 @@
             @keydown.enter.prevent="commitRename"
             @keydown.escape="renamingName = false"
             @blur="commitRename"
+            @input="fixCapitalization"
           />
           <span v-if="renameSaving" class="text-xs text-muted-foreground">…</span>
           <span v-if="renameError" class="text-xs text-destructive">{{ renameError }}</span>
@@ -288,7 +290,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { ArrowLeft, Upload, Pencil } from 'lucide-vue-next'
 import { useLocale } from '../composables/useLocale.js'
 import { useConfirm } from '../composables/useConfirm.js'
@@ -320,6 +322,7 @@ const renamingName = ref(false)
 const renameValue = ref('')
 const renameError = ref('')
 const renameSaving = ref(false)
+const renameInput = ref(null)
 
 // Upload
 const uploadOpen = ref(false)
@@ -444,6 +447,28 @@ async function persistOscHost() {
   const tpl = templates.value.find(t => t.name === editingName.value)
   if (tpl) tpl.oscHost = editingOscHost.value
   oscSaving.value = false
+}
+
+function fixCapitalization(e) {
+  const el = e.target
+  const pos = el.selectionStart
+  const val = el.value
+  // WebKit kapitalisiert nach Umlauten/ß — wir vergleichen mit renameValue
+  // und korrigieren falls der neue Buchstabe unerwartet groß ist
+  if (val === renameValue.value) return
+  const prev = renameValue.value
+  if (pos > 0 && pos <= val.length) {
+    const newChar = val[pos - 1]
+    const prevChar = prev[pos - 2] ?? ''
+    const umlautOrSz = /[äöüßÄÖÜ]/.test(prevChar)
+    if (umlautOrSz && newChar !== newChar.toLowerCase()) {
+      const fixed = val.slice(0, pos - 1) + newChar.toLowerCase() + val.slice(pos)
+      renameValue.value = fixed
+      nextTick(() => {
+        el.setSelectionRange(pos, pos)
+      })
+    }
+  }
 }
 
 function startRename() {

@@ -125,6 +125,16 @@ export async function templateRoutes(req, res, pathname) {
       }
       return json(res, 200, { ok: true })
     }
+    if (method === 'PATCH') {
+      const user = requireAdmin(req, res); if (!user) return
+      const body = await readJsonBody(req, res); if (body === null) return
+      const newName = typeof body.name === 'string' ? body.name.trim() : ''
+      if (!newName || newName.length > 100 || /[\x00-\x1F]/.test(newName)) return json(res, 400, { error: 'Ungültiger Bühnen-Template-Name' })
+      const existing = db.getTemplateByName(newName)
+      if (existing) return json(res, 409, { error: 'Name bereits vergeben' })
+      db.renameTemplate(name, newName)
+      return json(res, 200, { ok: true, name: newName })
+    }
     if (method === 'DELETE') {
       const user = requireAdmin(req, res); if (!user) return
       db.deleteTemplate(name)

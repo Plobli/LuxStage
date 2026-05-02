@@ -247,6 +247,9 @@ const templateCols = dbContainer.db.pragma('table_info(templates)').map(c => c.n
 if (!templateCols.includes('osc_host')) {
   dbContainer.db.exec("ALTER TABLE templates ADD COLUMN osc_host TEXT NOT NULL DEFAULT ''")
 }
+if (!templateCols.includes('updated_at')) {
+  dbContainer.db.exec('ALTER TABLE templates ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0')
+}
 
 const photoCols = dbContainer.db.pragma('table_info(photo_descriptions)').map(c => c.name)
 if (!photoCols.includes('channel_number')) {

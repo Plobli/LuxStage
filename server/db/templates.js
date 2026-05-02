@@ -2,8 +2,19 @@ import { dbContainer } from '../db-init.js'
 import { randomUUID } from 'node:crypto'
 
 export function listTemplates() {
-  return dbContainer.db.prepare('SELECT name, osc_host FROM templates ORDER BY name').all()
-    .map(r => ({ name: r.name, oscHost: r.osc_host ?? '' }))
+  return dbContainer.db.prepare(`
+    SELECT t.name, t.osc_host, t.updated_at,
+           COUNT(tc.id) AS channel_count
+    FROM templates t
+    LEFT JOIN template_channels tc ON tc.template_id = t.id
+    GROUP BY t.id
+    ORDER BY t.name
+  `).all().map(r => ({
+    name: r.name,
+    oscHost: r.osc_host ?? '',
+    channelCount: r.channel_count,
+    updatedAt: r.updated_at || null,
+  }))
 }
 
 export function getTemplateByName(name) {
@@ -14,6 +25,10 @@ export function updateTemplateOscHost(name, oscHost) {
   dbContainer.db.prepare('UPDATE templates SET osc_host = ? WHERE name = ?').run(oscHost, name)
 }
 
+export function renameTemplate(oldName, newName) {
+  dbContainer.db.prepare('UPDATE templates SET name = ? WHERE name = ?').run(newName, oldName)
+}
+
 export function readTemplate(name) {
   const tpl = dbContainer.db.prepare('SELECT * FROM templates WHERE name = ?').get(name)
   if (!tpl) return []
@@ -22,11 +37,14 @@ export function readTemplate(name) {
 
 export function writeTemplate(name, channels) {
   const tx = dbContainer.db.transaction(() => {
+    const now = Date.now()
     let tpl = dbContainer.db.prepare('SELECT * FROM templates WHERE name = ?').get(name)
     if (!tpl) {
       const id = randomUUID()
-      dbContainer.db.prepare('INSERT INTO templates (id, name) VALUES (?, ?)').run(id, name)
+      dbContainer.db.prepare('INSERT INTO templates (id, name, updated_at) VALUES (?, ?, ?)').run(id, name, now)
       tpl = { id }
+    } else {
+      dbContainer.db.prepare('UPDATE templates SET updated_at = ? WHERE id = ?').run(now, tpl.id)
     }
     dbContainer.db.prepare('DELETE FROM template_channels WHERE template_id = ?').run(tpl.id)
     for (let i = 0; i < channels.length; i++) {
@@ -79,11 +97,14 @@ export function writeTemplateSections(name, defs) {
   const insertKvRow = dbContainer.db.prepare('INSERT INTO template_section_kv_rows (id, section_id, label, value, sort_order) VALUES (?, ?, ?, ?, ?)')
   const insertField = dbContainer.db.prepare('INSERT INTO template_section_fields (id, section_id, key, label, unit, sort_order) VALUES (?, ?, ?, ?, ?, ?)')
   const tx = dbContainer.db.transaction(() => {
+    const now = Date.now()
     let tpl = dbContainer.db.prepare('SELECT * FROM templates WHERE name = ?').get(name)
     if (!tpl) {
       const id = randomUUID()
-      dbContainer.db.prepare('INSERT INTO templates (id, name) VALUES (?, ?)').run(id, name)
+      dbContainer.db.prepare('INSERT INTO templates (id, name, updated_at) VALUES (?, ?, ?)').run(id, name, now)
       tpl = { id }
+    } else {
+      dbContainer.db.prepare('UPDATE templates SET updated_at = ? WHERE id = ?').run(now, tpl.id)
     }
     dbContainer.db.prepare('DELETE FROM template_section_defs WHERE template_id = ?').run(tpl.id)
     for (let i = 0; i < defs.length; i++) {

@@ -4,12 +4,17 @@ import { type Channel } from './channels'
 export interface TemplateMeta {
   name: string
   oscHost: string
+  channelCount: number
+  updatedAt: number | null
 }
 
 export const fetchTemplates = (): Promise<TemplateMeta[]> => api.get('/api/templates')
 export const deleteTemplate = (name: string): Promise<any> => api.delete(`/api/templates/${name}`)
 export const saveTemplateOscHost = (name: string, oscHost: string): Promise<any> =>
   api.put('/api/templates', { name, oscHost })
+
+export const renameTemplate = (name: string, newName: string): Promise<{ ok: boolean, name: string }> =>
+  api.patch(`/api/templates/${encodeURIComponent(name)}`, { name: newName })
 
 export async function fetchTemplateChannels(name: string): Promise<Channel[]> {
   return api.get(`/api/templates/${encodeURIComponent(name)}/channels`)

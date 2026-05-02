@@ -1,15 +1,12 @@
 {
   "app.name": "LuxStage",
-
   "action.undo": "Undo (⌘Z)",
   "action.redo": "Redo (⌘⇧Z)",
-
   "nav.shows": "Shows",
   "nav.archive": "Archive",
-  "nav.templates": "Templates",
+  "nav.templates": "Stage Templates",
   "nav.settings": "Settings",
   "nav.logout": "Log out",
-
   "auth.login": "Log in",
   "auth.username": "Email address",
   "auth.password": "Password",
@@ -17,7 +14,6 @@
   "auth.login.submit": "Log in",
   "auth.login.loading": "Logging in …",
   "auth.login.error": "Login failed. Please check your username and password.",
-
   "show.new": "New Show",
   "show.name": "Name",
   "show.date": "Date",
@@ -40,10 +36,8 @@
   "show.archive.empty": "No archived shows",
   "show.setup": "Setup",
   "show.setup.placeholder": "Setup notes, special conditions, remarks …",
-
   "mode.preparation": "Setup",
   "mode.lighting": "Focus",
-
   "field.channel": "Chan",
   "field.channel_number": "Chan",
   "field.address": "Address",
@@ -56,7 +50,6 @@
   "field.name": "Name",
   "field.date": "Date",
   "field.venue": "Venue",
-
   "channel.no_category": "No Category",
   "channel.list.empty": "No channels yet.",
   "channel.add": "Add channel",
@@ -67,26 +60,24 @@
   "channel.export": "Export CSV",
   "channel.import": "Import CSV",
   "channel.position.edit": "Rename position",
-
-  "template.new": "New template",
+  "template.new": "New stage template",
   "template.upload": "Upload CSV",
   "template.upload.hint": "Semicolon-separated CSV file (UTF-8).",
   "template.upload.preview": "Preview",
-  "template.upload.confirm": "Import template",
-  "template.upload.success": "Template imported successfully.",
-  "template.upload.error": "Error importing template.",
-  "template.name": "Template name",
+  "template.upload.confirm": "Import stage template",
+  "template.upload.success": "Stage template imported successfully.",
+  "template.upload.error": "Error importing stage template.",
+  "template.name": "Name",
   "template.venue_name": "Theatre name",
   "template.channels": "Channels",
   "template.custom_fields": "Show fields",
-  "template.list.empty": "No templates yet.",
+  "template.list.empty": "No stage templates yet.",
   "template.created": "Created",
   "template.field_name": "Field name",
   "template.field_name.example": "e.g. Portal bridge",
   "template.unit_hint": "Unit (optional)",
   "template.unit_hint.example": "e.g. metres",
   "template.add_field": "Add field",
-
   "settings.server": "Server",
   "settings.server_settings": "Server settings",
   "settings.server_url": "Server URL",
@@ -104,18 +95,15 @@
   "settings.status.version.app": "App version",
   "settings.status.version.server": "Server version",
   "settings.status.disk": "Disk (free)",
-
   "photo.add": "Add photo",
   "photo.caption": "Caption",
   "photo.caption.placeholder": "Description …",
   "photo.delete": "Delete photo",
   "photo.empty": "No photos yet.",
-
   "color.picker.label": "Color / Filter",
   "color.picker.custom": "Custom",
   "color.picker.text": "Custom",
   "color.picker.placeholder": "e.g. R02 or warm white",
-
   "action.save": "Save",
   "action.cancel": "Cancel",
   "action.delete": "Delete",
@@ -127,21 +115,18 @@
   "action.done": "Done",
   "action.ok": "OK",
   "action.edit": "Edit",
-
   "error.generic": "An error occurred.",
   "error.loading": "Loading …",
   "error.network": "Cannot reach the server.",
-  "offline.banner": "No connection – read-only mode",
+  "offline.banner": "No connection to server – changes will not be saved",
   "error.not_found": "Not found.",
   "error.unauthorized": "Not logged in.",
-
   "csv.error.duplicate_channel": "Duplicate channel number: {channel}",
   "csv.error.invalid_channel": "Invalid channel number on line {line}: \"{value}\"",
   "csv.error.missing_header": "Required column missing: {column}",
   "csv.error.invalid_address": "Invalid address format on line {line}: \"{value}\"",
   "csv.preview.channels": "{count} channels",
   "csv.preview.custom_fields": "{count} show fields",
-
   "eos.import.button": "Import from Eos",
   "eos.import.error.invalid": "Not a valid Eos export file.",
   "eos.import.error.parse": "Could not read file.",
@@ -159,14 +144,12 @@
   "eos.preview.untouched": "Untouched – has description ({n})",
   "eos.preview.empty": "No changes.",
   "eos.preview.confirm": "Import",
-
   "history.btn": "History",
   "history.title": "Version History",
   "history.empty": "No versions available.",
   "history.restore": "Restore",
   "history.channel_count": "{n} channels",
   "history.back": "← Back",
-
   "sections.btn": "Sections",
   "sections.add": "+ Section",
   "sections.title.placeholder": "Title",
@@ -179,7 +162,6 @@
   "sections.new": "Section",
   "sections.add.markdown": "+ Text field",
   "sections.add.fields": "+ Custom fields",
-
   "show.id.label": "ID (filename, no spaces)",
   "show.id.placeholder": "northern-2026",
   "show.venue": "Venue",
@@ -189,11 +171,9 @@
   "show.channel.address.example": "1/001",
   "show.channel.delete.confirm": "Delete channel {channel}?",
   "show.photo.delete.confirm": "Delete photo?",
-
   "template.csv.choose": "Choose CSV",
   "template.more_channels": "… {count} more channels",
-  "template.delete.confirm": "Delete template \u201c{name}\u201d?",
-
+  "template.delete.confirm": "Delete stage template \"{name}\"?",
   "settings.backup": "Backup",
   "settings.backup.download": "↓ Download ZIP backup",
   "settings.backup.restore": "Restore backup",
@@ -219,7 +199,6 @@
   "settings.photos_per_page": "Photos per print page",
   "settings.photos_per_page.hint": "How many photos fit on one A4 page when printing.",
   "settings.backup.hint": "Download all show data as a ZIP archive.",
-
   "settings.account": "Account",
   "settings.account.force_change": "Please change your initial password before continuing.",
   "settings.account.change_password": "Change password",
@@ -236,7 +215,6 @@
   "settings.account.reset_password.submit": "Reset",
   "settings.account.reset_password.success": "✓ New password: {password}",
   "settings.account.reset_password.error": "✗ Error: {message}",
-
   "settings.users": "Users",
   "settings.users.hint": "Create and manage users.",
   "settings.users.new": "New user",
@@ -255,7 +233,6 @@
   "settings.users.email": "Email (optional)",
   "settings.users.error": "✗ {message}",
   "settings.users.success": "✓ User created",
-
   "settings.smtp": "Email / SMTP",
   "settings.smtp.hint": "SMTP configuration for automatic emails (welcome, password reset).",
   "settings.smtp.host": "SMTP host",
@@ -269,23 +246,19 @@
   "settings.smtp.success": "✓ Saved",
   "settings.smtp.test.success": "✓ Test email sent",
   "settings.smtp.error": "✗ {message}",
-
   "auth.reset": "Forgot password?",
   "auth.reset.title": "Reset password",
   "auth.reset.hint": "Contact your administrator to have your password reset.",
   "auth.reset.back": "Back to login",
-
   "editor.bold": "B",
   "editor.italic": "I",
   "editor.heading": "Heading",
   "editor.list.bullet": "• List",
   "editor.list.ordered": "1. List",
-
   "tab.channels": "Channels",
   "tab.info": "Info",
   "tab.photos": "Photos",
   "tab.floorplan": "Floor Plan",
-
   "nav.import": "Import",
   "nav.export": "Export",
   "ocr.trigger": "Scan show plan",
@@ -297,5 +270,7 @@
   "ocr.result.title": "Recognised content",
   "ocr.result.hint": "Please review the result before applying. The setup text will be appended. Recognised channels are only filled in if the notes field is still empty.",
   "ocr.result.apply": "Apply",
-  "offline.banner": "No connection to server – changes will not be saved"
+  "template.rename": "Rename",
+  "template.rename.placeholder": "New name",
+  "template.rename.error": "Name already taken."
 }

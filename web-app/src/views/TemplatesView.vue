@@ -8,7 +8,24 @@
         <Button variant="ghost" size="icon" class="text-muted-foreground hover:text-foreground" @click="editingName = null">
           <ArrowLeft class="size-5" />
         </Button>
-        <h1 class="text-2xl font-semibold text-foreground">{{ templateDisplayName(editingName) || editingName }}</h1>
+        <template v-if="renamingName">
+          <input
+            v-model="renameValue"
+            class="text-2xl font-semibold bg-transparent border-b border-primary outline-none text-foreground w-64"
+            autofocus
+            @keydown.enter.prevent="commitRename"
+            @keydown.escape="renamingName = false"
+            @blur="commitRename"
+          />
+          <span v-if="renameSaving" class="text-xs text-muted-foreground">…</span>
+          <span v-if="renameError" class="text-xs text-destructive">{{ renameError }}</span>
+        </template>
+        <template v-else>
+          <h1 class="text-2xl font-semibold text-foreground">{{ templateDisplayName(editingName) || editingName }}</h1>
+          <Button variant="ghost" size="icon" class="text-muted-foreground hover:text-foreground" :title="t('template.rename')" @click="startRename">
+            <Pencil class="size-4" />
+          </Button>
+        </template>
         <span v-if="detailSaving || sectionsSaving" class="text-xs text-muted-foreground">…</span>
       </div>
 
@@ -174,11 +191,15 @@
 
       <ul v-else role="list" class="divide-y divide-border">
         <li v-for="tpl in templates" :key="tpl.name" class="flex items-center justify-between gap-x-6 py-5">
-          <div class="min-w-0">
+          <div class="min-w-0 flex-1">
             <Button variant="link" class="min-w-0 text-left px-0 font-semibold" @click="openDetail(tpl.name)">
               {{ templateDisplayName(tpl.name) || tpl.name }}
             </Button>
-            <div v-if="tpl.oscHost" class="text-xs text-muted-foreground mt-0.5">OSC: {{ tpl.oscHost }}</div>
+            <div class="flex flex-wrap gap-x-4 mt-1 text-xs text-muted-foreground">
+              <span>{{ tpl.channelCount }} {{ tpl.channelCount === 1 ? 'Kanal' : 'Kanäle' }}</span>
+              <span v-if="tpl.oscHost">OSC: {{ tpl.oscHost }}</span>
+              <span v-if="tpl.updatedAt">Geändert: {{ formatDate(tpl.updatedAt) }}</span>
+            </div>
           </div>
           <div class="flex flex-none items-center gap-x-4">
             <Button variant="outline" size="sm" @click="openDetail(tpl.name)">
@@ -262,10 +283,10 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { ArrowLeft, Upload } from 'lucide-vue-next'
+import { ArrowLeft, Upload, Pencil } from 'lucide-vue-next'
 import { useLocale } from '../composables/useLocale.js'
 import { useConfirm } from '../composables/useConfirm.js'
-import { fetchTemplates, fetchTemplateChannels, saveTemplate, uploadTemplate, deleteTemplate, saveTemplateOscHost } from '../api/templates.js'
+import { fetchTemplates, fetchTemplateChannels, saveTemplate, uploadTemplate, deleteTemplate, saveTemplateOscHost, renameTemplate } from '../api/templates.js'
 import { fetchTemplateSections, saveTemplateSections } from '../api/sections.js'
 import { templateDisplayName } from '../utils/templateName.js'
 import { uuid } from '../utils/uuid.js'
@@ -289,6 +310,10 @@ const templates = ref([])
 const loading = ref(true)
 const editingOscHost = ref('')
 const oscSaving = ref(false)
+const renamingName = ref(false)
+const renameValue = ref('')
+const renameError = ref('')
+const renameSaving = ref(false)
 
 // Upload
 const uploadOpen = ref(false)
@@ -415,6 +440,32 @@ async function persistOscHost() {
   oscSaving.value = false
 }
 
+function startRename() {
+  renameValue.value = templateDisplayName(editingName.value) || editingName.value
+  renameError.value = ''
+  renamingName.value = true
+}
+
+async function commitRename() {
+  const newName = renameValue.value.trim()
+  if (!newName || newName === editingName.value) { renamingName.value = false; return }
+  renameSaving.value = true
+  renameError.value = ''
+  try {
+    await renameTemplate(editingName.value, newName)
+    const tpl = templates.value.find(t => t.name === editingName.value)
+    if (tpl) tpl.name = newName
+    editingName.value = newName
+    renamingName.value = false
+  } catch (e) {
+    renameError.value = e?.message?.includes('409') || e?.status === 409
+      ? t('template.rename.error')
+      : (e?.message || t('template.rename.error'))
+  } finally {
+    renameSaving.value = false
+  }
+}
+
 watch(editingName, () => {
   loadFloorplan()
 }, { immediate: true })
@@ -511,6 +562,13 @@ function onTypeChange(section, newType) {
   section.type = newType
   if (newType === 'kv-table' && !section.rows) section.rows = []
   persistSections()
+}
+
+// ── Hilfsfunktionen ─────────────────────────────────────────────────────────
+
+function formatDate(ts) {
+  if (!ts) return ''
+  return new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(ts))
 }
 
 // ── Löschen ─────────────────────────────────────────────────────────────────

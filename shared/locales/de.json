@@ -1,15 +1,12 @@
 {
   "app.name": "LuxStage",
-
   "action.undo": "Rückgängig (⌘Z)",
   "action.redo": "Wiederherstellen (⌘⇧Z)",
-
   "nav.shows": "Shows",
   "nav.archive": "Archiv",
-  "nav.templates": "Vorlagen",
+  "nav.templates": "Bühnen-Templates",
   "nav.settings": "Einstellungen",
   "nav.logout": "Abmelden",
-
   "auth.login": "Anmelden",
   "auth.username": "E-Mail-Adresse",
   "auth.password": "Passwort",
@@ -17,7 +14,6 @@
   "auth.login.submit": "Anmelden",
   "auth.login.loading": "Anmelden …",
   "auth.login.error": "Anmeldung fehlgeschlagen. Bitte Benutzername und Passwort prüfen.",
-
   "show.new": "Neue Show",
   "show.name": "Name",
   "show.date": "Datum",
@@ -40,10 +36,8 @@
   "show.archive.empty": "Keine archivierten Shows",
   "show.setup": "Aufbau",
   "show.setup.placeholder": "Aufbaunotizen, Besonderheiten, Hinweise …",
-
   "mode.preparation": "Aufbau",
   "mode.lighting": "Einleuchten",
-
   "field.channel": "Kanal",
   "field.channel_number": "Kanal",
   "field.address": "Adresse",
@@ -56,7 +50,6 @@
   "field.name": "Name",
   "field.date": "Datum",
   "field.venue": "Spielstätte",
-
   "channel.no_category": "Ohne Kategorie",
   "channel.list.empty": "Noch keine Kanäle vorhanden.",
   "channel.add": "Kanal hinzufügen",
@@ -67,26 +60,27 @@
   "channel.export": "CSV exportieren",
   "channel.import": "CSV importieren",
   "channel.position.edit": "Position umbenennen",
-
-  "template.new": "Neue Vorlage",
+  "template.new": "Neues Bühnen-Template",
   "template.upload": "CSV hochladen",
   "template.upload.hint": "Semikolon-getrennte CSV-Datei (UTF-8).",
   "template.upload.preview": "Vorschau",
-  "template.upload.confirm": "Vorlage importieren",
-  "template.upload.success": "Vorlage erfolgreich importiert.",
-  "template.upload.error": "Fehler beim Importieren der Vorlage.",
-  "template.name": "Vorlagen-Name",
+  "template.upload.confirm": "Bühnen-Template importieren",
+  "template.upload.success": "Bühnen-Template erfolgreich importiert.",
+  "template.upload.error": "Fehler beim Importieren des Bühnen-Templates.",
+  "template.name": "Name",
+  "template.rename": "Umbenennen",
+  "template.rename.placeholder": "Neuer Name",
+  "template.rename.error": "Name bereits vergeben.",
   "template.venue_name": "Theater-Name",
   "template.channels": "Kanäle",
   "template.custom_fields": "Show-Felder",
-  "template.list.empty": "Noch keine Vorlagen vorhanden.",
+  "template.list.empty": "Noch keine Bühnen-Templates vorhanden.",
   "template.created": "Erstellt",
   "template.field_name": "Feldname",
   "template.field_name.example": "z.B. Portalbrücke",
   "template.unit_hint": "Einheit (optional)",
   "template.unit_hint.example": "z.B. Meter",
   "template.add_field": "Feld hinzufügen",
-
   "settings.server": "Server",
   "settings.server_settings": "Server-Einstellungen",
   "settings.server_url": "Server-URL",
@@ -104,18 +98,15 @@
   "settings.status.version.app": "App-Version",
   "settings.status.version.server": "Server-Version",
   "settings.status.disk": "Festplatte (frei)",
-
   "photo.add": "Foto hinzufügen",
   "photo.caption": "Beschriftung",
   "photo.caption.placeholder": "Beschreibung …",
   "photo.delete": "Foto löschen",
   "photo.empty": "Noch keine Fotos vorhanden.",
-
   "color.picker.label": "Farbe / Filter",
   "color.picker.custom": "Freitext",
   "color.picker.text": "Freitext",
   "color.picker.placeholder": "z.B. R02 oder warm weiß",
-
   "action.save": "Speichern",
   "action.cancel": "Abbrechen",
   "action.delete": "Löschen",
@@ -127,21 +118,18 @@
   "action.done": "Fertig",
   "action.ok": "OK",
   "action.edit": "Bearbeiten",
-
   "error.generic": "Ein Fehler ist aufgetreten.",
   "error.loading": "Wird geladen …",
   "error.network": "Keine Verbindung zum Server.",
-  "offline.banner": "Kein Netz – Nur-Lese-Modus",
+  "offline.banner": "Keine Verbindung zum Server – Änderungen werden nicht gespeichert",
   "error.not_found": "Nicht gefunden.",
   "error.unauthorized": "Nicht angemeldet.",
-
   "csv.error.duplicate_channel": "Doppelte Kanal-Nummer: {channel}",
   "csv.error.invalid_channel": "Ungültige Kanal-Nummer in Zeile {line}: \"{value}\"",
   "csv.error.missing_header": "Pflicht-Spalte fehlt: {column}",
   "csv.error.invalid_address": "Ungültiges Adress-Format in Zeile {line}: \"{value}\"",
   "csv.preview.channels": "{count} Kanäle",
   "csv.preview.custom_fields": "{count} Show-Felder",
-
   "eos.import.button": "Aus Eos importieren",
   "eos.import.error.invalid": "Keine gültige Eos-Exportdatei.",
   "eos.import.error.parse": "Datei konnte nicht gelesen werden.",
@@ -159,14 +147,12 @@
   "eos.preview.untouched": "Unangetastet – hat Beschreibung ({n})",
   "eos.preview.empty": "Keine Änderungen.",
   "eos.preview.confirm": "Importieren",
-
   "history.btn": "Verlauf",
   "history.title": "Versionsverlauf",
   "history.empty": "Keine Versionen vorhanden.",
   "history.restore": "Wiederherstellen",
   "history.channel_count": "{n} Kanäle",
   "history.back": "← Zurück",
-
   "sections.btn": "Abschnitte",
   "sections.add": "+ Abschnitt",
   "sections.title.placeholder": "Titel",
@@ -179,7 +165,6 @@
   "sections.new": "Abschnitt",
   "sections.add.markdown": "+ Textfeld",
   "sections.add.fields": "+ Custom Fields",
-
   "show.id.label": "ID (Dateiname, keine Leerzeichen)",
   "show.id.placeholder": "norden-2026",
   "show.venue": "Bühne",
@@ -189,11 +174,9 @@
   "show.channel.address.example": "1/001",
   "show.channel.delete.confirm": "Kanal {channel} wirklich löschen?",
   "show.photo.delete.confirm": "Foto wirklich löschen?",
-
   "template.csv.choose": "CSV wählen",
   "template.more_channels": "… {count} weitere Kanäle",
-  "template.delete.confirm": "Vorlage \u201e{name}\u201c löschen?",
-
+  "template.delete.confirm": "Bühnen-Template „{name}“ löschen?",
   "settings.backup": "Backup",
   "settings.backup.download": "↓ ZIP-Backup herunterladen",
   "settings.backup.restore": "Backup wiederherstellen",
@@ -219,7 +202,6 @@
   "settings.photos_per_page": "Fotos pro Druckseite",
   "settings.photos_per_page.hint": "Wie viele Fotos sollen beim Drucken auf eine A4-Seite passen.",
   "settings.backup.hint": "Lade alle Show-Daten als ZIP-Archiv herunter.",
-
   "settings.account": "Konto",
   "settings.account.force_change": "Bitte ändere dein initiales Passwort, bevor du fortfährst.",
   "settings.account.change_password": "Passwort ändern",
@@ -236,7 +218,6 @@
   "settings.account.reset_password.submit": "Zurücksetzen",
   "settings.account.reset_password.success": "✓ Neues Passwort: {password}",
   "settings.account.reset_password.error": "✗ Fehler: {message}",
-
   "settings.users": "Benutzer",
   "settings.users.hint": "Benutzer anlegen und verwalten.",
   "settings.users.new": "Neuer Benutzer",
@@ -255,7 +236,6 @@
   "settings.users.email": "E-Mail (optional)",
   "settings.users.error": "✗ {message}",
   "settings.users.success": "✓ Benutzer angelegt",
-
   "settings.smtp": "E-Mail / SMTP",
   "settings.smtp.hint": "SMTP-Konfiguration für automatische E-Mails (Willkommen, Passwort-Reset).",
   "settings.smtp.host": "SMTP-Host",
@@ -269,23 +249,19 @@
   "settings.smtp.success": "✓ Gespeichert",
   "settings.smtp.test.success": "✓ Test-Mail gesendet",
   "settings.smtp.error": "✗ {message}",
-
   "auth.reset": "Passwort vergessen?",
   "auth.reset.title": "Passwort zurücksetzen",
   "auth.reset.hint": "Wende dich an deinen Administrator, um dein Passwort zurücksetzen zu lassen.",
   "auth.reset.back": "Zurück zur Anmeldung",
-
   "editor.bold": "B",
   "editor.italic": "I",
   "editor.heading": "Überschrift",
   "editor.list.bullet": "• Liste",
   "editor.list.ordered": "1. Liste",
-
   "tab.channels": "Kanäle",
   "tab.info": "Info",
   "tab.photos": "Fotos",
   "tab.floorplan": "Grundriss",
-
   "nav.import": "Importieren",
   "nav.export": "Exportieren",
   "ocr.trigger": "Showplan scannen",
@@ -296,6 +272,5 @@
   "ocr.loading": "Claude liest den Showplan …",
   "ocr.result.title": "Erkannter Inhalt",
   "ocr.result.hint": "Bitte prüfe das Ergebnis vor dem Übernehmen. Der Aufbau-Text wird angehängt. Erkannte Kanäle werden nur befüllt, wenn das Notiz-Feld noch leer ist.",
-  "ocr.result.apply": "Übernehmen",
-  "offline.banner": "Keine Verbindung zum Server – Änderungen werden nicht gespeichert"
+  "ocr.result.apply": "Übernehmen"
 }

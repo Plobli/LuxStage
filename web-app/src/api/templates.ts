@@ -1,8 +1,15 @@
 import { api } from './client'
 import { type Channel } from './channels'
 
-export const fetchTemplates = (): Promise<any[]> => api.get('/api/templates')
+export interface TemplateMeta {
+  name: string
+  oscHost: string
+}
+
+export const fetchTemplates = (): Promise<TemplateMeta[]> => api.get('/api/templates')
 export const deleteTemplate = (name: string): Promise<any> => api.delete(`/api/templates/${name}`)
+export const saveTemplateOscHost = (name: string, oscHost: string): Promise<any> =>
+  api.put('/api/templates', { name, oscHost })
 
 export async function fetchTemplateChannels(name: string): Promise<Channel[]> {
   return api.get(`/api/templates/${encodeURIComponent(name)}/channels`)

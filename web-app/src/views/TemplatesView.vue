@@ -15,6 +15,19 @@
       <div v-if="detailLoading" class="text-sm text-muted-foreground">…</div>
 
       <template v-else>
+        <div class="flex items-center gap-x-3 mb-6 max-w-sm">
+          <Label for="oscHostInput" class="shrink-0 text-sm text-muted-foreground">OSC-IP</Label>
+          <Input
+            id="oscHostInput"
+            v-model="editingOscHost"
+            placeholder="z.B. 192.168.1.10"
+            class="font-mono text-sm"
+            @blur="persistOscHost"
+            @keydown.enter.prevent="persistOscHost"
+          />
+          <span v-if="oscSaving" class="text-xs text-muted-foreground shrink-0">…</span>
+        </div>
+
         <Tabs v-model="activeTab" class="w-full">
           <TabsList class="w-full justify-start border-b border-border bg-transparent p-0 h-auto rounded-none mb-6">
             <TabsTrigger value="channels" class="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground rounded-none px-4 py-2 border-b-2 border-transparent">
@@ -160,15 +173,18 @@
       <div v-else-if="templates.length === 0" class="text-sm text-muted-foreground">{{ t('template.list.empty') }}</div>
 
       <ul v-else role="list" class="divide-y divide-border">
-        <li v-for="name in templates" :key="name" class="flex items-center justify-between gap-x-6 py-5">
-          <Button variant="link" class="min-w-0 text-left px-0 font-semibold" @click="openDetail(name)">
-            {{ templateDisplayName(name) || name }}
-          </Button>
+        <li v-for="tpl in templates" :key="tpl.name" class="flex items-center justify-between gap-x-6 py-5">
+          <div class="min-w-0">
+            <Button variant="link" class="min-w-0 text-left px-0 font-semibold" @click="openDetail(tpl.name)">
+              {{ templateDisplayName(tpl.name) || tpl.name }}
+            </Button>
+            <div v-if="tpl.oscHost" class="text-xs text-muted-foreground mt-0.5">OSC: {{ tpl.oscHost }}</div>
+          </div>
           <div class="flex flex-none items-center gap-x-4">
-            <Button variant="outline" size="sm" @click="openDetail(name)">
+            <Button variant="outline" size="sm" @click="openDetail(tpl.name)">
               {{ t('action.edit') }}
             </Button>
-            <Button variant="ghost" size="sm" class="text-red-400 hover:text-red-300 hover:bg-red-500/10" @click="handleDelete(name)">
+            <Button variant="ghost" size="sm" class="text-red-400 hover:text-red-300 hover:bg-red-500/10" @click="handleDelete(tpl.name)">
               {{ t('action.delete') }}
             </Button>
           </div>
@@ -249,7 +265,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { ArrowLeft, Upload } from 'lucide-vue-next'
 import { useLocale } from '../composables/useLocale.js'
 import { useConfirm } from '../composables/useConfirm.js'
-import { fetchTemplates, fetchTemplateChannels, saveTemplate, uploadTemplate, deleteTemplate } from '../api/templates.js'
+import { fetchTemplates, fetchTemplateChannels, saveTemplate, uploadTemplate, deleteTemplate, saveTemplateOscHost } from '../api/templates.js'
 import { fetchTemplateSections, saveTemplateSections } from '../api/sections.js'
 import { templateDisplayName } from '../utils/templateName.js'
 import { uuid } from '../utils/uuid.js'
@@ -271,6 +287,8 @@ const { confirm } = useConfirm()
 
 const templates = ref([])
 const loading = ref(true)
+const editingOscHost = ref('')
+const oscSaving = ref(false)
 
 // Upload
 const uploadOpen = ref(false)
@@ -378,6 +396,8 @@ async function openDetail(name) {
   editingName.value = name
   detailLoading.value = true
   activeTab.value = 'channels'
+  const tpl = templates.value.find(t => t.name === name)
+  editingOscHost.value = tpl?.oscHost ?? ''
   const [channels, sections] = await Promise.all([
     fetchTemplateChannels(name),
     fetchTemplateSections(name),
@@ -385,6 +405,14 @@ async function openDetail(name) {
   detailChannels.value = channels
   templateSections.value = Array.isArray(sections) ? sections : (sections?.sections ?? [])
   detailLoading.value = false
+}
+
+async function persistOscHost() {
+  oscSaving.value = true
+  await saveTemplateOscHost(editingName.value, editingOscHost.value)
+  const tpl = templates.value.find(t => t.name === editingName.value)
+  if (tpl) tpl.oscHost = editingOscHost.value
+  oscSaving.value = false
 }
 
 watch(editingName, () => {
@@ -491,6 +519,6 @@ async function handleDelete(name) {
   const ok = await confirm({ t, titleKey: 'template.delete.confirm', messageParams: { name }, confirmKey: 'action.delete', cancelKey: 'action.cancel' })
   if (!ok) return
   await deleteTemplate(name)
-  templates.value = templates.value.filter(n => n !== name)
+  templates.value = templates.value.filter(t => t.name !== name)
 }
 </script>

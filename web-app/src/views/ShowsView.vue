@@ -92,8 +92,8 @@
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">{{ t('show.template.none') }}</SelectItem>
-                <SelectItem v-for="tpl in templates" :key="tpl" :value="tpl">
-                  {{ templateDisplayName(tpl) }}
+                <SelectItem v-for="tpl in templates" :key="tpl.name" :value="tpl.name">
+                  {{ templateDisplayName(tpl.name) }}
                 </SelectItem>
               </SelectContent>
             </Select>

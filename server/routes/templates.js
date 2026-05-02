@@ -26,6 +26,19 @@ export async function templateRoutes(req, res, pathname) {
     return json(res, 200, db.listTemplates())
   }
 
+  if (method === 'PUT' && TPL_LIST.test(pathname)) {
+    const user = requireAdmin(req, res); if (!user) return
+    const body = await readJsonBody(req, res); if (body === null) return
+    const { name, oscHost } = body
+    if (!name || typeof name !== 'string') return json(res, 400, { error: 'Name fehlt' })
+    const tpl = db.getTemplateByName(name)
+    if (!tpl) return json(res, 404, { error: 'Bühnen-Template nicht gefunden' })
+    const host = typeof oscHost === 'string' ? oscHost.trim() : ''
+    if (host.length > 253) return json(res, 400, { error: 'OSC-Host zu lang' })
+    db.updateTemplateOscHost(name, host)
+    return json(res, 200, { ok: true })
+  }
+
   if (m = TPL_FP_IMAGE.exec(pathname)) {
     const templateName = decodeURIComponent(m[1])
     const tpl = db.getTemplateByName(templateName)
@@ -93,7 +106,7 @@ export async function templateRoutes(req, res, pathname) {
 
   if (m = TPL_ID.exec(pathname)) {
     const name = decodeURIComponent(m[1])
-    if (!/^[a-zA-Z0-9_\- ]{1,100}$/.test(name)) return json(res, 400, { error: 'Ungültiger Template-Name' })
+    if (!name || name.length > 100 || /[\x00-\x1F]/.test(name)) return json(res, 400, { error: 'Ungültiger Bühnen-Template-Name' })
 
     if (method === 'GET') {
       const channels = db.readTemplate(name).map(({ template_id: _, sort_order: __, ...ch }) => ch)

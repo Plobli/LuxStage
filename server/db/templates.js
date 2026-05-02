@@ -2,11 +2,16 @@ import { dbContainer } from '../db-init.js'
 import { randomUUID } from 'node:crypto'
 
 export function listTemplates() {
-  return dbContainer.db.prepare('SELECT name FROM templates ORDER BY name').all().map(r => r.name)
+  return dbContainer.db.prepare('SELECT name, osc_host FROM templates ORDER BY name').all()
+    .map(r => ({ name: r.name, oscHost: r.osc_host ?? '' }))
 }
 
 export function getTemplateByName(name) {
   return dbContainer.db.prepare('SELECT * FROM templates WHERE name = ?').get(name) ?? null
+}
+
+export function updateTemplateOscHost(name, oscHost) {
+  dbContainer.db.prepare('UPDATE templates SET osc_host = ? WHERE name = ?').run(oscHost, name)
 }
 
 export function readTemplate(name) {

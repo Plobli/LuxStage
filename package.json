@@ -1,6 +1,6 @@
 {
   "name": "luxstage-monorepo",
-  "version": "2026.4.2",
+  "version": "2026.5.1",
   "private": true,
   "workspaces": [
     "server",

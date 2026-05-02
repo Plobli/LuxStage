@@ -47,6 +47,15 @@
                     variant="ghost"
                     size="icon"
                     class="text-muted-foreground hover:text-foreground"
+                    @click="router.push(`/shows/${show.id}`)"
+                    :title="t('action.edit')"
+                  >
+                    <Pencil class="size-4" aria-hidden="true" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="text-muted-foreground hover:text-foreground"
                     @click="openAssign(show)"
                     :title="t('show.assign_template')"
                   >
@@ -153,7 +162,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Archive, Loader2, Settings2 } from 'lucide-vue-next'
+import { Archive, Loader2, Settings2, Pencil } from 'lucide-vue-next'
 import { useLocale } from '../composables/useLocale.js'
 import { fetchShows, createShow, archiveShow, updateMeta } from '../api/shows.js'
 import { fetchTemplates, fetchTemplateChannels } from '../api/templates.js'

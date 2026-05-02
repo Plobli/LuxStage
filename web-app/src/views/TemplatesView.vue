@@ -13,6 +13,10 @@
             v-model="renameValue"
             class="text-2xl font-semibold bg-transparent border-b border-primary outline-none text-foreground w-64"
             autofocus
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
             @keydown.enter.prevent="commitRename"
             @keydown.escape="renamingName = false"
             @blur="commitRename"
@@ -229,7 +233,7 @@
         <div v-else-if="step === 'preview'" class="pt-4 space-y-4">
           <div>
             <Label for="importName" class="text-xs">{{ t('template.name') }}</Label>
-            <Input id="importName" v-model="importName" type="text" required class="mt-1" />
+            <Input id="importName" v-model="importName" type="text" required class="mt-1" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
           </div>
           <div class="text-sm text-muted-foreground">
             <span>{{ t('csv.preview.channels', { count: previewChannels.length }) }}</span>

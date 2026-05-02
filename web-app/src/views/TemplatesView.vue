@@ -472,7 +472,7 @@ function fixCapitalization(e) {
 }
 
 function startRename() {
-  renameValue.value = templateDisplayName(editingName.value) || editingName.value
+  renameValue.value = editingName.value
   renameError.value = ''
   renamingName.value = true
 }

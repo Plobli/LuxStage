@@ -42,7 +42,16 @@
                     {{ show.last_edited_by }}, {{ formatEditedAt(show.last_edited_at) }}
                   </p>
                 </div>
-                <div class="shrink-0 pr-4" @click.stop>
+                <div class="shrink-0 pr-2 flex gap-1" @click.stop>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="text-muted-foreground hover:text-foreground"
+                    @click="openAssign(show)"
+                    :title="t('show.assign_template')"
+                  >
+                    <Settings2 class="size-4" aria-hidden="true" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -110,15 +119,43 @@
         </form>
       </DialogContent>
     </Dialog>
+    <!-- Bühnen-Template zuweisen: Dialog -->
+    <Dialog :open="assignDialogOpen" @update:open="assignDialogOpen = $event">
+      <DialogContent class="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{{ t('show.assign_template') }}</DialogTitle>
+        </DialogHeader>
+        <div class="space-y-4 mt-4">
+          <p v-if="assignShow" class="text-sm text-muted-foreground">{{ assignShow.name || assignShow.id }}</p>
+          <Select v-model="assignTemplate">
+            <SelectTrigger class="w-full">
+              <SelectValue :placeholder="t('show.template.none')" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">{{ t('show.template.none') }}</SelectItem>
+              <SelectItem v-for="tpl in templates" :key="tpl.name" :value="tpl.name">
+                {{ templateDisplayName(tpl.name) }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <DialogFooter class="pt-4">
+          <Button variant="outline" @click="assignDialogOpen = false">{{ t('action.cancel') }}</Button>
+          <Button :disabled="assignSaving" @click="handleAssign">
+            {{ assignSaving ? '…' : t('action.save') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Archive, Loader2 } from 'lucide-vue-next'
+import { Archive, Loader2, Settings2 } from 'lucide-vue-next'
 import { useLocale } from '../composables/useLocale.js'
-import { fetchShows, createShow, archiveShow } from '../api/shows.js'
+import { fetchShows, createShow, archiveShow, updateMeta } from '../api/shows.js'
 import { fetchTemplates, fetchTemplateChannels } from '../api/templates.js'
 import { cached, invalidate } from '../api/cache.js'
 import { saveChannels } from '../api/channels.js'
@@ -146,6 +183,11 @@ const loading = ref(true)
 const creating = ref(false)
 const drawerOpen = ref(false)
 const form = ref({ name: '', datum: new Date().toISOString().slice(0, 10), template: '' })
+
+const assignDialogOpen = ref(false)
+const assignShow = ref(null)
+const assignTemplate = ref('')
+const assignSaving = ref(false)
 
 function formatEditedAt(ts) {
   if (!ts) return ''
@@ -221,6 +263,27 @@ async function handleCreate() {
     console.error('Failed to create show:', e)
   } finally {
     creating.value = false
+  }
+}
+
+function openAssign(show) {
+  assignShow.value = show
+  assignTemplate.value = show.template || ''
+  assignDialogOpen.value = true
+}
+
+async function handleAssign() {
+  assignSaving.value = true
+  try {
+    await updateMeta(assignShow.value.id, { template: assignTemplate.value || null })
+    invalidate('shows')
+    const show = shows.value.find(s => s.id === assignShow.value.id)
+    if (show) show.template = assignTemplate.value || ''
+    assignDialogOpen.value = false
+  } catch (e) {
+    console.error('Failed to assign template:', e)
+  } finally {
+    assignSaving.value = false
   }
 }
 

@@ -272,5 +272,6 @@
   "ocr.result.apply": "Apply",
   "template.rename": "Rename",
   "template.rename.placeholder": "New name",
-  "template.rename.error": "Name already taken."
+  "template.rename.error": "Name already taken.",
+  "show.assign_template": "Assign stage template"
 }

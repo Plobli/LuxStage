@@ -26,7 +26,11 @@ export function updateTemplateOscHost(name, oscHost) {
 }
 
 export function renameTemplate(oldName, newName) {
-  dbContainer.db.prepare('UPDATE templates SET name = ? WHERE name = ?').run(newName, oldName)
+  const tx = dbContainer.db.transaction(() => {
+    dbContainer.db.prepare('UPDATE templates SET name = ? WHERE name = ?').run(newName, oldName)
+    dbContainer.db.prepare('UPDATE shows SET template = ? WHERE template = ?').run(newName, oldName)
+  })
+  tx()
 }
 
 export function readTemplate(name) {

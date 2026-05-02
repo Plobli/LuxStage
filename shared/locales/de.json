@@ -272,5 +272,6 @@
   "ocr.loading": "Claude liest den Showplan …",
   "ocr.result.title": "Erkannter Inhalt",
   "ocr.result.hint": "Bitte prüfe das Ergebnis vor dem Übernehmen. Der Aufbau-Text wird angehängt. Erkannte Kanäle werden nur befüllt, wenn das Notiz-Feld noch leer ist.",
-  "ocr.result.apply": "Übernehmen"
+  "ocr.result.apply": "Übernehmen",
+  "show.assign_template": "Bühnen-Template zuweisen"
 }

@@ -100,7 +100,31 @@ const emit = defineEmits(['update:modelValue'])
 const editor = useEditor({
   extensions: [
     StarterKit,
-    Markdown,
+    Markdown.configure({
+      html: true,
+      transformCopiedText: true,
+      transformPastedText: true,
+      serializer: {
+        table: ({ node }) => {
+          const rows = []
+          node.forEach((tableRow) => {
+            const cells = []
+            tableRow.forEach((cell) => {
+              cells.push(cell.textContent)
+            })
+            rows.push('| ' + cells.join(' | ') + ' |')
+          })
+          if (rows.length > 0) {
+            const headerCount = node.firstChild?.childCount || 0
+            rows.splice(1, 0, '| ' + Array(headerCount).fill('---').join(' | ') + ' |')
+          }
+          return rows.join('\n') + '\n'
+        },
+        tableRow: () => '',
+        tableCell: () => '',
+        tableHeader: () => '',
+      },
+    }),
     Table.configure({ resizable: false }),
     TableRow,
     TableCell,

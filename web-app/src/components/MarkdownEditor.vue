@@ -93,6 +93,53 @@ import StarterKit from '@tiptap/starter-kit'
 import { Markdown } from 'tiptap-markdown'
 import { Table, TableRow, TableCell, TableHeader } from '@tiptap/extension-table'
 
+// tiptap-markdown serialisiert Tabellen nur wenn die Table-Extension
+// addStorage().markdown definiert. Wir erweitern Table entsprechend.
+function serializeCell(state, cell) {
+  const child = cell.firstChild
+  if (child) state.renderInline(child)
+}
+
+const MarkdownTable = Table.extend({
+  addStorage() {
+    return {
+      markdown: {
+        serialize(state, node) {
+          node.forEach((row, _, rowIdx) => {
+            state.write('| ')
+            row.forEach((cell, _, cellIdx) => {
+              if (cellIdx > 0) state.write(' | ')
+              serializeCell(state, cell)
+            })
+            state.write(' |')
+            state.ensureNewLine()
+            // Trennzeile nach Header-Zeile
+            if (rowIdx === 0) {
+              state.write('| ')
+              const cols = row.childCount
+              state.write(Array(cols).fill('---').join(' | '))
+              state.write(' |')
+              state.ensureNewLine()
+            }
+          })
+          state.closeBlock(node)
+        },
+        parse: {},
+      },
+    }
+  },
+})
+
+const MarkdownTableRow = TableRow.extend({
+  addStorage() { return { markdown: { serialize() {}, parse: {} } } },
+})
+const MarkdownTableCell = TableCell.extend({
+  addStorage() { return { markdown: { serialize() {}, parse: {} } } },
+})
+const MarkdownTableHeader = TableHeader.extend({
+  addStorage() { return { markdown: { serialize() {}, parse: {} } } },
+})
+
 const { t } = useLocale()
 const props = defineProps({ modelValue: { type: String, default: '' } })
 const emit = defineEmits(['update:modelValue'])
@@ -104,31 +151,11 @@ const editor = useEditor({
       html: true,
       transformCopiedText: true,
       transformPastedText: true,
-      serializer: {
-        table: ({ node }) => {
-          const rows = []
-          node.forEach((tableRow) => {
-            const cells = []
-            tableRow.forEach((cell) => {
-              cells.push(cell.textContent)
-            })
-            rows.push('| ' + cells.join(' | ') + ' |')
-          })
-          if (rows.length > 0) {
-            const headerCount = node.firstChild?.childCount || 0
-            rows.splice(1, 0, '| ' + Array(headerCount).fill('---').join(' | ') + ' |')
-          }
-          return rows.join('\n') + '\n'
-        },
-        tableRow: () => '',
-        tableCell: () => '',
-        tableHeader: () => '',
-      },
     }),
-    Table.configure({ resizable: false }),
-    TableRow,
-    TableCell,
-    TableHeader,
+    MarkdownTable.configure({ resizable: false }),
+    MarkdownTableRow,
+    MarkdownTableCell,
+    MarkdownTableHeader,
   ],
   content: props.modelValue,
   editorProps: {

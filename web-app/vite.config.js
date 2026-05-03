@@ -36,7 +36,7 @@ export default defineConfig({
         manualChunks: {
           'vendor-vue': ['vue', 'vue-router'],
           'vendor-ui': ['reka-ui'],
-          'vendor-tiptap': ['@tiptap/starter-kit', '@tiptap/vue-3', 'tiptap-markdown'],
+          'vendor-tiptap': ['@tiptap/starter-kit', '@tiptap/vue-3', '@tiptap/extension-table'],
         },
       },
     },

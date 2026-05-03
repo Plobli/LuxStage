@@ -40,44 +40,19 @@
         :title="t('editor.list.ordered')"
       >1.</Toggle>
       <Separator orientation="vertical" class="mx-1 h-4" />
-      <button
-        @mousedown.prevent="insertTable"
-        class="h-8 rounded-full px-3 text-sm text-muted-foreground hover:bg-background hover:text-foreground transition-colors"
-        :title="t('editor.table.insert')"
-      >⊞</button>
-      <template v-if="editor.isActive('table')">
-        <button
-          @mousedown.prevent="editor.chain().focus().addColumnAfter().run()"
-          class="h-8 rounded-full px-2 text-xs text-muted-foreground hover:bg-background hover:text-foreground transition-colors"
-          :title="t('editor.table.addCol')"
-        >+Sp</button>
-        <button
-          @mousedown.prevent="editor.chain().focus().addRowAfter().run()"
-          class="h-8 rounded-full px-2 text-xs text-muted-foreground hover:bg-background hover:text-foreground transition-colors"
-          :title="t('editor.table.addRow')"
-        >+Ze</button>
-        <button
-          @mousedown.prevent="editor.chain().focus().deleteColumn().run()"
-          class="h-8 rounded-full px-2 text-xs text-muted-foreground hover:bg-background hover:text-foreground transition-colors"
-          :title="t('editor.table.delCol')"
-        >−Sp</button>
-        <button
-          @mousedown.prevent="editor.chain().focus().deleteRow().run()"
-          class="h-8 rounded-full px-2 text-xs text-muted-foreground hover:bg-background hover:text-foreground transition-colors"
-          :title="t('editor.table.delRow')"
-        >−Ze</button>
-        <button
-          @mousedown.prevent="editor.chain().focus().deleteTable().run()"
-          class="h-8 rounded-full px-2 text-xs text-red-400 hover:bg-red-500/10 transition-colors"
-          :title="t('editor.table.delete')"
-        >✕Tab</button>
-      </template>
+      <Toggle
+        size="sm"
+        :pressed="editor.isActive('table')"
+        @mousedown.prevent="editor.isActive('table') ? editor.chain().focus().deleteTable().run() : editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()"
+        class="h-8 rounded-full px-3 data-[state=on]:bg-background data-[state=on]:text-foreground"
+        :title="t('editor.table')"
+      >⊞</Toggle>
     </div>
 
     <!-- Editor Content -->
     <EditorContent
       :editor="editor"
-      class="tiptap-content min-h-[120px] bg-transparent px-4 py-4 text-sm text-foreground focus-within:outline-none [&_.tiptap]:min-h-[120px] [&_.tiptap]:outline-none [&_.tiptap]:text-foreground [&_.tiptap_p]:my-1.5 [&_.tiptap_h3]:mb-1 [&_.tiptap_h3]:mt-3 [&_.tiptap_h3]:text-sm [&_.tiptap_h3]:font-semibold [&_.tiptap_h3]:text-foreground [&_.tiptap_ul]:list-disc [&_.tiptap_ul]:pl-5 [&_.tiptap_ol]:list-decimal [&_.tiptap_ol]:pl-5 [&_.tiptap_li]:my-1 [&_.tiptap_strong]:font-semibold [&_.tiptap_strong]:text-foreground [&_.tiptap_em]:italic [&_.tiptap_table]:w-full [&_.tiptap_table]:border-collapse [&_.tiptap_table]:my-3 [&_.tiptap_td]:border [&_.tiptap_td]:border-border/60 [&_.tiptap_td]:px-3 [&_.tiptap_td]:py-1.5 [&_.tiptap_td]:text-sm [&_.tiptap_td]:align-top [&_.tiptap_th]:border [&_.tiptap_th]:border-border/60 [&_.tiptap_th]:px-3 [&_.tiptap_th]:py-1.5 [&_.tiptap_th]:text-sm [&_.tiptap_th]:font-semibold [&_.tiptap_th]:bg-muted/40 [&_.tiptap_th]:text-left [&_.tiptap_.selectedCell]:bg-muted/30"
+      class="tiptap-content min-h-[120px] bg-transparent px-4 py-4 text-sm text-foreground focus-within:outline-none [&_.tiptap]:min-h-[120px] [&_.tiptap]:outline-none [&_.tiptap]:text-foreground [&_.tiptap_p]:my-1.5 [&_.tiptap_h3]:mb-1 [&_.tiptap_h3]:mt-3 [&_.tiptap_h3]:text-sm [&_.tiptap_h3]:font-semibold [&_.tiptap_h3]:text-foreground [&_.tiptap_ul]:list-disc [&_.tiptap_ul]:pl-5 [&_.tiptap_ol]:list-decimal [&_.tiptap_ol]:pl-5 [&_.tiptap_li]:my-1 [&_.tiptap_strong]:font-semibold [&_.tiptap_strong]:text-foreground [&_.tiptap_em]:italic [&_.tiptap_table]:border-collapse [&_.tiptap_table]:w-full [&_.tiptap_table]:my-2 [&_.tiptap_td]:border [&_.tiptap_td]:border-border/60 [&_.tiptap_td]:px-2 [&_.tiptap_td]:py-1 [&_.tiptap_th]:border [&_.tiptap_th]:border-border/60 [&_.tiptap_th]:px-2 [&_.tiptap_th]:py-1 [&_.tiptap_th]:font-semibold [&_.tiptap_th]:bg-muted/30"
     />
   </div>
 </template>
@@ -90,103 +65,39 @@ import { Separator } from '@/components/ui/separator'
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import { useLocale } from '../composables/useLocale.js'
 import StarterKit from '@tiptap/starter-kit'
-import { Markdown } from 'tiptap-markdown'
-import { Table, TableRow, TableCell, TableHeader } from '@tiptap/extension-table'
-
-// tiptap-markdown serialisiert Tabellen nur wenn die Table-Extension
-// addStorage().markdown definiert. Wir erweitern Table entsprechend.
-function serializeCell(state, cell) {
-  const child = cell.firstChild
-  if (child) state.renderInline(child)
-}
-
-const MarkdownTable = Table.extend({
-  addStorage() {
-    return {
-      markdown: {
-        serialize(state, node) {
-          node.forEach((row, _, rowIdx) => {
-            state.write('| ')
-            row.forEach((cell, _, cellIdx) => {
-              if (cellIdx > 0) state.write(' | ')
-              serializeCell(state, cell)
-            })
-            state.write(' |')
-            state.ensureNewLine()
-            // Trennzeile nach Header-Zeile
-            if (rowIdx === 0) {
-              state.write('| ')
-              const cols = row.childCount
-              state.write(Array(cols).fill('---').join(' | '))
-              state.write(' |')
-              state.ensureNewLine()
-            }
-          })
-          state.closeBlock(node)
-        },
-        parse: {},
-      },
-    }
-  },
-})
-
-const MarkdownTableRow = TableRow.extend({
-  addStorage() { return { markdown: { serialize() {}, parse: {} } } },
-})
-const MarkdownTableCell = TableCell.extend({
-  addStorage() { return { markdown: { serialize() {}, parse: {} } } },
-})
-const MarkdownTableHeader = TableHeader.extend({
-  addStorage() { return { markdown: { serialize() {}, parse: {} } } },
-})
+import { Table, TableRow, TableHeader, TableCell } from '@tiptap/extension-table'
 
 const { t } = useLocale()
 const props = defineProps({ modelValue: { type: String, default: '' } })
 const emit = defineEmits(['update:modelValue'])
 
+const EMPTY_DOC = { type: 'doc', content: [{ type: 'paragraph' }] }
+
+function parseContent(val) {
+  if (!val) return EMPTY_DOC
+  try { return JSON.parse(val) } catch { return EMPTY_DOC }
+}
+
 const editor = useEditor({
   extensions: [
     StarterKit,
-    Markdown.configure({
-      html: true,
-      transformCopiedText: true,
-      transformPastedText: true,
-    }),
-    MarkdownTable.configure({ resizable: false }),
-    MarkdownTableRow,
-    MarkdownTableCell,
-    MarkdownTableHeader,
+    Table.configure({ resizable: false }),
+    TableRow,
+    TableHeader,
+    TableCell,
   ],
-  content: props.modelValue,
-  editorProps: {
-    attributes: { class: 'tiptap' },
-    handlePaste(view, event) {
-      // HTML-Paste (z.B. aus Word/Numbers) → Tiptap verarbeitet es nativ mit Table-Support
-      const html = event.clipboardData?.getData('text/html')
-      if (html) return false // Tiptap-Default übernimmt (parst HTML inkl. Tabellen)
-      // Plain-text Paste
-      const text = event.clipboardData?.getData('text/plain')
-      if (!text) return false
-      event.preventDefault()
-      view.dispatch(view.state.tr.insertText(text))
-      return true
-    },
-  },
+  content: parseContent(props.modelValue),
+  editorProps: { attributes: { class: 'tiptap' } },
   onUpdate({ editor }) {
-    const md = editor.storage.markdown.getMarkdown()
-    emit('update:modelValue', md)
+    emit('update:modelValue', JSON.stringify(editor.getJSON()))
   },
 })
 
-function insertTable() {
-  editor.value?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
-}
-
 watch(() => props.modelValue, (val) => {
   if (!editor.value || editor.value.isFocused) return
-  const current = editor.value.storage.markdown.getMarkdown()
+  const current = JSON.stringify(editor.value.getJSON())
   if (val === current) return
-  editor.value.commands.setContent(val, false, { preserveWhitespace: 'full' })
+  editor.value.commands.setContent(parseContent(val), false)
 }, { flush: 'post' })
 
 onBeforeUnmount(() => editor.value?.destroy())

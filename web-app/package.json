@@ -9,6 +9,10 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.2",
+    "@tiptap/extension-table": "^3.22.5",
+    "@tiptap/extension-table-cell": "^3.22.5",
+    "@tiptap/extension-table-header": "^3.22.5",
+    "@tiptap/extension-table-row": "^3.22.5",
     "@tiptap/starter-kit": "^3.22.2",
     "@tiptap/vue-3": "^3.22.2",
     "@vueuse/core": "^14.2.1",

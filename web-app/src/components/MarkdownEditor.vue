@@ -39,12 +39,20 @@
         class="h-8 rounded-full px-3 data-[state=on]:bg-background data-[state=on]:text-foreground"
         :title="t('editor.list.ordered')"
       >1.</Toggle>
+      <Separator orientation="vertical" class="mx-1 h-4" />
+      <Toggle
+        size="sm"
+        :pressed="editor.isActive('table')"
+        @mousedown.prevent="editor.isActive('table') ? editor.chain().focus().deleteTable().run() : editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()"
+        class="h-8 rounded-full px-3 data-[state=on]:bg-background data-[state=on]:text-foreground"
+        :title="t('editor.table')"
+      >⊞</Toggle>
     </div>
 
     <!-- Editor Content -->
     <EditorContent
       :editor="editor"
-      class="tiptap-content min-h-[120px] bg-transparent px-4 py-4 text-sm text-foreground focus-within:outline-none [&_.tiptap]:min-h-[120px] [&_.tiptap]:outline-none [&_.tiptap]:text-foreground [&_.tiptap_p]:my-1.5 [&_.tiptap_h3]:mb-1 [&_.tiptap_h3]:mt-3 [&_.tiptap_h3]:text-sm [&_.tiptap_h3]:font-semibold [&_.tiptap_h3]:text-foreground [&_.tiptap_ul]:list-disc [&_.tiptap_ul]:pl-5 [&_.tiptap_ol]:list-decimal [&_.tiptap_ol]:pl-5 [&_.tiptap_li]:my-1 [&_.tiptap_strong]:font-semibold [&_.tiptap_strong]:text-foreground [&_.tiptap_em]:italic"
+      class="tiptap-content min-h-[120px] bg-transparent px-4 py-4 text-sm text-foreground focus-within:outline-none [&_.tiptap]:min-h-[120px] [&_.tiptap]:outline-none [&_.tiptap]:text-foreground [&_.tiptap_p]:my-1.5 [&_.tiptap_h3]:mb-1 [&_.tiptap_h3]:mt-3 [&_.tiptap_h3]:text-sm [&_.tiptap_h3]:font-semibold [&_.tiptap_h3]:text-foreground [&_.tiptap_ul]:list-disc [&_.tiptap_ul]:pl-5 [&_.tiptap_ol]:list-decimal [&_.tiptap_ol]:pl-5 [&_.tiptap_li]:my-1 [&_.tiptap_strong]:font-semibold [&_.tiptap_strong]:text-foreground [&_.tiptap_em]:italic [&_.tiptap_table]:border-collapse [&_.tiptap_table]:w-full [&_.tiptap_table]:my-2 [&_.tiptap_td]:border [&_.tiptap_td]:border-border/60 [&_.tiptap_td]:px-2 [&_.tiptap_td]:py-1 [&_.tiptap_th]:border [&_.tiptap_th]:border-border/60 [&_.tiptap_th]:px-2 [&_.tiptap_th]:py-1 [&_.tiptap_th]:font-semibold [&_.tiptap_th]:bg-muted/30"
     />
   </div>
 </template>
@@ -57,27 +65,39 @@ import { Separator } from '@/components/ui/separator'
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import { useLocale } from '../composables/useLocale.js'
 import StarterKit from '@tiptap/starter-kit'
-import { Markdown } from 'tiptap-markdown'
+import { Table, TableRow, TableHeader, TableCell } from '@tiptap/extension-table'
 
 const { t } = useLocale()
 const props = defineProps({ modelValue: { type: String, default: '' } })
 const emit = defineEmits(['update:modelValue'])
 
+const EMPTY_DOC = { type: 'doc', content: [{ type: 'paragraph' }] }
+
+function parseContent(val) {
+  if (!val) return EMPTY_DOC
+  try { return JSON.parse(val) } catch { return EMPTY_DOC }
+}
+
 const editor = useEditor({
-  extensions: [StarterKit, Markdown],
-  content: props.modelValue,
+  extensions: [
+    StarterKit,
+    Table.configure({ resizable: false }),
+    TableRow,
+    TableHeader,
+    TableCell,
+  ],
+  content: parseContent(props.modelValue),
   editorProps: { attributes: { class: 'tiptap' } },
   onUpdate({ editor }) {
-    const md = editor.storage.markdown.getMarkdown()
-    emit('update:modelValue', md)
+    emit('update:modelValue', JSON.stringify(editor.getJSON()))
   },
 })
 
 watch(() => props.modelValue, (val) => {
   if (!editor.value || editor.value.isFocused) return
-  const current = editor.value.storage.markdown.getMarkdown()
+  const current = JSON.stringify(editor.value.getJSON())
   if (val === current) return
-  editor.value.commands.setContent(val, false, { preserveWhitespace: 'full' })
+  editor.value.commands.setContent(parseContent(val), false)
 }, { flush: 'post' })
 
 onBeforeUnmount(() => editor.value?.destroy())

@@ -838,7 +838,7 @@ function exportPNG() {
   img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr)
 }
 
-function isInputFocused() { const tag = document.activeElement?.tagName; return tag === 'INPUT' || tag === 'TEXTAREA' }
+function isInputFocused() { const el = document.activeElement; return el?.tagName === 'INPUT' || el?.tagName === 'TEXTAREA' || !!el?.isContentEditable }
 function handleKeyDown(e) {
   if (isInputFocused()) return
   if (e.key === ' ') { e.preventDefault(); spaceHeld.value = true; return }

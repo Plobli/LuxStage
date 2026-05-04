@@ -172,6 +172,8 @@
               @update:sectionContents="sectionContents = $event"
               @update:setupMarkdown="onSetupChange($event)"
               @pushSnapshot="pushSnapshot"
+              @recordFocus="recordFocus"
+              @commitFocus="commitFocus"
               @sectionChange="persistSectionsDebounced"
             />
         </div>
@@ -257,7 +259,7 @@ const { floorplan, loadFloorplan, onFloorplanChange, onFloorplanImageUpload, onF
 
 const {
   sectionDefs, sectionContents, sectionsSaving,
-  persistSectionsDebounced, persistSections,
+  persistSectionsDebounced, persistSections, persistSectionDefs,
   loadSections, handleSectionsSse
 } = useShowSections(props.id, meta)
 
@@ -290,6 +292,7 @@ const {
   persistSetupDebounced,
   persistSectionsDebounced,
   persistSections,
+  persistSectionDefs,
   t,
   confirm
 })

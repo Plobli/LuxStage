@@ -11,6 +11,8 @@
           <Input
             :value="sec.title"
             :placeholder="labels.titlePlaceholder"
+            @focus="emit('recordFocus')"
+            @blur="emit('commitFocus')"
             @input="sec.title = $event.target.value"
             @change="persistSectionDefs"
             class="h-7 min-w-40 flex-1 border-0 bg-transparent px-0 text-sm font-semibold text-accent shadow-none placeholder:text-muted-foreground/40 focus-visible:ring-0"
@@ -56,6 +58,8 @@
                 <Input
                   :value="row.label"
                   :placeholder="labels.fieldLabel"
+                  @focus="emit('recordFocus')"
+                  @blur="emit('commitFocus')"
                   @input="row.label = $event.target.value"
                   @change="persistKvRows(sec)"
                   class="h-full min-h-10 w-full rounded-none border-0 bg-transparent px-3 py-0 text-sm font-medium text-foreground shadow-none placeholder:text-muted-foreground/35 focus-visible:ring-0"
@@ -64,6 +68,8 @@
               <td class="py-0 px-0 align-middle border-l border-border/40 h-full">
                 <Input
                   :value="row.value"
+                  @focus="emit('recordFocus')"
+                  @blur="emit('commitFocus')"
                   @input="row.value = $event.target.value"
                   @change="persistKvRows(sec)"
                   class="h-full min-h-10 w-full rounded-none border-0 bg-transparent px-3 py-0 text-sm text-foreground shadow-none placeholder:text-muted-foreground/30 focus-visible:ring-0"
@@ -99,6 +105,8 @@
         <MarkdownEditor
           :modelValue="sectionContents.get(sec.id) ?? ''"
           @update:modelValue="onSectionChange(sec.id, $event)"
+          @focus="emit('recordFocus')"
+          @blur="emit('commitFocus')"
           class="rounded-none border-0 border-t border-border/60"
         />
       </div>
@@ -110,7 +118,7 @@
     <div class="border-b border-border/90 bg-muted px-4 py-2.5">
       <slot name="setup-heading" />
     </div>
-    <MarkdownEditor :modelValue="setupMarkdown" @update:modelValue="emit('update:setupMarkdown', $event)" class="rounded-none border-0 border-t border-border/60" />
+    <MarkdownEditor :modelValue="setupMarkdown" @update:modelValue="emit('update:setupMarkdown', $event)" @focus="emit('recordFocus')" @blur="emit('commitFocus')" class="rounded-none border-0 border-t border-border/60" />
   </section>
 
   <!-- Add section buttons -->
@@ -156,6 +164,8 @@ const emit = defineEmits([
   'update:setupMarkdown',
   'pushSnapshot',
   'sectionChange',
+  'recordFocus',
+  'commitFocus',
 ])
 
 const { confirm } = useConfirm()

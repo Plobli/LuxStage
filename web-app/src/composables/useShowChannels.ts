@@ -26,10 +26,11 @@ export function useShowChannels({
   setupMarkdown, 
   sectionContents, 
   sectionDefs, 
-  persistSetupDebounced, 
+  persistSetupDebounced,
   persistSectionsDebounced,
   persistSections,
-  t, 
+  persistSectionDefs,
+  t,
   confirm 
 }: {
   showId: string;
@@ -40,6 +41,7 @@ export function useShowChannels({
   persistSetupDebounced: any;
   persistSectionsDebounced: any;
   persistSections: () => Promise<void>;
+  persistSectionDefs: () => Promise<void>;
   t: (key: string, params?: any) => string;
   confirm: (opts: any) => Promise<boolean>;
 }) {
@@ -93,6 +95,7 @@ export function useShowChannels({
         persistChannels()
         persistSetupDebounced()
         persistSections()
+        persistSectionDefs()
       },
       `undoredo-${showId}`
     )

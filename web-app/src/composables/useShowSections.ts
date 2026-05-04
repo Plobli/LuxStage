@@ -1,6 +1,6 @@
 import { ref, type Ref } from 'vue'
 import { useDebounceFn } from '@vueuse/core'
-import { fetchShowSections, saveShowSections, fetchShowSectionDefs } from '../api/sections'
+import { fetchShowSections, saveShowSections, fetchShowSectionDefs, saveShowSectionDefs } from '../api/sections'
 
 export interface SectionDef {
   id: string;
@@ -56,12 +56,17 @@ export function useShowSections(showId: string, meta: Ref<any>) {
     }
   }
 
+  async function persistSectionDefs(): Promise<void> {
+    await saveShowSectionDefs(showId, sectionDefs.value)
+  }
+
   return {
     sectionDefs,
     sectionContents,
     sectionsSaving,
     persistSectionsDebounced,
     persistSections,
+    persistSectionDefs,
     loadSections,
     handleSectionsSse
   }

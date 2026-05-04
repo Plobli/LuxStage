@@ -47,6 +47,33 @@
         class="h-8 rounded-full px-3 data-[state=on]:bg-background data-[state=on]:text-foreground"
         :title="t('editor.table')"
       >⊞</Toggle>
+      <template v-if="editor.isActive('table')">
+        <Separator orientation="vertical" class="mx-1 h-4" />
+        <button
+          type="button"
+          @mousedown.prevent="editor.chain().focus().addRowAfter().run()"
+          class="h-8 rounded-full px-2.5 text-xs text-muted-foreground hover:bg-background hover:text-foreground"
+          :title="t('editor.table.add_row_after')"
+        >+↓</button>
+        <button
+          type="button"
+          @mousedown.prevent="editor.chain().focus().addColumnAfter().run()"
+          class="h-8 rounded-full px-2.5 text-xs text-muted-foreground hover:bg-background hover:text-foreground"
+          :title="t('editor.table.add_col_after')"
+        >+→</button>
+        <button
+          type="button"
+          @mousedown.prevent="editor.chain().focus().deleteRow().run()"
+          class="h-8 rounded-full px-2.5 text-xs text-muted-foreground hover:bg-background hover:text-red-400"
+          :title="t('editor.table.delete_row')"
+        >−↓</button>
+        <button
+          type="button"
+          @mousedown.prevent="editor.chain().focus().deleteColumn().run()"
+          class="h-8 rounded-full px-2.5 text-xs text-muted-foreground hover:bg-background hover:text-red-400"
+          :title="t('editor.table.delete_col')"
+        >−→</button>
+      </template>
     </div>
 
     <!-- Editor Content -->
@@ -69,7 +96,7 @@ import { Table, TableRow, TableHeader, TableCell } from '@tiptap/extension-table
 
 const { t } = useLocale()
 const props = defineProps({ modelValue: { type: String, default: '' } })
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue', 'focus', 'blur'])
 
 const EMPTY_DOC = { type: 'doc', content: [{ type: 'paragraph' }] }
 
@@ -88,6 +115,8 @@ const editor = useEditor({
   ],
   content: parseContent(props.modelValue),
   editorProps: { attributes: { class: 'tiptap' } },
+  onFocus() { emit('focus') },
+  onBlur() { emit('blur') },
   onUpdate({ editor }) {
     emit('update:modelValue', JSON.stringify(editor.getJSON()))
   },

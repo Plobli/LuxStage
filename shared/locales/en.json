@@ -255,6 +255,7 @@
   "editor.heading": "Heading",
   "editor.list.bullet": "• List",
   "editor.list.ordered": "1. List",
+  "editor.list.task": "Checklist",
   "editor.table": "Table",
   "editor.table.add_row_after": "Add row below",
   "editor.table.add_col_after": "Add column right",

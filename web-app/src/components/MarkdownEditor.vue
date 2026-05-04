@@ -39,6 +39,13 @@
         class="h-8 rounded-full px-3 data-[state=on]:bg-background data-[state=on]:text-foreground"
         :title="t('editor.list.ordered')"
       >1.</Toggle>
+      <Toggle
+        size="sm"
+        :pressed="editor.isActive('taskList')"
+        @mousedown.prevent="editor.chain().focus().toggleTaskList().run()"
+        class="h-8 rounded-full px-3 data-[state=on]:bg-background data-[state=on]:text-foreground"
+        :title="t('editor.list.task')"
+      >☑</Toggle>
       <Separator orientation="vertical" class="mx-1 h-4" />
       <Toggle
         size="sm"
@@ -79,7 +86,7 @@
     <!-- Editor Content -->
     <EditorContent
       :editor="editor"
-      class="tiptap-content min-h-[120px] bg-transparent px-4 py-4 text-sm text-foreground focus-within:outline-none [&_.tiptap]:min-h-[120px] [&_.tiptap]:outline-none [&_.tiptap]:text-foreground [&_.tiptap_p]:my-1.5 [&_.tiptap_h3]:mb-1 [&_.tiptap_h3]:mt-3 [&_.tiptap_h3]:text-sm [&_.tiptap_h3]:font-semibold [&_.tiptap_h3]:text-foreground [&_.tiptap_ul]:list-disc [&_.tiptap_ul]:pl-5 [&_.tiptap_ol]:list-decimal [&_.tiptap_ol]:pl-5 [&_.tiptap_li]:my-1 [&_.tiptap_strong]:font-semibold [&_.tiptap_strong]:text-foreground [&_.tiptap_em]:italic [&_.tiptap_table]:border-collapse [&_.tiptap_table]:w-full [&_.tiptap_table]:my-2 [&_.tiptap_td]:border [&_.tiptap_td]:border-border/60 [&_.tiptap_td]:px-2 [&_.tiptap_td]:py-1 [&_.tiptap_th]:border [&_.tiptap_th]:border-border/60 [&_.tiptap_th]:px-2 [&_.tiptap_th]:py-1 [&_.tiptap_th]:font-semibold [&_.tiptap_th]:bg-muted/30"
+      class="tiptap-content min-h-[120px] bg-transparent px-4 py-4 text-sm text-foreground focus-within:outline-none [&_.tiptap]:min-h-[120px] [&_.tiptap]:outline-none [&_.tiptap]:text-foreground [&_.tiptap_p]:my-1.5 [&_.tiptap_h3]:mb-1 [&_.tiptap_h3]:mt-3 [&_.tiptap_h3]:text-sm [&_.tiptap_h3]:font-semibold [&_.tiptap_h3]:text-foreground [&_.tiptap_ul]:list-disc [&_.tiptap_ul]:pl-5 [&_.tiptap_ol]:list-decimal [&_.tiptap_ol]:pl-5 [&_.tiptap_li]:my-1 [&_.tiptap_strong]:font-semibold [&_.tiptap_strong]:text-foreground [&_.tiptap_em]:italic [&_.tiptap_.tableWrapper]:overflow-x-auto [&_.tiptap_table]:border-collapse [&_.tiptap_table]:min-w-full [&_.tiptap_table]:my-2 [&_.tiptap_td]:border [&_.tiptap_td]:border-border/60 [&_.tiptap_td]:px-2 [&_.tiptap_td]:py-1 [&_.tiptap_td]:min-w-24 [&_.tiptap_th]:border [&_.tiptap_th]:border-border/60 [&_.tiptap_th]:px-2 [&_.tiptap_th]:py-1 [&_.tiptap_th]:min-w-24 [&_.tiptap_th]:font-semibold [&_.tiptap_th]:bg-muted/30 [&_.tiptap_ul[data-type=taskList]]:list-none [&_.tiptap_ul[data-type=taskList]]:pl-0 [&_.tiptap_ul[data-type=taskList]_li]:flex [&_.tiptap_ul[data-type=taskList]_li]:items-baseline [&_.tiptap_ul[data-type=taskList]_li]:gap-2 [&_.tiptap_ul[data-type=taskList]_li_label]:flex [&_.tiptap_ul[data-type=taskList]_li_label]:items-center [&_.tiptap_ul[data-type=taskList]_li_input[type=checkbox]]:mt-0 [&_.tiptap_ul[data-type=taskList]_li_input[type=checkbox]]:size-4 [&_.tiptap_ul[data-type=taskList]_li_input[type=checkbox]]:cursor-pointer [&_.tiptap_ul[data-type=taskList]_li_input[type=checkbox]]:accent-accent"
     />
   </div>
 </template>
@@ -93,6 +100,8 @@ import { useEditor, EditorContent } from '@tiptap/vue-3'
 import { useLocale } from '../composables/useLocale.js'
 import StarterKit from '@tiptap/starter-kit'
 import { Table, TableRow, TableHeader, TableCell } from '@tiptap/extension-table'
+import TaskList from '@tiptap/extension-task-list'
+import TaskItem from '@tiptap/extension-task-item'
 
 const { t } = useLocale()
 const props = defineProps({ modelValue: { type: String, default: '' } })
@@ -112,6 +121,8 @@ const editor = useEditor({
     TableRow,
     TableHeader,
     TableCell,
+    TaskList,
+    TaskItem.configure({ nested: false }),
   ],
   content: parseContent(props.modelValue),
   editorProps: { attributes: { class: 'tiptap' } },

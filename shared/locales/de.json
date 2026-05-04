@@ -258,6 +258,7 @@
   "editor.heading": "Überschrift",
   "editor.list.bullet": "• Liste",
   "editor.list.ordered": "1. Liste",
+  "editor.list.task": "Checkliste",
   "editor.table": "Tabelle",
   "editor.table.add_row_after": "Zeile unten einfügen",
   "editor.table.add_col_after": "Spalte rechts einfügen",

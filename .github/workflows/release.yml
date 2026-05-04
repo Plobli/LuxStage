@@ -13,6 +13,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -30,8 +32,21 @@ jobs:
           # und das fertig gebaute Web-App Dist-Verzeichnis.
           zip -r luxstage-release.zip server web-app/dist package.json package-lock.json -x "server/node_modules/*" "*/.DS_Store"
 
+      - name: Generate Release Notes
+        id: notes
+        run: |
+          PREV_TAG=$(git tag --sort=-version:refname | grep -v "^${GITHUB_REF_NAME}$" | head -1)
+          if [ -z "$PREV_TAG" ]; then
+            NOTES=$(git log --pretty=format:"- %s" HEAD)
+          else
+            NOTES=$(git log --pretty=format:"- %s" "${PREV_TAG}..HEAD")
+          fi
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: luxstage-release.zip
-          generate_release_notes: true
+          body: ${{ steps.notes.outputs.notes }}

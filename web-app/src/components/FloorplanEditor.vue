@@ -495,14 +495,14 @@ const floatingPanelPos = computed(() => {
   return { left: Math.round(left), top: Math.round(top) }
 })
 
-function towerForEl(el: any) { return props.towers.find((t: any) => t.id === el.towerId) ?? null }
-function filledSlotsLabel(el: any) {
+function towerForEl(el) { return props.towers.find(t => t.id === el.towerId) ?? null }
+function filledSlotsLabel(el) {
   const t = towerForEl(el)
   if (!t) return ''
-  const filled = (t.slots ?? []).filter((s: any) => s.channel_id).length
+  const filled = (t.slots ?? []).filter(s => s.channel_id).length
   return `${filled}/${t.slot_count} Slots`
 }
-function pillW(_channel: any) { return 62 }
+function pillW(_channel) { return 62 }
 function typeLabel(type) { return { line: 'Linie', rect: 'Rechteck', ellipse: 'Ellipse', text: 'Text', channel: 'Kanal', tower: 'Gassenturm' }[type] || type }
 
 function getArrowPoints(channel, rot) {
@@ -842,10 +842,10 @@ function openTowerPlacer() {
   towerPickerPos.value = { x: snap(stageSize.value.width / 2 - panOffset.value.x), y: snap(stageSize.value.height / 2 - panOffset.value.y) }
   showTowerPicker.value = true
 }
-function towerAlreadyPlaced(towerId: string) {
-  return elements.value.some((e: any) => e.type === 'tower' && e.towerId === towerId)
+function towerAlreadyPlaced(towerId) {
+  return elements.value.some(e => e.type === 'tower' && e.towerId === towerId)
 }
-function placeTowerNode(tower: any) {
+function placeTowerNode(tower) {
   addElement({ id: uuid(), type: 'tower', x: snap(towerPickerPos.value.x), y: snap(towerPickerPos.value.y), w: 90, h: 54, towerId: tower.id, towerName: tower.name, rotation: 0 })
   showTowerPicker.value = false
   activeTool.value = 'select'

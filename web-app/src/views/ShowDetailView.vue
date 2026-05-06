@@ -356,7 +356,7 @@ function jumpToChannel(_channelNum) {
   mobileTab.value = 'channels'
 }
 
-function openTowerFromFloorplan(_towerId: string) {
+function openTowerFromFloorplan(_towerId) {
   mobileTab.value = 'gassenturm'
 }
 

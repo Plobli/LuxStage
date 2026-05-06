@@ -24,6 +24,9 @@
       <ToolBtn :active="activeTool === 'channel'" title="Kanal platzieren (C)" @click="activeTool = 'channel'">
         <CircleDot class="w-5 h-5" />
       </ToolBtn>
+      <ToolBtn :active="activeTool === 'tower'" title="Gassenturm platzieren" @click="openTowerPlacer">
+        <Layers class="w-5 h-5" />
+      </ToolBtn>
       <Separator class="w-8 my-1" />
 
       <ToolBtn title="Hintergrundbild hochladen" @click="imageUploadInput?.click()">
@@ -111,6 +114,21 @@
                   :font-size="el.fontSize || 16" :font-weight="el.fontStyle === 'bold' ? 'bold' : 'normal'" 
                   dominant-baseline="hanging" style="cursor: pointer;">{{ el.text }}</text>
 
+            <!-- Tower Node -->
+            <g v-else-if="el.type === 'tower'" style="cursor: pointer;" @dblclick.stop="emit('open-tower', el.towerId)">
+              <rect :x="el.x" :y="el.y" :width="el.w || 80" :height="el.h || 50" rx="6"
+                    :fill="selectedIds.has(el.id) ? 'rgba(251,191,36,0.12)' : 'rgba(99,102,241,0.12)'"
+                    :stroke="selectedIds.has(el.id) ? '#f59e0b' : '#6366f1'"
+                    stroke-width="2" />
+              <!-- Side badge -->
+              <rect v-if="towerForEl(el)?.side" :x="el.x + (el.w || 80) - 20" :y="el.y + 4" width="16" height="14" rx="3" fill="#6366f1" />
+              <text v-if="towerForEl(el)?.side" :x="el.x + (el.w || 80) - 12" :y="el.y + 14" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle" dominant-baseline="auto">{{ towerForEl(el)?.side }}</text>
+              <!-- Name -->
+              <text :x="el.x + 8" :y="el.y + 16" fill="#a5b4fc" font-size="11" font-weight="600" dominant-baseline="auto">{{ towerForEl(el)?.name || el.towerName || 'Turm' }}</text>
+              <!-- Slot count -->
+              <text :x="el.x + 8" :y="el.y + 32" fill="#6b7280" font-size="10" dominant-baseline="auto">{{ filledSlotsLabel(el) }}</text>
+            </g>
+
             <!-- Channel -->
             <g v-else-if="el.type === 'channel'" style="cursor: pointer;">
               <!-- Selection indicator -->
@@ -175,6 +193,16 @@
               <Trash2 class="size-3 text-destructive" />
             </Button>
           </div>
+
+          <!-- Tower info -->
+          <template v-if="selectedElement.type === 'tower'">
+            <div v-if="towerForEl(selectedElement)" class="text-xs space-y-0.5 text-muted-foreground border-b border-border pb-2">
+              <div class="font-semibold text-foreground">{{ towerForEl(selectedElement).name }}</div>
+              <div v-if="towerForEl(selectedElement).stage_area">{{ towerForEl(selectedElement).stage_area }}</div>
+              <div>{{ filledSlotsLabel(selectedElement) }}</div>
+            </div>
+            <Button variant="outline" size="sm" class="h-7 text-xs w-full" @click="emit('open-tower', selectedElement.towerId)">→ Zum Blueprint</Button>
+          </template>
 
           <!-- Channel info -->
           <template v-if="selectedElement.type === 'channel'">
@@ -281,6 +309,33 @@
       </DialogContent>
     </Dialog>
 
+    <!-- Tower Picker Dialog -->
+    <Dialog :open="showTowerPicker" @update:open="val => { if (!val) showTowerPicker = false }">
+      <DialogContent class="w-72 max-h-[28rem] flex flex-col gap-0 p-4">
+        <DialogHeader class="mb-3"><DialogTitle class="text-sm">Gassenturm platzieren</DialogTitle></DialogHeader>
+        <div class="flex-1 overflow-y-auto space-y-1">
+          <Button
+            v-for="tower in props.towers"
+            :key="tower.id"
+            variant="ghost"
+            :disabled="towerAlreadyPlaced(tower.id)"
+            @click="placeTowerNode(tower)"
+            class="w-full justify-start px-2 py-1.5 h-auto text-sm"
+            :class="towerAlreadyPlaced(tower.id) && 'opacity-40'"
+          >
+            <div>
+              <div class="font-semibold">{{ tower.name }}</div>
+              <div class="text-xs text-muted-foreground">{{ tower.stage_area }}{{ tower.side ? ' · ' + tower.side : '' }}</div>
+            </div>
+          </Button>
+          <div v-if="!props.towers.length" class="text-xs text-muted-foreground px-2 py-4 text-center">
+            Noch keine Gassentürme angelegt
+          </div>
+        </div>
+        <DialogFooter class="mt-3"><Button variant="outline" @click="showTowerPicker = false" class="w-full">Abbrechen</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
+
     <!-- Channel Picker Dialog -->
     <Dialog :open="showChannelPicker" @update:open="val => { if (!val) showChannelPicker = false }">
       <DialogContent class="w-72 max-h-[28rem] flex flex-col gap-0 p-4">
@@ -302,7 +357,7 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick, defineComponent
 import { uuid } from '../utils/uuid.js'
 import {
   Copy, MousePointer2, Hand, Minus, Square, Circle, Type, CircleDot,
-  Upload, ImageOff, Download, Undo2, Redo2, Trash2
+  Upload, ImageOff, Download, Undo2, Redo2, Trash2, Layers
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -313,8 +368,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import ToolBtn from '@/components/ui/ToolBtn.vue'
 import PanelBtn from '@/components/ui/PanelBtn.vue'
 
-const props = defineProps({ imageUrl: { type: String, default: null }, initialCanvasData: { type: String, default: null }, channels: { type: Array, default: () => [] } })
-const emit = defineEmits(['change', 'jump-to-channel', 'upload-image', 'delete-image', 'snapshot'])
+const props = defineProps({
+  imageUrl: { type: String, default: null },
+  initialCanvasData: { type: String, default: null },
+  channels: { type: Array, default: () => [] },
+  towers: { type: Array, default: () => [] },
+})
+const emit = defineEmits(['change', 'jump-to-channel', 'upload-image', 'delete-image', 'snapshot', 'open-tower'])
 
 const activeTool = ref('select')
 const elements = ref([])
@@ -324,6 +384,8 @@ const drawStart = ref(null)
 const showChannelPicker = ref(false)
 const channelPickerPos = ref({ x: 0, y: 0 })
 const channelSearch = ref('')
+const showTowerPicker = ref(false)
+const towerPickerPos = ref({ x: 0, y: 0 })
 const reassignTargetId = ref(null)
 const svgRef = ref(null)
 const containerEl = ref(null)
@@ -433,8 +495,15 @@ const floatingPanelPos = computed(() => {
   return { left: Math.round(left), top: Math.round(top) }
 })
 
-function pillW(_channel) { return 62 }
-function typeLabel(type) { return { line: 'Linie', rect: 'Rechteck', ellipse: 'Ellipse', text: 'Text', channel: 'Kanal' }[type] || type }
+function towerForEl(el: any) { return props.towers.find((t: any) => t.id === el.towerId) ?? null }
+function filledSlotsLabel(el: any) {
+  const t = towerForEl(el)
+  if (!t) return ''
+  const filled = (t.slots ?? []).filter((s: any) => s.channel_id).length
+  return `${filled}/${t.slot_count} Slots`
+}
+function pillW(_channel: any) { return 62 }
+function typeLabel(type) { return { line: 'Linie', rect: 'Rechteck', ellipse: 'Ellipse', text: 'Text', channel: 'Kanal', tower: 'Gassenturm' }[type] || type }
 
 function getArrowPoints(channel, rot) {
   const rad = (rot || 0) * Math.PI / 180
@@ -522,6 +591,7 @@ function getBounds(el) {
   if (el.type === 'rect') return { x: el.x, y: el.y, w: el.w, h: el.h }
   if (el.type === 'ellipse') return { x: el.x - el.rx, y: el.y - el.ry, w: el.rx * 2, h: el.ry * 2 }
   if (el.type === 'text') return { x: el.x - 5, y: el.y - 5, w: (el.fontSize||16)*5, h: (el.fontSize||16)+10 }
+  if (el.type === 'tower') return { x: el.x, y: el.y, w: el.w || 90, h: el.h || 54 }
   return { x: 0, y: 0, w: 0, h: 0 }
 }
 
@@ -768,6 +838,20 @@ function deleteSelected() {
   elements.value = elements.value.filter(e => !selectedIds.value.has(e.id))
   selectedIds.value = new Set(); emitChange()
 }
+function openTowerPlacer() {
+  towerPickerPos.value = { x: snap(stageSize.value.width / 2 - panOffset.value.x), y: snap(stageSize.value.height / 2 - panOffset.value.y) }
+  showTowerPicker.value = true
+}
+function towerAlreadyPlaced(towerId: string) {
+  return elements.value.some((e: any) => e.type === 'tower' && e.towerId === towerId)
+}
+function placeTowerNode(tower: any) {
+  addElement({ id: uuid(), type: 'tower', x: snap(towerPickerPos.value.x), y: snap(towerPickerPos.value.y), w: 90, h: 54, towerId: tower.id, towerName: tower.name, rotation: 0 })
+  showTowerPicker.value = false
+  activeTool.value = 'select'
+  emitChange()
+}
+
 function placeChannelCircle(ch) {
   const id = uuid()
   addElement({ id, type: 'channel', x: channelPickerPos.value.x, y: channelPickerPos.value.y, channel: ch.channel, rotation: 0 })

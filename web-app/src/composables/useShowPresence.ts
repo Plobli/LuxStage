@@ -10,6 +10,7 @@ export interface PresenceUser {
 export interface PresenceCallbacks {
   onChannels?: (data: any) => void;
   onSections?: (data: any) => void;
+  onTowers?: (data: any) => void;
 }
 
 export function useShowPresence(showId: string, callbacks: PresenceCallbacks) {
@@ -20,6 +21,7 @@ export function useShowPresence(showId: string, callbacks: PresenceCallbacks) {
     unsubscribeSSE = subscribeShow(showId, {
       onChannels: callbacks.onChannels,
       onSections: callbacks.onSections,
+      onTowers: callbacks.onTowers,
       onPresence: ({ users }: { users: PresenceUser[] }) => {
         presence.value = users
       },

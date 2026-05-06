@@ -1,7 +1,8 @@
-import { ref } from 'vue'
+import { ref, type Ref } from 'vue'
 import { fetchTowers, createTower, updateTower, deleteTower as apiDeleteTower, assignTowerSlot, type Tower } from '../api/towers'
+import type { Channel } from '../api/channels'
 
-export function useShowTowers(showId: string) {
+export function useShowTowers(showId: string, channels?: Ref<Channel[]>) {
   const towers = ref<Tower[]>([])
   const loading = ref(false)
 
@@ -34,8 +35,38 @@ export function useShowTowers(showId: string) {
     await assignTowerSlot(showId, towerId, slotIndex, channelId)
     const tower = towers.value.find(t => t.id === towerId)
     if (!tower) return
+
+    // Clear old channel that had this slot
+    if (channels?.value) {
+      for (const ch of channels.value) {
+        if (!ch.mount_ref) continue
+        try {
+          const ref = typeof ch.mount_ref === 'string' ? JSON.parse(ch.mount_ref) : ch.mount_ref
+          if (ref?.towerId === towerId && ref?.slotIndex === slotIndex) {
+            ch.mount_ref = null
+          }
+        } catch {}
+      }
+    }
+
     const slot = tower.slots.find(s => s.slot_index === slotIndex)
-    if (slot) slot.channel_id = channelId
+    if (slot) {
+      const oldChannelId = slot.channel_id
+      slot.channel_id = channelId
+
+      // Update mount_ref on the new channel
+      if (channelId && channels?.value) {
+        const ch = channels.value.find(c => c.id === channelId)
+        if (ch) {
+          ch.mount_ref = JSON.stringify({
+            type: 'tower',
+            towerId,
+            towerName: tower.name,
+            slotIndex,
+          })
+        }
+      }
+    }
   }
 
   function handleTowersSse() {

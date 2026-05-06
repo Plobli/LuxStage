@@ -143,10 +143,12 @@
               :image-url="floorplan.image_url ? api.url(floorplan.image_url) : null"
               :initial-canvas-data="floorplan.canvas_data"
               :channels="channels"
+              :towers="towers"
               @change="onFloorplanChange"
               @upload-image="onFloorplanImageUpload"
               @delete-image="onFloorplanImageDelete"
               @jump-to-channel="jumpToChannel"
+              @open-tower="openTowerFromFloorplan"
             />
           </div>
         </div>
@@ -274,7 +276,6 @@ watch(mobileTab, (tab) => sessionStorage.setItem(TAB_KEY, tab))
 // ── Composables ────────────────────────────────────────────────────────────
 const { photos, loadPhotos } = useShowPhotos(props.id)
 const { floorplan, loadFloorplan, onFloorplanChange, onFloorplanImageUpload, onFloorplanImageDelete } = useShowFloorplan(props.id)
-const { towers, loadTowers, addTower, saveTower, removeTower, assignSlot } = useShowTowers(props.id)
 
 const {
   sectionDefs, sectionContents, sectionsSaving,
@@ -316,9 +317,12 @@ const {
   confirm
 })
 
+const { towers, loadTowers, addTower, saveTower, removeTower, assignSlot } = useShowTowers(props.id, channels)
+
 const { presence, initPresence, cleanupPresence } = useShowPresence(props.id, {
   onChannels: handleChannelsSse,
-  onSections: handleSectionsSse
+  onSections: handleSectionsSse,
+  onTowers: () => loadTowers(),
 })
 
 // ── Editor ─────────────────────────────────────────────────────────────────
@@ -350,6 +354,10 @@ async function openPdf() {
 
 function jumpToChannel(_channelNum) {
   mobileTab.value = 'channels'
+}
+
+function openTowerFromFloorplan(_towerId: string) {
+  mobileTab.value = 'gassenturm'
 }
 
 // ── Laden ──────────────────────────────────────────────────────────────────

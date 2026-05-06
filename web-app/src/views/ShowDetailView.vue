@@ -19,6 +19,7 @@
         tabInfo: t('tab.info'),
         tabPhotos: t('tab.photos'),
         tabFloorplan: t('tab.floorplan'),
+        tabGassenturm: t('tab.gassenturm'),
         undo: t('action.undo'),
         redo: t('action.redo'),
         dupAddress: t('channel.dup_address'),
@@ -150,6 +151,21 @@
           </div>
         </div>
 
+        <!-- Gassenturm View -->
+        <div
+          v-show="mobileTab === 'gassenturm'"
+          class="flex flex-col flex-1 min-h-0 overflow-hidden"
+        >
+          <GassenturmView
+            :towers="towers"
+            :channels="channels"
+            :addTowerFn="addTower"
+            :saveTowerFn="saveTower"
+            :deleteTowerFn="removeTower"
+            :assignSlotFn="assignSlot"
+          />
+        </div>
+
         <!-- Info View -->
         <div
           v-show="mobileTab === 'info'"
@@ -222,6 +238,7 @@ import { useShowSections } from '../composables/useShowSections.js'
 import { useShowPresence } from '../composables/useShowPresence.js'
 import { useShowChannels } from '../composables/useShowChannels.js'
 import { useShowFloorplan } from '../composables/useShowFloorplan.js'
+import { useShowTowers } from '../composables/useShowTowers.js'
 
 import ShowHeader from '../components/show/ShowHeader.vue'
 import { fetchShow, updateMeta, restoreHistory, createSnapshot } from '../api/shows.js'
@@ -235,6 +252,7 @@ import ChannelTable from '../components/channel/ChannelTable.vue'
 import SectionEditor from '../components/show/SectionEditor.vue'
 const EosMergePreviewDialog = defineAsyncComponent(() => import('../components/EosMergePreviewDialog.vue'))
 const FloorplanEditor = defineAsyncComponent(() => import('../components/FloorplanEditor.vue'))
+const GassenturmView = defineAsyncComponent(() => import('../components/show/GassenturmView.vue'))
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
@@ -256,6 +274,7 @@ watch(mobileTab, (tab) => sessionStorage.setItem(TAB_KEY, tab))
 // ── Composables ────────────────────────────────────────────────────────────
 const { photos, loadPhotos } = useShowPhotos(props.id)
 const { floorplan, loadFloorplan, onFloorplanChange, onFloorplanImageUpload, onFloorplanImageDelete } = useShowFloorplan(props.id)
+const { towers, loadTowers, addTower, saveTower, removeTower, assignSlot } = useShowTowers(props.id)
 
 const {
   sectionDefs, sectionContents, sectionsSaving,
@@ -360,6 +379,7 @@ onMounted(async () => {
   snapshotInterval = setInterval(() => createSnapshot(props.id).catch(() => {}), 10 * 60 * 1000)
 
   loadFloorplan().catch(() => {})
+  loadTowers().catch(() => {})
   initPresence()
 
   await nextTick()

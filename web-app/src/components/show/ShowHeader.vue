@@ -24,6 +24,9 @@
             <TabsTrigger value="floorplan" class="text-xs sm:text-sm px-2 sm:px-4 py-1.5 font-medium">
               {{ labels.tabFloorplan }}
             </TabsTrigger>
+            <TabsTrigger value="gassenturm" class="text-xs sm:text-sm px-2 sm:px-4 py-1.5 font-medium">
+              {{ labels.tabGassenturm || 'Aufbauplan' }}
+            </TabsTrigger>
           </TabsList>
         </Tabs>
       </div>

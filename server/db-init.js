@@ -333,6 +333,41 @@ if (!showFloorplanLayersExists) {
   }
 }
 
+// towers: Gassenturm-Instanzen pro Show
+const towersTableExists = dbContainer.db.prepare(
+  "SELECT name FROM sqlite_master WHERE type='table' AND name='towers'"
+).get()
+if (!towersTableExists) {
+  dbContainer.db.exec(`
+    CREATE TABLE towers (
+      id           TEXT PRIMARY KEY,
+      show_id      TEXT NOT NULL REFERENCES shows(id) ON DELETE CASCADE,
+      name         TEXT NOT NULL DEFAULT '',
+      side         TEXT NOT NULL DEFAULT '',
+      stage_area   TEXT NOT NULL DEFAULT '',
+      slot_count   INTEGER NOT NULL DEFAULT 4,
+      sort_order   INTEGER NOT NULL DEFAULT 0,
+      created_at   INTEGER NOT NULL
+    );
+    CREATE INDEX idx_towers_show ON towers(show_id);
+
+    CREATE TABLE tower_slots (
+      id         TEXT PRIMARY KEY,
+      tower_id   TEXT NOT NULL REFERENCES towers(id) ON DELETE CASCADE,
+      slot_index INTEGER NOT NULL,
+      channel_id TEXT,
+      UNIQUE(tower_id, slot_index)
+    );
+    CREATE INDEX idx_tower_slots_tower ON tower_slots(tower_id);
+  `)
+}
+
+// mount_ref in channels: JSON-Feld { type, towerId, slotIndex } oder null
+const channelCols = dbContainer.db.pragma('table_info(channels)').map(c => c.name)
+if (!channelCols.includes('mount_ref')) {
+  dbContainer.db.exec("ALTER TABLE channels ADD COLUMN mount_ref TEXT")
+}
+
 export function resetDb() {
   if (dbContainer.db) dbContainer.db.close()
   dbContainer.db = new Database(':memory:')

@@ -68,7 +68,7 @@
         </div>
 
         <!-- Desktop: Notizen -->
-        <div v-if="!isMobile" class="px-0 py-0 align-middle border-l border-border/40 h-full flex items-center">
+        <div v-if="!isMobile" class="px-0 py-0 align-middle border-l border-border/40 h-full flex flex-col items-start justify-center">
           <ChannelTextarea
             v-model="ch.notes"
             :data-nav-row="rowIndex"
@@ -78,6 +78,11 @@
             @blur="emit('commitFocus')"
             @keydown="onKeydownCol3"
           />
+          <div v-if="mountRefLabel" class="px-2 pb-1 w-full">
+            <span class="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium bg-accent/10 text-accent/80 border border-accent/20 select-none">
+              <Layers class="size-2.5 shrink-0" />{{ mountRefLabel }}
+            </span>
+          </div>
         </div>
 
         <!-- Desktop: Delete -->
@@ -161,7 +166,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { GripVertical, X } from 'lucide-vue-next'
+import { GripVertical, X, Layers } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import ColorAutocomplete from '../ColorAutocomplete.vue'
@@ -190,6 +195,21 @@ function onKeydownCol0(e) { props.onKeydownFn?.(e, props.rowIndex, 0, 4, props.o
 function onKeydownCol1(e) { props.onKeydownFn?.(e, props.rowIndex, 1, 4, null) }
 function onKeydownCol2(e) { props.onKeydownFn?.(e, props.rowIndex, 2, 4, null) }
 function onKeydownCol3(e) { props.onKeydownFn?.(e, props.rowIndex, 3, 4, props.onAddRow) }
+
+const mountRefLabel = computed(() => {
+  const raw = props.ch?.mount_ref
+  if (!raw) return null
+  try {
+    const ref = typeof raw === 'string' ? JSON.parse(raw) : raw
+    if (ref?.type === 'tower') {
+      const parts = [ref.towerName, ref.slotIndex != null ? `Slot ${ref.slotIndex}` : null].filter(Boolean)
+      return parts.join(' · ') || 'Gassenturm'
+    }
+    if (ref?.type === 'bar') return ref.barName ?? 'Zugstange'
+    if (ref?.type === 'stage_object') return ref.objectName ?? 'Kulisse'
+  } catch { return null }
+  return null
+})
 
 const channelStatusClass = computed(() => {
   if (props.channelStatus === 'active') return 'text-green-600 dark:text-green-400'

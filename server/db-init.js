@@ -199,6 +199,9 @@ if (!showCols.includes('last_edited_by')) {
 if (!showCols.includes('last_edited_at')) {
   dbContainer.db.exec('ALTER TABLE shows ADD COLUMN last_edited_at INTEGER')
 }
+if (!showCols.includes('gassenturm_meta')) {
+  dbContainer.db.exec('ALTER TABLE shows ADD COLUMN gassenturm_meta TEXT')
+}
 const userCols = dbContainer.db.pragma('table_info(users)').map(c => c.name)
 if (!userCols.includes('role')) {
   dbContainer.db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'techniker'")
@@ -249,6 +252,11 @@ if (!templateCols.includes('osc_host')) {
 }
 if (!templateCols.includes('updated_at')) {
   dbContainer.db.exec('ALTER TABLE templates ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0')
+}
+
+const channelCols = dbContainer.db.pragma('table_info(channels)').map(c => c.name)
+if (!channelCols.includes('gassenturm_assignment')) {
+  dbContainer.db.exec('ALTER TABLE channels ADD COLUMN gassenturm_assignment TEXT')
 }
 
 const photoCols = dbContainer.db.pragma('table_info(photo_descriptions)').map(c => c.name)

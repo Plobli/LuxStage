@@ -43,10 +43,11 @@ export async function showRoutes(req, res, pathname, params) {
     if (method === 'PUT') {
       const user = req.user
       const body = await readJsonBody(req, res); if (body === null) return
-      const { setupMarkdown, eosActiveChannels, ...rest } = body
+      const { setupMarkdown, eosActiveChannels, gassenturmMeta, ...rest } = body
       const fields = { ...rest }
       if (setupMarkdown !== undefined) fields.setup_markdown = setupMarkdown
       if (eosActiveChannels !== undefined) fields.eos_active_channels = JSON.stringify(eosActiveChannels)
+      if (gassenturmMeta !== undefined) fields.gassenturm_meta = JSON.stringify(gassenturmMeta)
       fields.last_edited_by = user.username
       fields.last_edited_at = Date.now()
       db.writeShow(slug, fields)
@@ -123,6 +124,7 @@ export async function showRoutes(req, res, pathname, params) {
         spielzeit: show.spielzeit,
         setupMarkdown: show.setup_markdown ?? '',
         eosActiveChannels: show.eos_active_channels ? JSON.parse(show.eos_active_channels) : null,
+        gassenturmMeta: show.gassenturm_meta ? JSON.parse(show.gassenturm_meta) : {},
         channels,
         lock,
       })

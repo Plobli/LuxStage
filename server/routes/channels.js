@@ -13,7 +13,7 @@ export async function channelRoutes(req, res, pathname) {
     const slug = m[1]
     if (method === 'GET') {
       const user = req.user
-      const channels = db.readChannels(slug).map(({ show_id: _, sort_order: __, ...ch }) => ch)
+      const channels = db.readChannels(slug)
       return json(res, 200, channels)
     }
     if (method === 'PUT') {

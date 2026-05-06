@@ -1,12 +1,13 @@
 <template>
   <div class="flex h-full flex-col overflow-hidden bg-card">
     <div class="shrink-0 sticky top-0 z-20 border-b border-border/90 bg-muted shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_8px_rgba(0,0,0,0.10)]">
-      <div v-if="!isMobile" class="grid min-h-8 grid-cols-[2rem_10rem_7rem_minmax(14rem,22%)_minmax(16rem,1fr)_2.5rem] items-center px-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/90">
+      <div v-if="!isMobile" class="grid min-h-8 grid-cols-[2rem_10rem_7rem_minmax(14rem,22%)_1fr_4.5rem_2.5rem] items-center px-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/90">
         <div></div>
         <div>{{ labels.channel }}</div>
         <div class="px-0">{{ labels.color }}</div>
         <div class="px-0">{{ labels.device }}</div>
         <div class="px-1.5">{{ labels.notes }}</div>
+        <div class="px-1 text-center">GT</div>
         <div></div>
       </div>
     </div>
@@ -72,7 +73,6 @@
         </template>
 
         <template v-else-if="item.type === 'channel'">
-          <!-- Channel row -->
           <ChannelRow
             :ch="item.ch"
             :rowIndex="rowIndexOf(item.ch)"
@@ -82,6 +82,10 @@
             :deleteTitle="labels.delete"
             :onKeydownFn="onKeydownFn"
             :onAddRow="() => startAdd(item.group.position)"
+            :existingTowerNames="existingTowerNames"
+            :allChannels="props.channels"
+            :towerMeta="props.towerMeta"
+            @updateTower="(name, data) => emit('updateTower', name, data)"
             @change="emit('change')"
             @recordFocus="emit('recordFocus')"
             @commitFocus="emit('commitFocus')"
@@ -93,7 +97,6 @@
         </template>
 
         <template v-else-if="item.type === 'add-btn'">
-          <!-- Add button row -->
           <div
             class="border-t border-border/60 bg-card px-3 py-1.5"
             data-no-drag
@@ -108,14 +111,12 @@
         </template>
 
         <template v-else-if="item.type === 'add-form'">
-          <!-- Add form row -->
           <div
             class="border-t border-border/60 bg-card px-3 py-1.5"
             data-no-drag
             @keydown.escape="addingPosition = null"
             @keydown.enter.prevent="saveAdd"
           >
-          <!-- Mobile add form -->
           <div v-if="isMobile" class="flex flex-col gap-1.5">
             <div class="flex items-center gap-1.5">
               <Input
@@ -149,8 +150,7 @@
               />
             </div>
           </div>
-          <!-- Desktop add form -->
-          <div v-else class="grid grid-cols-[2rem_10rem_7rem_minmax(14rem,22%)_minmax(16rem,1fr)_2.5rem] items-center gap-0">
+          <div v-else class="grid grid-cols-[2rem_10rem_7rem_minmax(14rem,22%)_1fr_4.5rem_2.5rem] items-center gap-0">
             <div></div>
             <div class="px-3">
               <div class="flex items-center gap-1.5">
@@ -185,6 +185,7 @@
                 class="h-8 min-h-8 w-full resize-none border-0 bg-transparent px-2 py-1.5 text-sm leading-none text-foreground shadow-none transition-colors placeholder:text-muted-foreground/25 hover:bg-muted/10 focus-visible:bg-muted/20 focus-visible:outline-none focus-visible:ring-0"
               />
             </div>
+            <div></div>
             <div class="flex justify-center">
               <Button
                 size="icon"
@@ -198,7 +199,6 @@
         </template>
 
         <template v-else-if="item.type === 'empty'">
-          <!-- Empty state -->
           <div
             class="px-4 py-10"
             data-no-drag
@@ -237,6 +237,7 @@ const props = defineProps({
   channelStatusFn: { type: Function, required: true },
   toggleChannelStatusFn: { type: Function, required: true },
   onKeydownFn: { type: Function, default: null },
+  towerMeta: { type: Object, default: () => ({}) },
   labels: {
     type: Object,
     default: () => ({
@@ -256,6 +257,7 @@ const emit = defineEmits([
   'pushSnapshot',
   'deleteChannel',
   'reorder',
+  'updateTower',
 ])
 
 let channelRowUid = 0
@@ -272,11 +274,20 @@ function ensureStableChannelKey(ch) {
   return ch.__rowKey
 }
 
+// ── Existing tower names (for datalist in modal) ───────────────────────────
+const existingTowerNames = computed(() => {
+  const names = new Set()
+  for (const ch of props.channels) {
+    if (ch.gassenturmAssignment?.turmname) names.add(ch.gassenturmAssignment.turmname)
+  }
+  return [...names].sort()
+})
+
 // ── Add form ───────────────────────────────────────────────────────────────
 const addingPosition = ref(null)
 const addForm = ref({})
 
-// ── Flat list for virtual scrolling ───────────────────────────────────────
+// ── Flat list ──────────────────────────────────────────────────────────────
 const virtualItems = computed(() => {
   const items = []
   if (props.groupedChannels.length === 0) {
@@ -301,7 +312,6 @@ const virtualItems = computed(() => {
   return items
 })
 
-// ── Row index helpers ──────────────────────────────────────────────────────
 const flatChannels = computed(() => props.groupedChannels.flatMap(g => g.channels))
 
 function rowIndexOf(ch) {
@@ -357,7 +367,7 @@ function saveAdd() {
   emit('change')
 }
 
-// ── Insert after (context menu) ────────────────────────────────────────────
+// ── Insert after ───────────────────────────────────────────────────────────
 function insertAfter(ch) {
   emit('pushSnapshot')
   const idx = props.channels.findIndex(c => c === ch)

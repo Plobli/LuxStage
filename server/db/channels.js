@@ -7,15 +7,21 @@ function now() { return Date.now() }
 export function readChannels(slug) {
   const show = readShow(slug)
   if (!show) return []
-  return dbContainer.db.prepare('SELECT * FROM channels WHERE show_id = ? ORDER BY sort_order').all(show.id)
+  return dbContainer.db.prepare('SELECT * FROM channels WHERE show_id = ? ORDER BY sort_order').all(show.id).map(row => {
+    const { show_id, sort_order, gassenturm_assignment, ...rest } = row
+    return {
+      ...rest,
+      ...(gassenturm_assignment ? { gassenturmAssignment: JSON.parse(gassenturm_assignment) } : {}),
+    }
+  })
 }
 
 export function writeChannels(slug, channels, editedBy = null) {
   const show = readShow(slug)
   if (!show) throw new Error(`Show not found: ${slug}`)
   const insertChannel = dbContainer.db.prepare(`
-    INSERT INTO channels (id, show_id, channel, address, device, position, color, notes, sort_order)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO channels (id, show_id, channel, address, device, position, color, notes, gassenturm_assignment, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `)
   const tx = dbContainer.db.transaction(() => {
     dbContainer.db.prepare('DELETE FROM channels WHERE show_id = ?').run(show.id)
@@ -25,6 +31,7 @@ export function writeChannels(slug, channels, editedBy = null) {
         randomUUID(), show.id,
         ch.channel ?? '', ch.address ?? '', ch.device ?? '',
         ch.position ?? '', ch.color ?? '', ch.notes ?? '',
+        ch.gassenturmAssignment ? JSON.stringify(ch.gassenturmAssignment) : null,
         i
       )
     }

@@ -21,6 +21,9 @@
             <TabsTrigger value="photos" class="text-xs sm:text-sm px-2 sm:px-4 py-1.5 font-medium">
               {{ labels.tabPhotos }}
             </TabsTrigger>
+            <TabsTrigger value="aufbau" class="text-xs sm:text-sm px-2 sm:px-4 py-1.5 font-medium">
+              {{ labels.tabAufbau }}
+            </TabsTrigger>
             <TabsTrigger value="floorplan" class="text-xs sm:text-sm px-2 sm:px-4 py-1.5 font-medium">
               {{ labels.tabFloorplan }}
             </TabsTrigger>

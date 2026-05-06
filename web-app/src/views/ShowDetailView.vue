@@ -18,6 +18,7 @@
         tabChannels: t('tab.channels'),
         tabInfo: t('tab.info'),
         tabPhotos: t('tab.photos'),
+        tabAufbau: 'Aufbau',
         tabFloorplan: t('tab.floorplan'),
         undo: t('action.undo'),
         redo: t('action.redo'),
@@ -89,6 +90,8 @@
                 channelNr: t('show.channel.nr'),
                 addressExample: t('show.channel.address.example'),
               }"
+              :towerMeta="gassenturmMeta"
+              @updateTower="onGassenturmMetaUpdate"
               @change="scheduleChannelsSave()"
               @recordFocus="recordFocus()"
               @commitFocus="commitFocus()"
@@ -125,6 +128,25 @@
               @update:photos="photos = $event"
             />
           </div>
+        </div>
+
+        <!-- Aufbau / Gassenturm View -->
+        <div
+          v-show="mobileTab === 'aufbau'"
+          class="flex flex-col flex-1 min-h-0 overflow-hidden"
+        >
+          <div class="shrink-0 flex min-h-10 items-center justify-between border-b border-border/90 bg-muted px-4">
+            <span class="text-sm font-semibold text-accent">Aufbau</span>
+          </div>
+          <GassenturmView
+            :channels="channels"
+            :towerMeta="gassenturmMeta"
+            @updateTower="onGassenturmMetaUpdate"
+            @renameTower="onGassenturmRename"
+            @addChannel="onGassenturmAddChannel"
+            @removeChannel="onGassenturmRemoveChannel"
+            @change="scheduleChannelsSave()"
+          />
         </div>
 
         <!-- Floorplan View -->
@@ -233,6 +255,7 @@ import { api } from '../api/client.js'
 
 import ChannelTable from '../components/channel/ChannelTable.vue'
 import SectionEditor from '../components/show/SectionEditor.vue'
+const GassenturmView = defineAsyncComponent(() => import('../components/show/GassenturmView.vue'))
 const EosMergePreviewDialog = defineAsyncComponent(() => import('../components/EosMergePreviewDialog.vue'))
 const FloorplanEditor = defineAsyncComponent(() => import('../components/FloorplanEditor.vue'))
 
@@ -248,6 +271,45 @@ const meta = ref({})
 const setupMarkdown = ref('')
 const setupSaving = ref(false)
 const historyOpen = ref(false)
+const gassenturmMeta = ref({})
+
+const persistGassenturmMeta = useDebounceFn(async () => {
+  await updateMeta(props.id, { ...meta.value, gassenturmMeta: gassenturmMeta.value })
+}, 400)
+
+function onGassenturmMetaUpdate(turmname, data) {
+  gassenturmMeta.value = { ...gassenturmMeta.value, [turmname]: data }
+  persistGassenturmMeta()
+}
+
+function onGassenturmRemoveChannel(ch) {
+  pushSnapshot()
+  channels.value = channels.value.filter(c => c !== ch)
+  scheduleChannelsSave()
+}
+
+function onGassenturmAddChannel({ turmname, position }) {
+  pushSnapshot()
+  channels.value.push({
+    channel: '', address: '', device: '', position: '', color: '', notes: '',
+    gassenturmAssignment: { turmname, position, notiz: '' }
+  })
+  scheduleChannelsSave()
+}
+
+function onGassenturmRename(oldName, newName) {
+  // towerMeta: alten Key entfernen, neuen anlegen
+  const { [oldName]: oldMeta, ...rest } = gassenturmMeta.value
+  gassenturmMeta.value = { ...rest, [newName]: oldMeta ?? { richtung: 'C', notiz: '' } }
+  persistGassenturmMeta()
+  // alle Kanäle umbenennen
+  for (const ch of channels.value) {
+    if (ch.gassenturmAssignment?.turmname === oldName) {
+      ch.gassenturmAssignment = { ...ch.gassenturmAssignment, turmname: newName }
+    }
+  }
+  scheduleChannelsSave()
+}
 
 const TAB_KEY = `show-tab-${props.id}`
 const mobileTab = ref(sessionStorage.getItem(TAB_KEY) || 'channels')
@@ -348,6 +410,7 @@ onMounted(async () => {
     meta.value = { name: showData.name, datum: showData.datum, template: showData.template, untertitel: showData.untertitel, spielzeit: showData.spielzeit }
     setupMarkdown.value = showData.setupMarkdown ?? ''
     eosActiveChannels.value = showData.eosActiveChannels ?? null
+    gassenturmMeta.value = showData.gassenturmMeta ?? {}
 
   } catch (e) {
     console.error('Ladefehler:', e)

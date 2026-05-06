@@ -118,13 +118,14 @@ export function setServerUrl(url: string): void {
  * Gemeinsame SSE-Verbindung pro Show.
  * Gibt { onChannels, onSections, onPresence, close } zurück.
  */
-export function subscribeShow(showId: string, { onChannels, onSections, onPresence, onTowers }: { onChannels?: (data: any) => void, onSections?: (data: any) => void, onPresence?: (data: any) => void, onTowers?: (data: any) => void } = {}): () => void {
+export function subscribeShow(showId: string, { onChannels, onSections, onPresence, onTowers, onBars }: { onChannels?: (data: any) => void, onSections?: (data: any) => void, onPresence?: (data: any) => void, onTowers?: (data: any) => void, onBars?: (data: any) => void } = {}): () => void {
   const url = BASE() + `/api/shows/${showId}/events?token=${getToken()}&device=web`
   const es = new EventSource(url)
   if (onChannels) es.addEventListener('channels-updated', (e: any) => onChannels(JSON.parse(e.data)))
   if (onSections) es.addEventListener('sections-updated', (e: any) => onSections(JSON.parse(e.data)))
   if (onPresence) es.addEventListener('presence-updated', (e: any) => onPresence(JSON.parse(e.data)))
   if (onTowers) es.addEventListener('towers-updated', (e: any) => onTowers(JSON.parse(e.data)))
+  if (onBars) es.addEventListener('bars-updated', (e: any) => onBars(JSON.parse(e.data)))
   es.onerror = () => {} // reconnect automatically
   return () => es.close()
 }

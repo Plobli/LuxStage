@@ -14,17 +14,19 @@ export function writeChannels(slug, channels, editedBy = null) {
   const show = readShow(slug)
   if (!show) throw new Error(`Show not found: ${slug}`)
   const insertChannel = dbContainer.db.prepare(`
-    INSERT INTO channels (id, show_id, channel, address, device, position, color, notes, sort_order)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO channels (id, show_id, channel, address, device, position, color, notes, mount_ref, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `)
   const tx = dbContainer.db.transaction(() => {
     dbContainer.db.prepare('DELETE FROM channels WHERE show_id = ?').run(show.id)
     for (let i = 0; i < channels.length; i++) {
       const ch = channels[i]
+      const mountRef = ch.mount_ref ? (typeof ch.mount_ref === 'string' ? ch.mount_ref : JSON.stringify(ch.mount_ref)) : null
       insertChannel.run(
         randomUUID(), show.id,
         ch.channel ?? '', ch.address ?? '', ch.device ?? '',
         ch.position ?? '', ch.color ?? '', ch.notes ?? '',
+        mountRef,
         i
       )
     }

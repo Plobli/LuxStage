@@ -368,6 +368,34 @@ if (!channelCols.includes('mount_ref')) {
   dbContainer.db.exec("ALTER TABLE channels ADD COLUMN mount_ref TEXT")
 }
 
+// bars: Zugstangen pro Show
+const barsTableExists = dbContainer.db.prepare(
+  "SELECT name FROM sqlite_master WHERE type='table' AND name='bars'"
+).get()
+if (!barsTableExists) {
+  dbContainer.db.exec(`
+    CREATE TABLE bars (
+      id           TEXT PRIMARY KEY,
+      show_id      TEXT NOT NULL REFERENCES shows(id) ON DELETE CASCADE,
+      name         TEXT NOT NULL DEFAULT '',
+      zug_nr       TEXT NOT NULL DEFAULT '',
+      length_cm    INTEGER NOT NULL DEFAULT 600,
+      sort_order   INTEGER NOT NULL DEFAULT 0,
+      created_at   INTEGER NOT NULL
+    );
+    CREATE INDEX idx_bars_show ON bars(show_id);
+
+    CREATE TABLE bar_fixtures (
+      id         TEXT PRIMARY KEY,
+      bar_id     TEXT NOT NULL REFERENCES bars(id) ON DELETE CASCADE,
+      channel_id TEXT,
+      position   REAL NOT NULL DEFAULT 0,
+      UNIQUE(bar_id, channel_id)
+    );
+    CREATE INDEX idx_bar_fixtures_bar ON bar_fixtures(bar_id);
+  `)
+}
+
 export function resetDb() {
   if (dbContainer.db) dbContainer.db.close()
   dbContainer.db = new Database(':memory:')

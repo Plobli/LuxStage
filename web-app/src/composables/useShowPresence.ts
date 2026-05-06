@@ -11,6 +11,7 @@ export interface PresenceCallbacks {
   onChannels?: (data: any) => void;
   onSections?: (data: any) => void;
   onTowers?: (data: any) => void;
+  onBars?: (data: any) => void;
 }
 
 export function useShowPresence(showId: string, callbacks: PresenceCallbacks) {
@@ -22,6 +23,7 @@ export function useShowPresence(showId: string, callbacks: PresenceCallbacks) {
       onChannels: callbacks.onChannels,
       onSections: callbacks.onSections,
       onTowers: callbacks.onTowers,
+      onBars: callbacks.onBars,
       onPresence: ({ users }: { users: PresenceUser[] }) => {
         presence.value = users
       },

@@ -17,6 +17,7 @@ import { smtpRoutes } from './routes/smtp.js'
 import { updateRoutes } from './routes/update.js'
 import { pdfRoutes } from './routes/pdf.js'
 import { towerRoutes } from './routes/towers.js'
+import { barRoutes } from './routes/bars.js'
 
 const distPath = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'web-app', 'dist')
 
@@ -106,6 +107,7 @@ export async function router(req, res) {
         if (/\/sections(\/|$)|\/section-defs/.test(pathname)) { const r = await sectionRoutes(req, res, pathname);  if (!nil(r)) return }
         if (/\/floorplan(\/|$)/.test(pathname))       { const r = await floorplanRoutes(req, res, pathname);        if (!nil(r)) return }
         if (/\/towers(\/|$)/.test(pathname))           { const r = await towerRoutes(req, res, pathname);            if (!nil(r)) return }
+        if (/\/bars(\/|$)/.test(pathname))             { const r = await barRoutes(req, res, pathname);              if (!nil(r)) return }
         if (/\/history(\/|$)/.test(pathname))         { const r = await historyRoutes(req, res, pathname);          if (!nil(r)) return }
         if (/\/pdf$/.test(pathname))                  { const r = await pdfRoutes(req, res, pathname);              if (nil(r)) notFound(res); return }
         { const r = await showRoutes(req, res, pathname, params); if (nil(r)) notFound(res); return }

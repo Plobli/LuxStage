@@ -153,19 +153,48 @@
           </div>
         </div>
 
-        <!-- Gassenturm View -->
+        <!-- Aufbauplan View (Gassenturm + Zugstangen) -->
         <div
           v-show="mobileTab === 'gassenturm'"
           class="flex flex-col flex-1 min-h-0 overflow-hidden"
         >
-          <GassenturmView
-            :towers="towers"
-            :channels="channels"
-            :addTowerFn="addTower"
-            :saveTowerFn="saveTower"
-            :deleteTowerFn="removeTower"
-            :assignSlotFn="assignSlot"
-          />
+          <!-- Sub-Nav -->
+          <div class="shrink-0 flex items-center gap-1 px-4 py-2 border-b border-border bg-card">
+            <button
+              v-for="sub in aufbauSubTabs"
+              :key="sub.key"
+              :class="[
+                'text-xs px-3 py-1.5 rounded-md font-medium transition-colors',
+                aufbauTab === sub.key
+                  ? 'bg-accent/15 text-accent'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+              ]"
+              @click="aufbauTab = sub.key"
+            >{{ sub.label }}</button>
+          </div>
+
+          <div v-show="aufbauTab === 'gassenturm'" class="flex-1 min-h-0 overflow-hidden">
+            <GassenturmView
+              :towers="towers"
+              :channels="channels"
+              :addTowerFn="addTower"
+              :saveTowerFn="saveTower"
+              :deleteTowerFn="removeTower"
+              :assignSlotFn="assignSlot"
+            />
+          </div>
+
+          <div v-show="aufbauTab === 'zugstangen'" class="flex-1 min-h-0 overflow-hidden">
+            <ZugstangenView
+              :bars="bars"
+              :channels="channels"
+              :addBarFn="addBar"
+              :saveBarFn="saveBar"
+              :deleteBarFn="removeBar"
+              :assignFixtureFn="assignFixture"
+              :unassignFixtureFn="unassignFixture"
+            />
+          </div>
         </div>
 
         <!-- Info View -->
@@ -241,6 +270,7 @@ import { useShowPresence } from '../composables/useShowPresence.js'
 import { useShowChannels } from '../composables/useShowChannels.js'
 import { useShowFloorplan } from '../composables/useShowFloorplan.js'
 import { useShowTowers } from '../composables/useShowTowers.js'
+import { useShowBars } from '../composables/useShowBars.js'
 
 import ShowHeader from '../components/show/ShowHeader.vue'
 import { fetchShow, updateMeta, restoreHistory, createSnapshot } from '../api/shows.js'
@@ -255,6 +285,7 @@ import SectionEditor from '../components/show/SectionEditor.vue'
 const EosMergePreviewDialog = defineAsyncComponent(() => import('../components/EosMergePreviewDialog.vue'))
 const FloorplanEditor = defineAsyncComponent(() => import('../components/FloorplanEditor.vue'))
 const GassenturmView = defineAsyncComponent(() => import('../components/show/GassenturmView.vue'))
+const ZugstangenView = defineAsyncComponent(() => import('../components/show/ZugstangenView.vue'))
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
@@ -272,6 +303,12 @@ const historyOpen = ref(false)
 const TAB_KEY = `show-tab-${props.id}`
 const mobileTab = ref(sessionStorage.getItem(TAB_KEY) || 'channels')
 watch(mobileTab, (tab) => sessionStorage.setItem(TAB_KEY, tab))
+
+const aufbauTab = ref('gassenturm')
+const aufbauSubTabs = [
+  { key: 'gassenturm', label: 'Gassentürme' },
+  { key: 'zugstangen', label: 'Zugstangen' },
+]
 
 // ── Composables ────────────────────────────────────────────────────────────
 const { photos, loadPhotos } = useShowPhotos(props.id)
@@ -318,11 +355,13 @@ const {
 })
 
 const { towers, loadTowers, addTower, saveTower, removeTower, assignSlot } = useShowTowers(props.id, channels)
+const { bars, loadBars, addBar, saveBar, removeBar, assignFixture, unassignFixture } = useShowBars(props.id, channels)
 
 const { presence, initPresence, cleanupPresence } = useShowPresence(props.id, {
   onChannels: handleChannelsSse,
   onSections: handleSectionsSse,
   onTowers: () => loadTowers(),
+  onBars: () => loadBars(),
 })
 
 // ── Editor ─────────────────────────────────────────────────────────────────
@@ -388,6 +427,7 @@ onMounted(async () => {
 
   loadFloorplan().catch(() => {})
   loadTowers().catch(() => {})
+  loadBars().catch(() => {})
   initPresence()
 
   await nextTick()

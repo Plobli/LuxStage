@@ -24,9 +24,17 @@ export function writeTower(slug, data) {
   const id = data.id || randomUUID()
   const existing = dbContainer.db.prepare('SELECT id FROM towers WHERE id = ?').get(id)
   if (existing) {
+    const current = dbContainer.db.prepare('SELECT * FROM towers WHERE id = ?').get(id)
     dbContainer.db.prepare(`
       UPDATE towers SET name=?, side=?, stage_area=?, slot_count=?, sort_order=? WHERE id=?
-    `).run(data.name ?? '', data.side ?? '', data.stage_area ?? '', data.slot_count ?? 4, data.sort_order ?? 0, id)
+    `).run(
+      data.name ?? current.name ?? '',
+      data.side ?? current.side ?? '',
+      data.stage_area ?? current.stage_area ?? '',
+      data.slot_count ?? current.slot_count ?? 4,
+      data.sort_order ?? current.sort_order ?? 0,
+      id
+    )
   } else {
     const count = dbContainer.db.prepare('SELECT COUNT(*) as n FROM towers WHERE show_id = ?').get(show.id).n
     dbContainer.db.prepare(`
@@ -88,4 +96,7 @@ export function ensureTowerSlots(towerId, slotCount) {
       ).run(randomUUID(), towerId, i)
     }
   }
+  dbContainer.db.prepare(
+    'DELETE FROM tower_slots WHERE tower_id = ? AND slot_index > ?'
+  ).run(towerId, slotCount)
 }

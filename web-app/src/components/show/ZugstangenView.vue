@@ -52,6 +52,11 @@
               >
                 <span class="text-sm font-bold text-accent">{{ channelNr(fx.channel_id) }}</span>
               </button>
+              <button
+                class="absolute -top-1 -right-1 size-4 rounded-full bg-red-500 text-white text-[9px] font-bold items-center justify-center hidden group-hover/fx:flex z-20 hover:bg-red-600"
+                style="margin-top: -15px;"
+                @click.stop="confirmRemoveFixture(fx, bar)"
+              >×</button>
             </div>
           </div>
         </div>
@@ -203,6 +208,13 @@ async function saveBarForm() {
   }
   barDialogOpen.value = false
 }
+function confirmRemoveFixture(fx, bar) {
+  const nr = channelNr(fx.channel_id)
+  if (confirm(`Scheinwerfer ${nr !== '?' ? `Kanal ${nr}` : fx.channel_id} von "${bar.name}" entfernen?`)) {
+    props.unassignFixtureFn(bar.id, fx.channel_id)
+  }
+}
+
 function confirmDeleteBar(bar) {
   if (confirm(`Zugstange "${bar.name}" wirklich löschen?`)) {
     props.deleteBarFn(bar.id)

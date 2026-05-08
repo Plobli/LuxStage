@@ -48,10 +48,17 @@ export function writeBarFixture(barId, channelId, position) {
     VALUES (?, ?, ?, ?)
     ON CONFLICT(bar_id, channel_id) DO UPDATE SET position = excluded.position
   `).run(id, barId, channelId, position ?? 0)
+
+  const bar = dbContainer.db.prepare('SELECT * FROM bars WHERE id = ?').get(barId)
+  if (bar) {
+    const mountRef = JSON.stringify({ type: 'bar', barId, barName: bar.name, zugNr: bar.zug_nr, position: position ?? 0 })
+    dbContainer.db.prepare('UPDATE channels SET mount_ref = ? WHERE id = ?').run(mountRef, channelId)
+  }
 }
 
 export function removeBarFixture(barId, channelId) {
   dbContainer.db.prepare(
     'DELETE FROM bar_fixtures WHERE bar_id = ? AND channel_id = ?'
   ).run(barId, channelId)
+  dbContainer.db.prepare('UPDATE channels SET mount_ref = NULL WHERE id = ?').run(channelId)
 }

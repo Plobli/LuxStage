@@ -10,33 +10,49 @@
       <div
         v-for="bar in bars"
         :key="bar.id"
-        class="flex items-center gap-4 px-5 border-b border-border bg-card h-21.5"
+        class="group/row flex items-center gap-6 px-6 py-5 border-b border-border/50 hover:bg-white/2 transition-colors"
       >
         <!-- Name + Länge -->
-        <div class="w-36 shrink-0">
-          <div class="text-sm font-bold text-foreground truncate">{{ bar.name }}</div>
-          <div class="text-xs text-muted-foreground mt-0.5">{{ bar.length_cm }} cm</div>
+        <div class="w-40 shrink-0">
+          <div class="text-sm font-semibold text-foreground tracking-tight truncate">{{ bar.name }}</div>
+          <div class="text-xs text-muted-foreground/60 mt-0.5 tabular-nums">{{ bar.length_cm }} cm</div>
         </div>
 
         <!-- Stangen-Visualisierung -->
-        <div class="flex-1 min-w-0 relative" style="height: 61px;">
+        <div class="flex-1 min-w-0 relative" style="height: 72px;">
           <!-- Skala-Labels oben -->
-          <div class="absolute top-0 left-0 right-0 h-4">
+          <div class="absolute left-0 right-0 h-4" style="top: 24px;">
             <span
               v-for="tick in getScaleTicks(bar)"
               :key="tick.pos"
-              class="absolute text-[9px] text-muted-foreground/60 -translate-x-1/2"
+              class="absolute text-[9px] -translate-x-1/2 tabular-nums leading-none"
+              :class="tick.center ? 'text-foreground font-semibold' : 'text-muted-foreground'"
               :style="{ left: tick.pct + '%' }"
             >{{ tick.label }}</span>
           </div>
 
           <!-- Stangen-Linie + Marker -->
           <div
-            class="absolute left-0 right-0 h-4 rounded-full bg-muted/60 border border-border cursor-crosshair"
-            style="top: 20px;"
+            class="absolute left-0 right-0 cursor-crosshair"
+            style="top: 42px; height: 6px;"
             :data-bar-id="bar.id"
             @click.self="onBarLineClick($event, bar)"
           >
+            <!-- Stangen-Track -->
+            <div class="absolute inset-0 rounded-full bg-white/25 border border-white/40 pointer-events-none" />
+            <!-- Tick-Striche -->
+            <div
+              v-for="tick in getScaleTicks(bar)"
+              :key="'t'+tick.pos"
+              class="absolute top-1/2 -translate-x-px pointer-events-none"
+              :style="{
+                left: tick.pct + '%',
+                height: tick.center ? '16px' : '10px',
+                marginTop: tick.center ? '-8px' : '-5px',
+                width: tick.center ? '2px' : '1px',
+                background: tick.center ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.4)',
+              }"
+            />
             <!-- Kanal-Marker -->
             <div
               v-for="fx in bar.fixtures"
@@ -46,28 +62,26 @@
               @mousedown.prevent.stop="startDrag($event, fx, bar)"
             >
               <button
-                class="size-11.5 rounded-full border-2 border-border bg-background flex items-center justify-center hover:border-accent transition-colors shadow-sm"
-                style="margin-top: -15px;"
+                class="size-10 rounded-full border-2 border-accent bg-accent/30 backdrop-blur-sm flex items-center justify-center hover:bg-accent/50 transition-all shadow-lg"
                 @click.stop="goToChannel(fx.channel_id)"
               >
-                <span class="text-sm font-bold text-accent">{{ channelNr(fx.channel_id) }}</span>
+                <span class="text-xs font-bold text-white tabular-nums drop-shadow-sm">{{ channelNr(fx.channel_id) }}</span>
               </button>
               <button
-                class="absolute -top-1 -right-1 size-4 rounded-full bg-red-500 text-white text-[9px] font-bold items-center justify-center hidden group-hover/fx:flex z-20 hover:bg-red-600"
-                style="margin-top: -15px;"
+                class="absolute -top-0.5 -right-0.5 size-3.5 rounded-full bg-red-500/90 text-white items-center justify-center hidden group-hover/fx:flex z-20 hover:bg-red-500 transition-colors shadow"
                 @click.stop="confirmRemoveFixture(fx, bar)"
-              >×</button>
+              ><svg viewBox="0 0 10 10" width="7" height="7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="2" y1="2" x2="8" y2="8"/><line x1="8" y1="2" x2="2" y2="8"/></svg></button>
             </div>
           </div>
         </div>
 
-        <!-- Aktionen -->
-        <div class="flex items-center gap-1 shrink-0">
-          <Button variant="ghost" size="sm" class="text-xs text-muted-foreground" @click="openEditBarDialog(bar)">
-            <Pencil class="size-3 mr-1" />Bearbeiten
+        <!-- Aktionen (nur bei Hover) -->
+        <div class="flex items-center gap-0.5 shrink-0 opacity-0 group-hover/row:opacity-100 transition-opacity">
+          <Button variant="ghost" size="icon" class="size-7 text-muted-foreground/60 hover:text-foreground" @click="openEditBarDialog(bar)">
+            <Pencil class="size-3.5" />
           </Button>
-          <Button variant="ghost" size="sm" class="text-xs text-red-400 hover:text-red-500 hover:bg-red-500/10" @click="confirmDeleteBar(bar)">
-            <Trash2 class="size-3 mr-1" />Löschen
+          <Button variant="ghost" size="icon" class="size-7 text-muted-foreground/60 hover:text-red-400" @click="confirmDeleteBar(bar)">
+            <Trash2 class="size-3.5" />
           </Button>
         </div>
       </div>
@@ -172,10 +186,18 @@ function posPercent(pos, lengthCm) {
 function getScaleTicks(bar) {
   const len = bar.length_cm || 600
   const half = len / 2
-  const step = len <= 300 ? 50 : len <= 600 ? 100 : 200
+  const labelStep = 50
   const ticks = []
-  for (let cm = -half; cm <= half; cm += step) {
-    ticks.push({ pos: cm, pct: posPercent(cm, len), label: cm === 0 ? '0' : `${cm}` })
+  for (let cm = -half; cm <= half + 0.01; cm += 50) {
+    const snapped = Math.round(cm)
+    const isCenter = snapped === 0
+    const hasLabel = Math.abs(snapped % labelStep) < 0.5
+    ticks.push({
+      pos: snapped,
+      pct: posPercent(snapped, len),
+      center: isCenter,
+      label: hasLabel ? (isCenter ? '0' : `${snapped}`) : null,
+    })
   }
   return ticks
 }

@@ -96,6 +96,9 @@
               @pushSnapshot="pushSnapshot()"
               @deleteChannel="deleteChannel($event)"
               @reorder="channels.splice(0, channels.length, ...$event)"
+              @placeInFloorplan="onPlaceInFloorplan($event)"
+              @assignTower="onAssignTower($event)"
+              @assignBar="onAssignBar($event)"
             />
           </div>
         </div>
@@ -144,11 +147,13 @@
               :initial-canvas-data="floorplan.canvas_data"
               :channels="channels"
               :towers="towers"
+              :bars="bars"
               @change="onFloorplanChange"
               @upload-image="onFloorplanImageUpload"
               @delete-image="onFloorplanImageDelete"
               @jump-to-channel="jumpToChannel"
               @open-tower="openTowerFromFloorplan"
+              @open-bar="onOpenBarFromFloorplan"
             />
           </div>
         </div>
@@ -177,10 +182,13 @@
             <GassenturmView
               :towers="towers"
               :channels="channels"
+              :preselectedChannelId="aufbauTab === 'gassenturm' ? activeChannelForAssign?.id : null"
               :addTowerFn="addTower"
               :saveTowerFn="saveTower"
               :deleteTowerFn="removeTower"
               :assignSlotFn="assignSlot"
+              :pushSnapshotFn="pushSnapshot"
+              @assigned="activeChannelForAssign = null"
             />
           </div>
 
@@ -188,11 +196,13 @@
             <ZugstangenView
               :bars="bars"
               :channels="channels"
+              :preselectedChannelId="aufbauTab === 'zugstangen' ? activeChannelForAssign?.id : null"
               :addBarFn="addBar"
               :saveBarFn="saveBar"
               :deleteBarFn="removeBar"
               :assignFixtureFn="assignFixture"
               :unassignFixtureFn="unassignFixture"
+              @assigned="activeChannelForAssign = null"
             />
           </div>
         </div>
@@ -270,6 +280,7 @@ import { useShowPresence } from '../composables/useShowPresence.js'
 import { useShowChannels } from '../composables/useShowChannels.js'
 import { useShowFloorplan } from '../composables/useShowFloorplan.js'
 import { useShowTowers } from '../composables/useShowTowers.js'
+import { restoreTowersSnapshot } from '../api/towers.js'
 import { useShowBars } from '../composables/useShowBars.js'
 
 import ShowHeader from '../components/show/ShowHeader.vue'
@@ -331,6 +342,8 @@ const persistSetupDebounced = useDebounceFn(async () => {
   }
 }, 50)
 
+const towers = ref([])
+
 const {
   channels, channelsSaving, search, eosActiveChannels, eosMergePreview,
   dupWarning, dupChannelWarning, dupChannelNrs, groupedChannels,
@@ -350,11 +363,13 @@ const {
   persistSectionsDebounced,
   persistSections,
   persistSectionDefs,
+  towers,
+  saveTowersSnapshot: (snapshot) => restoreTowersSnapshot(props.id, snapshot),
   t,
   confirm
 })
 
-const { towers, loadTowers, addTower, saveTower, removeTower, assignSlot } = useShowTowers(props.id, channels)
+const { loadTowers, addTower, saveTower, removeTower, assignSlot } = useShowTowers(props.id, channels, towers)
 const { bars, loadBars, addBar, saveBar, removeBar, assignFixture, unassignFixture } = useShowBars(props.id, channels)
 
 const { presence, initPresence, cleanupPresence } = useShowPresence(props.id, {
@@ -391,12 +406,48 @@ async function openPdf() {
   window.open(url, '_blank')
 }
 
-function jumpToChannel(_channelNum) {
+function jumpToChannel(channelNum) {
   mobileTab.value = 'channels'
+  nextTick(() => {
+    const el = document.querySelector(`[data-ch-key="${channelNum}|"]`) ??
+                document.querySelector(`[data-ch-key^="${channelNum}|"]`)
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    if (el) {
+      el.classList.add('ring-2', 'ring-accent', 'ring-inset')
+      setTimeout(() => el.classList.remove('ring-2', 'ring-accent', 'ring-inset'), 1500)
+    }
+  })
 }
 
 function openTowerFromFloorplan(_towerId) {
   mobileTab.value = 'gassenturm'
+  aufbauTab.value = 'gassenturm'
+}
+
+function onOpenBarFromFloorplan(_barId) {
+  mobileTab.value = 'gassenturm'
+  aufbauTab.value = 'zugstangen'
+}
+
+const activeChannelForAssign = ref(null)
+
+async function onAssignTower(ch) {
+  if (!ch.id) await persistChannels()
+  activeChannelForAssign.value = channels.value.find(c => c.channel === ch.channel) ?? ch
+  mobileTab.value = 'gassenturm'
+  aufbauTab.value = 'gassenturm'
+}
+
+async function onAssignBar(ch) {
+  if (!ch.id) await persistChannels()
+  activeChannelForAssign.value = channels.value.find(c => c.channel === ch.channel) ?? ch
+  mobileTab.value = 'gassenturm'
+  aufbauTab.value = 'zugstangen'
+}
+
+function onPlaceInFloorplan(ch) {
+  activeChannelForAssign.value = ch
+  mobileTab.value = 'floorplan'
 }
 
 // ── Laden ──────────────────────────────────────────────────────────────────

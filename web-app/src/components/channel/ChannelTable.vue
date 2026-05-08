@@ -89,6 +89,9 @@
             @toggleStatus="toggleChannelStatus(item.ch)"
             @delete="emit('deleteChannel', item.ch)"
             @insertAfter="insertAfter(item.ch)"
+            @placeInFloorplan="emit('placeInFloorplan', item.ch)"
+            @assignTower="emit('assignTower', item.ch)"
+            @assignBar="emit('assignBar', item.ch)"
           />
         </template>
 
@@ -256,6 +259,9 @@ const emit = defineEmits([
   'pushSnapshot',
   'deleteChannel',
   'reorder',
+  'placeInFloorplan',
+  'assignTower',
+  'assignBar',
 ])
 
 let channelRowUid = 0

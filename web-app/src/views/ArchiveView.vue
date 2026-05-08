@@ -10,9 +10,11 @@
         <DialogHeader>
           <DialogTitle>{{ t('show.delete.confirm.title') }}</DialogTitle>
         </DialogHeader>
-        <p class="text-sm text-muted-foreground py-4">
-          {{ deleteTarget ? t('show.delete.confirm.text', { name: deleteTarget.name || deleteTarget.id }) : '' }}
-        </p>
+        <DialogBody>
+          <p class="text-sm text-muted-foreground">
+            {{ deleteTarget ? t('show.delete.confirm.text', { name: deleteTarget.name || deleteTarget.id }) : '' }}
+          </p>
+        </DialogBody>
         <DialogFooter>
           <Button variant="outline" @click="deleteTarget = null">
             {{ t('action.cancel') }}
@@ -80,7 +82,7 @@ import { useLocale } from '../composables/useLocale.js'
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
 
 const { t } = useLocale()
 

@@ -2,16 +2,34 @@ import { ref, type Ref } from 'vue'
 import { fetchTowers, createTower, updateTower, deleteTower as apiDeleteTower, assignTowerSlot, type Tower } from '../api/towers'
 import type { Channel } from '../api/channels'
 
-export function useShowTowers(showId: string, channels?: Ref<Channel[]>) {
-  const towers = ref<Tower[]>([])
+export function useShowTowers(showId: string, channels?: Ref<Channel[]>, externalTowers?: Ref<Tower[]>) {
+  const towers = externalTowers ?? ref<Tower[]>([])
   const loading = ref(false)
 
   async function loadTowers() {
     loading.value = true
     try {
       towers.value = await fetchTowers(showId)
+      syncMountRefNames()
     } finally {
       loading.value = false
+    }
+  }
+
+  function syncMountRefNames() {
+    if (!channels?.value) return
+    const towerMap = new Map(towers.value.map(t => [t.id, t]))
+    for (const ch of channels.value) {
+      if (!ch.mount_ref) continue
+      try {
+        const ref = typeof ch.mount_ref === 'string' ? JSON.parse(ch.mount_ref) : ch.mount_ref
+        if (ref?.type === 'tower') {
+          const tower = towerMap.get(ref.towerId)
+          if (tower && tower.name !== ref.towerName) {
+            ch.mount_ref = JSON.stringify({ ...ref, towerName: tower.name })
+          }
+        }
+      } catch {}
     }
   }
 
@@ -73,5 +91,5 @@ export function useShowTowers(showId: string, channels?: Ref<Channel[]>) {
     loadTowers()
   }
 
-  return { towers, loading, loadTowers, addTower, saveTower, removeTower, assignSlot, handleTowersSse }
+  return { loading, loadTowers, addTower, saveTower, removeTower, assignSlot, handleTowersSse }
 }

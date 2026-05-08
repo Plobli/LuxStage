@@ -57,6 +57,15 @@ export function createShow(slug, fields) {
 }
 
 function _copyTemplateToShow(templateId, showId) {
+  // Template-Bars → Show-Bars kopieren (ohne Scheinwerfer)
+  const tBars = dbContainer.db.prepare('SELECT * FROM template_bars WHERE template_id = ? ORDER BY sort_order').all(templateId)
+  const insertBar = dbContainer.db.prepare(
+    'INSERT INTO bars (id, show_id, name, zug_nr, length_cm, sort_order, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  )
+  for (const tb of tBars) {
+    insertBar.run(randomUUID(), showId, tb.name, tb.zug_nr, tb.length_cm, tb.sort_order, Date.now())
+  }
+
   const tDefs = dbContainer.db.prepare('SELECT * FROM template_section_defs WHERE template_id = ? ORDER BY sort_order').all(templateId)
   if (!tDefs.length) return
   const defIds = tDefs.map(d => d.id)

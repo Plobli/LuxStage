@@ -1,16 +1,16 @@
 <template>
   <AlertDialog :open="open">
     <AlertDialogContent class="sm:max-w-lg">
-      <AlertDialogHeader class="flex sm:flex-row items-start gap-4">
-        <div class="mx-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-red-500/10 sm:mx-0 sm:size-10">
-          <AlertTriangle class="size-5 text-red-400" aria-hidden="true" />
+      <AlertDialogHeader>
+        <div class="flex size-9 shrink-0 items-center justify-center rounded-full bg-red-500/10">
+          <AlertTriangle class="size-4 text-red-400" aria-hidden="true" />
         </div>
-        <div class="mt-3 text-center sm:mt-0 sm:text-left">
+        <div class="flex flex-col gap-0.5">
           <AlertDialogTitle>{{ title }}</AlertDialogTitle>
-          <AlertDialogDescription class="mt-2">{{ message }}</AlertDialogDescription>
+          <AlertDialogDescription>{{ message }}</AlertDialogDescription>
         </div>
       </AlertDialogHeader>
-      <AlertDialogFooter class="mt-5 sm:mt-4 gap-3">
+      <AlertDialogFooter>
         <AlertDialogCancel @click="cancel">
           {{ cancelLabel }}
         </AlertDialogCancel>

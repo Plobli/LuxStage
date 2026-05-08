@@ -6,7 +6,7 @@
         :class="isMobile
           ? `border-t border-border/60 ${rowIndex % 2 === 0 ? 'bg-card' : 'bg-muted/40'}`
           : 'group/row grid border-t border-border/60 bg-card transition-colors'
-              + ' grid-cols-[2rem_10rem_7rem_minmax(14rem,22%)_1fr_2.5rem] items-center'"
+              + ' grid-cols-[2rem_10rem_7rem_minmax(14rem,22%)_1fr_7rem_2.5rem] items-center'"
       >
         <!-- Desktop: Drag handle -->
         <div v-if="!isMobile" class="flex py-0 pl-1 pr-0 align-middle">
@@ -83,6 +83,37 @@
               <Layers class="size-2.5 shrink-0" />{{ mountRefLabel }}
             </span>
           </div>
+        </div>
+
+        <!-- Desktop: Action buttons -->
+        <div v-if="!isMobile" class="pl-1 pr-1 align-middle border-l border-border/40 flex items-center justify-center gap-0.5">
+          <Button
+            variant="ghost"
+            size="icon"
+            class="no-print size-7 rounded-sm text-muted-foreground opacity-0 transition-all group-hover/row:opacity-100 hover:bg-muted/60 hover:text-foreground"
+            title="Im Grundriss platzieren"
+            @click="emit('placeInFloorplan', ch)"
+          >
+            <MapPin class="size-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            class="no-print size-7 rounded-sm text-muted-foreground opacity-0 transition-all group-hover/row:opacity-100 hover:bg-muted/60 hover:text-foreground"
+            title="Gassenturm-Slot zuweisen"
+            @click="emit('assignTower', ch)"
+          >
+            <Layers class="size-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            class="no-print size-7 rounded-sm text-muted-foreground opacity-0 transition-all group-hover/row:opacity-100 hover:bg-muted/60 hover:text-foreground"
+            title="Zugstange zuweisen"
+            @click="emit('assignBar', ch)"
+          >
+            <AlignJustify class="size-3.5" />
+          </Button>
         </div>
 
         <!-- Desktop: Delete -->
@@ -166,7 +197,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { GripVertical, X, Layers } from 'lucide-vue-next'
+import { GripVertical, X, Layers, MapPin, AlignJustify } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import ColorAutocomplete from '../ColorAutocomplete.vue'
@@ -187,6 +218,7 @@ const props = defineProps({
 const emit = defineEmits([
   'change', 'recordFocus', 'commitFocus', 'pushSnapshot',
   'toggleStatus', 'delete',
+  'placeInFloorplan', 'assignTower', 'assignBar',
 ])
 
 const isMobile = useIsMobile()

@@ -56,6 +56,27 @@ export function clearTowerSlot(towerId, slotIndex) {
   ).run(towerId, slotIndex)
 }
 
+export function restoreTowers(slug, towers) {
+  const show = readShow(slug)
+  if (!show) throw new Error(`Show not found: ${slug}`)
+  const restoreAll = dbContainer.db.transaction(() => {
+    dbContainer.db.prepare('DELETE FROM towers WHERE show_id = ?').run(show.id)
+    for (const tower of towers) {
+      dbContainer.db.prepare(`
+        INSERT INTO towers (id, show_id, name, side, stage_area, slot_count, sort_order, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(tower.id, show.id, tower.name ?? '', tower.side ?? '', tower.stage_area ?? '', tower.slot_count ?? 4, tower.sort_order ?? 0, tower.created_at ?? Date.now())
+      for (const slot of (tower.slots ?? [])) {
+        dbContainer.db.prepare(`
+          INSERT INTO tower_slots (id, tower_id, slot_index, channel_id)
+          VALUES (?, ?, ?, ?)
+        `).run(slot.id ?? randomUUID(), tower.id, slot.slot_index, slot.channel_id ?? null)
+      }
+    }
+  })
+  restoreAll()
+}
+
 export function ensureTowerSlots(towerId, slotCount) {
   for (let i = 1; i <= slotCount; i++) {
     const exists = dbContainer.db.prepare(

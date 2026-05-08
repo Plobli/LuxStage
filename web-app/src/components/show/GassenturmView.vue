@@ -1,119 +1,110 @@
 <template>
-  <div class="flex h-full overflow-hidden">
-    <!-- Linke Spalte: Tower-Liste -->
-    <div class="w-64 shrink-0 border-r border-border flex flex-col bg-muted/20">
-      <div class="flex items-center justify-between px-4 py-3 border-b border-border">
-        <span class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Gassentürme</span>
-        <Button variant="ghost" size="icon" class="size-7 text-muted-foreground hover:text-foreground" @click="openNewTowerDialog">
-          <Plus class="size-4" />
-        </Button>
-      </div>
-
-      <div class="flex-1 overflow-y-auto">
-        <div v-if="towers.length === 0" class="px-4 py-8 text-center text-xs text-muted-foreground">
-          Noch keine Gassentürme
-        </div>
-        <button
-          v-for="tower in towers"
-          :key="tower.id"
-          :class="[
-            'w-full text-left px-4 py-3 border-b border-border/50 transition-colors hover:bg-muted/40',
-            selectedTowerId === tower.id ? 'bg-accent/10 border-l-2 border-l-accent' : ''
-          ]"
-          @click="selectedTowerId = tower.id"
-        >
-          <div class="flex items-center justify-between gap-2">
-            <span class="text-sm font-medium text-foreground truncate">{{ tower.name }}</span>
-            <div class="flex items-center gap-1 shrink-0">
-              <span v-if="tower.side" class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{{ tower.side }}</span>
-            </div>
-          </div>
-          <div class="flex items-center justify-between mt-0.5">
-            <span class="text-xs text-muted-foreground truncate">{{ tower.stage_area || '–' }}</span>
-            <span class="text-[10px] text-muted-foreground shrink-0">
-              {{ filledSlotCount(tower) }}/{{ tower.slot_count }} Slots
-            </span>
-          </div>
-        </button>
-      </div>
+  <div class="flex-1 overflow-x-auto overflow-y-auto p-4">
+    <!-- Toolbar -->
+    <div class="flex justify-end mb-4">
+      <Button variant="outline" size="sm" class="text-xs gap-1.5" @click="openNewTowerDialog">
+        <Plus class="size-3.5" /> Neuer Gassenturm
+      </Button>
     </div>
 
-    <!-- Rechte Seite: Blueprint -->
-    <div class="flex-1 min-w-0 flex flex-col">
-      <div v-if="!selectedTower" class="flex-1 flex items-center justify-center text-sm text-muted-foreground">
-        Gassenturm auswählen
-      </div>
+    <div v-if="towers.length === 0" class="flex items-center justify-center h-48 text-sm text-muted-foreground">
+      Noch keine Gassentürme
+    </div>
 
-      <template v-else>
+    <!-- 2 Zeilen, horizontale Spalten -->
+    <div class="grid grid-rows-2 grid-flow-col gap-3">
+      <div
+        v-for="tower in towers"
+        :key="tower.id"
+        class="rounded-xl border border-border/60 bg-card overflow-hidden flex flex-col"
+        style="width: clamp(16rem, 30vw, 62.5rem)"
+      >
         <!-- Header -->
-        <div class="flex items-center justify-between px-5 py-3 border-b border-border bg-card shrink-0">
-          <div>
-            <h2 class="text-sm font-semibold text-foreground">{{ selectedTower.name }}</h2>
-            <p class="text-xs text-muted-foreground">{{ selectedTower.stage_area }}{{ selectedTower.side ? ' · ' + selectedTower.side : '' }}</p>
+        <div class="flex items-start justify-between px-4 pt-4 pb-3 min-h-20">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="text-base font-semibold text-foreground truncate">{{ tower.name }}</span>
+              <span v-if="tower.side" class="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-accent/15 text-accent">{{ tower.side }}</span>
+            </div>
+            <div class="flex items-center gap-2 mt-0.5">
+              <span v-if="tower.stage_area" class="text-xs text-muted-foreground truncate">{{ tower.stage_area }}</span>
+              <span class="text-xs text-muted-foreground/50 shrink-0">{{ tower.slot_count }} Slots</span>
+            </div>
           </div>
-          <div class="flex items-center gap-2">
-            <Button variant="ghost" size="sm" class="text-xs text-muted-foreground" @click="openEditTowerDialog(selectedTower)">
-              <Pencil class="size-3 mr-1" /> Bearbeiten
+          <div class="flex items-center gap-0.5 shrink-0 ml-2 -mt-1">
+            <Button variant="ghost" size="icon" class="size-7 text-muted-foreground/50 hover:text-foreground" @click="openEditTowerDialog(tower)">
+              <Pencil class="size-3.5" />
             </Button>
-            <Button variant="ghost" size="sm" class="text-xs text-red-400 hover:text-red-500 hover:bg-red-500/10" @click="confirmDeleteTower(selectedTower)">
-              <Trash2 class="size-3 mr-1" /> Löschen
+            <Button variant="ghost" size="icon" class="size-7 text-muted-foreground/50 hover:text-destructive" @click="confirmDeleteTower(tower)">
+              <Trash2 class="size-3.5" />
             </Button>
           </div>
         </div>
 
-        <!-- Slots (Slot 1 = unten, physikalisch korrekt → umgekehrte Reihenfolge) -->
-        <div class="flex-1 overflow-y-auto p-4">
-          <div class="flex flex-col-reverse gap-2 max-w-lg">
-            <div
-              v-for="slot in slotsForDisplay"
-              :key="slot.slot_index"
-              class="flex items-center gap-3 rounded-md border border-border bg-card px-4 py-3"
-            >
-              <!-- Slot-Nummer Badge -->
-              <div class="size-8 shrink-0 rounded-full bg-muted flex items-center justify-center text-xs font-semibold text-muted-foreground">
-                {{ slot.slot_index }}
-              </div>
+        <!-- Divider -->
+        <div class="h-px bg-border mx-4" />
 
-              <!-- Channel-Info oder leer -->
-              <div class="flex-1 min-w-0">
-                <template v-if="slot.channel_id && channelForId(slot.channel_id)">
-                  <div class="flex items-center gap-2">
-                    <span class="font-mono text-sm font-semibold text-foreground">{{ channelForId(slot.channel_id)?.channel }}</span>
-                    <span v-if="channelForId(slot.channel_id)?.color" class="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                      {{ channelForId(slot.channel_id)?.color }}
-                    </span>
-                  </div>
-                  <p v-if="channelForId(slot.channel_id)?.device" class="text-xs text-muted-foreground truncate mt-0.5">
-                    {{ channelForId(slot.channel_id)?.device }}
-                  </p>
-                </template>
-                <span v-else class="text-xs text-muted-foreground/50 italic">leer</span>
-              </div>
-
-              <!-- Slot-Aktion -->
-              <div class="shrink-0 flex gap-1">
-                <Button
-                  v-if="slot.channel_id"
-                  variant="ghost"
-                  size="icon"
-                  class="size-7 text-muted-foreground hover:text-red-400"
-                  @click="clearSlot(selectedTower.id, slot.slot_index)"
-                >
-                  <X class="size-3.5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="size-7 text-muted-foreground hover:text-foreground"
-                  @click="openSlotPicker(slot)"
-                >
-                  <ChevronsUpDown class="size-3.5" />
-                </Button>
-              </div>
+        <!-- Slots -->
+        <div :key="slotRenderKey" :ref="el => initSortable(el, tower)" class="flex flex-col flex-1">
+          <div
+            v-for="slot in slotsFor(tower)"
+            :key="slot.slot_index"
+            :data-slot-index="slot.slot_index"
+            class="flex items-center gap-2.5 px-3 py-2.5 border-b border-border/60 hover:bg-muted/20 transition-colors"
+          >
+            <GripVertical class="drag-handle size-3.5 shrink-0 text-muted-foreground/50 cursor-grab active:cursor-grabbing" />
+            <div class="size-6 shrink-0 rounded-full bg-muted flex items-center justify-center text-[10px] font-semibold text-foreground/70">
+              {{ slot.slot_index }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <template v-if="slot.channel_id && channelForId(slot.channel_id)">
+                <div class="flex items-center gap-1.5">
+                  <span class="font-mono text-sm font-semibold text-foreground">{{ channelForId(slot.channel_id)?.channel }}</span>
+                  <span
+                    v-if="channelForId(slot.channel_id)?.color"
+                    class="text-[10px] px-1.5 py-0.5 rounded font-medium"
+                    :style="filterBadgeStyle(channelForId(slot.channel_id)?.color) ?? { backgroundColor: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }"
+                  >
+                    {{ channelForId(slot.channel_id)?.color }}
+                  </span>
+                </div>
+                <p v-if="channelForId(slot.channel_id)?.device" class="text-[11px] text-muted-foreground/70 truncate leading-tight">
+                  {{ channelForId(slot.channel_id)?.device }}
+                </p>
+              </template>
+              <span v-else class="text-xs text-muted-foreground/60">leer</span>
+            </div>
+            <div class="shrink-0 flex gap-0.5">
+              <Button
+                v-if="slot.channel_id"
+                variant="ghost"
+                size="icon"
+                class="size-6 text-muted-foreground/40 hover:text-destructive"
+                @click="clearSlot(tower.id, slot.slot_index)"
+              >
+                <X class="size-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-6 text-muted-foreground/40 hover:text-foreground"
+                @click="openSlotPicker(tower, slot)"
+              >
+                <ChevronsUpDown class="size-3" />
+              </Button>
             </div>
           </div>
         </div>
-      </template>
+
+        <!-- Slot hinzufügen -->
+        <button
+          class="flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/20 transition-colors border-t border-border/30"
+          @click="addSlot(tower)"
+        >
+          <Plus class="size-3" />
+          Slot hinzufügen
+        </button>
+      </div>
     </div>
   </div>
 
@@ -123,7 +114,7 @@
       <DialogHeader>
         <DialogTitle>{{ editingTower ? 'Gassenturm bearbeiten' : 'Neuer Gassenturm' }}</DialogTitle>
       </DialogHeader>
-      <div class="flex flex-col gap-4 py-2">
+      <DialogBody>
         <div class="flex flex-col gap-1.5">
           <label class="text-xs text-muted-foreground">Name</label>
           <Input v-model="towerForm.name" placeholder="z. B. Gassenturm 1" autofocus />
@@ -142,7 +133,7 @@
           <label class="text-xs text-muted-foreground">Anzahl Slots</label>
           <Input v-model.number="towerForm.slot_count" type="number" min="1" max="20" />
         </div>
-      </div>
+      </DialogBody>
       <DialogFooter>
         <Button variant="ghost" @click="towerDialogOpen = false">Abbrechen</Button>
         <Button @click="saveTowerForm">{{ editingTower ? 'Speichern' : 'Anlegen' }}</Button>
@@ -156,9 +147,9 @@
       <DialogHeader>
         <DialogTitle>Slot {{ pickerSlot?.slot_index }} · Kanal zuweisen</DialogTitle>
       </DialogHeader>
-      <div class="flex flex-col gap-2 py-2">
+      <DialogBody>
         <Input v-model="channelPickerSearch" placeholder="Kanalnummer suchen…" autofocus />
-        <div class="max-h-64 overflow-y-auto flex flex-col gap-1 mt-1">
+        <div class="max-h-64 overflow-y-auto flex flex-col gap-1">
           <button
             v-for="ch in filteredChannelsForPicker"
             :key="ch.channel"
@@ -173,7 +164,7 @@
             Keine Kanäle gefunden
           </div>
         </div>
-      </div>
+      </DialogBody>
       <DialogFooter>
         <Button variant="ghost" @click="slotPickerOpen = false">Abbrechen</Button>
       </DialogFooter>
@@ -182,36 +173,27 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { Plus, Pencil, Trash2, X, ChevronsUpDown } from 'lucide-vue-next'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
+import { Plus, Pencil, Trash2, X, ChevronsUpDown, GripVertical } from 'lucide-vue-next'
+import Sortable from 'sortablejs'
+import { filterBadgeStyle } from '@/utils/filterColors.js'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
 
 const props = defineProps({
   towers: { type: Array, required: true },
   channels: { type: Array, required: true },
   activeChannelIds: { type: Array, default: () => [] },
+  preselectedChannelId: { type: String, default: null },
   addTowerFn: { type: Function, required: true },
   saveTowerFn: { type: Function, required: true },
   deleteTowerFn: { type: Function, required: true },
   assignSlotFn: { type: Function, required: true },
+  pushSnapshotFn: { type: Function, required: true },
 })
 
-const selectedTowerId = ref(null)
-
-const selectedTower = computed(() => props.towers.find(t => t.id === selectedTowerId.value) ?? null)
-
-const slotsForDisplay = computed(() => {
-  if (!selectedTower.value) return []
-  const slots = [...(selectedTower.value.slots ?? [])]
-  slots.sort((a, b) => a.slot_index - b.slot_index)
-  return slots
-})
-
-function filledSlotCount(tower) {
-  return (tower.slots ?? []).filter(s => s.channel_id).length
-}
+const emit = defineEmits(['assigned'])
 
 const channelById = computed(() => {
   const map = new Map()
@@ -221,6 +203,12 @@ const channelById = computed(() => {
 
 function channelForId(channelId) {
   return channelById.value.get(channelId) ?? null
+}
+
+function slotsFor(tower) {
+  const slots = [...(tower.slots ?? [])]
+  slots.sort((a, b) => a.slot_index - b.slot_index)
+  return slots
 }
 
 // Tower Dialog
@@ -245,22 +233,27 @@ async function saveTowerForm() {
   if (editingTower.value) {
     await props.saveTowerFn(editingTower.value.id, { ...towerForm.value })
   } else {
-    const id = await props.addTowerFn({ ...towerForm.value })
-    selectedTowerId.value = id
+    await props.addTowerFn({ ...towerForm.value })
   }
   towerDialogOpen.value = false
 }
 
 function confirmDeleteTower(tower) {
   if (confirm(`Gassenturm "${tower.name}" wirklich löschen?`)) {
+    props.pushSnapshotFn()
     props.deleteTowerFn(tower.id)
-    if (selectedTowerId.value === tower.id) selectedTowerId.value = null
   }
+}
+
+async function addSlot(tower) {
+  props.pushSnapshotFn()
+  await props.saveTowerFn(tower.id, { slot_count: tower.slot_count + 1 })
 }
 
 // Slot Picker
 const slotPickerOpen = ref(false)
 const pickerSlot = ref(null)
+const pickerTower = ref(null)
 const channelPickerSearch = ref('')
 
 const filteredChannelsForPicker = computed(() => {
@@ -274,19 +267,62 @@ const filteredChannelsForPicker = computed(() => {
   }).slice(0, 50)
 })
 
-function openSlotPicker(slot) {
+function openSlotPicker(tower, slot) {
+  pickerTower.value = tower
   pickerSlot.value = slot
   channelPickerSearch.value = ''
   slotPickerOpen.value = true
 }
 
 function pickChannel(ch) {
-  if (!pickerSlot.value || !selectedTower.value) return
-  props.assignSlotFn(selectedTower.value.id, pickerSlot.value.slot_index, ch.id)
+  if (!pickerTower.value) return
+  const slotIndex = pickerSlot.value?.slot_index ?? 0
+  props.pushSnapshotFn()
+  props.assignSlotFn(pickerTower.value.id, slotIndex, ch.id)
   slotPickerOpen.value = false
+  emit('assigned')
 }
 
+watch(() => props.preselectedChannelId, (id) => {
+  if (!id) return
+  channelPickerSearch.value = props.channels.find(c => c.id === id)?.channel ?? ''
+  pickerSlot.value = null
+  slotPickerOpen.value = true
+})
+
+// Drag & Drop
+const sortableInstances = new Map()
+const slotRenderKey = ref(0)
+
+function initSortable(el, tower) {
+  if (!el) return
+  if (sortableInstances.has(tower.id)) {
+    sortableInstances.get(tower.id).destroy()
+  }
+  const instance = Sortable.create(el, {
+    animation: 150,
+    handle: '.drag-handle',
+    onEnd({ oldIndex, newIndex }) {
+      if (oldIndex === newIndex) return
+      const slots = slotsFor(tower)
+      const fromSlot = slots[oldIndex]
+      const toSlot = slots[newIndex]
+      if (!fromSlot || !toSlot) return
+      props.pushSnapshotFn()
+      slotRenderKey.value++
+      props.assignSlotFn(tower.id, fromSlot.slot_index, toSlot.channel_id ?? null)
+      props.assignSlotFn(tower.id, toSlot.slot_index, fromSlot.channel_id ?? null)
+    },
+  })
+  sortableInstances.set(tower.id, instance)
+}
+
+onBeforeUnmount(() => {
+  for (const inst of sortableInstances.values()) inst.destroy()
+})
+
 function clearSlot(towerId, slotIndex) {
+  props.pushSnapshotFn()
   props.assignSlotFn(towerId, slotIndex, null)
 }
 </script>

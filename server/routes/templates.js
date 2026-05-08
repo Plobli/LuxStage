@@ -8,6 +8,8 @@ import { readJsonBody, readBodyBuffer, json, notFound } from '../helpers.js'
 const TPL_LIST        = /^\/api\/templates$/
 const TPL_CHANNELS    = /^\/api\/templates\/([^/]+)\/channels$/
 const TPL_SECTIONS    = /^\/api\/templates\/([^/]+)\/sections$/
+const TPL_BARS        = /^\/api\/templates\/([^/]+)\/bars$/
+const TPL_BAR         = /^\/api\/templates\/([^/]+)\/bars\/([^/]+)$/
 const TPL_FP          = /^\/api\/templates\/([^/]+)\/floorplan$/
 const TPL_FP_IMAGE    = /^\/api\/templates\/([^/]+)\/floorplan\/image$/
 const TPL_ID          = /^\/api\/templates\/(.+)$/
@@ -37,6 +39,35 @@ export async function templateRoutes(req, res, pathname) {
     if (host.length > 253) return json(res, 400, { error: 'OSC-Host zu lang' })
     db.updateTemplateOscHost(name, host)
     return json(res, 200, { ok: true })
+  }
+
+  if (m = TPL_BAR.exec(pathname)) {
+    const templateName = decodeURIComponent(m[1])
+    const barId = m[2]
+    if (method === 'PUT') {
+      const user = requireAdmin(req, res); if (!user) return
+      const body = await readJsonBody(req, res); if (body === null) return
+      db.writeTemplateBar(templateName, { ...body, id: barId })
+      return json(res, 200, { ok: true })
+    }
+    if (method === 'DELETE') {
+      const user = requireAdmin(req, res); if (!user) return
+      db.deleteTemplateBar(barId)
+      return json(res, 200, { ok: true })
+    }
+  }
+
+  if (m = TPL_BARS.exec(pathname)) {
+    const templateName = decodeURIComponent(m[1])
+    if (method === 'GET') {
+      return json(res, 200, db.readTemplateBars(templateName))
+    }
+    if (method === 'POST') {
+      const user = requireAdmin(req, res); if (!user) return
+      const body = await readJsonBody(req, res); if (body === null) return
+      const barId = db.writeTemplateBar(templateName, body)
+      return json(res, 201, { id: barId })
+    }
   }
 
   if (m = TPL_FP_IMAGE.exec(pathname)) {

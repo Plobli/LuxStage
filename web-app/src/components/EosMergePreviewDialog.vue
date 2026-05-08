@@ -5,7 +5,7 @@
         <DialogTitle class="mb-4">{{ t('eos.preview.title') }}</DialogTitle>
       </DialogHeader>
 
-      <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+      <DialogBody class="max-h-[60vh] overflow-y-auto">
         <!-- Neu aktiv (gelb) -->
         <div v-if="newActive.length > 0">
           <div class="text-xs font-medium text-yellow-400 uppercase tracking-wide mb-1">
@@ -64,9 +64,9 @@
         <p v-if="newActive.length === 0 && nowGone.length === 0 && untouched.length === 0" class="text-sm text-muted-foreground">
           {{ t('eos.preview.empty') }}
         </p>
-      </div>
+      </DialogBody>
 
-      <DialogFooter class="mt-5 sm:mt-4 gap-3 flex-wrap">
+      <DialogFooter class="gap-3 flex-wrap">
         <Button variant="outline" class="w-full sm:w-auto" @click="$emit('cancel')">
           {{ t('action.cancel') }}
         </Button>
@@ -81,7 +81,7 @@
 <script setup>
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
 import { useLocale } from '../composables/useLocale.js'
 
 const { t } = useLocale()

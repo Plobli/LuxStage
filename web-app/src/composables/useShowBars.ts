@@ -10,8 +10,26 @@ export function useShowBars(showId: string, channels?: Ref<Channel[]>) {
     loading.value = true
     try {
       bars.value = await fetchBars(showId)
+      syncMountRefNames()
     } finally {
       loading.value = false
+    }
+  }
+
+  function syncMountRefNames() {
+    if (!channels?.value) return
+    const barMap = new Map(bars.value.map(b => [b.id, b]))
+    for (const ch of channels.value) {
+      if (!ch.mount_ref) continue
+      try {
+        const ref = typeof ch.mount_ref === 'string' ? JSON.parse(ch.mount_ref) : ch.mount_ref
+        if (ref?.type === 'bar') {
+          const bar = barMap.get(ref.barId)
+          if (bar && bar.name !== ref.barName) {
+            ch.mount_ref = JSON.stringify({ ...ref, barName: bar.name })
+          }
+        }
+      } catch {}
     }
   }
 

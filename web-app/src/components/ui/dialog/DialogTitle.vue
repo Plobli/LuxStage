@@ -14,16 +14,13 @@ const props = defineProps({
 });
 
 const delegatedProps = reactiveOmit(props, "class");
-
 const forwardedProps = useForwardProps(delegatedProps);
 </script>
 
 <template>
   <DialogTitle
     v-bind="forwardedProps"
-    :class="
-      cn('text-lg font-semibold leading-none tracking-tight', props.class)
-    "
+    :class="cn('text-xl font-bold leading-snug text-white', props.class)"
   >
     <slot />
   </DialogTitle>

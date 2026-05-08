@@ -135,3 +135,31 @@ export function deleteTemplateSections(name) {
   if (!tpl) return
   dbContainer.db.prepare('DELETE FROM template_section_defs WHERE template_id = ?').run(tpl.id)
 }
+
+export function readTemplateBars(name) {
+  const tpl = dbContainer.db.prepare('SELECT * FROM templates WHERE name = ?').get(name)
+  if (!tpl) return []
+  return dbContainer.db.prepare('SELECT * FROM template_bars WHERE template_id = ? ORDER BY sort_order').all(tpl.id)
+}
+
+export function writeTemplateBar(name, data) {
+  const tpl = dbContainer.db.prepare('SELECT * FROM templates WHERE name = ?').get(name)
+  if (!tpl) throw new Error(`Template not found: ${name}`)
+  const id = data.id || randomUUID()
+  const existing = dbContainer.db.prepare('SELECT id FROM template_bars WHERE id = ?').get(id)
+  if (existing) {
+    dbContainer.db.prepare(
+      'UPDATE template_bars SET name=?, zug_nr=?, length_cm=?, sort_order=? WHERE id=?'
+    ).run(data.name ?? '', data.zug_nr ?? '', data.length_cm ?? 600, data.sort_order ?? 0, id)
+  } else {
+    const count = dbContainer.db.prepare('SELECT COUNT(*) as n FROM template_bars WHERE template_id = ?').get(tpl.id).n
+    dbContainer.db.prepare(
+      'INSERT INTO template_bars (id, template_id, name, zug_nr, length_cm, sort_order) VALUES (?, ?, ?, ?, ?, ?)'
+    ).run(id, tpl.id, data.name ?? '', data.zug_nr ?? '', data.length_cm ?? 600, data.sort_order ?? count)
+  }
+  return id
+}
+
+export function deleteTemplateBar(barId) {
+  dbContainer.db.prepare('DELETE FROM template_bars WHERE id = ?').run(barId)
+}

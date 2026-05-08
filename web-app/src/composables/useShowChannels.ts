@@ -4,6 +4,7 @@ import { fetchChannels, saveChannels, mergeChannels, parseChannelsCsv, type Chan
 import { updateMeta } from '../api/shows'
 import { useUndoRedo } from './useUndoRedo'
 import { type SectionDef } from './useShowSections'
+import type { Tower } from '../api/towers'
 
 export interface EosMergePreview {
   open: boolean;
@@ -18,6 +19,7 @@ export interface UndoRedoState {
   sectionDefs: SectionDef[];
   meta: any;
   setupMarkdown: string;
+  towers: Tower[];
 }
 
 export function useShowChannels({ 
@@ -30,8 +32,10 @@ export function useShowChannels({
   persistSectionsDebounced,
   persistSections,
   persistSectionDefs,
+  towers,
+  saveTowersSnapshot,
   t,
-  confirm 
+  confirm
 }: {
   showId: string;
   meta: Ref<any>;
@@ -42,6 +46,8 @@ export function useShowChannels({
   persistSectionsDebounced: any;
   persistSections: () => Promise<void>;
   persistSectionDefs: () => Promise<void>;
+  towers: Ref<Tower[]>;
+  saveTowersSnapshot: (snapshot: Tower[]) => Promise<void>;
   t: (key: string, params?: any) => string;
   confirm: (opts: any) => Promise<boolean>;
 }) {
@@ -77,6 +83,7 @@ export function useShowChannels({
         sectionDefs: sectionDefs.value,
         meta: meta.value,
         setupMarkdown: setupMarkdown.value,
+        towers: towers.value,
       }),
       (snap) => {
         channels.value = snap.channels
@@ -84,6 +91,8 @@ export function useShowChannels({
         sectionDefs.value = snap.sectionDefs
         meta.value = snap.meta
         setupMarkdown.value = snap.setupMarkdown
+        towers.value = snap.towers ?? []
+        saveTowersSnapshot(snap.towers ?? []).catch(() => {})
       },
       () => {
         (persistChannels as any)?.cancel?.()

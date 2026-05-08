@@ -1,14 +1,26 @@
 import * as db from '../db.js'
+import { restoreTowers } from '../db/towers.js'
 import { readJsonBody, json } from '../helpers.js'
 import { broadcast } from '../sse.js'
 
-const SHOW_TOWERS      = /^\/api\/shows\/([^/]+)\/towers$/
-const SHOW_TOWER       = /^\/api\/shows\/([^/]+)\/towers\/([^/]+)$/
-const SHOW_TOWER_SLOT  = /^\/api\/shows\/([^/]+)\/towers\/([^/]+)\/slots\/(\d+)$/
+const SHOW_TOWERS         = /^\/api\/shows\/([^/]+)\/towers$/
+const SHOW_TOWERS_RESTORE = /^\/api\/shows\/([^/]+)\/towers\/restore$/
+const SHOW_TOWER          = /^\/api\/shows\/([^/]+)\/towers\/([^/]+)$/
+const SHOW_TOWER_SLOT     = /^\/api\/shows\/([^/]+)\/towers\/([^/]+)\/slots\/(\d+)$/
 
 export async function towerRoutes(req, res, pathname) {
   const { method } = req
   let m
+
+  if (m = SHOW_TOWERS_RESTORE.exec(pathname)) {
+    const slug = m[1]
+    if (method === 'PUT') {
+      const body = await readJsonBody(req, res); if (body === null) return
+      restoreTowers(slug, body.towers ?? [])
+      broadcast(slug, 'towers-updated', {})
+      return json(res, 200, { ok: true })
+    }
+  }
 
   if (m = SHOW_TOWERS.exec(pathname)) {
     const slug = m[1]

@@ -75,23 +75,14 @@
         <DialogHeader>
           <DialogTitle>{{ t('show.new') }}</DialogTitle>
         </DialogHeader>
-        <form @submit.prevent="handleCreate" class="space-y-6 mt-4">
+        <DialogBody>
           <div class="space-y-2">
             <Label for="showName">{{ t('show.name') }}</Label>
-            <Input
-              id="showName"
-              v-model="form.name"
-              type="text"
-              required
-            />
+            <Input id="showName" v-model="form.name" type="text" required />
           </div>
           <div class="space-y-2">
             <Label for="showDate">{{ t('show.date') }}</Label>
-            <Input
-              id="showDate"
-              v-model="form.datum"
-              type="date"
-            />
+            <Input id="showDate" v-model="form.datum" type="date" />
           </div>
           <div class="space-y-2">
             <Label for="showTemplate">{{ t('show.template') }}</Label>
@@ -107,16 +98,16 @@
               </SelectContent>
             </Select>
           </div>
-          <DialogFooter class="pt-4">
-            <Button variant="outline" type="button" @click="drawerOpen = false">
-              {{ t('action.cancel') }}
-            </Button>
-            <Button type="submit" :disabled="creating">
-              <Loader2 v-if="creating" class="mr-2 size-4 animate-spin" />
-              {{ creating ? t('show.creating') : t('show.create') }}
-            </Button>
-          </DialogFooter>
-        </form>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="outline" type="button" @click="drawerOpen = false">
+            {{ t('action.cancel') }}
+          </Button>
+          <Button type="button" :disabled="creating" @click="handleCreate">
+            <Loader2 v-if="creating" class="mr-2 size-4 animate-spin" />
+            {{ creating ? t('show.creating') : t('show.create') }}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
     <!-- Bühnen-Template zuweisen: Dialog -->
@@ -125,7 +116,7 @@
         <DialogHeader>
           <DialogTitle>{{ t('show.assign_template') }}</DialogTitle>
         </DialogHeader>
-        <div class="space-y-4 mt-4">
+        <DialogBody>
           <p v-if="assignShow" class="text-sm text-muted-foreground">{{ assignShow.name || assignShow.id }}</p>
           <Select v-model="assignTemplate">
             <SelectTrigger class="w-full">
@@ -138,8 +129,8 @@
               </SelectItem>
             </SelectContent>
           </Select>
-        </div>
-        <DialogFooter class="pt-4">
+        </DialogBody>
+        <DialogFooter>
           <Button variant="outline" @click="assignDialogOpen = false">{{ t('action.cancel') }}</Button>
           <Button :disabled="assignSaving" @click="handleAssign">
             {{ assignSaving ? '…' : t('action.save') }}
@@ -163,7 +154,7 @@ import { templateDisplayName } from '../utils/templateName.js'
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {

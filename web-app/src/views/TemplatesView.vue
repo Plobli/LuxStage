@@ -64,6 +64,9 @@
             <TabsTrigger value="floorplan" class="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground rounded-none px-4 py-2 border-b-2 border-transparent">
               Grundriss
             </TabsTrigger>
+            <TabsTrigger value="bars" class="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground rounded-none px-4 py-2 border-b-2 border-transparent">
+              Zugstangen
+            </TabsTrigger>
           </TabsList>
 
           <!-- Kanaltabelle -->
@@ -145,6 +148,30 @@
           <Button variant="outline" size="sm" @click="addSection">+ {{ t('sections.add') }}</Button>
           </TabsContent>
 
+          <!-- Zugstangen -->
+          <TabsContent value="bars" class="mt-0 outline-none max-w-xl space-y-3">
+            <div class="text-sm text-muted-foreground">
+              Zugstangen werden beim Erstellen einer Show automatisch übernommen (ohne Scheinwerfer).
+            </div>
+            <div v-if="templateBars.length === 0" class="text-sm text-muted-foreground border border-dashed border-border rounded-lg px-4 py-6 text-center">
+              Noch keine Zugstangen
+            </div>
+            <div v-for="(bar, idx) in templateBars" :key="bar.id" class="flex items-center gap-3 rounded-md border border-border bg-card px-4 py-2.5">
+              <span class="text-sm font-medium text-foreground flex-1 truncate">{{ bar.name }}</span>
+              <span v-if="bar.zug_nr" class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0">{{ bar.zug_nr }}</span>
+              <span class="text-xs text-muted-foreground shrink-0">{{ bar.length_cm }} cm</span>
+              <Button variant="ghost" size="icon" class="size-6 text-muted-foreground hover:text-foreground shrink-0" @click="openEditTemplateBar(bar)">
+                <Pencil class="size-3" />
+              </Button>
+              <Button variant="ghost" size="icon" class="size-6 text-muted-foreground hover:text-red-400 shrink-0" @click="removeTemplateBar(bar.id, idx)">
+                <X class="size-3" />
+              </Button>
+            </div>
+            <Button variant="outline" size="sm" class="w-full border-dashed" @click="openNewTemplateBar">
+              <Plus class="size-3 mr-1.5" /> Zugstange hinzufügen
+            </Button>
+          </TabsContent>
+
           <!-- Grundriss-Bild Upload -->
           <TabsContent value="floorplan" class="mt-0 outline-none max-w-xl space-y-4">
           <div class="text-sm text-muted-foreground">
@@ -221,6 +248,35 @@
       </ul>
     </template>
 
+    <!-- Template-Bar Dialog -->
+    <Dialog :open="tbarDialogOpen" @update:open="tbarDialogOpen = $event">
+      <DialogContent class="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{{ editingTbar ? 'Zugstange bearbeiten' : 'Neue Zugstange' }}</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs text-muted-foreground">Name</label>
+            <Input v-model="tbarForm.name" placeholder="z. B. Bühnenportal" autofocus />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col gap-1.5">
+              <label class="text-xs text-muted-foreground">Zugnummer</label>
+              <Input v-model="tbarForm.zug_nr" placeholder="z. B. 12" />
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-xs text-muted-foreground">Länge (cm)</label>
+              <Input v-model.number="tbarForm.length_cm" type="number" min="50" max="3000" />
+            </div>
+          </div>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="ghost" @click="tbarDialogOpen = false">Abbrechen</Button>
+          <Button @click="saveTbarForm">{{ editingTbar ? 'Speichern' : 'Anlegen' }}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
     <!-- Upload-Dialog -->
     <Dialog :open="uploadOpen" @update:open="val => { if (!val) closeUpload() }">
       <DialogContent class="sm:max-w-3xl">
@@ -291,7 +347,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
-import { ArrowLeft, Upload, Pencil } from 'lucide-vue-next'
+import { ArrowLeft, Upload, Pencil, Plus, X } from 'lucide-vue-next'
 import { useLocale } from '../composables/useLocale.js'
 import { useConfirm } from '../composables/useConfirm.js'
 import { fetchTemplates, fetchTemplateChannels, saveTemplate, uploadTemplate, deleteTemplate, saveTemplateOscHost, renameTemplate } from '../api/templates.js'
@@ -300,12 +356,13 @@ import { templateDisplayName } from '../utils/templateName.js'
 import { uuid } from '../utils/uuid.js'
 import ChannelTable from '../components/channel/ChannelTable.vue'
 import { fetchTemplateFloorplan, uploadTemplateFloorplanImage, deleteTemplateFloorplanImage } from '../api/floorplan.js'
+import { fetchTemplateBars, createTemplateBar, updateTemplateBar, deleteTemplateBar } from '../api/templateBars.js'
 import { api } from '../api/client.js'
 
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Label } from '@/components/ui/label'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
@@ -345,6 +402,12 @@ const sectionsSaving = ref(false)
 const floorplanImageUrl = ref(null)
 const floorplanUploading = ref(false)
 const floorplanError = ref('')
+
+// Template-Bars
+const templateBars = ref([])
+const tbarDialogOpen = ref(false)
+const editingTbar = ref(null)
+const tbarForm = ref({ name: '', zug_nr: '', length_cm: 600 })
 
 const emptySet = new Set()
 
@@ -432,13 +495,41 @@ async function openDetail(name) {
   activeTab.value = 'channels'
   const tpl = templates.value.find(t => t.name === name)
   editingOscHost.value = tpl?.oscHost ?? ''
-  const [channels, sections] = await Promise.all([
+  const [channels, sections, bars] = await Promise.all([
     fetchTemplateChannels(name),
     fetchTemplateSections(name),
+    fetchTemplateBars(name),
   ])
   detailChannels.value = channels
   templateSections.value = Array.isArray(sections) ? sections : (sections?.sections ?? [])
+  templateBars.value = bars
   detailLoading.value = false
+}
+
+function openNewTemplateBar() {
+  editingTbar.value = null
+  tbarForm.value = { name: '', zug_nr: '', length_cm: 600 }
+  tbarDialogOpen.value = true
+}
+function openEditTemplateBar(bar) {
+  editingTbar.value = bar
+  tbarForm.value = { name: bar.name, zug_nr: bar.zug_nr, length_cm: bar.length_cm }
+  tbarDialogOpen.value = true
+}
+async function saveTbarForm() {
+  if (!tbarForm.value.name) return
+  if (editingTbar.value) {
+    await updateTemplateBar(editingName.value, editingTbar.value.id, tbarForm.value)
+    Object.assign(editingTbar.value, tbarForm.value)
+  } else {
+    const { id } = await createTemplateBar(editingName.value, tbarForm.value)
+    templateBars.value.push({ id, template_id: '', sort_order: templateBars.value.length, ...tbarForm.value })
+  }
+  tbarDialogOpen.value = false
+}
+async function removeTemplateBar(barId, idx) {
+  await deleteTemplateBar(editingName.value, barId)
+  templateBars.value.splice(idx, 1)
 }
 
 async function persistOscHost() {

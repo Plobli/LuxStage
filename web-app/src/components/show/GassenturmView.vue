@@ -1,12 +1,6 @@
 <template>
+  <div class="flex flex-col h-full overflow-hidden">
   <div class="flex-1 overflow-x-auto overflow-y-auto p-4">
-    <!-- Toolbar -->
-    <div class="flex justify-end mb-4">
-      <Button variant="outline" size="sm" class="text-xs gap-1.5" @click="openNewTowerDialog">
-        <Plus class="size-3.5" /> Neuer Gassenturm
-      </Button>
-    </div>
-
     <div v-if="towers.length === 0" class="flex items-center justify-center h-48 text-sm text-muted-foreground">
       Noch keine Gassentürme
     </div>
@@ -106,6 +100,14 @@
         </button>
       </div>
     </div>
+  </div>
+
+  <!-- Neuer Gassenturm -->
+  <div class="shrink-0 border-t border-border px-5 py-3 flex justify-end">
+    <Button variant="ghost" size="sm" class="text-xs text-muted-foreground border border-dashed border-border/60" @click="openNewTowerDialog">
+      <Plus class="size-3 mr-1.5" /> Neuer Gassenturm
+    </Button>
+  </div>
   </div>
 
   <!-- Tower Dialog -->

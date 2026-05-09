@@ -120,10 +120,15 @@ export async function generatePDF(show, channels, sectionsMap, templateSections,
   if (hasSections) {
     for (const sec of sortedSections) {
       const content = sectionContents.get(sec.id) ?? ''
-      if (!content.trim()) continue
+      const hasContent = sec.type === 'kv-table'
+        ? (sec.rows ?? []).some(r => r.value?.trim())
+        : parseSetupSection(content).length > 0
+      if (!hasContent) continue
       doc.font(FONT_BOLD).fontSize(11).text(sec.title, PAGE_MARGIN, doc.y)
       doc.moveDown(0.4)
-      if (sec.type === 'fields') {
+      if (sec.type === 'kv-table') {
+        renderKvTableSection(doc, sec.rows ?? [], PAGE_MARGIN, usableW)
+      } else if (sec.type === 'fields') {
         renderFieldsSection(doc, sec.fields, content, PAGE_MARGIN, usableW)
       } else {
         const blocks = parseSetupSection(content)
@@ -401,9 +406,70 @@ function renderFieldsSection(doc, fields, raw, margin, usableW) {
   doc.moveDown(0.3)
 }
 
+function renderKvTableSection(doc, rows, margin, usableW) {
+  const colLabelW = mm(45)
+  const colValueW = usableW - colLabelW
+  const rowH = mm(5.5)
+  let y = doc.y
+  for (const row of rows) {
+    const value = row.value?.trim() ?? ''
+    if (!value) continue
+    doc.rect(margin, y, usableW, rowH).stroke('#cccccc')
+    doc.font(FONT_BOLD).fontSize(8)
+      .text(row.label ?? '', margin + mm(1.5), y + mm(1.2), {
+        width: colLabelW - mm(3), height: rowH - mm(1), lineBreak: false, ellipsis: true,
+      })
+    doc.font(FONT_NORMAL).fontSize(8)
+      .text(value, margin + colLabelW + mm(1.5), y + mm(1.2), {
+        width: colValueW - mm(3), height: rowH - mm(1), lineBreak: false, ellipsis: true,
+      })
+    y += rowH
+  }
+  doc.y = y
+  doc.moveDown(0.3)
+}
+
+function tiptapNodeText(node) {
+  if (!node) return ''
+  if (node.type === 'text') return node.text ?? ''
+  if (Array.isArray(node.content)) return node.content.map(tiptapNodeText).join('')
+  return ''
+}
+
+function parseTiptapDoc(doc) {
+  const blocks = []
+  if (!doc?.content) return blocks
+  for (const node of doc.content) {
+    if (node.type === 'heading') {
+      blocks.push({ type: 'heading', level: node.attrs?.level ?? 1, text: tiptapNodeText(node) })
+    } else if (node.type === 'bulletList' || node.type === 'orderedList' || node.type === 'taskList') {
+      const items = (node.content ?? []).map(li => tiptapNodeText(li).trim()).filter(Boolean)
+      if (items.length) blocks.push({ type: 'list', items })
+    } else if (node.type === 'table') {
+      const rows = []
+      for (const tr of (node.content ?? [])) {
+        const cells = (tr.content ?? []).map(td => tiptapNodeText(td).trim())
+        rows.push(cells)
+      }
+      if (rows.length) blocks.push({ type: 'table', rows })
+    } else if (node.type === 'paragraph') {
+      const text = tiptapNodeText(node).trim()
+      if (text) blocks.push({ type: 'text', text })
+    }
+  }
+  return blocks
+}
+
 function parseSetupSection(content) {
   if (!content) return []
-  const lines = content.trim().split('\n')
+  const trimmed = content.trim()
+  if (trimmed.startsWith('{')) {
+    try {
+      const doc = JSON.parse(trimmed)
+      return parseTiptapDoc(doc)
+    } catch {}
+  }
+  const lines = trimmed.split('\n')
   const blocks = []
   let i = 0
   while (i < lines.length) {
@@ -473,10 +539,19 @@ function renderSetupBlocks(doc, blocks, margin, usableW) {
       const colCount = Math.max(...rows.map(r => r.length))
       const col0W = mm(40)
       const colRest = (usableW - col0W) / Math.max(colCount - 1, 1)
-      const rowH = mm(5.5)
       let y = doc.y
       for (let ri = 0; ri < rows.length; ri++) {
         const isHeader = ri === 0
+        const font = isHeader ? FONT_BOLD : FONT_NORMAL
+        // Berechne Zeilenhöhe anhand des längsten Zellinhalts
+        let rowH = mm(5.5)
+        for (let ci = 0; ci < rows[ri].length; ci++) {
+          const w = ci === 0 ? col0W : colRest
+          const cellText = rows[ri][ci] || ''
+          if (!cellText) continue
+          const h = doc.font(font).fontSize(8).heightOfString(cellText, { width: w - mm(3) }) + mm(2.4)
+          if (h > rowH) rowH = h
+        }
         if (isHeader) {
           doc.rect(margin, y, usableW, rowH).fill('#e8e8e8')
           doc.fill('black')
@@ -485,10 +560,10 @@ function renderSetupBlocks(doc, blocks, margin, usableW) {
         let x = margin
         for (let ci = 0; ci < rows[ri].length; ci++) {
           const w = ci === 0 ? col0W : colRest
-          doc.font(isHeader ? FONT_BOLD : FONT_NORMAL).fontSize(8)
+          doc.font(font).fontSize(8)
             .fill('black')
             .text(rows[ri][ci] || '', x + mm(1.5), y + mm(1.2), {
-              width: w - mm(3), height: rowH - mm(1), lineBreak: false, ellipsis: true,
+              width: w - mm(3), lineBreak: true,
             })
           x += w
         }

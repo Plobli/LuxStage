@@ -10,79 +10,101 @@
       <div
         v-for="bar in bars"
         :key="bar.id"
-        class="group/row flex items-center gap-6 px-6 py-5 border-b border-border/50 hover:bg-white/2 transition-colors"
+        class="group/row flex flex-col px-6 pt-4 pb-3 border-b border-border/50 hover:bg-white/2 transition-colors"
       >
-        <!-- Name + Länge -->
-        <div class="w-40 shrink-0">
-          <div class="text-sm font-semibold text-foreground tracking-tight truncate">{{ bar.name }}</div>
-          <div class="text-xs text-muted-foreground/60 mt-0.5 tabular-nums">{{ bar.length_cm }} cm</div>
-        </div>
-
-        <!-- Stangen-Visualisierung -->
-        <div class="flex-1 min-w-0 relative" style="height: 72px;">
-          <!-- Skala-Labels oben -->
-          <div class="absolute left-0 right-0 h-4" style="top: 24px;">
-            <span
-              v-for="tick in getScaleTicks(bar)"
-              :key="tick.pos"
-              class="absolute text-[9px] -translate-x-1/2 tabular-nums leading-none"
-              :class="tick.center ? 'text-foreground font-semibold' : 'text-muted-foreground'"
-              :style="{ left: tick.pct + '%' }"
-            >{{ tick.label }}</span>
+        <!-- Obere Zeile: Name + Visualisierung + Aktionen -->
+        <div class="flex items-center gap-6">
+          <!-- Name + Länge -->
+          <div class="w-40 shrink-0">
+            <div class="text-sm font-semibold text-foreground tracking-tight truncate">{{ bar.name }}</div>
+            <div class="text-xs text-muted-foreground/60 mt-0.5 tabular-nums">{{ bar.length_cm }} cm</div>
           </div>
 
-          <!-- Stangen-Linie + Marker -->
-          <div
-            class="absolute left-0 right-0 cursor-crosshair"
-            style="top: 42px; height: 6px;"
-            :data-bar-id="bar.id"
-            @click.self="onBarLineClick($event, bar)"
-          >
-            <!-- Stangen-Track -->
-            <div class="absolute inset-0 rounded-full bg-white/25 border border-white/40 pointer-events-none" />
-            <!-- Tick-Striche -->
+          <!-- Stangen-Visualisierung -->
+          <div class="flex-1 min-w-0 relative" style="height: 72px;">
+            <!-- Skala-Labels oben -->
+            <div class="absolute left-0 right-0 h-4" style="top: 24px;">
+              <span
+                v-for="tick in getScaleTicks(bar)"
+                :key="tick.pos"
+                class="absolute text-[9px] -translate-x-1/2 tabular-nums leading-none"
+                :class="tick.center ? 'text-foreground font-semibold' : 'text-muted-foreground'"
+                :style="{ left: tick.pct + '%' }"
+              >{{ tick.label }}</span>
+            </div>
+
+            <!-- Stangen-Linie + Marker -->
             <div
-              v-for="tick in getScaleTicks(bar)"
-              :key="'t'+tick.pos"
-              class="absolute top-1/2 -translate-x-px pointer-events-none"
-              :style="{
-                left: tick.pct + '%',
-                height: tick.center ? '16px' : '10px',
-                marginTop: tick.center ? '-8px' : '-5px',
-                width: tick.center ? '2px' : '1px',
-                background: tick.center ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.4)',
-              }"
-            />
-            <!-- Kanal-Marker -->
-            <div
-              v-for="fx in bar.fixtures"
-              :key="fx.channel_id"
-              class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 group/fx z-10"
-              :style="{ left: posPercent(fx.position, bar.length_cm) + '%' }"
-              @mousedown.prevent.stop="startDrag($event, fx, bar)"
+              class="absolute left-0 right-0 cursor-crosshair"
+              style="top: 42px; height: 6px;"
+              :data-bar-id="bar.id"
+              @click.self="onBarLineClick($event, bar)"
             >
-              <button
-                class="size-10 rounded-full border-2 border-accent bg-accent/30 backdrop-blur-sm flex items-center justify-center hover:bg-accent/50 transition-all shadow-lg"
-                @click.stop="goToChannel(fx.channel_id)"
+              <!-- Stangen-Track -->
+              <div class="absolute inset-0 rounded-full bg-white/25 border border-white/40 pointer-events-none" />
+              <!-- Tick-Striche -->
+              <div
+                v-for="tick in getScaleTicks(bar)"
+                :key="'t'+tick.pos"
+                class="absolute top-1/2 -translate-x-px pointer-events-none"
+                :style="{
+                  left: tick.pct + '%',
+                  height: tick.center ? '16px' : '10px',
+                  marginTop: tick.center ? '-8px' : '-5px',
+                  width: tick.center ? '2px' : '1px',
+                  background: tick.center ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.4)',
+                }"
+              />
+              <!-- Kanal-Marker -->
+              <div
+                v-for="fx in bar.fixtures"
+                :key="fx.channel_id"
+                class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 group/fx z-10"
+                :style="{ left: posPercent(fx.position, bar.length_cm) + '%' }"
+                @mousedown.prevent.stop="startDrag($event, fx, bar)"
               >
-                <span class="text-xs font-bold text-white tabular-nums drop-shadow-sm">{{ channelNr(fx.channel_id) }}</span>
-              </button>
-              <button
-                class="absolute -top-0.5 -right-0.5 size-3.5 rounded-full bg-red-500/90 text-white items-center justify-center hidden group-hover/fx:flex z-20 hover:bg-red-500 transition-colors shadow"
-                @click.stop="confirmRemoveFixture(fx, bar)"
-              ><svg viewBox="0 0 10 10" width="7" height="7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="2" y1="2" x2="8" y2="8"/><line x1="8" y1="2" x2="2" y2="8"/></svg></button>
+                <button
+                  class="size-10 rounded-full border-2 border-accent bg-accent/30 backdrop-blur-sm flex items-center justify-center hover:bg-accent/50 transition-all shadow-lg"
+                  @click.stop="goToChannel(fx.channel_id)"
+                >
+                  <span class="text-xs font-bold text-white tabular-nums drop-shadow-sm">{{ channelNr(fx.channel_id) }}</span>
+                </button>
+                <button
+                  class="absolute -top-0.5 -right-0.5 size-3.5 rounded-full bg-red-500/90 text-white items-center justify-center hidden group-hover/fx:flex z-20 hover:bg-red-500 transition-colors shadow"
+                  @click.stop="confirmRemoveFixture(fx, bar)"
+                ><svg viewBox="0 0 10 10" width="7" height="7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="2" y1="2" x2="8" y2="8"/><line x1="8" y1="2" x2="2" y2="8"/></svg></button>
+              </div>
             </div>
           </div>
+
+          <!-- Aktionen (nur bei Hover) -->
+          <div class="flex items-center gap-0.5 shrink-0 opacity-0 group-hover/row:opacity-100 transition-opacity">
+            <Button variant="ghost" size="icon" class="size-7 text-muted-foreground/60 hover:text-foreground" @click="openEditBarDialog(bar)">
+              <Pencil class="size-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" class="size-7 text-muted-foreground/60 hover:text-red-400" @click="confirmDeleteBar(bar)">
+              <Trash2 class="size-3.5" />
+            </Button>
+          </div>
         </div>
 
-        <!-- Aktionen (nur bei Hover) -->
-        <div class="flex items-center gap-0.5 shrink-0 opacity-0 group-hover/row:opacity-100 transition-opacity">
-          <Button variant="ghost" size="icon" class="size-7 text-muted-foreground/60 hover:text-foreground" @click="openEditBarDialog(bar)">
-            <Pencil class="size-3.5" />
-          </Button>
-          <Button variant="ghost" size="icon" class="size-7 text-muted-foreground/60 hover:text-red-400" @click="confirmDeleteBar(bar)">
-            <Trash2 class="size-3.5" />
-          </Button>
+        <!-- Höhe + Anmerkungen -->
+        <div class="flex items-center gap-4 mt-2 ml-46">
+          <input
+            type="number"
+            :value="bar.height_cm ?? ''"
+            min="0" max="3000"
+            placeholder="Höhe (cm)"
+            class="w-28 h-9 rounded-md border border-border/60 bg-transparent px-3 text-sm tabular-nums text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-accent"
+            @change="saveInlineField(bar, 'height_cm', $event.target.value === '' ? null : Number($event.target.value))"
+          />
+          <input
+            type="text"
+            :value="bar.notes ?? ''"
+            placeholder="Anmerkung…"
+            class="flex-1 h-9 rounded-md border border-border/60 bg-transparent px-3 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-accent"
+            @change="saveInlineField(bar, 'notes', $event.target.value)"
+          />
         </div>
       </div>
     </div>
@@ -224,7 +246,7 @@ function openEditBarDialog(bar) {
 async function saveBarForm() {
   if (!barForm.value.name) return
   if (editingBar.value) {
-    await props.saveBarFn(editingBar.value.id, { ...barForm.value })
+    await props.saveBarFn(editingBar.value.id, { ...barForm.value, height_cm: editingBar.value.height_cm ?? null, notes: editingBar.value.notes ?? '' })
   } else {
     await props.addBarFn({ ...barForm.value })
   }
@@ -235,6 +257,11 @@ function confirmRemoveFixture(fx, bar) {
   if (confirm(`Scheinwerfer ${nr !== '?' ? `Kanal ${nr}` : fx.channel_id} von "${bar.name}" entfernen?`)) {
     props.unassignFixtureFn(bar.id, fx.channel_id)
   }
+}
+
+async function saveInlineField(bar, field, value) {
+  await props.saveBarFn(bar.id, { name: bar.name, zug_nr: bar.zug_nr, length_cm: bar.length_cm, height_cm: bar.height_cm, notes: bar.notes, [field]: value })
+  bar[field] = value
 }
 
 function confirmDeleteBar(bar) {

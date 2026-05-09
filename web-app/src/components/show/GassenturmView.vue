@@ -11,13 +11,12 @@
       Noch keine Gassentürme
     </div>
 
-    <!-- 2 Zeilen, horizontale Spalten -->
-    <div class="grid grid-rows-2 grid-flow-col gap-3">
+    <!-- 2 Zeilen, responsive Spalten -->
+    <div class="grid grid-rows-2 grid-flow-col gap-3" :style="gridStyle">
       <div
         v-for="tower in towers"
         :key="tower.id"
         class="rounded-xl border border-border/60 bg-card overflow-hidden flex flex-col"
-        style="width: clamp(16rem, 30vw, 62.5rem)"
       >
         <!-- Header -->
         <div class="flex items-start justify-between px-4 pt-4 pb-3 min-h-20">
@@ -50,27 +49,28 @@
             v-for="slot in slotsFor(tower)"
             :key="slot.slot_index"
             :data-slot-index="slot.slot_index"
-            class="flex items-center gap-2.5 px-3 py-2.5 border-b border-border/60 hover:bg-muted/20 transition-colors"
+            class="flex items-center gap-3 px-4 py-3.5 border-b border-border/60 hover:bg-muted/20 transition-colors"
           >
-            <GripVertical class="drag-handle size-3.5 shrink-0 text-muted-foreground/50 cursor-grab active:cursor-grabbing" />
-            <div class="size-6 shrink-0 rounded-full bg-muted flex items-center justify-center text-[10px] font-semibold text-foreground/70">
-              {{ slot.slot_index }}
+            <div class="flex items-center gap-1 shrink-0">
+              <GripVertical class="drag-handle size-3.5 text-muted-foreground/50 cursor-grab active:cursor-grabbing" />
+              <span class="w-4 text-xs text-muted-foreground/40 font-mono text-right">{{ slot.slot_index }}</span>
             </div>
             <div class="flex-1 min-w-0">
               <template v-if="slot.channel_id && channelForId(slot.channel_id)">
-                <div class="flex items-center gap-1.5">
-                  <span class="font-mono text-sm font-semibold text-foreground">{{ channelForId(slot.channel_id)?.channel }}</span>
-                  <span
-                    v-if="channelForId(slot.channel_id)?.color"
-                    class="text-[10px] px-1.5 py-0.5 rounded font-medium"
-                    :style="filterBadgeStyle(channelForId(slot.channel_id)?.color) ?? { backgroundColor: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }"
-                  >
-                    {{ channelForId(slot.channel_id)?.color }}
-                  </span>
+                <div class="flex items-center px-2 gap-3 truncate">
+                  <span class="font-mono font-bold text-xl text-foreground shrink-0 leading-none">{{ channelForId(slot.channel_id)?.channel }}</span>
+                  <template v-if="channelForId(slot.channel_id)?.color">
+                    <span class="text-muted-foreground/30 shrink-0">·</span>
+                    <span
+                      class="text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0"
+                      :style="filterBadgeStyle(channelForId(slot.channel_id)?.color) ?? { backgroundColor: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }"
+                    >{{ channelForId(slot.channel_id)?.color }}</span>
+                  </template>
+                  <template v-if="channelForId(slot.channel_id)?.device">
+                    <span class="text-muted-foreground/30 shrink-0">·</span>
+                    <span class="text-sm text-foreground truncate">{{ channelForId(slot.channel_id)?.device }}</span>
+                  </template>
                 </div>
-                <p v-if="channelForId(slot.channel_id)?.device" class="text-[11px] text-muted-foreground/70 truncate leading-tight">
-                  {{ channelForId(slot.channel_id)?.device }}
-                </p>
               </template>
               <span v-else class="text-xs text-muted-foreground/60">leer</span>
             </div>
@@ -194,6 +194,11 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['assigned'])
+
+const gridStyle = computed(() => {
+  const cols = Math.ceil(props.towers.length / 2) || 1
+  return { gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }
+})
 
 const channelById = computed(() => {
   const map = new Map()

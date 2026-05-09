@@ -396,6 +396,15 @@ if (!barsTableExists) {
   `)
 }
 
+// Migration: height_cm + notes auf bars
+{
+  const cols = dbContainer.db.prepare("PRAGMA table_info(bars)").all().map(c => c.name)
+  if (!cols.includes('height_cm'))
+    dbContainer.db.exec("ALTER TABLE bars ADD COLUMN height_cm REAL")
+  if (!cols.includes('notes'))
+    dbContainer.db.exec("ALTER TABLE bars ADD COLUMN notes TEXT NOT NULL DEFAULT ''")
+}
+
 // template_bars: Zugstangen-Definitionen pro Bühnen-Template
 const templateBarsTableExists = dbContainer.db.prepare(
   "SELECT name FROM sqlite_master WHERE type='table' AND name='template_bars'"

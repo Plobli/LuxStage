@@ -12,20 +12,17 @@
       <div class="flex flex-1 min-w-0">
         <Tabs :model-value="modelValue" @update:model-value="emit('update:modelValue', $event)" class="w-auto">
           <TabsList class="bg-muted h-10 p-1 gap-0.5">
+            <TabsTrigger value="gassenturm" class="text-xs sm:text-sm px-2 sm:px-4 py-1.5 font-medium">
+              {{ labels.tabGassenturm || 'Aufbauplan' }}
+            </TabsTrigger>
             <TabsTrigger value="channels" class="text-xs sm:text-sm px-2 sm:px-4 py-1.5 font-medium">
               {{ labels.tabChannels }}
-            </TabsTrigger>
-            <TabsTrigger value="info" class="text-xs sm:text-sm px-2 sm:px-4 py-1.5 font-medium">
-              {{ labels.tabInfo }}
             </TabsTrigger>
             <TabsTrigger value="photos" class="text-xs sm:text-sm px-2 sm:px-4 py-1.5 font-medium">
               {{ labels.tabPhotos }}
             </TabsTrigger>
             <TabsTrigger value="floorplan" class="text-xs sm:text-sm px-2 sm:px-4 py-1.5 font-medium">
               {{ labels.tabFloorplan }}
-            </TabsTrigger>
-            <TabsTrigger value="gassenturm" class="text-xs sm:text-sm px-2 sm:px-4 py-1.5 font-medium">
-              {{ labels.tabGassenturm || 'Aufbauplan' }}
             </TabsTrigger>
           </TabsList>
         </Tabs>

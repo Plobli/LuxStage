@@ -16,7 +16,6 @@
       :labels="{
         back: t('action.back'),
         tabChannels: t('tab.channels'),
-        tabInfo: t('tab.info'),
         tabPhotos: t('tab.photos'),
         tabFloorplan: t('tab.floorplan'),
         tabGassenturm: t('tab.gassenturm'),
@@ -158,7 +157,7 @@
           </div>
         </div>
 
-        <!-- Aufbauplan View (Gassenturm + Zugstangen) -->
+        <!-- Aufbauplan View -->
         <div
           v-show="mobileTab === 'gassenturm'"
           class="flex flex-col flex-1 min-h-0 overflow-hidden"
@@ -176,7 +175,46 @@
               ]"
               @click="aufbauTab = sub.key"
             >{{ sub.label }}</button>
+            <button
+              :class="[
+                'text-xs px-3 py-1.5 rounded-md font-medium transition-colors',
+                'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+              ]"
+              @click="addSectionFromSubtab"
+            >+</button>
           </div>
+
+          <!-- Section-Subtabs -->
+          <template v-for="sub in aufbauSubTabs" :key="sub.key">
+            <div
+              v-if="sub.sectionId"
+              v-show="aufbauTab === sub.key"
+              class="flex-1 min-h-0 overflow-y-auto"
+            >
+              <SectionEditor
+                :showId="props.id"
+                :sectionDefs="sectionDefs"
+                :sectionContents="sectionContents"
+                :setupMarkdown="setupMarkdown"
+                :singleSectionId="sub.sectionId"
+                :labels="{
+                  titlePlaceholder: t('sections.title.placeholder'),
+                  fieldLabel: t('sections.field.label'),
+                  fieldValue: t('sections.field.value'),
+                  fieldAdd: t('sections.field.add'),
+                  addMarkdown: t('sections.add.markdown'),
+                  addFields: t('sections.add.fields'),
+                }"
+                @update:sectionDefs="sectionDefs = $event"
+                @update:sectionContents="sectionContents = $event"
+                @update:setupMarkdown="onSetupChange($event)"
+                @pushSnapshot="pushSnapshot"
+                @recordFocus="recordFocus"
+                @commitFocus="commitFocus"
+                @sectionChange="persistSectionsDebounced"
+              />
+            </div>
+          </template>
 
           <div v-show="aufbauTab === 'gassenturm'" class="flex-1 min-h-0 overflow-hidden">
             <GassenturmView
@@ -205,34 +243,6 @@
               @assigned="activeChannelForAssign = null"
             />
           </div>
-        </div>
-
-        <!-- Info View -->
-        <div
-          v-show="mobileTab === 'info'"
-          class="flex-1 min-h-0 overflow-y-auto"
-        >
-            <SectionEditor
-              :showId="props.id"
-              :sectionDefs="sectionDefs"
-              :sectionContents="sectionContents"
-              :setupMarkdown="setupMarkdown"
-              :labels="{
-                titlePlaceholder: t('sections.title.placeholder'),
-                fieldLabel: t('sections.field.label'),
-                fieldValue: t('sections.field.value'),
-                fieldAdd: t('sections.field.add'),
-                addMarkdown: t('sections.add.markdown'),
-                addFields: t('sections.add.fields'),
-              }"
-              @update:sectionDefs="sectionDefs = $event"
-              @update:sectionContents="sectionContents = $event"
-              @update:setupMarkdown="onSetupChange($event)"
-              @pushSnapshot="pushSnapshot"
-              @recordFocus="recordFocus"
-              @commitFocus="commitFocus"
-              @sectionChange="persistSectionsDebounced"
-            />
         </div>
 
       </div>
@@ -266,7 +276,7 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick, onMounted, onBeforeUnmount, defineAsyncComponent } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount, defineAsyncComponent } from 'vue'
 import { Loader2 } from 'lucide-vue-next'
 import { useDebounceFn } from '@vueuse/core'
 import { useRouter } from 'vue-router'
@@ -285,6 +295,8 @@ import { useShowBars } from '../composables/useShowBars.js'
 
 import ShowHeader from '../components/show/ShowHeader.vue'
 import { fetchShow, updateMeta, restoreHistory, createSnapshot } from '../api/shows.js'
+import { saveShowSectionDefs } from '../api/sections.ts'
+import { uuid } from '../utils/uuid.js'
 import { downloadChannelsCsv } from '../api/channels.js'
 import PhotoGallery from '../components/show/PhotoGallery.vue'
 const HistorySlideOver = defineAsyncComponent(() => import('../components/show/HistorySlideOver.vue'))
@@ -312,14 +324,13 @@ const setupSaving = ref(false)
 const historyOpen = ref(false)
 
 const TAB_KEY = `show-tab-${props.id}`
-const mobileTab = ref(sessionStorage.getItem(TAB_KEY) || 'channels')
-watch(mobileTab, (tab) => sessionStorage.setItem(TAB_KEY, tab))
+const mobileTab = ref(sessionStorage.getItem(TAB_KEY) || 'floorplan')
+watch(mobileTab, (tab) => {
+  sessionStorage.setItem(TAB_KEY, tab)
+  if (tab === 'floorplan') aufbauTab.value = aufbauSubTabs.value[0]?.key ?? 'gassenturm'
+})
 
 const aufbauTab = ref('gassenturm')
-const aufbauSubTabs = [
-  { key: 'gassenturm', label: 'Gassentürme' },
-  { key: 'zugstangen', label: 'Zugstangen' },
-]
 
 // ── Composables ────────────────────────────────────────────────────────────
 const { photos, loadPhotos } = useShowPhotos(props.id)
@@ -330,6 +341,23 @@ const {
   persistSectionsDebounced, persistSections, persistSectionDefs,
   loadSections, handleSectionsSse
 } = useShowSections(props.id, meta)
+
+const AUFBAU_FIXED_TABS = [
+  { key: 'gassenturm', label: 'Gassentürme' },
+  { key: 'zugstangen', label: 'Zugstangen' },
+]
+const aufbauSubTabs = computed(() => {
+  const sectionTabs = [...sectionDefs.value]
+    .sort((a, b) => a.order - b.order)
+    .map(s => ({ key: `section:${s.id}`, label: s.title || '(kein Titel)', sectionId: s.id }))
+  return [...sectionTabs, ...AUFBAU_FIXED_TABS]
+})
+
+watch(aufbauSubTabs, (tabs) => {
+  if (!tabs.find(t => t.key === aufbauTab.value)) {
+    aufbauTab.value = tabs[0]?.key ?? 'gassenturm'
+  }
+})
 
 let pendingSetupMd = null
 const persistSetupDebounced = useDebounceFn(async () => {
@@ -448,6 +476,15 @@ async function onAssignBar(ch) {
 function onPlaceInFloorplan(ch) {
   activeChannelForAssign.value = ch
   mobileTab.value = 'floorplan'
+}
+
+async function addSectionFromSubtab() {
+  pushSnapshot()
+  const id = uuid()
+  const newDefs = [...sectionDefs.value, { id, title: '', type: 'markdown', order: sectionDefs.value.length }]
+  sectionDefs.value = newDefs
+  await saveShowSectionDefs(props.id, newDefs)
+  aufbauTab.value = `section:${id}`
 }
 
 // ── Laden ──────────────────────────────────────────────────────────────────

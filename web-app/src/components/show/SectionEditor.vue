@@ -113,16 +113,16 @@
     </section>
   </div>
 
-  <!-- Fallback: single setup editor (when no sections defined) -->
-  <section v-if="sortedSections.length === 0" class="border-b border-border/60">
+  <!-- Fallback: single setup editor (when no sections defined, not in single-section mode) -->
+  <section v-if="!singleSectionId && sortedSections.length === 0" class="border-b border-border/60">
     <div class="border-b border-border/90 bg-muted px-4 py-2.5">
       <slot name="setup-heading" />
     </div>
     <MarkdownEditor :modelValue="setupMarkdown" @update:modelValue="emit('update:setupMarkdown', $event)" @focus="emit('recordFocus')" @blur="emit('commitFocus')" class="rounded-none border-0 border-t border-border/60" />
   </section>
 
-  <!-- Add section buttons -->
-  <div class="flex items-center gap-2 border-b border-border/60 px-4 py-2">
+  <!-- Add section buttons (not in single-section mode) -->
+  <div v-if="!singleSectionId" class="flex items-center gap-2 border-b border-border/60 px-4 py-2">
     <Button variant="ghost" size="sm" class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground hover:bg-muted/60 hover:text-foreground" @click="addMarkdownSection">{{ labels.addMarkdown }}</Button>
     <Button v-if="!hasKvTableType()" variant="ghost" size="sm" class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground hover:bg-muted/60 hover:text-foreground" @click="addKvTableSection">{{ labels.addFields }}</Button>
   </div>
@@ -145,6 +145,7 @@ const props = defineProps({
   sectionDefs: { type: Array, required: true },
   sectionContents: { type: Map, required: true },
   setupMarkdown: { type: String, default: '' },
+  singleSectionId: { type: String, default: null },
   labels: {
     type: Object,
     default: () => ({
@@ -249,9 +250,11 @@ watch(
 )
 
 // ── Helpers ────────────────────────────────────────────────────────────────
-const sortedSections = computed(() =>
-  [...props.sectionDefs].sort((a, b) => a.order - b.order)
-)
+const sortedSections = computed(() => {
+  const all = [...props.sectionDefs].sort((a, b) => a.order - b.order)
+  if (props.singleSectionId) return all.filter(s => s.id === props.singleSectionId)
+  return all
+})
 
 function sortedRows(sec) {
   return [...(sec.rows ?? [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))

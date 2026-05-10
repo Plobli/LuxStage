@@ -41,7 +41,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits);
       v-bind="forwarded"
       aria-describedby="undefined"
       :class="cn(
-        'fixed left-1/2 top-1/2 z-50 flex flex-col w-full max-w-lg -translate-x-1/2 -translate-y-1/2 bg-[#131316] border border-[#35353b] rounded-xl overflow-hidden shadow-2xl duration-150 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
+        'fixed left-1/2 top-1/2 z-50 flex flex-col w-full max-w-lg -translate-x-1/2 -translate-y-1/2 bg-[#131316] border border-[#35353b] rounded-xl overflow-visible shadow-2xl duration-150 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
         props.class,
       )"
     >

@@ -6,7 +6,7 @@
         <h1 class="text-2xl font-semibold text-foreground">{{ t('nav.shows') }}</h1>
       </div>
       <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-        <Button @click="drawerOpen = true">
+        <Button @click="openCreate">
           {{ t('show.new') }}
         </Button>
       </div>
@@ -91,7 +91,7 @@
                 <SelectValue :placeholder="t('show.template.none')" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{{ t('show.template.none') }}</SelectItem>
+                <SelectItem value="__none__">{{ t('show.template.none') }}</SelectItem>
                 <SelectItem v-for="tpl in templates" :key="tpl.name" :value="tpl.name">
                   {{ templateDisplayName(tpl.name) }}
                 </SelectItem>
@@ -173,11 +173,11 @@ const templates = ref([])
 const loading = ref(true)
 const creating = ref(false)
 const drawerOpen = ref(false)
-const form = ref({ name: '', datum: new Date().toISOString().slice(0, 10), template: '' })
+const form = ref({ name: '', datum: new Date().toISOString().slice(0, 10), template: '__none__' })
 
 const assignDialogOpen = ref(false)
 const assignShow = ref(null)
-const assignTemplate = ref('')
+const assignTemplate = ref('__none__')
 const assignSaving = ref(false)
 
 function formatEditedAt(ts) {
@@ -235,14 +235,15 @@ async function handleCreate() {
   creating.value = true
   const id = generateId(form.value.name, form.value.datum)
   try {
-    const content = `---\nid: ${id}\nname: ${form.value.name || id}\ndatum: ${form.value.datum || new Date().toISOString().slice(0, 10)}\n${form.value.template ? `template: ${form.value.template}\n` : ''}---\n\n`
-    await createShow({ id, name: form.value.name || id, datum: form.value.datum || new Date().toISOString().slice(0, 10), content, template: form.value.template || undefined })
+    const tplCreate = form.value.template === '__none__' ? '' : form.value.template
+    const content = `---\nid: ${id}\nname: ${form.value.name || id}\ndatum: ${form.value.datum || new Date().toISOString().slice(0, 10)}\n${tplCreate ? `template: ${tplCreate}\n` : ''}---\n\n`
+    await createShow({ id, name: form.value.name || id, datum: form.value.datum || new Date().toISOString().slice(0, 10), content, template: tplCreate || undefined })
     invalidate('shows')
-    const newShow = { id, name: form.value.name || id, datum: form.value.datum || new Date().toISOString().slice(0, 10), template: form.value.template || '' }
+    const newShow = { id, name: form.value.name || id, datum: form.value.datum || new Date().toISOString().slice(0, 10), template: tplCreate }
     shows.value.push(newShow)
-    if (form.value.template) {
+    if (tplCreate) {
       try {
-        const channels = await fetchTemplateChannels(form.value.template)
+        const channels = await fetchTemplateChannels(tplCreate)
         if (channels.length) await saveChannels(id, channels)
       } catch (e) {
         console.error('Failed to apply template channels:', e)
@@ -257,19 +258,25 @@ async function handleCreate() {
   }
 }
 
+function openCreate() {
+  form.value = { name: '', datum: new Date().toISOString().slice(0, 10), template: '__none__' }
+  drawerOpen.value = true
+}
+
 function openAssign(show) {
   assignShow.value = show
-  assignTemplate.value = show.template || ''
+  assignTemplate.value = show.template || '__none__'
   assignDialogOpen.value = true
 }
 
 async function handleAssign() {
   assignSaving.value = true
   try {
-    await updateMeta(assignShow.value.id, { template: assignTemplate.value || null })
+    const tplVal = assignTemplate.value === '__none__' ? null : assignTemplate.value
+    await updateMeta(assignShow.value.id, { template: tplVal })
     invalidate('shows')
     const show = shows.value.find(s => s.id === assignShow.value.id)
-    if (show) show.template = assignTemplate.value || ''
+    if (show) show.template = tplVal || ''
     assignDialogOpen.value = false
   } catch (e) {
     console.error('Failed to assign template:', e)

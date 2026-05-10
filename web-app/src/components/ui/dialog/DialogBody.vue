@@ -11,7 +11,25 @@ const props = defineProps({
 </script>
 
 <template>
-  <div :class="cn('flex flex-col gap-4 px-6 py-5', props.class)">
+  <div :class="cn('dialog-body flex flex-col gap-6 px-6 py-4', props.class)">
     <slot />
   </div>
 </template>
+
+<style>
+/* Abstand Label → Input innerhalb jeder Feldgruppe */
+.dialog-body > div,
+.dialog-body > label + * {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem; /* 10px */
+}
+
+/* Label-Stil */
+.dialog-body label {
+  font-size: 0.9375rem; /* 15px */
+  font-weight: 600;
+  color: white;
+  line-height: 1;
+}
+</style>

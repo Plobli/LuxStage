@@ -2,11 +2,20 @@
   <div class="flex flex-col h-dvh bg-background overflow-hidden">
 
     <!-- ── Top Navigation Bar ─────────────────────────────────────────────── -->
+    <!-- Skeleton während Laden -->
+    <div v-if="loading" class="sticky top-0 z-40 flex flex-col border-b border-border bg-background">
+      <div class="flex h-16 shrink-0 items-center gap-x-4 px-4 sm:px-6 lg:px-8">
+        <div class="h-5 w-40 rounded bg-muted animate-pulse" />
+        <div class="h-4 w-24 rounded bg-muted animate-pulse" />
+      </div>
+      <div class="flex h-10 items-center border-t border-border/50 bg-muted/50" />
+    </div>
     <ShowHeader
+      v-else
       v-model="mobileTab"
       v-model:search="search"
       :showName="meta.name"
-      :showDate="meta.datum"
+      :showDate="showDateFormatted"
       :canUndo="canUndo"
       :canRedo="canRedo"
       :saving="channelsSaving || sectionsSaving || setupSaving"
@@ -14,7 +23,6 @@
       :dupAddressWarning="dupWarning"
       :dupChannelWarning="dupChannelWarning"
       :labels="{
-        back: t('action.back'),
         tabChannels: t('tab.channels'),
         tabPhotos: t('tab.photos'),
         tabFloorplan: t('tab.floorplan'),
@@ -32,7 +40,7 @@
         pdf: t('show.pdf'),
         csvExport: t('channel.export'),
       }"
-      @back="router.push('/')"
+      @update:showName="onRenameShow($event)"
       @undo="undo()"
       @redo="redo()"
       @openHistory="openHistory()"
@@ -40,7 +48,25 @@
       @downloadCsv="downloadChannelsCsv(props.id, channels)"
       @eosFileSelected="onEosFileSelected($event)"
       @csvFileSelected="onCsvImportSelected($event)"
-    />
+    >
+      <template v-if="mobileTab === 'gassenturm'" #subnav>
+        <button
+          v-for="sub in aufbauSubTabs"
+          :key="sub.key"
+          :class="[
+            'text-sm px-3 py-1.5 rounded-md font-medium transition-colors',
+            aufbauTab === sub.key
+              ? 'bg-accent/15 text-accent'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+          ]"
+          @click="aufbauTab = sub.key"
+        >{{ sub.label }}</button>
+        <button
+          class="text-xs px-3 py-1.5 rounded-md font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-muted/40"
+          @click="addSectionFromSubtab"
+        >+</button>
+      </template>
+    </ShowHeader>
 
     <!-- ── Loading ────────────────────────────────────────────────────────── -->
     <div v-if="loading" class="flex flex-1 items-center justify-center">
@@ -162,28 +188,6 @@
           v-show="mobileTab === 'gassenturm'"
           class="flex flex-col flex-1 min-h-0 overflow-hidden"
         >
-          <!-- Sub-Nav -->
-          <div class="shrink-0 flex items-center gap-1 px-4 py-2 border-b border-border bg-card">
-            <button
-              v-for="sub in aufbauSubTabs"
-              :key="sub.key"
-              :class="[
-                'text-xs px-3 py-1.5 rounded-md font-medium transition-colors',
-                aufbauTab === sub.key
-                  ? 'bg-accent/15 text-accent'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
-              ]"
-              @click="aufbauTab = sub.key"
-            >{{ sub.label }}</button>
-            <button
-              :class="[
-                'text-xs px-3 py-1.5 rounded-md font-medium transition-colors',
-                'text-muted-foreground hover:text-foreground hover:bg-muted/40'
-              ]"
-              @click="addSectionFromSubtab"
-            >+</button>
-          </div>
-
           <!-- Section-Subtabs -->
           <template v-for="sub in aufbauSubTabs" :key="sub.key">
             <div
@@ -264,6 +268,57 @@
       @restore="doRestoreHistory($event)"
     />
 
+    <!-- Neuer Tab Dialog -->
+    <Dialog :open="newSectionDialog" @update:open="newSectionDialog = $event">
+      <DialogContent class="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Neuer Tab</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <div>
+            <Label for="newSectionName">Name</Label>
+            <Input
+              size="lg"
+              id="newSectionName"
+              v-model="newSectionName"
+              placeholder="z. B. Hängerei"
+              @keydown.enter.prevent="confirmNewSection"
+              @keydown.esc.prevent="newSectionDialog = false"
+            />
+          </div>
+          <div>
+            <Label>Typ</Label>
+            <div class="flex flex-col gap-2">
+              <button
+                :class="['flex items-center gap-4 rounded-xl border p-4 text-left transition-colors', newSectionType === 'markdown' ? 'border-white/20 bg-white/6' : 'border-white/8 hover:border-white/12 hover:bg-white/3']"
+                @click="newSectionType = 'markdown'"
+              >
+                <div :class="['size-4 shrink-0 rounded-full border-2 transition-colors', newSectionType === 'markdown' ? 'border-white bg-white' : 'border-white/30']" />
+                <div>
+                  <div class="text-sm font-semibold text-foreground">Text</div>
+                  <div class="text-xs text-muted-foreground mt-1">Freitext mit Formatierung – für Beschreibungen und Notizen</div>
+                </div>
+              </button>
+              <button
+                :class="['flex items-center gap-4 rounded-xl border p-4 text-left transition-colors', newSectionType === 'kv-table' ? 'border-white/20 bg-white/6' : 'border-white/8 hover:border-white/12 hover:bg-white/3']"
+                @click="newSectionType = 'kv-table'"
+              >
+                <div :class="['size-4 shrink-0 rounded-full border-2 transition-colors', newSectionType === 'kv-table' ? 'border-white bg-white' : 'border-white/30']" />
+                <div>
+                  <div class="text-sm font-semibold text-foreground">Felder</div>
+                  <div class="text-xs text-muted-foreground mt-1">Strukturierte Schlüssel-Wert-Paare – für technische Daten</div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="outline" @click="newSectionDialog = false">Abbrechen</Button>
+          <Button :disabled="!newSectionName.trim()" @click="confirmNewSection">Erstellen</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
     <EosMergePreviewDialog
       :open="eosMergePreview.open"
       :newActive="eosMergePreview.newActive"
@@ -279,7 +334,6 @@
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount, defineAsyncComponent } from 'vue'
 import { Loader2 } from 'lucide-vue-next'
 import { useDebounceFn } from '@vueuse/core'
-import { useRouter } from 'vue-router'
 import { useLocale } from '../composables/useLocale.js'
 import { useConfirm } from '../composables/useConfirm.js'
 import { useKeyboardNav } from '../composables/useKeyboardNav.js'
@@ -294,6 +348,10 @@ import { restoreTowersSnapshot } from '../api/towers.js'
 import { useShowBars } from '../composables/useShowBars.js'
 
 import ShowHeader from '../components/show/ShowHeader.vue'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import { fetchShow, updateMeta, restoreHistory, createSnapshot } from '../api/shows.js'
 import { saveShowSectionDefs } from '../api/sections.ts'
 import { uuid } from '../utils/uuid.js'
@@ -311,7 +369,6 @@ const GassenturmView = defineAsyncComponent(() => import('../components/show/Gas
 const ZugstangenView = defineAsyncComponent(() => import('../components/show/ZugstangenView.vue'))
 
 const props = defineProps({ id: { type: String, required: true } })
-const router = useRouter()
 const { t } = useLocale()
 const { confirm } = useConfirm()
 const { onKeydown } = useKeyboardNav()
@@ -319,6 +376,12 @@ const { onKeydown } = useKeyboardNav()
 // ── Globals ────────────────────────────────────────────────────────────────
 const loading = ref(true)
 const meta = ref({})
+
+const showDateFormatted = computed(() => {
+  if (!meta.value.datum) return ''
+  const d = new Date(meta.value.datum)
+  return d.toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' })
+})
 const setupMarkdown = ref('')
 const setupSaving = ref(false)
 const historyOpen = ref(false)
@@ -417,6 +480,11 @@ function onSetupChange(md) {
 }
 
 // ── History ─────────────────────────────────────────────────────────────────
+async function onRenameShow(name) {
+  meta.value.name = name
+  await updateMeta(props.id, { ...meta.value })
+}
+
 function openHistory() {
   historyOpen.value = true
 }
@@ -478,10 +546,23 @@ function onPlaceInFloorplan(ch) {
   mobileTab.value = 'floorplan'
 }
 
-async function addSectionFromSubtab() {
+const newSectionDialog = ref(false)
+const newSectionName = ref('')
+const newSectionType = ref('markdown')
+
+function addSectionFromSubtab() {
+  newSectionName.value = ''
+  newSectionType.value = 'markdown'
+  newSectionDialog.value = true
+}
+
+async function confirmNewSection() {
+  const title = newSectionName.value.trim()
+  if (!title) return
+  newSectionDialog.value = false
   pushSnapshot()
   const id = uuid()
-  const newDefs = [...sectionDefs.value, { id, title: '', type: 'markdown', order: sectionDefs.value.length }]
+  const newDefs = [...sectionDefs.value, { id, title, type: newSectionType.value, order: sectionDefs.value.length, rows: newSectionType.value === 'kv-table' ? [] : undefined }]
   sectionDefs.value = newDefs
   await saveShowSectionDefs(props.id, newDefs)
   aufbauTab.value = `section:${id}`

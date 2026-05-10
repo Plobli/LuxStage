@@ -7,31 +7,31 @@
       </div>
       <form class="md:col-span-2" @submit.prevent="doSave">
         <div class="space-y-4 sm:max-w-xl">
-          <div class="space-y-2">
+          <div>
             <Label for="smtp-host">{{ t('settings.smtp.host') }}</Label>
-            <Input id="smtp-host" v-model="form.host" type="text" placeholder="mail.example.com" />
+            <Input size="lg" id="smtp-host" v-model="form.host" type="text" placeholder="mail.example.com" />
           </div>
           <div class="grid grid-cols-2 gap-4">
-            <div class="space-y-2">
+            <div>
               <Label for="smtp-port">{{ t('settings.smtp.port') }}</Label>
-              <Input id="smtp-port" v-model="form.port" type="number" placeholder="587" />
+              <Input size="lg" id="smtp-port" v-model="form.port" type="number" placeholder="587" />
             </div>
             <div class="flex items-end gap-2 pb-0.5">
               <input id="smtp-secure" v-model="form.secure" type="checkbox" class="h-4 w-4 rounded border-border" />
               <Label for="smtp-secure">{{ t('settings.smtp.secure') }}</Label>
             </div>
           </div>
-          <div class="space-y-2">
+          <div>
             <Label for="smtp-user">{{ t('settings.smtp.user') }}</Label>
-            <Input id="smtp-user" v-model="form.user" type="text" autocomplete="off" />
+            <Input size="lg" id="smtp-user" v-model="form.user" type="text" autocomplete="off" />
           </div>
-          <div class="space-y-2">
+          <div>
             <Label for="smtp-pass">{{ t('settings.smtp.pass') }}</Label>
-            <Input id="smtp-pass" v-model="form.pass" type="password" :placeholder="passPlaceholder" autocomplete="new-password" />
+            <Input size="lg" id="smtp-pass" v-model="form.pass" type="password" :placeholder="passPlaceholder" autocomplete="new-password" />
           </div>
-          <div class="space-y-2">
+          <div>
             <Label for="smtp-from">{{ t('settings.smtp.from') }}</Label>
-            <Input id="smtp-from" v-model="form.from" type="text" placeholder="LuxStage <noreply@example.com>" />
+            <Input size="lg" id="smtp-from" v-model="form.from" type="text" placeholder="LuxStage <noreply@example.com>" />
           </div>
           <Alert v-if="msg" :variant="msg.startsWith('✓') ? 'default' : 'destructive'">
             <AlertDescription>{{ msg }}</AlertDescription>

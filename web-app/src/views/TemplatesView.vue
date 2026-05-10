@@ -250,23 +250,23 @@
 
     <!-- Template-Bar Dialog -->
     <Dialog :open="tbarDialogOpen" @update:open="tbarDialogOpen = $event">
-      <DialogContent class="sm:max-w-sm">
+      <DialogContent class="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{{ editingTbar ? 'Zugstange bearbeiten' : 'Neue Zugstange' }}</DialogTitle>
         </DialogHeader>
         <DialogBody>
-          <div class="flex flex-col gap-1.5">
-            <label class="text-xs text-muted-foreground">Name</label>
-            <Input v-model="tbarForm.name" placeholder="z. B. Bühnenportal" autofocus />
+          <div>
+            <Label>Name</Label>
+            <Input size="lg" v-model="tbarForm.name" placeholder="z. B. Bühnenportal" autofocus />
           </div>
           <div class="grid grid-cols-2 gap-3">
-            <div class="flex flex-col gap-1.5">
-              <label class="text-xs text-muted-foreground">Zugnummer</label>
-              <Input v-model="tbarForm.zug_nr" placeholder="z. B. 12" />
+            <div>
+              <Label>Zugnummer</Label>
+              <Input size="lg" v-model="tbarForm.zug_nr" placeholder="z. B. 12" />
             </div>
-            <div class="flex flex-col gap-1.5">
-              <label class="text-xs text-muted-foreground">Länge (cm)</label>
-              <Input v-model.number="tbarForm.length_cm" type="number" min="50" max="3000" />
+            <div>
+              <Label>Länge (cm)</Label>
+              <Input size="lg" v-model.number="tbarForm.length_cm" type="number" min="50" max="3000" />
             </div>
           </div>
         </DialogBody>
@@ -293,7 +293,7 @@
         <div v-else-if="step === 'preview'" class="pt-4 space-y-4">
           <div>
             <Label for="importName" class="text-xs">{{ t('template.name') }}</Label>
-            <Input id="importName" v-model="importName" type="text" required class="mt-1" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" />
+            <Input size="lg" id="importName" v-model="importName" type="text" required class="mt-1" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" />
           </div>
           <div class="text-sm text-muted-foreground">
             <span>{{ t('csv.preview.channels', { count: previewChannels.length }) }}</span>

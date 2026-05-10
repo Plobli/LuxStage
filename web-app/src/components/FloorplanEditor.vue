@@ -30,6 +30,9 @@
       <ToolBtn :active="activeTool === 'bar'" title="Zugstange platzieren" @click="openBarPlacer">
         <AlignJustify class="w-5 h-5" />
       </ToolBtn>
+      <ToolBtn :active="activeTool === 'ruler'" title="Maßstab kalibrieren" @click="activeTool = 'ruler'">
+        <Ruler class="w-5 h-5" />
+      </ToolBtn>
       <Separator class="w-8 my-1" />
 
       <ToolBtn title="Hintergrundbild hochladen" @click="imageUploadInput?.click()">
@@ -61,7 +64,7 @@
     <div
       ref="containerEl"
       class="flex-1 relative overflow-hidden"
-      :class="(activeTool === 'pan' || spaceHeld) ? 'cursor-grab' : activeTool !== 'select' ? 'cursor-crosshair' : 'cursor-default'"
+      :class="(activeTool === 'pan' || spaceHeld) ? 'cursor-grab' : activeTool === 'ruler' ? 'cursor-crosshair' : activeTool !== 'select' ? 'cursor-crosshair' : 'cursor-default'"
       :style="isPanning ? 'cursor:grabbing' : ''"
       @mousedown="onContainerMouseDown"
       @mousemove="onContainerMouseMove"
@@ -89,7 +92,7 @@
           </g>
 
           <!-- Elements -->
-          <g v-for="el in elements" :key="el.id" :transform="getTransform(el)" @mousedown.stop="onNodeMouseDown(el.id, $event)">
+          <g v-for="el in elements" :key="el.id" :transform="getTransform(el)" @mousedown.stop="onNodeMouseDown(el.id, $event)" @dblclick.stop="onNodeDblClick(el.id)" @mouseenter="hoveredId = el.id" @mouseleave="hoveredId = null">
             <!-- Highlight when selected -->
             <rect v-if="selectedIds.has(el.id) && el.type !== 'line' && el.type !== 'channel'"
                   :x="getBounds(el).x" :y="getBounds(el).y" :width="getBounds(el).w" :height="getBounds(el).h"
@@ -143,9 +146,23 @@
               <line :x1="el.x" :y1="el.y + (el.h || 28) / 2" :x2="el.x + (el.w || 160)" :y2="el.y + (el.h || 28) / 2"
                     :stroke="selectedIds.has(el.id) ? '#f59e0b' : '#10b981'" stroke-width="5" stroke-linecap="round" />
               <!-- Name label -->
-              <text :x="el.x + 6" :y="el.y + 10" fill="#6ee7b7" font-size="9" font-weight="600" dominant-baseline="auto">{{ barForEl(el)?.name || el.barName || 'Stange' }}</text>
-              <!-- Fixture count -->
-              <text :x="el.x + 6" :y="el.y + 22" fill="#6b7280" font-size="8" dominant-baseline="auto">{{ fixturesLabel(el) }}</text>
+              <text :x="el.x + 4" :y="el.y - 3" fill="#6ee7b7" font-size="9" font-weight="600" dominant-baseline="auto">{{ barForEl(el)?.name || el.barName || 'Stange' }}</text>
+              <!-- Fixture pins -->
+              <g v-for="fx in (barForEl(el)?.fixtures ?? [])" :key="fx.channel_id">
+                <circle
+                  :cx="el.x + fixtureXOffset(fx.position, barForEl(el)?.length_cm, el.w || 160)"
+                  :cy="el.y + (el.h || 28) / 2"
+                  r="10"
+                  fill="#dc3740"
+                  stroke="rgba(220,55,64,0.4)"
+                  stroke-width="3"
+                />
+                <text
+                  :x="el.x + fixtureXOffset(fx.position, barForEl(el)?.length_cm, el.w || 160)"
+                  :y="el.y + (el.h || 28) / 2"
+                  fill="white" font-size="8" font-weight="700" text-anchor="middle" dominant-baseline="central"
+                >{{ channelNrById(fx.channel_id) }}</text>
+              </g>
             </g>
 
             <!-- Channel -->
@@ -153,13 +170,25 @@
               <!-- Selection indicator -->
               <rect v-if="selectedIds.has(el.id)" :x="-pillW(el.channel)/2 - 4" :y="-22" :width="pillW(el.channel) + 8" :height="44" rx="22" fill="none" stroke="#dc3740" stroke-width="2" stroke-dasharray="4,3" />
               <!-- Arrow -->
-              <line :x1="getArrowPoints(el.channel, el.rotation).x1" :y1="getArrowPoints(el.channel, el.rotation).y1" 
-                    :x2="getArrowPoints(el.channel, el.rotation).x2" :y2="getArrowPoints(el.channel, el.rotation).y2" 
+              <line :x1="getArrowPoints(el.channel, el.rotation).x1" :y1="getArrowPoints(el.channel, el.rotation).y1"
+                    :x2="getArrowPoints(el.channel, el.rotation).x2" :y2="getArrowPoints(el.channel, el.rotation).y2"
                     stroke="#dc3740" stroke-width="3" marker-end="url(#arrowhead)" />
               <!-- Pill -->
               <rect :x="-pillW(el.channel)/2" y="-18" :width="pillW(el.channel)" :height="36" rx="18" fill="#dc3740" stroke="#dc3740" stroke-width="2" />
               <!-- Text -->
               <text x="0" y="0" fill="#fff" font-size="18" font-weight="bold" text-anchor="middle" dominant-baseline="central">{{ el.channel }}</text>
+              <!-- Rotation handle at arrow tip -->
+              <circle
+                v-if="hoveredId === el.id || selectedIds.has(el.id)"
+                :cx="getArrowPoints(el.channel, el.rotation).x2"
+                :cy="getArrowPoints(el.channel, el.rotation).y2"
+                r="7"
+                fill="white"
+                stroke="#dc3740"
+                stroke-width="2"
+                cursor="grab"
+                @mousedown.stop="startArrowRotateDrag(el, $event)"
+              />
             </g>
 
             <!-- Resize handle for rect/ellipse -->
@@ -175,6 +204,25 @@
 
           <!-- Lasso Rect -->
           <rect v-if="lassoRect" :x="lassoRect.x" :y="lassoRect.y" :width="lassoRect.w" :height="lassoRect.h" fill="rgba(59,130,246,0.08)" stroke="#3b82f6" stroke-width="1" stroke-dasharray="2,3" />
+
+          <!-- Ruler calibration preview -->
+          <g v-if="activeTool === 'ruler' && rulerPoints.length > 0" style="pointer-events:none;">
+            <circle :cx="rulerPoints[0].x" :cy="rulerPoints[0].y" r="5" fill="#f59e0b" stroke="#fff" stroke-width="1.5" />
+            <line v-if="rulerPoints.length === 2"
+              :x1="rulerPoints[0].x" :y1="rulerPoints[0].y"
+              :x2="rulerPoints[1].x" :y2="rulerPoints[1].y"
+              stroke="#f59e0b" stroke-width="2" stroke-dasharray="6,4" />
+            <circle v-if="rulerPoints.length === 2" :cx="rulerPoints[1].x" :cy="rulerPoints[1].y" r="5" fill="#f59e0b" stroke="#fff" stroke-width="1.5" />
+          </g>
+
+          <!-- Scale bar -->
+          <g v-if="scalePixelsPerMeter > 0" style="pointer-events:none;" :transform="`translate(${-panOffset.x + 16}, ${stageSize.height - panOffset.y - 28})`">
+            <rect x="-4" y="-16" :width="scaleBarWidth + 8" height="28" rx="4" fill="rgba(0,0,0,0.5)" />
+            <text :x="scaleBarWidth / 2" y="-5" fill="white" font-size="9" font-weight="600" text-anchor="middle" dominant-baseline="auto">{{ scaleBarLabel }}</text>
+            <line x1="0" y1="6" :x2="scaleBarWidth" y2="6" stroke="white" stroke-width="2" stroke-linecap="round" />
+            <line x1="0" y1="2" x2="0" y2="10" stroke="white" stroke-width="1.5" />
+            <line :x1="scaleBarWidth" y1="2" :x2="scaleBarWidth" y2="10" stroke="white" stroke-width="1.5" />
+          </g>
 
           <!-- Notes -->
           <g v-for="el in elementsWithNotes" :key="'note-'+el.id" :transform="`translate(${el._noteX}, ${el._noteY})`" style="pointer-events: none;">
@@ -200,40 +248,52 @@
   </div>
 
   <!-- Properties Dialog -->
-  <Dialog :open="selectedIds.size === 1 && !!selectedElement && !isElementDragging" @update:open="val => { if (!val) selectedIds = new Set() }">
-    <DialogContent class="w-80 max-w-sm">
-      <DialogHeader hide-close>
+  <Dialog :open="propertiesOpen && !!selectedElement" @update:open="val => { if (!val) { propertiesOpen = false; selectedIds.value = new Set() } }">
+    <DialogContent class="sm:max-w-lg">
+      <DialogHeader>
         <DialogTitle>
-          {{ selectedElement?.type === 'bar' && barForEl(selectedElement) ? barForEl(selectedElement).name : selectedElement?.type === 'tower' && towerForEl(selectedElement) ? towerForEl(selectedElement).name : (selectedElement ? typeLabel(selectedElement.type) : '') }}
+          <!-- Kanal: Nummer prominent im Titel -->
+          <template v-if="selectedElement?.type === 'channel'">
+            Kanal {{ channelInfo?.channel }}
+          </template>
+          <template v-else>
+            {{ selectedElement?.type === 'bar' && barForEl(selectedElement) ? barForEl(selectedElement).name : selectedElement?.type === 'tower' && towerForEl(selectedElement) ? towerForEl(selectedElement).name : (selectedElement ? typeLabel(selectedElement.type) : '') }}
+          </template>
         </DialogTitle>
-        <template #actions>
-          <Button variant="ghost" size="icon" class="h-7 w-7 shrink-0 text-destructive hover:text-destructive" @click="deleteSelected" title="Löschen">
-            <Trash2 class="size-4" />
-          </Button>
-        </template>
       </DialogHeader>
 
-      <DialogBody v-if="selectedElement" class="text-sm">
+      <DialogBody v-if="selectedElement">
         <!-- Tower info -->
         <template v-if="selectedElement.type === 'tower'">
-          <div v-if="towerForEl(selectedElement)" class="space-y-0.5">
-            <div v-if="towerForEl(selectedElement).stage_area" class="text-sm text-[#b4b4bb]">{{ towerForEl(selectedElement).stage_area }}</div>
-            <div class="text-sm text-[#b4b4bb]">{{ filledSlotsLabel(selectedElement) }}</div>
-          </div>
+          <template v-if="towerForEl(selectedElement)">
+            <div class="flex flex-col gap-1">
+              <div v-if="towerForEl(selectedElement).stage_area" class="text-sm text-muted-foreground">{{ towerForEl(selectedElement).stage_area }}</div>
+              <div class="text-sm text-muted-foreground">{{ filledSlotsLabel(selectedElement) }}</div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <div
+                v-for="slot in (towerForEl(selectedElement).slots ?? []).filter(s => s.channel_id)"
+                :key="slot.id"
+                class="flex items-center justify-center w-10 h-10 rounded-full bg-white text-black font-bold text-sm shrink-0"
+              >
+                {{ props.channels.find(c => c.id === slot.channel_id)?.channel ?? '?' }}
+              </div>
+            </div>
+          </template>
         </template>
 
         <!-- Bar info -->
         <template v-if="selectedElement.type === 'bar'">
           <template v-if="barForEl(selectedElement)">
-            <div class="space-y-0.5">
-              <div v-if="barForEl(selectedElement).zug_nr" class="text-sm text-[#b4b4bb]">Zug {{ barForEl(selectedElement).zug_nr }}</div>
-              <div class="text-sm text-[#b4b4bb]">{{ fixturesLabel(selectedElement) }}</div>
+            <div class="flex flex-col gap-1">
+              <div v-if="barForEl(selectedElement).zug_nr" class="text-sm text-muted-foreground">Zug {{ barForEl(selectedElement).zug_nr }}</div>
+              <div class="text-sm text-muted-foreground">{{ fixturesLabel(selectedElement) }}</div>
             </div>
             <div class="flex flex-wrap gap-2">
               <div
                 v-for="fixture in barForEl(selectedElement).fixtures ?? []"
                 :key="fixture.id"
-                class="flex items-center justify-center w-12 h-12 rounded-full bg-white text-black font-bold text-sm shrink-0"
+                class="flex items-center justify-center w-10 h-10 rounded-full bg-white text-black font-bold text-sm shrink-0"
               >
                 {{ props.channels.find(c => c.id === fixture.channel_id)?.channel ?? '?' }}
               </div>
@@ -243,106 +303,87 @@
 
         <!-- Channel info -->
         <template v-if="selectedElement.type === 'channel'">
-          <div v-if="channelInfo" class="text-xs space-y-0.5 text-muted-foreground border-b border-border pb-3">
-            <div class="font-semibold text-foreground">{{ channelInfo.channel }}</div>
+          <div v-if="channelInfo" class="flex flex-col gap-1 text-sm text-muted-foreground">
             <div v-if="channelInfo.device">{{ channelInfo.device }}</div>
             <div v-if="channelInfo.position">{{ channelInfo.position }}</div>
             <div v-if="channelInfo.address">{{ channelInfo.address }}</div>
-          </div>
-          <div class="flex gap-2">
-            <Button variant="outline" size="sm" class="h-8 text-xs flex-1" @click="jumpToChannel">→ Zum Kanal</Button>
-            <Button variant="outline" size="sm" class="h-8 text-xs flex-1" @click="openReassignPicker">Kanal ändern</Button>
           </div>
         </template>
 
         <!-- Text editing -->
         <template v-if="selectedElement.type === 'text'">
-          <div class="space-y-1.5">
-            <Input v-model="selectedElement.text" type="text" class="h-8 text-xs" placeholder="Text…" @input="emitChange" />
-            <div class="flex items-center gap-1.5">
-              <Input v-model.number="selectedElement.fontSize" type="number" min="6" max="200" class="h-8 w-14 text-xs" @input="emitChange" />
-              <Button size="sm" :variant="selectedElement.fontStyle === 'bold' ? 'default' : 'ghost'" @click="toggleFontStyle(selectedElement)" class="h-8 px-2 text-xs font-bold">B</Button>
-              <input type="color" :value="selectedElement.color || '#9ca3af'" @input="e => { selectedElement.color = e.target.value; emitChange() }" class="w-8 h-8 rounded cursor-pointer bg-transparent border border-border p-0.5" />
+          <div class="flex flex-col gap-2">
+            <Input v-model="selectedElement.text" type="text" placeholder="Text…" @input="emitChange" />
+            <div class="flex items-center gap-2">
+              <Input v-model.number="selectedElement.fontSize" type="number" min="6" max="200" class="w-20" @input="emitChange" />
+              <Button size="sm" :variant="selectedElement.fontStyle === 'bold' ? 'default' : 'ghost'" @click="toggleFontStyle(selectedElement)" class="font-bold">B</Button>
+              <input type="color" :value="selectedElement.color || '#9ca3af'" @input="e => { selectedElement.color = e.target.value; emitChange() }" class="w-9 h-9 rounded-xl cursor-pointer bg-transparent border border-border p-0.5" />
             </div>
           </div>
         </template>
 
         <!-- Stroke/fill (line/rect/ellipse) -->
         <template v-if="['line','rect','ellipse'].includes(selectedElement.type)">
-          <div class="flex items-center gap-2">
-            <input type="color" :value="selectedElement.color || '#6b7280'" @input="e => { selectedElement.color = e.target.value; emitChange() }" class="w-8 h-8 rounded cursor-pointer bg-transparent border border-border p-0.5" />
-            <span class="text-xs text-muted-foreground flex-1">Farbe</span>
-            <Input v-model.number="selectedElement.strokeWidth" type="number" min="1" max="20" class="h-8 w-14 text-xs" @input="emitChange" />
+          <div class="flex items-center gap-3">
+            <input type="color" :value="selectedElement.color || '#6b7280'" @input="e => { selectedElement.color = e.target.value; emitChange() }" class="w-9 h-9 rounded-xl cursor-pointer bg-transparent border border-border p-0.5" />
+            <span class="text-sm text-muted-foreground flex-1">Farbe</span>
+            <Input v-model.number="selectedElement.strokeWidth" type="number" min="1" max="20" class="w-20" @input="emitChange" />
           </div>
-          <div v-if="selectedElement.type !== 'line'" class="flex items-center gap-2">
-            <input type="color" :value="selectedElement.fill === 'transparent' || !selectedElement.fill ? '#000000' : selectedElement.fill" @input="e => { selectedElement.fill = e.target.value; emitChange() }" class="w-8 h-8 rounded cursor-pointer bg-transparent border border-border p-0.5" />
-            <span class="text-xs text-muted-foreground flex-1">Füllung</span>
-            <Button variant="outline" size="sm" @click="toggleFill(selectedElement)" class="h-8 px-2 text-xs">
+          <div v-if="selectedElement.type !== 'line'" class="flex items-center gap-3">
+            <input type="color" :value="selectedElement.fill === 'transparent' || !selectedElement.fill ? '#000000' : selectedElement.fill" @input="e => { selectedElement.fill = e.target.value; emitChange() }" class="w-9 h-9 rounded-xl cursor-pointer bg-transparent border border-border p-0.5" />
+            <span class="text-sm text-muted-foreground flex-1">Füllung</span>
+            <Button variant="outline" size="sm" @click="toggleFill(selectedElement)">
               {{ selectedElement.fill && selectedElement.fill !== 'transparent' ? 'Transparent' : 'Füllen' }}
             </Button>
           </div>
         </template>
 
-        <!-- Rotation (nicht für bar/tower) -->
-        <div v-if="!['bar','tower'].includes(selectedElement.type)" class="flex items-center gap-2">
-          <Slider
-            :model-value="[selectedElement.rotation || 0]"
-            @update:model-value="updateRotation(selectedElement.id, $event[0])"
-            :min="-180" :max="180" :step="1"
-            class="flex-1"
+
+        <!-- Notiz -->
+        <div v-if="selectedElement.type !== 'text'" class="flex flex-col gap-2 pt-2 border-t border-border">
+          <Label>Notiz</Label>
+          <textarea
+            v-model="selectedElement.notes"
+            placeholder="Notiz hinzufügen…"
+            rows="2"
+            class="w-full text-sm text-foreground bg-card border border-input rounded-xl px-4 py-3 resize-none outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-1 focus:ring-ring"
+            @input="emitChange"
           />
-          <span class="text-xs text-muted-foreground w-9 text-right tabular-nums">{{ Math.round(selectedElement.rotation || 0) }}°</span>
         </div>
       </DialogBody>
 
-      <!-- Notiz-Bereich -->
-      <div v-if="selectedElement && selectedElement.type !== 'text'" class="px-6 py-4 bg-[#2c2c30] space-y-2">
-        <p class="text-xs text-[#b4b4bb] uppercase tracking-wide">Notiz</p>
-        <textarea
-          v-model="selectedElement.notes"
-          placeholder="Notiz hinzufügen…"
-          rows="2"
-          class="w-full text-sm text-white bg-transparent resize-none outline-none placeholder:text-[#b4b4bb]/50"
-          @input="emitChange"
-        />
-      </div>
-
-      <DialogFooter v-if="selectedElement">
-        <Button
-          v-if="selectedElement.type === 'bar'"
-          variant="outline"
-          size="sm"
-          class="h-7 text-xs px-3"
-          @click="emit('open-bar', selectedElement.barId)"
-        >Bearbeiten</Button>
-        <Button
-          v-else-if="selectedElement.type === 'tower'"
-          variant="outline"
-          size="sm"
-          class="h-7 text-xs px-3"
-          @click="emit('open-tower', selectedElement.towerId)"
-        >Bearbeiten</Button>
-        <PanelBtn v-else @click="duplicateSelected" title="Duplizieren"><Copy class="size-3" /></PanelBtn>
+      <DialogFooter v-if="selectedElement" class="justify-between">
+        <!-- Links: Löschen -->
+        <Button variant="ghost" class="text-destructive hover:text-destructive hover:bg-destructive/10" @click="deleteSelected">
+          <Trash2 class="size-4" />Löschen
+        </Button>
+        <!-- Rechts: Aktion -->
+        <div class="flex gap-2">
+          <Button v-if="selectedElement.type === 'channel'" variant="outline" @click="jumpToChannel">→ Zum Kanal</Button>
+          <Button v-else-if="selectedElement.type === 'bar'" variant="outline" @click="emit('open-bar', selectedElement.barId)">Bearbeiten</Button>
+          <Button v-else-if="selectedElement.type === 'tower'" variant="outline" @click="emit('open-tower', selectedElement.towerId)">Bearbeiten</Button>
+          <Button v-else variant="outline" @click="duplicateSelected"><Copy class="size-4" />Duplizieren</Button>
+        </div>
       </DialogFooter>
     </DialogContent>
   </Dialog>
 
   <!-- Multi-select Dialog -->
   <Dialog :open="selectedIds.size > 1" @update:open="val => { if (!val) selectedIds = new Set() }">
-    <DialogContent class="w-auto max-w-sm">
+    <DialogContent class="sm:max-w-lg">
       <DialogHeader hide-close>
         <DialogTitle>{{ selectedIds.size }} Elemente ausgewählt</DialogTitle>
       </DialogHeader>
       <DialogFooter>
-        <Button variant="destructive" size="sm" @click="deleteSelected">
-          <Trash2 class="size-3 mr-1.5" />Löschen
+        <Button variant="outline" @click="selectedIds = new Set()">Abbrechen</Button>
+        <Button variant="destructive" @click="deleteSelected">
+          <Trash2 class="size-4" />Löschen
         </Button>
-        <Button variant="ghost" size="sm" @click="selectedIds = new Set()">Abbrechen</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>
 
-    <div class="absolute top-2 left-[60px] z-20 flex items-center gap-2 bg-background/80 backdrop-blur border border-border rounded p-1">
+    <div class="absolute top-2 left-15 z-20 flex items-center gap-2 bg-background/80 backdrop-blur border border-border rounded p-1">
       <Button size="sm" :variant="showGrid ? 'default' : 'ghost'" @click="showGrid = !showGrid" class="h-7 px-2 text-xs" title="Gitter anzeigen (G)">Gitter</Button>
       <Button size="sm" :variant="snapToGrid ? 'default' : 'ghost'" @click="snapToGrid = !snapToGrid" class="h-7 px-2 text-xs" title="Am Gitter einrasten">Einrasten</Button>
     </div>
@@ -350,91 +391,80 @@
 
   <!-- Reassign Dialog -->
   <Dialog :open="!!reassignTargetId" @update:open="val => { if (!val) reassignTargetId = null }">
-    <DialogContent class="w-80 max-h-128 flex flex-col">
+    <DialogContent class="sm:max-w-lg flex flex-col max-h-[80vh]">
       <DialogHeader><DialogTitle>Kanal neu zuweisen</DialogTitle></DialogHeader>
       <DialogBody class="flex-1 overflow-y-auto">
-        <Input v-model="channelSearch" type="text" placeholder="Suchen..." class="w-full h-8" autofocus />
-        <div class="space-y-1 -mx-1">
-          <Button v-for="ch in filteredChannels" :key="ch.channel" variant="ghost" :disabled="usedChannels.includes(ch.channel)" @click="reassignChannel(ch)" class="w-full justify-start px-3 py-1.5 h-auto text-sm" :class="usedChannels.includes(ch.channel) && 'opacity-50'">
-            <div><div class="font-semibold">{{ ch.channel }}</div><div class="text-xs text-muted-foreground">{{ ch.device }}</div></div>
+        <Input v-model="channelSearch" placeholder="Suchen…" autofocus />
+        <div class="flex flex-col gap-1">
+          <Button v-for="ch in filteredChannels" :key="ch.channel" variant="ghost" :disabled="usedChannels.includes(ch.channel)" @click="reassignChannel(ch)" class="w-full justify-start h-auto py-2" :class="usedChannels.includes(ch.channel) && 'opacity-50'">
+            <div class="text-left"><div class="font-semibold">{{ ch.channel }}</div><div class="text-xs text-muted-foreground">{{ ch.device }}</div></div>
           </Button>
         </div>
       </DialogBody>
-      <DialogFooter><Button variant="outline" @click="reassignTargetId = null" class="w-full">Abbrechen</Button></DialogFooter>
+      <DialogFooter><Button variant="outline" @click="reassignTargetId = null">Abbrechen</Button></DialogFooter>
     </DialogContent>
   </Dialog>
 
   <!-- Tower Picker Dialog -->
   <Dialog :open="showTowerPicker" @update:open="val => { if (!val) showTowerPicker = false }">
-    <DialogContent class="w-80 max-h-128 flex flex-col">
+    <DialogContent class="sm:max-w-lg flex flex-col max-h-[80vh]">
       <DialogHeader><DialogTitle>Gassenturm platzieren</DialogTitle></DialogHeader>
       <DialogBody class="flex-1 overflow-y-auto">
-        <div class="space-y-1 -mx-1">
-          <Button
-            v-for="tower in props.towers"
-            :key="tower.id"
-            variant="ghost"
-            :disabled="towerAlreadyPlaced(tower.id)"
-            @click="placeTowerNode(tower)"
-            class="w-full justify-start px-3 py-1.5 h-auto text-sm"
-            :class="towerAlreadyPlaced(tower.id) && 'opacity-40'"
-          >
-            <div>
-              <div class="font-semibold">{{ tower.name }}</div>
-              <div class="text-xs text-muted-foreground">{{ tower.stage_area }}{{ tower.side ? ' · ' + tower.side : '' }}</div>
-            </div>
+        <div class="flex flex-col gap-1">
+          <Button v-for="tower in props.towers" :key="tower.id" variant="ghost" :disabled="towerAlreadyPlaced(tower.id)" @click="placeTowerNode(tower)" class="w-full justify-start h-auto py-2" :class="towerAlreadyPlaced(tower.id) && 'opacity-40'">
+            <div class="text-left"><div class="font-semibold">{{ tower.name }}</div><div class="text-xs text-muted-foreground">{{ tower.stage_area }}{{ tower.side ? ' · ' + tower.side : '' }}</div></div>
           </Button>
-          <div v-if="!props.towers.length" class="text-xs text-muted-foreground px-3 py-4 text-center">
-            Noch keine Gassentürme angelegt
-          </div>
+          <div v-if="!props.towers.length" class="text-sm text-muted-foreground py-4 text-center">Noch keine Gassentürme angelegt</div>
         </div>
       </DialogBody>
-      <DialogFooter><Button variant="outline" @click="showTowerPicker = false" class="w-full">Abbrechen</Button></DialogFooter>
+      <DialogFooter><Button variant="outline" @click="showTowerPicker = false">Abbrechen</Button></DialogFooter>
     </DialogContent>
   </Dialog>
 
   <!-- Bar Picker Dialog -->
   <Dialog :open="showBarPicker" @update:open="val => { if (!val) showBarPicker = false }">
-    <DialogContent class="w-80 max-h-128 flex flex-col">
+    <DialogContent class="sm:max-w-lg flex flex-col max-h-[80vh]">
       <DialogHeader><DialogTitle>Zugstange platzieren</DialogTitle></DialogHeader>
       <DialogBody class="flex-1 overflow-y-auto">
-        <div class="space-y-1 -mx-1">
-          <Button
-            v-for="bar in props.bars"
-            :key="bar.id"
-            variant="ghost"
-            :disabled="barAlreadyPlaced(bar.id)"
-            @click="placeBarNode(bar)"
-            class="w-full justify-start px-3 py-1.5 h-auto text-sm"
-            :class="barAlreadyPlaced(bar.id) && 'opacity-40'"
-          >
-            <div>
-              <div class="font-semibold">{{ bar.name }}</div>
-              <div class="text-xs text-muted-foreground">{{ bar.length_cm }} cm{{ bar.zug_nr ? ' · Zug ' + bar.zug_nr : '' }}</div>
-            </div>
+        <div class="flex flex-col gap-1">
+          <Button v-for="bar in props.bars" :key="bar.id" variant="ghost" :disabled="barAlreadyPlaced(bar.id)" @click="placeBarNode(bar)" class="w-full justify-start h-auto py-2" :class="barAlreadyPlaced(bar.id) && 'opacity-40'">
+            <div class="text-left"><div class="font-semibold">{{ bar.name }}</div><div class="text-xs text-muted-foreground">{{ bar.length_cm }} cm{{ bar.zug_nr ? ' · Zug ' + bar.zug_nr : '' }}</div></div>
           </Button>
-          <div v-if="!props.bars.length" class="text-xs text-muted-foreground px-3 py-4 text-center">
-            Noch keine Zugstangen angelegt
-          </div>
+          <div v-if="!props.bars.length" class="text-sm text-muted-foreground py-4 text-center">Noch keine Zugstangen angelegt</div>
         </div>
       </DialogBody>
-      <DialogFooter><Button variant="outline" @click="showBarPicker = false" class="w-full">Abbrechen</Button></DialogFooter>
+      <DialogFooter><Button variant="outline" @click="showBarPicker = false">Abbrechen</Button></DialogFooter>
+    </DialogContent>
+  </Dialog>
+
+  <!-- Ruler Distance Dialog -->
+  <Dialog :open="showRulerDialog" @update:open="val => { if (!val) cancelRuler() }">
+    <DialogContent class="sm:max-w-sm">
+      <DialogHeader><DialogTitle>Strecke eingeben</DialogTitle></DialogHeader>
+      <DialogBody>
+        <p class="text-sm text-muted-foreground mb-3">Wie lang ist die markierte Strecke in Metern?</p>
+        <Input v-model="rulerDistanceInput" type="text" inputmode="decimal" placeholder="z. B. 6" autofocus @keydown.enter="commitRuler" />
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="outline" @click="cancelRuler">Abbrechen</Button>
+        <Button @click="commitRuler">Übernehmen</Button>
+      </DialogFooter>
     </DialogContent>
   </Dialog>
 
   <!-- Channel Picker Dialog -->
   <Dialog :open="showChannelPicker" @update:open="val => { if (!val) showChannelPicker = false }">
-    <DialogContent class="w-80 max-h-128 flex flex-col">
+    <DialogContent class="sm:max-w-lg flex flex-col max-h-[80vh]">
       <DialogHeader><DialogTitle>Kanal wählen</DialogTitle></DialogHeader>
       <DialogBody class="flex-1 overflow-y-auto">
-        <Input v-model="channelSearch" type="text" placeholder="Suchen..." class="w-full h-8" autofocus />
-        <div class="space-y-1 -mx-1">
-          <Button v-for="ch in filteredChannels" :key="ch.channel" variant="ghost" :disabled="usedChannels.includes(ch.channel)" @click="placeChannelCircle(ch)" class="w-full justify-start px-3 py-1.5 h-auto text-sm" :class="usedChannels.includes(ch.channel) && 'opacity-50'">
-            <div><div class="font-semibold">{{ ch.channel }}</div><div class="text-xs text-muted-foreground">{{ ch.device }}</div></div>
+        <Input v-model="channelSearch" placeholder="Suchen…" autofocus />
+        <div class="flex flex-col gap-1">
+          <Button v-for="ch in filteredChannels" :key="ch.channel" variant="ghost" :disabled="usedChannels.includes(ch.channel)" @click="placeChannelCircle(ch)" class="w-full justify-start h-auto py-2" :class="usedChannels.includes(ch.channel) && 'opacity-50'">
+            <div class="text-left"><div class="font-semibold">{{ ch.channel }}</div><div class="text-xs text-muted-foreground">{{ ch.device }}</div></div>
           </Button>
         </div>
       </DialogBody>
-      <DialogFooter><Button variant="outline" @click="showChannelPicker = false" class="w-full">Abbrechen</Button></DialogFooter>
+      <DialogFooter><Button variant="outline" @click="showChannelPicker = false">Abbrechen</Button></DialogFooter>
     </DialogContent>
   </Dialog>
 </template>
@@ -444,13 +474,14 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { uuid } from '../utils/uuid.js'
 import {
   Copy, MousePointer2, Hand, Minus, Square, Circle, Type, CircleDot,
-  Upload, ImageOff, Download, Undo2, Redo2, Trash2, Layers, AlignJustify
+  Upload, ImageOff, Download, Undo2, Redo2, Trash2, Layers, AlignJustify, Ruler
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Slider } from '@/components/ui/slider'
 import { Separator } from '@/components/ui/separator'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
 
 import ToolBtn from '@/components/ui/ToolBtn.vue'
 import PanelBtn from '@/components/ui/PanelBtn.vue'
@@ -546,6 +577,29 @@ const filteredChannels = computed(() => {
 
 const isElementDragging = ref(false)
 const isResizing = ref(false)
+const isArrowRotating = ref(false)
+const hoveredId = ref(null)
+const propertiesOpen = ref(false)
+
+const rulerPoints = ref([])
+const scalePixelsPerMeter = ref(0)
+const showRulerDialog = ref(false)
+const rulerDistanceInput = ref('')
+
+const scaleBarWidth = computed(() => {
+  if (scalePixelsPerMeter.value <= 0) return 0
+  const candidates = [0.25, 0.5, 1, 2, 5, 10, 20, 50]
+  const target = 80 / scalePixelsPerMeter.value
+  const m = candidates.reduce((a, b) => Math.abs(a - target) < Math.abs(b - target) ? a : b)
+  return m * scalePixelsPerMeter.value
+})
+const scaleBarLabel = computed(() => {
+  if (scalePixelsPerMeter.value <= 0) return ''
+  const candidates = [0.25, 0.5, 1, 2, 5, 10, 20, 50]
+  const target = 80 / scalePixelsPerMeter.value
+  const m = candidates.reduce((a, b) => Math.abs(a - target) < Math.abs(b - target) ? a : b)
+  return m >= 1 ? `${m} m` : `${Math.round(m * 100)} cm`
+})
 
 
 function towerForEl(el) { return props.towers.find(t => t.id === el.towerId) ?? null }
@@ -560,6 +614,13 @@ function fixturesLabel(el) {
   const b = barForEl(el)
   if (!b) return ''
   return `${(b.fixtures ?? []).length} Scheinwerfer`
+}
+function fixtureXOffset(positionCm, lengthCm, widthPx) {
+  const len = lengthCm || 600
+  return ((positionCm + len / 2) / len) * widthPx
+}
+function channelNrById(channelId) {
+  return props.channels.find(c => c.id === channelId)?.channel ?? '?'
 }
 function pillW(_channel) { return 62 }
 function typeLabel(type) { return { line: 'Linie', rect: 'Rechteck', ellipse: 'Ellipse', text: 'Text', channel: 'Kanal', tower: 'Gassenturm', bar: 'Zugstange' }[type] || type }
@@ -681,14 +742,21 @@ function onNodeMouseDown(id, e) {
     selectedIds.value = s
   } else if (!selectedIds.value.has(id)) {
     selectedIds.value = new Set([id])
+    propertiesOpen.value = false
   }
-  
+
   isElementDragging.value = true
   const pos = getPointerPos(e)
   drawStart.value = pos
-  
+
   // Save initial state for dragging
   clipboard.value = [...selectedIds.value].map(sid => JSON.parse(JSON.stringify(elements.value.find(x => x.id === sid))))
+}
+
+function onNodeDblClick(id) {
+  if (activeTool.value !== 'select') return
+  selectedIds.value = new Set([id])
+  propertiesOpen.value = true
 }
 
 let resizeObj = null
@@ -800,6 +868,8 @@ function onContainerMouseUp(e) {
   }
   if (isElementDragging.value) {
     isElementDragging.value = false
+    const upPos = getPointerPos(e)
+    const dragDist = drawStart.value ? Math.hypot(upPos.x - drawStart.value.x, upPos.y - drawStart.value.y) : 999
     elements.value.forEach(el => {
       if(!selectedIds.value.has(el.id)) return
       if(el.type === 'line'){ el.x1=snap(el.x1); el.y1=snap(el.y1); el.x2=snap(el.x2); el.y2=snap(el.y2) }
@@ -807,6 +877,18 @@ function onContainerMouseUp(e) {
     })
     drawStart.value = null
     emitChange()
+    if (dragDist < 5 && selectedIds.value.size === 1) propertiesOpen.value = true
+    return
+  }
+
+  if (activeTool.value === 'ruler') {
+    const pos = getPointerPos(e)
+    rulerPoints.value = [...rulerPoints.value, { x: pos.x, y: pos.y }]
+    if (rulerPoints.value.length === 2) {
+      rulerDistanceInput.value = ''
+      showRulerDialog.value = true
+    }
+    drawStart.value = null
     return
   }
 
@@ -919,12 +1001,45 @@ function openBarPlacer() {
 function barAlreadyPlaced(barId) {
   return elements.value.some(e => e.type === 'bar' && e.barId === barId)
 }
+function barWidthPx(lengthCm) {
+  if (scalePixelsPerMeter.value > 0) return Math.round((lengthCm / 100) * scalePixelsPerMeter.value)
+  return Math.min(Math.max(Math.round(lengthCm / 4), 80), 400)
+}
 function placeBarNode(bar) {
-  const barW = Math.min(Math.max(Math.round((bar.length_cm || 600) / 4), 80), 400)
-  addElement({ id: uuid(), type: 'bar', x: snap(barPickerPos.value.x), y: snap(barPickerPos.value.y), w: barW, h: 28, barId: bar.id, barName: bar.name, rotation: 0 })
+  const w = barWidthPx(bar.length_cm || 600)
+  addElement({ id: uuid(), type: 'bar', x: snap(barPickerPos.value.x - w / 2), y: snap(barPickerPos.value.y), w, h: 28, barId: bar.id, barName: bar.name, rotation: 0 })
   showBarPicker.value = false
   activeTool.value = 'select'
   emitChange()
+}
+
+function commitRuler() {
+  const normalized = rulerDistanceInput.value.replace(',', '.')
+  const meters = parseFloat(normalized)
+  if (!isNaN(meters) && meters > 0 && rulerPoints.value.length === 2) {
+    const dx = rulerPoints.value[1].x - rulerPoints.value[0].x
+    const dy = rulerPoints.value[1].y - rulerPoints.value[0].y
+    scalePixelsPerMeter.value = Math.sqrt(dx * dx + dy * dy) / meters
+    // Alle platzierten Bars auf neuen Maßstab anpassen, Mitte beibehalten
+    elements.value.forEach(el => {
+      if (el.type !== 'bar') return
+      const bar = props.bars.find(b => b.id === el.barId)
+      if (!bar) return
+      const oldW = el.w || 160
+      const newW = barWidthPx(bar.length_cm || 600)
+      el.x = Math.round(el.x + oldW / 2 - newW / 2)
+      el.w = newW
+    })
+    emitChange()
+  }
+  rulerPoints.value = []
+  showRulerDialog.value = false
+  activeTool.value = 'select'
+}
+function cancelRuler() {
+  rulerPoints.value = []
+  showRulerDialog.value = false
+  activeTool.value = 'select'
 }
 
 function placeChannelCircle(ch) {
@@ -943,10 +1058,62 @@ function reassignChannel(ch) {
   reassignTargetId.value = null
 }
 function updateRotation(id, deg) { const el = elements.value.find(e => e.id === id); if (el) { el.rotation = deg; emitChange() } }
+
+function startRotationDrag(el, event) {
+  event.preventDefault()
+  event.stopPropagation()
+  const rect = event.currentTarget.getBoundingClientRect()
+  const cx = rect.left + rect.width / 2
+  const cy = rect.top + rect.height / 2
+  function onMove(e) {
+    const angle = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI + 90
+    updateRotation(el.id, Math.round(angle))
+  }
+  function onUp() {
+    window.removeEventListener('pointermove', onMove)
+    window.removeEventListener('pointerup', onUp)
+  }
+  window.addEventListener('pointermove', onMove)
+  window.addEventListener('pointerup', onUp)
+}
+
+function startArrowRotateDrag(el, event) {
+  event.preventDefault()
+  event.stopPropagation()
+  isArrowRotating.value = true
+  function onMove(e) {
+    const pos = getPointerPos(e)
+    const angle = Math.atan2(pos.y - el.y, pos.x - el.x) * 180 / Math.PI
+    updateRotation(el.id, Math.round(angle))
+  }
+  function onUp() {
+    isArrowRotating.value = false
+    window.removeEventListener('mousemove', onMove)
+    window.removeEventListener('mouseup', onUp)
+  }
+  window.addEventListener('mousemove', onMove)
+  window.addEventListener('mouseup', onUp)
+}
+
 function toggleFontStyle(el) { el.fontStyle = el.fontStyle === 'bold' ? 'normal' : 'bold'; emitChange() }
 function toggleFill(el) { el.fill = (el.fill && el.fill !== 'transparent') ? 'transparent' : '#ffffff'; emitChange() }
-function exportData() { return JSON.stringify(elements.value) }
-function parseData(str) { if (!str) return; try { elements.value = JSON.parse(str) } catch {} }
+function exportData() {
+  const data = { elements: elements.value }
+  if (scalePixelsPerMeter.value > 0) data._scale = scalePixelsPerMeter.value
+  return JSON.stringify(data)
+}
+function parseData(str) {
+  if (!str) return
+  try {
+    const parsed = JSON.parse(str)
+    if (Array.isArray(parsed)) {
+      elements.value = parsed
+    } else {
+      elements.value = parsed.elements ?? []
+      scalePixelsPerMeter.value = parsed._scale ?? 0
+    }
+  } catch {}
+}
 
 function pushHistory() {
   const snap = exportData()
@@ -1057,6 +1224,23 @@ onUnmounted(() => {
 watch(() => props.initialCanvasData, (newVal) => {
   parseData(newVal); history.value = [exportData()]; historyIndex.value = 0
 }, { immediate: true })
+
+watch(() => props.bars, (newBars) => {
+  if (!scalePixelsPerMeter.value) return
+  let changed = false
+  elements.value.forEach(el => {
+    if (el.type !== 'bar') return
+    const bar = newBars.find(b => b.id === el.barId)
+    if (!bar) return
+    const newW = barWidthPx(bar.length_cm || 600)
+    if (el.w !== newW) {
+      el.x = Math.round(el.x + (el.w || 160) / 2 - newW / 2)
+      el.w = newW
+      changed = true
+    }
+  })
+  if (changed) emitChange()
+}, { deep: true })
 </script>
 
 <style scoped>

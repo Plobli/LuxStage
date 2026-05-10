@@ -1,11 +1,26 @@
 <template>
   <div class="sticky top-0 z-40 flex flex-col border-b border-border bg-background">
-    <!-- Erste Zeile: Back, Tabs, Menu/Actions -->
+    <!-- Erste Zeile: Titel, Datum, Tabs, Menu/Actions -->
     <div class="flex h-16 shrink-0 items-center gap-x-4 px-4 sm:px-6 lg:px-8">
-      <Button variant="ghost" size="icon" class="text-muted-foreground hover:text-foreground shrink-0" @click="emit('back')">
-        <span class="sr-only">{{ labels.back }}</span>
-        <ArrowLeft class="size-5" />
-      </Button>
+      <!-- Titel + Datum -->
+      <div class="flex items-baseline gap-x-2 shrink-0 min-w-0">
+        <h1
+          v-if="!editingName"
+          class="text-xl font-semibold text-foreground truncate max-w-50 cursor-text hover:text-foreground/70 transition-colors"
+          @click="startEditName"
+        >{{ showName }}</h1>
+        <input
+          v-else
+          ref="nameInput"
+          :value="editName"
+          @input="editName = $event.target.value"
+          @blur="commitName"
+          @keydown.enter.prevent="commitName"
+          @keydown.esc.prevent="cancelName"
+          class="text-xl font-semibold text-foreground bg-transparent border-b border-accent outline-none max-w-50 min-w-20"
+        />
+        <span class="text-xs text-muted-foreground shrink-0">{{ showDate }}</span>
+      </div>
       <Separator orientation="vertical" class="h-6" />
 
       <!-- Tab-Switcher: wächst automatisch, wird kompakt auf Mobile -->
@@ -102,11 +117,10 @@
       </div>
     </div>
 
-    <!-- Zweite Zeile: Info/Metadata (Mobile und Desktop) -->
+    <!-- Zweite Zeile: SubNav-Slot + Undo/Redo/Suchen -->
     <div class="flex h-10 items-center gap-x-3 px-4 sm:px-6 lg:px-8 bg-muted/50 border-t border-border/50">
-      <!-- Title + Date -->
-      <h1 class="text-xs sm:text-sm font-semibold text-foreground truncate">{{ showName }}</h1>
-      <span class="text-xs text-muted-foreground shrink-0">{{ showDate }}</span>
+      <!-- SubNav-Slot (z.B. Aufbau-Tabs) -->
+      <slot name="subnav" />
 
       <!-- Spacer -->
       <div class="flex-1" />
@@ -206,8 +220,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { Search, Undo2, Redo2, ArrowLeft, ChevronDown, AlertTriangle, MoreVertical } from 'lucide-vue-next'
+import { ref, computed, nextTick } from 'vue'
+import { Search, Undo2, Redo2, ChevronDown, AlertTriangle, MoreVertical } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -257,7 +271,7 @@ const props = defineProps({
 const emit = defineEmits([
   'update:modelValue',  // tab change
   'update:search',
-  'back',
+  'update:showName',
   'undo',
   'redo',
   'openHistory',
@@ -269,6 +283,30 @@ const emit = defineEmits([
 
 const eosFileInput = ref(null)
 const csvImportInput = ref(null)
+
+const editingName = ref(false)
+const editName = ref('')
+const nameInput = ref(null)
+
+async function startEditName() {
+  editName.value = props.showName
+  editingName.value = true
+  await nextTick()
+  nameInput.value?.focus()
+  nameInput.value?.select()
+}
+
+function commitName() {
+  const trimmed = editName.value.trim()
+  if (trimmed && trimmed !== props.showName) {
+    emit('update:showName', trimmed)
+  }
+  editingName.value = false
+}
+
+function cancelName() {
+  editingName.value = false
+}
 
 const colorMap = ['#3b82f6', '#a855f7', '#22c55e', '#f97316', '#ec4899', '#14b8a6', '#6366f1', '#06b6d4']
 

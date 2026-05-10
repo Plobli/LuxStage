@@ -71,23 +71,23 @@
 
     <!-- Neue Show: Dialog -->
     <Dialog :open="drawerOpen" @update:open="drawerOpen = $event">
-      <DialogContent class="sm:max-w-md">
+      <DialogContent class="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{{ t('show.new') }}</DialogTitle>
         </DialogHeader>
         <DialogBody>
-          <div class="space-y-2">
+          <div>
             <Label for="showName">{{ t('show.name') }}</Label>
-            <Input id="showName" v-model="form.name" type="text" required />
+            <Input size="lg" id="showName" v-model="form.name" type="text" required />
           </div>
-          <div class="space-y-2">
+          <div>
             <Label for="showDate">{{ t('show.date') }}</Label>
-            <Input id="showDate" v-model="form.datum" type="date" />
+            <Input size="lg" id="showDate" v-model="form.datum" type="date" />
           </div>
-          <div class="space-y-2">
+          <div>
             <Label for="showTemplate">{{ t('show.template') }}</Label>
             <Select id="showTemplate" v-model="form.template">
-              <SelectTrigger class="w-full">
+              <SelectTrigger size="lg" class="w-full">
                 <SelectValue :placeholder="t('show.template.none')" />
               </SelectTrigger>
               <SelectContent>
@@ -112,18 +112,18 @@
     </Dialog>
     <!-- Bühnen-Template zuweisen: Dialog -->
     <Dialog :open="assignDialogOpen" @update:open="assignDialogOpen = $event">
-      <DialogContent class="sm:max-w-sm">
+      <DialogContent class="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{{ t('show.assign_template') }}</DialogTitle>
         </DialogHeader>
         <DialogBody>
           <p v-if="assignShow" class="text-sm text-muted-foreground">{{ assignShow.name || assignShow.id }}</p>
           <Select v-model="assignTemplate">
-            <SelectTrigger class="w-full">
+            <SelectTrigger size="lg" class="w-full">
               <SelectValue :placeholder="t('show.template.none')" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">{{ t('show.template.none') }}</SelectItem>
+              <SelectItem value="__none__">{{ t('show.template.none') }}</SelectItem>
               <SelectItem v-for="tpl in templates" :key="tpl.name" :value="tpl.name">
                 {{ templateDisplayName(tpl.name) }}
               </SelectItem>

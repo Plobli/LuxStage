@@ -112,28 +112,28 @@
 
   <!-- Tower Dialog -->
   <Dialog :open="towerDialogOpen" @update:open="towerDialogOpen = $event">
-    <DialogContent class="sm:max-w-md">
+    <DialogContent class="sm:max-w-lg">
       <DialogHeader>
         <DialogTitle>{{ editingTower ? 'Gassenturm bearbeiten' : 'Neuer Gassenturm' }}</DialogTitle>
       </DialogHeader>
       <DialogBody>
         <div class="flex flex-col gap-1.5">
           <label class="text-xs text-muted-foreground">Name</label>
-          <Input v-model="towerForm.name" placeholder="z. B. Gassenturm 1" autofocus />
+          <Input size="lg" v-model="towerForm.name" placeholder="z. B. Gassenturm 1" autofocus />
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div class="flex flex-col gap-1.5">
             <label class="text-xs text-muted-foreground">Bühnenbereich</label>
-            <Input v-model="towerForm.stage_area" placeholder="z. B. Vorbühne Links" />
+            <Input size="lg" v-model="towerForm.stage_area" placeholder="z. B. Vorbühne Links" />
           </div>
           <div class="flex flex-col gap-1.5">
             <label class="text-xs text-muted-foreground">Seite</label>
-            <Input v-model="towerForm.side" placeholder="L / R" class="w-full" />
+            <Input size="lg" v-model="towerForm.side" placeholder="L / R" class="w-full" />
           </div>
         </div>
         <div class="flex flex-col gap-1.5">
           <label class="text-xs text-muted-foreground">Anzahl Slots</label>
-          <Input v-model.number="towerForm.slot_count" type="number" min="1" max="20" />
+          <Input size="lg" v-model.number="towerForm.slot_count" type="number" min="1" max="20" />
         </div>
       </DialogBody>
       <DialogFooter>
@@ -145,12 +145,12 @@
 
   <!-- Slot Channel Picker -->
   <Dialog :open="slotPickerOpen" @update:open="slotPickerOpen = $event">
-    <DialogContent class="sm:max-w-sm">
+    <DialogContent class="sm:max-w-lg">
       <DialogHeader>
         <DialogTitle>Slot {{ pickerSlot?.slot_index }} · Kanal zuweisen</DialogTitle>
       </DialogHeader>
       <DialogBody>
-        <Input v-model="channelPickerSearch" placeholder="Kanalnummer suchen…" autofocus />
+        <Input size="lg" v-model="channelPickerSearch" placeholder="Kanalnummer suchen…" autofocus />
         <div class="max-h-64 overflow-y-auto flex flex-col gap-1">
           <button
             v-for="ch in filteredChannelsForPicker"

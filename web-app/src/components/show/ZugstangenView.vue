@@ -119,18 +119,18 @@
 
   <!-- Bar Dialog -->
   <Dialog :open="barDialogOpen" @update:open="barDialogOpen = $event">
-    <DialogContent class="sm:max-w-sm">
+    <DialogContent class="sm:max-w-lg">
       <DialogHeader>
         <DialogTitle>{{ editingBar ? 'Zugstange bearbeiten' : 'Neue Zugstange' }}</DialogTitle>
       </DialogHeader>
       <DialogBody>
         <div class="flex flex-col gap-1.5">
           <label class="text-xs text-muted-foreground">Name</label>
-          <Input v-model="barForm.name" placeholder="z. B. Maschinenzug 1" autofocus />
+          <Input size="lg" v-model="barForm.name" placeholder="z. B. Maschinenzug 1" autofocus />
         </div>
         <div class="flex flex-col gap-1.5">
           <label class="text-xs text-muted-foreground">Länge (cm)</label>
-          <Input v-model.number="barForm.length_cm" type="number" min="50" max="3000" />
+          <Input size="lg" v-model.number="barForm.length_cm" type="number" min="50" max="3000" />
         </div>
       </DialogBody>
       <DialogFooter>
@@ -142,12 +142,12 @@
 
   <!-- Fixture Picker -->
   <Dialog :open="fixturePickerOpen" @update:open="fixturePickerOpen = $event">
-    <DialogContent class="sm:max-w-sm">
+    <DialogContent class="sm:max-w-lg">
       <DialogHeader>
         <DialogTitle>Scheinwerfer hinzufügen</DialogTitle>
       </DialogHeader>
       <DialogBody>
-        <Input v-model="fixtureSearch" placeholder="Kanal suchen…" autofocus />
+        <Input size="lg" v-model="fixtureSearch" placeholder="Kanal suchen…" autofocus />
         <div class="max-h-48 overflow-y-auto flex flex-col gap-1">
           <button
             v-for="ch in filteredChannelsForPicker"
@@ -161,7 +161,7 @@
         </div>
         <div v-if="pickerChannel" class="flex flex-col gap-1.5 border-t border-border pt-3">
           <label class="text-xs text-muted-foreground">Position auf Stange (cm, 0 = Mitte)</label>
-          <Input v-model.number="pickerPosition" type="number" :min="-(pickerBar?.length_cm || 600)/2" :max="(pickerBar?.length_cm || 600)/2" />
+          <Input size="lg" v-model.number="pickerPosition" type="number" :min="-(pickerBar?.length_cm || 600)/2" :max="(pickerBar?.length_cm || 600)/2" />
         </div>
       </DialogBody>
       <DialogFooter>

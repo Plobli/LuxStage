@@ -6,7 +6,7 @@
 
     <!-- Bestätigungsdialog Löschen -->
     <Dialog :open="!!deleteTarget" @update:open="(val) => { if(!val) deleteTarget = null }">
-      <DialogContent class="sm:max-w-md">
+      <DialogContent class="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{{ t('show.delete.confirm.title') }}</DialogTitle>
         </DialogHeader>

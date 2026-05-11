@@ -38,7 +38,7 @@
       <ToolBtn title="Hintergrundbild hochladen" @click="imageUploadInput?.click()">
         <Upload class="w-5 h-5" />
       </ToolBtn>
-      <ToolBtn v-if="bgImage" title="Hintergrundbild entfernen" variant="danger" @click="emit('delete-image')">
+      <ToolBtn v-if="bgImageSrc" title="Hintergrundbild entfernen" variant="danger" @click="emit('delete-image')">
         <ImageOff class="w-5 h-5" />
       </ToolBtn>
       <input ref="imageUploadInput" type="file" accept="image/*" class="hidden" @change="onImageFileSelected" />
@@ -662,24 +662,60 @@ function getArrowPoints(channel, rot) {
 
 function fitToContainer() { panOffset.value = { x: 0, y: 0 } }
 
-watch(() => props.imageUrl, (url) => {
+async function loadBackground(url) {
   if (!url) { bgImage.value = null; bgImageSrc.value = ''; return }
+
+  const isSvg = url.split('?')[0].toLowerCase().endsWith('.svg')
+    || url.startsWith('data:image/svg')
+
+  if (isSvg) {
+    // Fetch SVG text to read viewBox dimensions — naturalWidth/Height is unreliable for SVGs with width="100%"
+    let svgText
+    if (url.startsWith('data:')) {
+      const base64 = url.split(',')[1]
+      svgText = atob(base64)
+    } else {
+      const res = await fetch(url, { cache: 'reload' })
+      svgText = await res.text()
+    }
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(svgText, 'image/svg+xml')
+    const svgEl = doc.querySelector('svg')
+    let w = 0, h = 0
+    const vb = svgEl?.getAttribute('viewBox')
+    if (vb) {
+      const parts = vb.trim().split(/[\s,]+/)
+      w = parseFloat(parts[2]) || 0
+      h = parseFloat(parts[3]) || 0
+    }
+    if (!w || !h) {
+      w = parseFloat(svgEl?.getAttribute('width')) || 1200
+      h = parseFloat(svgEl?.getAttribute('height')) || 800
+    }
+    const MAX = 2000
+    const scale = Math.min(1, MAX / w, MAX / h)
+    stageSize.value = { width: Math.round(w * scale), height: Math.round(h * scale) }
+    bgImage.value = null
+    bgImageSrc.value = url
+    nextTick(fitToContainer)
+    return
+  }
+
+  const blob = await fetch(url, { cache: 'reload' }).then(r => r.blob())
+  const blobUrl = URL.createObjectURL(blob)
   const img = new Image()
-  img.crossOrigin = 'anonymous'
   img.onload = () => {
     const MAX = 2000
     const scale = Math.min(1, MAX / img.naturalWidth, MAX / img.naturalHeight)
     stageSize.value = { width: Math.round(img.naturalWidth * scale), height: Math.round(img.naturalHeight * scale) }
     bgImage.value = img
-    // We create a canvas to get a base64 version so SVG doesn't throw SecurityError on toDataURL
-    const cvs = document.createElement('canvas')
-    cvs.width = img.naturalWidth; cvs.height = img.naturalHeight;
-    cvs.getContext('2d').drawImage(img, 0, 0)
-    bgImageSrc.value = cvs.toDataURL()
+    bgImageSrc.value = blobUrl
     nextTick(fitToContainer)
   }
-  img.src = url
-}, { immediate: true })
+  img.src = blobUrl
+}
+
+watch(() => props.imageUrl, loadBackground, { immediate: true })
 
 const gridLeft = computed(() => -panOffset.value.x)
 const gridTop = computed(() => -panOffset.value.y)

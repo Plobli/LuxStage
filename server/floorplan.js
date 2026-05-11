@@ -73,7 +73,7 @@ export async function serveFloorplanImage(imagePath, res) {
     : ext === 'webp' ? 'image/webp'
     : 'image/jpeg'
   res.setHeader('Content-Type', mime)
-  res.setHeader('Cache-Control', 'public, max-age=86400')
+  res.setHeader('Cache-Control', 'no-cache')
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.end(buffer)
   return true

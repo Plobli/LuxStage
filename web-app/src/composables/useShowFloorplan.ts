@@ -25,7 +25,9 @@ export function useShowFloorplan(showId: string) {
   async function onFloorplanImageUpload(file: File): Promise<void> {
     const result = await uploadShowFloorplanImage(showId, file)
     if (result?.image_url) {
-      floorplan.value = { ...floorplan.value, image_url: result.image_url }
+      floorplan.value = { ...floorplan.value, image_url: null }
+      await new Promise(r => setTimeout(r, 0))
+      floorplan.value = { ...floorplan.value, image_url: result.image_url + '?t=' + Date.now() }
     }
   }
 

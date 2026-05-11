@@ -26,21 +26,22 @@ export function writeTower(slug, data) {
   if (existing) {
     const current = dbContainer.db.prepare('SELECT * FROM towers WHERE id = ?').get(id)
     dbContainer.db.prepare(`
-      UPDATE towers SET name=?, side=?, stage_area=?, slot_count=?, sort_order=? WHERE id=?
+      UPDATE towers SET name=?, side=?, stage_area=?, slot_count=?, sort_order=?, notes=? WHERE id=?
     `).run(
       data.name ?? current.name ?? '',
       data.side ?? current.side ?? '',
       data.stage_area ?? current.stage_area ?? '',
       data.slot_count ?? current.slot_count ?? 4,
       data.sort_order ?? current.sort_order ?? 0,
+      data.notes ?? current.notes ?? '',
       id
     )
   } else {
     const count = dbContainer.db.prepare('SELECT COUNT(*) as n FROM towers WHERE show_id = ?').get(show.id).n
     dbContainer.db.prepare(`
-      INSERT INTO towers (id, show_id, name, side, stage_area, slot_count, sort_order, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(id, show.id, data.name ?? '', data.side ?? '', data.stage_area ?? '', data.slot_count ?? 4, data.sort_order ?? count, now())
+      INSERT INTO towers (id, show_id, name, side, stage_area, slot_count, sort_order, notes, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, show.id, data.name ?? '', data.side ?? '', data.stage_area ?? '', data.slot_count ?? 4, data.sort_order ?? count, data.notes ?? '', now())
   }
   return id
 }
@@ -71,9 +72,9 @@ export function restoreTowers(slug, towers) {
     dbContainer.db.prepare('DELETE FROM towers WHERE show_id = ?').run(show.id)
     for (const tower of towers) {
       dbContainer.db.prepare(`
-        INSERT INTO towers (id, show_id, name, side, stage_area, slot_count, sort_order, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(tower.id, show.id, tower.name ?? '', tower.side ?? '', tower.stage_area ?? '', tower.slot_count ?? 4, tower.sort_order ?? 0, tower.created_at ?? Date.now())
+        INSERT INTO towers (id, show_id, name, side, stage_area, slot_count, sort_order, notes, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(tower.id, show.id, tower.name ?? '', tower.side ?? '', tower.stage_area ?? '', tower.slot_count ?? 4, tower.sort_order ?? 0, tower.notes ?? '', tower.created_at ?? Date.now())
       for (const slot of (tower.slots ?? [])) {
         dbContainer.db.prepare(`
           INSERT INTO tower_slots (id, tower_id, slot_index, channel_id)

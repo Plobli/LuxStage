@@ -123,16 +123,16 @@
             <!-- Tower Node -->
             <g v-else-if="el.type === 'tower'" style="cursor: pointer;" @dblclick.stop="emit('open-tower', el.towerId)">
               <rect :x="el.x" :y="el.y" :width="el.w || 80" :height="el.h || 50" rx="6"
-                    :fill="selectedIds.has(el.id) ? 'rgba(251,191,36,0.12)' : 'rgba(99,102,241,0.12)'"
-                    :stroke="selectedIds.has(el.id) ? '#f59e0b' : '#6366f1'"
+                    :fill="selectedIds.has(el.id) ? 'var(--color-accent)' : 'var(--color-card)'"
+                    :stroke="selectedIds.has(el.id) ? 'var(--color-ring)' : 'var(--color-accent)'"
                     stroke-width="2" />
               <!-- Side badge -->
-              <rect v-if="towerForEl(el)?.side" :x="el.x + (el.w || 80) - 20" :y="el.y + 4" width="16" height="14" rx="3" fill="#6366f1" />
-              <text v-if="towerForEl(el)?.side" :x="el.x + (el.w || 80) - 12" :y="el.y + 14" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle" dominant-baseline="auto">{{ towerForEl(el)?.side }}</text>
+              <rect v-if="towerForEl(el)?.side" :x="el.x + (el.w || 80) - 22" :y="el.y + 5" width="17" height="15" rx="3" fill="var(--color-accent)" />
+              <text v-if="towerForEl(el)?.side" :x="el.x + (el.w || 80) - 13.5" :y="el.y + 12.5" fill="var(--color-accent-foreground)" :font-size="'var(--text-xs)'" font-weight="bold" text-anchor="middle" dominant-baseline="middle">{{ towerForEl(el)?.side }}</text>
               <!-- Name -->
-              <text :x="el.x + 8" :y="el.y + 16" fill="#a5b4fc" font-size="11" font-weight="600" dominant-baseline="auto">{{ towerForEl(el)?.name || el.towerName || 'Turm' }}</text>
+              <text :x="el.x + (el.w || 80) / 2" :y="el.y + (el.h || 50) / 2 - 6" fill="var(--color-foreground)" :font-size="'var(--text-xl)'" font-weight="700" text-anchor="middle" dominant-baseline="middle">{{ towerForEl(el)?.name || el.towerName || 'Turm' }}</text>
               <!-- Slot count -->
-              <text :x="el.x + 8" :y="el.y + 32" fill="#6b7280" font-size="10" dominant-baseline="auto">{{ filledSlotsLabel(el) }}</text>
+              <text :x="el.x + (el.w || 80) / 2" :y="el.y + (el.h || 50) / 2 + 10" fill="var(--color-muted-foreground)" :font-size="'var(--text-xs)'" text-anchor="middle" dominant-baseline="middle">{{ filledSlotsLabel(el) }}</text>
             </g>
 
             <!-- Bar Node -->
@@ -340,7 +340,7 @@
 
 
         <!-- Notiz -->
-        <div v-if="selectedElement.type !== 'text'" class="flex flex-col gap-2 pt-2 border-t border-border">
+        <div v-if="selectedElement.type !== 'text' && selectedElement.type !== 'tower'" class="flex flex-col gap-2 pt-2 border-t border-border">
           <Label>Notiz</Label>
           <textarea
             v-model="selectedElement.notes"

@@ -242,7 +242,7 @@ import {
 } from '@/components/ui/tooltip'
 
 const props = defineProps({
-  modelValue: { type: String, default: 'channels' }, // active tab
+  modelValue: { type: String, default: 'gassenturm' }, // active tab
   showName: { type: String, default: '' },
   showDate: { type: String, default: '' },
   canUndo: { type: Boolean, default: false },

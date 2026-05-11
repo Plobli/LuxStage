@@ -15,6 +15,7 @@ export interface Tower {
   stage_area: string
   slot_count: number
   sort_order: number
+  notes: string
   slots: TowerSlot[]
 }
 

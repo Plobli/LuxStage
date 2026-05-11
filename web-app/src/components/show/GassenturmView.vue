@@ -37,6 +37,24 @@
         <!-- Divider -->
         <div class="h-px bg-border mx-4" />
 
+        <!-- Notiz -->
+        <div v-if="tower.notes || editingNoteId === tower.id" class="px-4 pt-3 pb-1">
+          <textarea
+            :value="tower.notes"
+            placeholder="Notiz…"
+            rows="2"
+            class="w-full text-sm text-foreground/80 bg-transparent border border-border/40 rounded-lg px-3 py-2 resize-none outline-none placeholder:text-muted-foreground/40 focus:border-ring focus:ring-1 focus:ring-ring"
+            @focus="editingNoteId = tower.id"
+            @blur="editingNoteId = null"
+            @change="saveNotes(tower, $event.target.value)"
+          />
+        </div>
+        <button
+          v-else
+          class="mx-4 mt-3 mb-1 text-left text-xs text-muted-foreground/30 hover:text-muted-foreground/60 transition-colors"
+          @click="editingNoteId = tower.id"
+        >+ Notiz</button>
+
         <!-- Slots -->
         <div :key="slotRenderKey" :ref="el => initSortable(el, tower)" class="flex flex-col flex-1">
           <div
@@ -216,6 +234,13 @@ function slotsFor(tower) {
   const slots = [...(tower.slots ?? [])]
   slots.sort((a, b) => a.slot_index - b.slot_index)
   return slots
+}
+
+// Notiz
+const editingNoteId = ref(null)
+
+async function saveNotes(tower, value) {
+  await props.saveTowerFn(tower.id, { notes: value })
 }
 
 // Tower Dialog

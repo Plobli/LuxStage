@@ -389,13 +389,24 @@ const setupSaving = ref(false)
 const historyOpen = ref(false)
 
 const TAB_KEY = `show-tab-${props.id}`
-const mobileTab = ref(sessionStorage.getItem(TAB_KEY) || 'floorplan')
+const SUBTAB_KEY = `show-subtab-${props.id}`
+const TAB_TIME_KEY = `show-tab-time-${props.id}`
+const TAB_TIMEOUT_MS = 2 * 60 * 60 * 1000 // 2 Stunden
+
+const isTimedOut = Date.now() - Number(localStorage.getItem(TAB_TIME_KEY) || 0) > TAB_TIMEOUT_MS
+
+const mobileTab = ref(isTimedOut ? 'gassenturm' : (sessionStorage.getItem(TAB_KEY) || 'gassenturm'))
+if (!localStorage.getItem(TAB_TIME_KEY)) localStorage.setItem(TAB_TIME_KEY, String(Date.now()))
 watch(mobileTab, (tab) => {
   sessionStorage.setItem(TAB_KEY, tab)
-  if (tab === 'floorplan') aufbauTab.value = aufbauSubTabs.value[0]?.key ?? 'gassenturm'
+  localStorage.setItem(TAB_TIME_KEY, String(Date.now()))
+  if (tab === 'floorplan') aufbauTab.value = aufbauSubTabs.value[0]?.key ?? null
 })
 
-const aufbauTab = ref('gassenturm')
+const aufbauTab = ref(isTimedOut ? null : (sessionStorage.getItem(SUBTAB_KEY) || null))
+watch(aufbauTab, (tab) => {
+  if (tab) sessionStorage.setItem(SUBTAB_KEY, tab)
+})
 
 // ── Composables ────────────────────────────────────────────────────────────
 const { photos, loadPhotos } = useShowPhotos(props.id)
@@ -420,7 +431,7 @@ const aufbauSubTabs = computed(() => {
 
 watch(aufbauSubTabs, (tabs) => {
   if (!tabs.find(t => t.key === aufbauTab.value)) {
-    aufbauTab.value = tabs[0]?.key ?? 'gassenturm'
+    aufbauTab.value = tabs[0]?.key ?? null
   }
 })
 

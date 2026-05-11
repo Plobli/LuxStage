@@ -5,6 +5,10 @@ export function fetchTemplateFloorplan(templateId: string): Promise<any> {
   return api.get(`/api/templates/${templateId}/floorplan`)
 }
 
+export function saveTemplateFloorplan(templateId: string, canvasData: any): Promise<any> {
+  return api.put(`/api/templates/${templateId}/floorplan`, { canvas_data: canvasData })
+}
+
 export function deleteTemplateFloorplanImage(templateId: string): Promise<any> {
   return api.delete(`/api/templates/${templateId}/floorplan/image`)
 }

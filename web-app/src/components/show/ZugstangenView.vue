@@ -10,14 +10,23 @@
       <div
         v-for="bar in bars"
         :key="bar.id"
+        draggable="true"
         class="group/row flex flex-col px-6 pt-4 pb-3 border-b border-border/50 hover:bg-white/2 transition-colors"
+        :class="dragOverId === bar.id ? 'bg-white/5 border-l-2 border-l-primary' : draggedId === bar.id ? 'opacity-40' : ''"
+        @dragstart="onBarDragStart(bar.id)"
+        @dragover="onBarDragOver($event, bar.id)"
+        @drop="onBarDrop(bar.id)"
+        @dragend="onBarDragEnd"
       >
         <!-- Obere Zeile: Name + Visualisierung + Aktionen -->
         <div class="flex items-center gap-6">
-          <!-- Name + Länge -->
-          <div class="w-40 shrink-0">
+          <!-- Drag Handle + Name + Länge -->
+          <div class="w-40 shrink-0 flex items-start gap-2">
+            <svg class="size-4 text-muted-foreground/40 mt-0.5 shrink-0 cursor-grab" viewBox="0 0 16 16" fill="currentColor"><circle cx="5.5" cy="4" r="1.2"/><circle cx="10.5" cy="4" r="1.2"/><circle cx="5.5" cy="8" r="1.2"/><circle cx="10.5" cy="8" r="1.2"/><circle cx="5.5" cy="12" r="1.2"/><circle cx="10.5" cy="12" r="1.2"/></svg>
+          <div class="min-w-0">
             <div class="text-sm font-semibold text-foreground tracking-tight truncate">{{ bar.name }}</div>
             <div class="text-xs text-muted-foreground/60 mt-0.5 tabular-nums">{{ bar.length_cm }} cm</div>
+          </div>
           </div>
 
           <!-- Stangen-Visualisierung -->
@@ -175,6 +184,7 @@
 <script setup>
 import { ref, computed, onBeforeUnmount } from 'vue'
 import { Plus, Pencil, Trash2 } from 'lucide-vue-next'
+import { useDragReorder } from '@/composables/useDragReorder'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
@@ -188,9 +198,30 @@ const props = defineProps({
   deleteBarFn: { type: Function, required: true },
   assignFixtureFn: { type: Function, required: true },
   unassignFixtureFn: { type: Function, required: true },
+  reorderBarsFn: { type: Function, default: null },
 })
 
-const emit = defineEmits(['assigned', 'navigate-to-channel'])
+const emit = defineEmits(['assigned', 'navigate-to-channel', 'reordered'])
+
+// Drag & Drop — arbeitet auf einer lokalen Kopie, Prop-Array bleibt readonly
+const localBars = computed(() => props.bars)
+const draggedId = ref(null)
+const dragOverId = ref(null)
+
+function onBarDragStart(id) { draggedId.value = id }
+function onBarDragOver(e, id) { e.preventDefault(); dragOverId.value = id }
+function onBarDrop(targetId) {
+  const arr = [...localBars.value]
+  const from = arr.findIndex(b => b.id === draggedId.value)
+  const to = arr.findIndex(b => b.id === targetId)
+  if (from === -1 || to === -1 || from === to) { draggedId.value = null; dragOverId.value = null; return }
+  const [moved] = arr.splice(from, 1)
+  arr.splice(to, 0, moved)
+  if (props.reorderBarsFn) props.reorderBarsFn(arr.map(b => b.id))
+  emit('reordered', arr)
+  draggedId.value = null; dragOverId.value = null
+}
+function onBarDragEnd() { draggedId.value = null; dragOverId.value = null }
 
 const channelById = computed(() => {
   const map = new Map()

@@ -41,6 +41,16 @@ export function deleteBar(barId) {
   dbContainer.db.prepare('DELETE FROM bars WHERE id = ?').run(barId)
 }
 
+export function reorderBars(slug, orderedIds) {
+  const show = readShow(slug)
+  if (!show) return
+  const update = dbContainer.db.prepare('UPDATE bars SET sort_order = ? WHERE id = ? AND show_id = ?')
+  const tx = dbContainer.db.transaction(() => {
+    orderedIds.forEach((id, i) => update.run(i, id, show.id))
+  })
+  tx()
+}
+
 export function writeBarFixture(barId, channelId, position) {
   const id = randomUUID()
   dbContainer.db.prepare(`

@@ -3,6 +3,7 @@ import { readJsonBody, json } from '../helpers.js'
 import { broadcast } from '../sse.js'
 
 const SHOW_BARS         = /^\/api\/shows\/([^/]+)\/bars$/
+const SHOW_BARS_REORDER = /^\/api\/shows\/([^/]+)\/bars\/reorder$/
 const SHOW_BAR          = /^\/api\/shows\/([^/]+)\/bars\/([^/]+)$/
 const SHOW_BAR_FIXTURE  = /^\/api\/shows\/([^/]+)\/bars\/([^/]+)\/fixtures$/
 const SHOW_BAR_FIX_DEL  = /^\/api\/shows\/([^/]+)\/bars\/([^/]+)\/fixtures\/([^/]+)$/
@@ -19,6 +20,16 @@ export async function barRoutes(req, res, pathname) {
       const barId = db.writeBar(slug, body)
       broadcast(slug, 'bars-updated', {})
       return json(res, 201, { id: barId })
+    }
+  }
+
+  if (m = SHOW_BARS_REORDER.exec(pathname)) {
+    const slug = m[1]
+    if (method === 'PUT') {
+      const body = await readJsonBody(req, res); if (body === null) return
+      db.reorderBars(slug, body.order ?? [])
+      broadcast(slug, 'bars-updated', {})
+      return json(res, 200, { ok: true })
     }
   }
 

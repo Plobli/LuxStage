@@ -47,7 +47,7 @@ export const api = {
 
   /** Synchrone URL mit langlebigem JWT — nur für Inline-Ressourcen (img src, SSE).
    *  Für einmalige Downloads (PDF, Backup) stattdessen downloadUrl() nutzen. */
-  url: (path: string): string => BASE() + path + '?token=' + (getToken() || ''),
+  url: (path: string): string => BASE() + path + (path.includes('?') ? '&' : '?') + 'token=' + (getToken() || ''),
 
   /** Async URL mit kurzlebigem Einmal-Token (60s TTL) für Downloads (PDF, Backup).
    *  Verhindert, dass der langlebige JWT in Server-Logs landet. */

@@ -24,3 +24,7 @@ export async function updateTemplateBar(templateName: string, barId: string, dat
 export async function deleteTemplateBar(templateName: string, barId: string): Promise<void> {
   return api.delete(`/api/templates/${encodeURIComponent(templateName)}/bars/${barId}`)
 }
+
+export async function reorderTemplateBars(templateName: string, order: string[]): Promise<void> {
+  return api.put(`/api/templates/${encodeURIComponent(templateName)}/bars/reorder`, { order })
+}

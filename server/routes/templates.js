@@ -9,6 +9,7 @@ const TPL_LIST        = /^\/api\/templates$/
 const TPL_CHANNELS    = /^\/api\/templates\/([^/]+)\/channels$/
 const TPL_SECTIONS    = /^\/api\/templates\/([^/]+)\/sections$/
 const TPL_BARS        = /^\/api\/templates\/([^/]+)\/bars$/
+const TPL_BARS_REORDER = /^\/api\/templates\/([^/]+)\/bars\/reorder$/
 const TPL_BAR         = /^\/api\/templates\/([^/]+)\/bars\/([^/]+)$/
 const TPL_FP          = /^\/api\/templates\/([^/]+)\/floorplan$/
 const TPL_FP_IMAGE    = /^\/api\/templates\/([^/]+)\/floorplan\/image$/
@@ -39,6 +40,17 @@ export async function templateRoutes(req, res, pathname) {
     if (host.length > 253) return json(res, 400, { error: 'OSC-Host zu lang' })
     db.updateTemplateOscHost(name, host)
     return json(res, 200, { ok: true })
+  }
+
+  if (m = TPL_BARS_REORDER.exec(pathname)) {
+    const templateName = decodeURIComponent(m[1])
+    const tpl = db.getTemplateByName(templateName)
+    if (!tpl) return notFound(res)
+    if (method === 'PUT') {
+      const body = await readJsonBody(req, res); if (body === null) return
+      db.reorderTemplateBars(tpl.id, body.order ?? [])
+      return json(res, 200, { ok: true })
+    }
   }
 
   if (m = TPL_BAR.exec(pathname)) {
@@ -105,12 +117,24 @@ export async function templateRoutes(req, res, pathname) {
   }
 
   if (m = TPL_FP.exec(pathname)) {
+    const templateName = decodeURIComponent(m[1])
+    const tpl = db.getTemplateByName(templateName)
+    if (!tpl) return notFound(res)
+
     if (method === 'GET') {
-      const templateName = decodeURIComponent(m[1])
-      const tpl = db.getTemplateByName(templateName)
-      if (!tpl) return notFound(res)
       const fp = db.getTemplateFloorplan(tpl.id)
-      return json(res, 200, { image_url: fp ? floorplan.floorplanUrl(fp.image_path) : null })
+      return json(res, 200, {
+        image_url: fp?.image_path ? floorplan.floorplanUrl(fp.image_path) : null,
+        canvas_data: fp?.canvas_data ?? null
+      })
+    }
+
+    if (method === 'PUT') {
+      const body = await readJsonBody(req, res)
+      if (body === null) return
+      const raw = typeof body.canvas_data === 'string' ? body.canvas_data : JSON.stringify(body.canvas_data ?? null)
+      db.upsertTemplateFloorplanData(tpl.id, raw)
+      return json(res, 200, { ok: true })
     }
   }
 

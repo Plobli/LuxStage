@@ -22,6 +22,19 @@ export function upsertTemplateFloorplan(templateId, imagePath) {
   }
 }
 
+export function upsertTemplateFloorplanData(templateId, canvasData) {
+  const existing = getTemplateFloorplan(templateId)
+  if (existing) {
+    dbContainer.db.prepare(
+      'UPDATE template_floorplans SET canvas_data = ? WHERE template_id = ?'
+    ).run(canvasData, templateId)
+  } else {
+    dbContainer.db.prepare(
+      'INSERT INTO template_floorplans (id, template_id, canvas_data, created_at) VALUES (?, ?, ?, ?)'
+    ).run(randomUUID(), templateId, canvasData, now())
+  }
+}
+
 export function getShowFloorplan(showId) {
   return dbContainer.db.prepare(
     'SELECT * FROM show_floorplan_layers WHERE show_id = ?'

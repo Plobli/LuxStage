@@ -95,6 +95,7 @@ export async function floorplanRoutes(req, res, pathname) {
       if (!show) return notFound(res)
       const layer = db.getShowFloorplan(show.id)
       let imageUrl = null
+      let canvasData = layer?.canvas_data ?? null
       if (layer?.image_path) {
         imageUrl = floorplanLib.floorplanUrl(layer.image_path)
       } else if (show.template) {
@@ -102,9 +103,10 @@ export async function floorplanRoutes(req, res, pathname) {
         if (tpl) {
           const fp = db.getTemplateFloorplan(tpl.id)
           if (fp?.image_path) imageUrl = floorplanLib.floorplanUrl(fp.image_path)
+          if (!canvasData && fp?.canvas_data) canvasData = fp.canvas_data
         }
       }
-      return json(res, 200, { image_url: imageUrl, canvas_data: layer?.canvas_data ?? null })
+      return json(res, 200, { image_url: imageUrl, canvas_data: canvasData })
     }
     if (method === 'PUT') {
       const show = db.readShow(showId)

@@ -119,7 +119,7 @@
       </div>
 
       <!-- Main Content -->
-      <main class="lg:pl-20 bg-background h-dvh overflow-hidden">
+      <main class="lg:pl-20 bg-background h-dvh overflow-y-auto">
         <!-- Offline-Banner -->
         <Alert v-if="!isOnline" variant="destructive" class="sticky top-0 z-50 rounded-none border-x-0 border-t-0 py-2">
           <AlertTriangle class="size-4" />

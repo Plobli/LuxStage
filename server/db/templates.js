@@ -163,3 +163,11 @@ export function writeTemplateBar(name, data) {
 export function deleteTemplateBar(barId) {
   dbContainer.db.prepare('DELETE FROM template_bars WHERE id = ?').run(barId)
 }
+
+export function reorderTemplateBars(templateId, orderedIds) {
+  const update = dbContainer.db.prepare('UPDATE template_bars SET sort_order = ? WHERE id = ? AND template_id = ?')
+  const tx = dbContainer.db.transaction(() => {
+    orderedIds.forEach((id, i) => update.run(i, id, templateId))
+  })
+  tx()
+}

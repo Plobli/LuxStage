@@ -295,6 +295,12 @@ if (!tplFloorplanTables) {
   `)
 }
 
+// template_floorplans: add canvas_data column if missing
+const tplFloorplanCols = dbContainer.db.prepare("PRAGMA table_info(template_floorplans)").all().map(c => c.name)
+if (!tplFloorplanCols.includes('canvas_data')) {
+  dbContainer.db.exec('ALTER TABLE template_floorplans ADD COLUMN canvas_data TEXT')
+}
+
 // show_floorplan_layers: ensure show_floorplan_layers exists (may have been created without image_path)
 const showFloorplanLayersExists = dbContainer.db.prepare(
   "SELECT name FROM sqlite_master WHERE type='table' AND name='show_floorplan_layers'"

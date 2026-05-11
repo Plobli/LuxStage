@@ -244,6 +244,7 @@
               :deleteBarFn="removeBar"
               :assignFixtureFn="assignFixture"
               :unassignFixtureFn="unassignFixture"
+              :reorderBarsFn="reorderBars"
               @assigned="activeChannelForAssign = null"
             />
           </div>
@@ -461,7 +462,7 @@ const {
 })
 
 const { loadTowers, addTower, saveTower, removeTower, assignSlot } = useShowTowers(props.id, channels, towers)
-const { bars, loadBars, addBar, saveBar, removeBar, assignFixture, unassignFixture } = useShowBars(props.id, channels)
+const { bars, loadBars, addBar, saveBar, removeBar, assignFixture, unassignFixture, reorderBars } = useShowBars(props.id, channels)
 
 const { presence, initPresence, cleanupPresence } = useShowPresence(props.id, {
   onChannels: handleChannelsSse,

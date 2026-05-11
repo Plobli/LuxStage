@@ -156,7 +156,17 @@
             <div v-if="templateBars.length === 0" class="text-sm text-muted-foreground border border-dashed border-border rounded-lg px-4 py-6 text-center">
               Noch keine Zugstangen
             </div>
-            <div v-for="(bar, idx) in templateBars" :key="bar.id" class="flex items-center gap-3 rounded-md border border-border bg-card px-4 py-2.5">
+            <div
+              v-for="(bar, idx) in templateBars" :key="bar.id"
+              draggable="true"
+              class="flex items-center gap-3 rounded-md border bg-card px-4 py-2.5 cursor-grab transition-colors"
+              :class="barDragOverId === bar.id ? 'border-primary bg-primary/5' : barDraggedId === bar.id ? 'opacity-40 border-border' : 'border-border'"
+              @dragstart="onBarDragStart(bar.id)"
+              @dragover="onBarDragOver($event, bar.id)"
+              @drop="onBarDrop(bar.id)"
+              @dragend="onBarDragEnd"
+            >
+              <svg class="size-4 text-muted-foreground shrink-0 cursor-grab" viewBox="0 0 16 16" fill="currentColor"><circle cx="5.5" cy="4" r="1.2"/><circle cx="10.5" cy="4" r="1.2"/><circle cx="5.5" cy="8" r="1.2"/><circle cx="10.5" cy="8" r="1.2"/><circle cx="5.5" cy="12" r="1.2"/><circle cx="10.5" cy="12" r="1.2"/></svg>
               <span class="text-sm font-medium text-foreground flex-1 truncate">{{ bar.name }}</span>
               <span v-if="bar.zug_nr" class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0">{{ bar.zug_nr }}</span>
               <span class="text-xs text-muted-foreground shrink-0">{{ bar.length_cm }} cm</span>
@@ -172,38 +182,24 @@
             </Button>
           </TabsContent>
 
-          <!-- Grundriss-Bild Upload -->
-          <TabsContent value="floorplan" class="mt-0 outline-none max-w-xl space-y-4">
-          <div class="text-sm text-muted-foreground">
-            Lade ein Bild des Bühnengrundrisses hoch. Dieses Bild dient als Hintergrund für den Grundriss-Editor in allen Shows mit diesem Template.
-          </div>
-
-          <!-- Aktuelles Bild -->
-          <div v-if="floorplanImageUrl" class="relative">
-            <img :src="floorplanImageUrl" class="w-full rounded border border-border object-contain max-h-64 bg-muted/10" />
-            <Button
-              variant="destructive" size="sm" class="absolute top-2 right-2"
-              @click="removeFloorplanImage"
-            >Entfernen</Button>
-          </div>
-
-          <div v-else class="border-2 border-dashed border-border rounded-lg p-8 text-center text-muted-foreground text-sm">
-            Noch kein Grundriss-Bild
-          </div>
-
-          <!-- Upload -->
-          <Button variant="secondary" as-child :disabled="floorplanUploading">
-            <label class="cursor-pointer inline-flex items-center gap-2">
-              <Upload class="size-4" />
-              {{ floorplanUploading ? 'Wird hochgeladen…' : 'Bild hochladen' }}
-              <input type="file" accept="image/*" class="sr-only" @change="onFloorplanImageUpload" :disabled="floorplanUploading" />
-            </label>
-          </Button>
-
-          <Alert v-if="floorplanError" variant="destructive">
-            <AlertDescription>{{ floorplanError }}</AlertDescription>
-          </Alert>
-            </TabsContent>
+          <!-- Grundriss-Editor -->
+          <TabsContent value="floorplan" class="mt-0 outline-none">
+            <div class="h-[calc(100vh-16rem)] rounded-lg border border-border overflow-hidden">
+            <FloorplanEditor
+              :image-url="floorplanImageUrl"
+              :initial-canvas-data="floorplanCanvasData"
+              :channels="[]"
+              :towers="[]"
+              :bars="templateBars"
+              @change="onFloorplanChange"
+              @upload-image="(f) => onFloorplanImageUpload({ target: { files: [f] } })"
+              @delete-image="removeFloorplanImage"
+            />
+            </div>
+            <Alert v-if="floorplanError" variant="destructive" class="mt-2">
+              <AlertDescription>{{ floorplanError }}</AlertDescription>
+            </Alert>
+          </TabsContent>
             </Tabs>
             </template> 
     </template>
@@ -355,8 +351,10 @@ import { fetchTemplateSections, saveTemplateSections } from '../api/sections.js'
 import { templateDisplayName } from '../utils/templateName.js'
 import { uuid } from '../utils/uuid.js'
 import ChannelTable from '../components/channel/ChannelTable.vue'
-import { fetchTemplateFloorplan, uploadTemplateFloorplanImage, deleteTemplateFloorplanImage } from '../api/floorplan.js'
-import { fetchTemplateBars, createTemplateBar, updateTemplateBar, deleteTemplateBar } from '../api/templateBars.js'
+import { fetchTemplateFloorplan, saveTemplateFloorplan, uploadTemplateFloorplanImage, deleteTemplateFloorplanImage } from '../api/floorplan.js'
+import FloorplanEditor from '../components/FloorplanEditor.vue'
+import { fetchTemplateBars, createTemplateBar, updateTemplateBar, deleteTemplateBar, reorderTemplateBars } from '../api/templateBars.js'
+import { useDragReorder } from '../composables/useDragReorder'
 import { api } from '../api/client.js'
 
 import { Button } from '@/components/ui/button'
@@ -400,11 +398,16 @@ const activeTab = ref('channels')
 const templateSections = ref([])
 const sectionsSaving = ref(false)
 const floorplanImageUrl = ref(null)
+const floorplanCanvasData = ref(null)
 const floorplanUploading = ref(false)
 const floorplanError = ref('')
 
 // Template-Bars
 const templateBars = ref([])
+const { draggedId: barDraggedId, dragOverId: barDragOverId, onDragStart: onBarDragStart, onDragOver: onBarDragOver, onDrop: onBarDrop, onDragEnd: onBarDragEnd } = useDragReorder(
+  templateBars,
+  (ordered) => reorderTemplateBars(editingName.value, ordered.map(b => b.id)).catch(() => {})
+)
 const tbarDialogOpen = ref(false)
 const editingTbar = ref(null)
 const tbarForm = ref({ name: '', zug_nr: '', length_cm: 600 })
@@ -601,7 +604,13 @@ async function persist() {
 async function loadFloorplan() {
   if (!editingName.value) return
   const data = await fetchTemplateFloorplan(editingName.value).catch(() => null)
-  floorplanImageUrl.value = data?.image_url ? api.url(data.image_url) : null
+  floorplanImageUrl.value = data?.image_url ? api.url(data.image_url) + '&t=' + Date.now() : null
+  floorplanCanvasData.value = data?.canvas_data ?? null
+}
+
+function onFloorplanChange(canvasData) {
+  floorplanCanvasData.value = canvasData
+  saveTemplateFloorplan(editingName.value, canvasData).catch(() => {})
 }
 
 async function onFloorplanImageUpload(e) {

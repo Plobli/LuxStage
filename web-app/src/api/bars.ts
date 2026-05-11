@@ -40,3 +40,7 @@ export async function addBarFixture(showId: string, barId: string, channelId: st
 export async function removeBarFixture(showId: string, barId: string, channelId: string): Promise<void> {
   return api.delete(`/api/shows/${showId}/bars/${barId}/fixtures/${channelId}`)
 }
+
+export async function reorderBars(showId: string, order: string[]): Promise<void> {
+  return api.put(`/api/shows/${showId}/bars/reorder`, { order })
+}

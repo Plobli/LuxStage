@@ -471,6 +471,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { getToken } from '@/api/client'
 import { uuid } from '../utils/uuid.js'
 import {
   Copy, MousePointer2, Hand, Minus, Square, Circle, Type, CircleDot,
@@ -675,7 +676,7 @@ async function loadBackground(url) {
       const base64 = url.split(',')[1]
       svgText = atob(base64)
     } else {
-      const res = await fetch(url, { cache: 'reload' })
+      const res = await fetch(url, { cache: 'reload', headers: { Authorization: 'Bearer ' + (getToken() || '') } })
       svgText = await res.text()
     }
     const parser = new DOMParser()
@@ -701,7 +702,7 @@ async function loadBackground(url) {
     return
   }
 
-  const blob = await fetch(url, { cache: 'reload' }).then(r => r.blob())
+  const blob = await fetch(url, { cache: 'reload', headers: { Authorization: 'Bearer ' + (getToken() || '') } }).then(r => r.blob())
   const blobUrl = URL.createObjectURL(blob)
   const img = new Image()
   img.onload = () => {

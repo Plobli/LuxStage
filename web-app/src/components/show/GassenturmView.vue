@@ -168,7 +168,7 @@
         <DialogTitle>Slot {{ pickerSlot?.slot_index }} · Kanal zuweisen</DialogTitle>
       </DialogHeader>
       <DialogBody>
-        <Input size="lg" v-model="channelPickerSearch" placeholder="Kanalnummer suchen…" autofocus @keydown.enter="pickFirstResult" />
+        <Input ref="pickerInputRef" size="lg" v-model="channelPickerSearch" placeholder="Kanalnummer suchen…" autofocus @keydown.enter="pickFirstResult" />
         <div class="max-h-64 overflow-y-auto flex flex-col gap-1">
           <button
             v-for="(ch, idx) in filteredChannelsForPicker"
@@ -194,7 +194,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onBeforeUnmount, nextTick } from 'vue'
 import { Plus, Pencil, Trash2, X, ChevronsUpDown, GripVertical } from 'lucide-vue-next'
 import Sortable from 'sortablejs'
 import { filterBadgeStyle } from '@/utils/filterColors.js'
@@ -288,6 +288,7 @@ const slotPickerOpen = ref(false)
 const pickerSlot = ref(null)
 const pickerTower = ref(null)
 const channelPickerSearch = ref('')
+const pickerInputRef = ref(null)
 
 const filteredChannelsForPicker = computed(() => {
   const q = channelPickerSearch.value.trim().toLowerCase()
@@ -307,9 +308,24 @@ function openSlotPicker(tower, slot) {
   slotPickerOpen.value = true
 }
 
-function pickFirstResult() {
+async function pickFirstResult() {
   const first = filteredChannelsForPicker.value[0]
-  if (first) pickChannel(first)
+  if (!first || !pickerTower.value) return
+  const slotIndex = pickerSlot.value?.slot_index ?? 0
+  const tower = pickerTower.value
+  props.pushSnapshotFn()
+  props.assignSlotFn(tower.id, slotIndex, first.id)
+  emit('assigned')
+
+  const nextSlot = slotsFor(tower).find(s => s.slot_index === slotIndex + 1)
+  if (nextSlot && !nextSlot.channel_id) {
+    pickerSlot.value = nextSlot
+    channelPickerSearch.value = ''
+    await nextTick()
+    pickerInputRef.value?.$el?.querySelector('input')?.focus()
+  } else {
+    slotPickerOpen.value = false
+  }
 }
 
 function pickChannel(ch) {

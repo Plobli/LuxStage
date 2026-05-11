@@ -168,12 +168,13 @@
         <DialogTitle>Slot {{ pickerSlot?.slot_index }} · Kanal zuweisen</DialogTitle>
       </DialogHeader>
       <DialogBody>
-        <Input size="lg" v-model="channelPickerSearch" placeholder="Kanalnummer suchen…" autofocus />
+        <Input size="lg" v-model="channelPickerSearch" placeholder="Kanalnummer suchen…" autofocus @keydown.enter="pickFirstResult" />
         <div class="max-h-64 overflow-y-auto flex flex-col gap-1">
           <button
-            v-for="ch in filteredChannelsForPicker"
+            v-for="(ch, idx) in filteredChannelsForPicker"
             :key="ch.channel"
-            class="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted/60 text-left transition-colors"
+            class="flex items-center gap-3 px-3 py-2 rounded-md text-left transition-colors"
+            :class="idx === 0 ? 'bg-muted/60' : 'hover:bg-muted/60'"
             @click="pickChannel(ch)"
           >
             <span class="font-mono text-base font-semibold w-12 text-foreground">{{ ch.channel }}</span>
@@ -304,6 +305,11 @@ function openSlotPicker(tower, slot) {
   pickerSlot.value = slot
   channelPickerSearch.value = ''
   slotPickerOpen.value = true
+}
+
+function pickFirstResult() {
+  const first = filteredChannelsForPicker.value[0]
+  if (first) pickChannel(first)
 }
 
 function pickChannel(ch) {

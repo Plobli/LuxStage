@@ -98,6 +98,7 @@
                 @recordFocus="() => {}"
                 @commitFocus="() => {}"
                 @deleteChannel="deleteChannel($event)"
+                @clearChannel="clearChannel($event)"
                 @reorder="detailChannels.splice(0, detailChannels.length, ...$event)"
               />
             </div>
@@ -647,6 +648,12 @@ async function persistSections() {
 
 async function deleteChannel(ch) {
   detailChannels.value = detailChannels.value.filter(c => c.channel !== ch.channel)
+  await persist()
+}
+
+async function clearChannel(ch) {
+  ch.notes = ''
+  ch.color = ''
   await persist()
 }
 

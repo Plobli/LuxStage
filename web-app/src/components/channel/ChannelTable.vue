@@ -88,6 +88,7 @@
             @pushSnapshot="emit('pushSnapshot')"
             @toggleStatus="toggleChannelStatus(item.ch)"
             @delete="emit('deleteChannel', item.ch)"
+            @clear="emit('clearChannel', item.ch)"
             @insertAfter="insertAfter(item.ch)"
             @placeInFloorplan="emit('placeInFloorplan', item.ch)"
             @assignTower="emit('assignTower', item.ch)"
@@ -258,6 +259,7 @@ const emit = defineEmits([
   'commitFocus',
   'pushSnapshot',
   'deleteChannel',
+  'clearChannel',
   'reorder',
   'placeInFloorplan',
   'assignTower',

@@ -103,7 +103,7 @@
             title="Gassenturm-Slot zuweisen"
             @click="emit('assignTower', ch)"
           >
-            <Layers class="size-3.5" />
+            <TowerControl class="size-3.5" />
           </Button>
           <Button
             variant="ghost"
@@ -122,12 +122,27 @@
             variant="ghost"
             size="icon"
             class="no-print size-7 rounded-sm text-muted-foreground opacity-0 transition-all group-hover/row:opacity-100 hover:bg-red-500/10 hover:text-red-400"
-            @click="emit('delete', ch)"
+            @click="deleteDialogOpen = true"
             :title="deleteTitle"
           >
             <X class="size-3.5" />
           </Button>
         </div>
+
+        <!-- Delete confirm dialog -->
+        <AlertDialog :open="deleteDialogOpen" @update:open="val => { if (!val) deleteDialogOpen = false }">
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Was soll passieren?</AlertDialogTitle>
+              <AlertDialogDescription>Zeile löschen entfernt den Kanal vollständig. Leeren entfernt nur Beschreibung und Farbe.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter class="flex-col sm:flex-row gap-2">
+              <AlertDialogCancel @click="deleteDialogOpen = false">Abbrechen</AlertDialogCancel>
+              <Button variant="outline" @click="() => { deleteDialogOpen = false; emit('clear', ch) }">Kanal leeren</Button>
+              <AlertDialogAction class="bg-destructive text-destructive-foreground hover:bg-destructive/90" @click="() => { deleteDialogOpen = false; emit('delete', ch) }">Zeile löschen</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         <!-- Mobile: Compact stacked layout -->
         <div v-if="isMobile" class="flex flex-col gap-0 py-0 px-0 w-full">
@@ -196,9 +211,10 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { GripVertical, X, Layers, MapPin, AlignJustify } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
+import { GripVertical, X, Layers, MapPin, AlignJustify, TowerControl } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import ColorAutocomplete from '../ColorAutocomplete.vue'
 import ChannelTextarea from './ChannelTextarea.vue'
@@ -217,9 +233,11 @@ const props = defineProps({
 
 const emit = defineEmits([
   'change', 'recordFocus', 'commitFocus', 'pushSnapshot',
-  'toggleStatus', 'delete',
+  'toggleStatus', 'delete', 'clear',
   'placeInFloorplan', 'assignTower', 'assignBar',
 ])
+
+const deleteDialogOpen = ref(false)
 
 const isMobile = useIsMobile()
 

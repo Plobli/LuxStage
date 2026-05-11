@@ -360,8 +360,8 @@
         <!-- Rechts: Aktion -->
         <div class="flex gap-2">
           <Button v-if="selectedElement.type === 'channel'" variant="outline" @click="jumpToChannel">→ Zum Kanal</Button>
-          <Button v-else-if="selectedElement.type === 'bar'" variant="outline" @click="emit('open-bar', selectedElement.barId)">Bearbeiten</Button>
-          <Button v-else-if="selectedElement.type === 'tower'" variant="outline" @click="emit('open-tower', selectedElement.towerId)">Bearbeiten</Button>
+          <Button v-else-if="selectedElement.type === 'bar'" variant="outline" @click="() => { propertiesOpen = false; emit('open-bar', selectedElement.barId) }">→ zur Zugstange</Button>
+          <Button v-else-if="selectedElement.type === 'tower'" variant="outline" @click="() => { propertiesOpen = false; emit('open-tower', selectedElement.towerId) }">→ zum Gassenturm</Button>
           <Button v-else variant="outline" @click="duplicateSelected"><Copy class="size-4" />Duplizieren</Button>
         </div>
       </DialogFooter>

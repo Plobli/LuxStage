@@ -174,10 +174,15 @@ export function useShowChannels({
   })
 
   async function deleteChannel(ch: Channel): Promise<void> {
-    const ok = await confirm({ t, titleKey: 'show.channel.delete.confirm', messageParams: { channel: ch.channel }, confirmKey: 'action.delete', cancelKey: 'action.cancel' })
-    if (!ok) return
     pushSnapshot()
     channels.value = channels.value.filter(c => c !== ch)
+    scheduleChannelsSave()
+  }
+
+  function clearChannel(ch: Channel): void {
+    pushSnapshot()
+    ch.notes = ''
+    ch.color = ''
     scheduleChannelsSave()
   }
 
@@ -340,6 +345,7 @@ export function useShowChannels({
     scheduleChannelsSave,
     persistChannels,
     deleteChannel,
+    clearChannel,
     onCsvImportSelected,
     onEosFileSelected,
     resolveEosMergePreview,

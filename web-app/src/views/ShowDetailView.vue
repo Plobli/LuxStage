@@ -120,6 +120,7 @@
               @commitFocus="commitFocus()"
               @pushSnapshot="pushSnapshot()"
               @deleteChannel="deleteChannel($event)"
+              @clearChannel="clearChannel($event)"
               @reorder="channels.splice(0, channels.length, ...$event)"
               @placeInFloorplan="onPlaceInFloorplan($event)"
               @assignTower="onAssignTower($event)"
@@ -439,7 +440,7 @@ const towers = ref([])
 const {
   channels, channelsSaving, search, eosActiveChannels, eosMergePreview,
   dupWarning, dupChannelWarning, dupChannelNrs, groupedChannels,
-  scheduleChannelsSave, persistChannels, deleteChannel,
+  scheduleChannelsSave, persistChannels, deleteChannel, clearChannel,
   onCsvImportSelected, onEosFileSelected, resolveEosMergePreview,
   channelStatus, toggleChannelStatus,
   initSnapshot, recordFocus, commitFocus, pushSnapshot,

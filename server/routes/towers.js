@@ -25,6 +25,8 @@ export async function towerRoutes(req, res, pathname) {
   if (m = SHOW_TOWERS.exec(pathname)) {
     const slug = m[1]
     if (method === 'GET') {
+      const towers = db.readTowers(slug)
+      for (const tower of towers) db.ensureTowerSlots(tower.id, tower.slot_count)
       return json(res, 200, db.readTowers(slug))
     }
     if (method === 'POST') {
@@ -42,7 +44,7 @@ export async function towerRoutes(req, res, pathname) {
     if (method === 'PUT') {
       const body = await readJsonBody(req, res); if (body === null) return
       db.writeTower(slug, { ...body, id: towerId })
-      db.ensureTowerSlots(towerId, body.slot_count ?? 4)
+      if (body.slot_count != null) db.ensureTowerSlots(towerId, body.slot_count)
       broadcast(slug, 'towers-updated', {})
       return json(res, 200, { ok: true })
     }

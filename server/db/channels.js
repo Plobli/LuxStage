@@ -13,23 +13,37 @@ export function readChannels(slug) {
 export function writeChannels(slug, channels, editedBy = null) {
   const show = readShow(slug)
   if (!show) throw new Error(`Show not found: ${slug}`)
-  const insertChannel = dbContainer.db.prepare(`
+
+  const upsert = dbContainer.db.prepare(`
     INSERT INTO channels (id, show_id, channel, address, device, position, color, notes, mount_ref, sort_order)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      channel = excluded.channel, address = excluded.address, device = excluded.device,
+      position = excluded.position, color = excluded.color, notes = excluded.notes,
+      mount_ref = excluded.mount_ref, sort_order = excluded.sort_order
   `)
+
   const tx = dbContainer.db.transaction(() => {
-    dbContainer.db.prepare('DELETE FROM channels WHERE show_id = ?').run(show.id)
+    // Bestehende Kanäle nach Kanalnummer indexieren, um IDs zu erhalten
+    const existing = dbContainer.db.prepare('SELECT id, channel FROM channels WHERE show_id = ?').all(show.id)
+    const idByNumber = new Map(existing.map(r => [r.channel, r.id]))
+    const incomingIds = new Set()
+
     for (let i = 0; i < channels.length; i++) {
       const ch = channels[i]
+      const id = idByNumber.get(ch.channel) ?? (ch.id || randomUUID())
+      incomingIds.add(id)
       const mountRef = ch.mount_ref ? (typeof ch.mount_ref === 'string' ? ch.mount_ref : JSON.stringify(ch.mount_ref)) : null
-      insertChannel.run(
-        randomUUID(), show.id,
-        ch.channel ?? '', ch.address ?? '', ch.device ?? '',
-        ch.position ?? '', ch.color ?? '', ch.notes ?? '',
-        mountRef,
-        i
-      )
+      upsert.run(id, show.id, ch.channel ?? '', ch.address ?? '', ch.device ?? '', ch.position ?? '', ch.color ?? '', ch.notes ?? '', mountRef, i)
     }
+
+    // Kanäle löschen, die nicht mehr in der Liste sind
+    for (const { id } of existing) {
+      if (!incomingIds.has(id)) {
+        dbContainer.db.prepare('DELETE FROM channels WHERE id = ?').run(id)
+      }
+    }
+
     dbContainer.db.prepare('UPDATE shows SET updated_at = ? WHERE id = ?').run(now(), show.id)
     if (editedBy) touchLastEdited(show.id, editedBy)
   })

@@ -61,9 +61,10 @@
             v-for="slot in slotsFor(tower)"
             :key="slot.slot_index"
             :data-slot-index="slot.slot_index"
-            class="flex items-center gap-3 px-4 py-3.5 border-b border-border/60 hover:bg-muted/20 transition-colors"
+            class="flex items-center gap-3 px-4 py-3.5 border-b border-border/60 hover:bg-muted/20 transition-colors cursor-pointer"
+            @click="openSlotPicker(tower, slot)"
           >
-            <div class="flex items-center gap-1 shrink-0">
+            <div class="flex items-center gap-1 shrink-0" @click.stop>
               <GripVertical class="drag-handle size-3.5 text-muted-foreground/50 cursor-grab active:cursor-grabbing" />
               <span class="w-4 text-xs text-muted-foreground/40 font-mono text-right">{{ slot.slot_index }}</span>
             </div>
@@ -92,7 +93,7 @@
                 variant="ghost"
                 size="icon"
                 class="size-6 text-muted-foreground/40 hover:text-destructive"
-                @click="clearSlot(tower.id, slot.slot_index)"
+                @click.stop="clearSlot(tower.id, slot.slot_index)"
               >
                 <X class="size-3" />
               </Button>
@@ -100,7 +101,7 @@
                 variant="ghost"
                 size="icon"
                 class="size-6 text-muted-foreground/40 hover:text-foreground"
-                @click="openSlotPicker(tower, slot)"
+                @click.stop="openSlotPicker(tower, slot)"
               >
                 <ChevronsUpDown class="size-3" />
               </Button>

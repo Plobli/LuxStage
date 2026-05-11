@@ -56,22 +56,18 @@
               </td>
               <td class="py-0 px-0 align-middle border-l border-border/40 h-full">
                 <Input
-                  :value="row.label"
+                  v-model="row.label"
                   :placeholder="labels.fieldLabel"
                   @focus="emit('recordFocus')"
-                  @blur="emit('commitFocus')"
-                  @input="row.label = $event.target.value"
-                  @change="persistKvRows(sec)"
+                  @blur="emit('commitFocus'); persistKvRows(sec)"
                   class="h-full min-h-10 w-full rounded-none border-0 bg-transparent px-3 py-0 text-sm font-medium text-foreground shadow-none placeholder:text-muted-foreground/35 focus-visible:ring-0"
                 />
               </td>
               <td class="py-0 px-0 align-middle border-l border-border/40 h-full">
                 <Input
-                  :value="row.value"
+                  v-model="row.value"
                   @focus="emit('recordFocus')"
-                  @blur="emit('commitFocus')"
-                  @input="row.value = $event.target.value"
-                  @change="persistKvRows(sec)"
+                  @blur="emit('commitFocus'); persistKvRows(sec)"
                   class="h-full min-h-10 w-full rounded-none border-0 bg-transparent px-3 py-0 text-sm text-foreground shadow-none placeholder:text-muted-foreground/30 focus-visible:ring-0"
                 />
               </td>

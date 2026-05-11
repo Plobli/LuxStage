@@ -156,12 +156,13 @@
         <DialogTitle>Scheinwerfer hinzufügen</DialogTitle>
       </DialogHeader>
       <DialogBody>
-        <Input size="lg" v-model="fixtureSearch" placeholder="Kanal suchen…" autofocus />
+        <Input size="lg" v-model="fixtureSearch" placeholder="Kanal suchen…" autofocus @keydown.enter="selectFirstAndConfirm" />
         <div class="max-h-48 overflow-y-auto flex flex-col gap-1">
           <button
-            v-for="ch in filteredChannelsForPicker"
+            v-for="(ch, idx) in filteredChannelsForPicker"
             :key="ch.channel"
-            class="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted/60 text-left transition-colors"
+            class="flex items-center gap-3 px-3 py-2 rounded-md text-left transition-colors"
+            :class="idx === 0 ? 'bg-muted/60' : 'hover:bg-muted/60'"
             @click="pickerChannel = ch; fixtureSearch = ''"
           >
             <span :class="pickerChannel?.id === ch.id ? 'text-accent font-bold' : ''" class="font-mono text-base w-10">{{ ch.channel }}</span>
@@ -262,11 +263,11 @@ function goToChannel(channelId) {
 // Bar Dialog
 const barDialogOpen = ref(false)
 const editingBar = ref(null)
-const barForm = ref({ name: '', zug_nr: '', length_cm: 1000 })
+const barForm = ref({ name: '', zug_nr: '', length_cm: 1100 })
 
 function openNewBarDialog() {
   editingBar.value = null
-  barForm.value = { name: '', zug_nr: '', length_cm: 1000 }
+  barForm.value = { name: '', zug_nr: '', length_cm: 1100 }
   barDialogOpen.value = true
 }
 function openEditBarDialog(bar) {
@@ -331,6 +332,12 @@ function onBarLineClick(event, bar) {
   pickerPosition.value = Math.max(-len / 2, Math.min(len / 2, snapped))
   fixtureSearch.value = ''
   fixturePickerOpen.value = true
+}
+
+function selectFirstAndConfirm() {
+  const first = filteredChannelsForPicker.value[0]
+  if (first) pickerChannel.value = first
+  confirmAddFixture()
 }
 
 async function confirmAddFixture() {

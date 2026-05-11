@@ -122,17 +122,17 @@
 
             <!-- Tower Node -->
             <g v-else-if="el.type === 'tower'" style="cursor: pointer;" @dblclick.stop="emit('open-tower', el.towerId)">
-              <rect :x="el.x" :y="el.y" :width="el.w || 80" :height="el.h || 50" rx="6"
+              <rect :x="el.x" :y="el.y" :width="el.w || 120" :height="el.h || 70" rx="6"
                     :fill="selectedIds.has(el.id) ? 'var(--color-accent)' : 'var(--color-card)'"
                     :stroke="selectedIds.has(el.id) ? 'var(--color-ring)' : 'var(--color-accent)'"
                     stroke-width="2" />
               <!-- Side badge -->
-              <rect v-if="towerForEl(el)?.side" :x="el.x + (el.w || 80) - 22" :y="el.y + 5" width="17" height="15" rx="3" fill="var(--color-accent)" />
-              <text v-if="towerForEl(el)?.side" :x="el.x + (el.w || 80) - 13.5" :y="el.y + 12.5" fill="var(--color-accent-foreground)" :font-size="'var(--text-xs)'" font-weight="bold" text-anchor="middle" dominant-baseline="middle">{{ towerForEl(el)?.side }}</text>
+              <rect v-if="towerForEl(el)?.side" :x="el.x + (el.w || 120) - 22" :y="el.y + 5" width="17" height="15" rx="3" fill="var(--color-accent)" />
+              <text v-if="towerForEl(el)?.side" :x="el.x + (el.w || 120) - 13.5" :y="el.y + 12.5" fill="var(--color-accent-foreground)" :font-size="'var(--text-xs)'" font-weight="bold" text-anchor="middle" dominant-baseline="middle">{{ towerForEl(el)?.side }}</text>
               <!-- Name -->
-              <text :x="el.x + (el.w || 80) / 2" :y="el.y + (el.h || 50) / 2 - 6" fill="var(--color-foreground)" :font-size="'var(--text-xl)'" font-weight="700" text-anchor="middle" dominant-baseline="middle">{{ towerForEl(el)?.name || el.towerName || 'Turm' }}</text>
+              <text :x="el.x + (el.w || 120) / 2" :y="el.y + (el.h || 70) / 2 - 6" fill="var(--color-foreground)" :font-size="'var(--text-xl)'" font-weight="700" text-anchor="middle" dominant-baseline="middle">{{ towerForEl(el)?.name || el.towerName || 'Turm' }}</text>
               <!-- Slot count -->
-              <text :x="el.x + (el.w || 80) / 2" :y="el.y + (el.h || 50) / 2 + 10" fill="var(--color-muted-foreground)" :font-size="'var(--text-xs)'" text-anchor="middle" dominant-baseline="middle">{{ filledSlotsLabel(el) }}</text>
+              <text :x="el.x + (el.w || 120) / 2" :y="el.y + (el.h || 70) / 2 + 10" fill="var(--color-muted-foreground)" :font-size="'var(--text-xs)'" text-anchor="middle" dominant-baseline="middle">{{ filledSlotsLabel(el) }}</text>
             </g>
 
             <!-- Bar Node -->
@@ -152,15 +152,15 @@
                 <circle
                   :cx="el.x + fixtureXOffset(fx.position, barForEl(el)?.length_cm, el.w || 160)"
                   :cy="el.y + (el.h || 28) / 2"
-                  r="10"
+                  r="14"
                   fill="#dc3740"
                   stroke="rgba(220,55,64,0.4)"
-                  stroke-width="3"
+                  stroke-width="4"
                 />
                 <text
                   :x="el.x + fixtureXOffset(fx.position, barForEl(el)?.length_cm, el.w || 160)"
                   :y="el.y + (el.h || 28) / 2"
-                  fill="white" font-size="8" font-weight="700" text-anchor="middle" dominant-baseline="central"
+                  fill="white" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="central"
                 >{{ channelNrById(fx.channel_id) }}</text>
               </g>
             </g>

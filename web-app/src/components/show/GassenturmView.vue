@@ -42,8 +42,9 @@
           <textarea
             :value="tower.notes"
             placeholder="Notiz…"
-            rows="2"
-            class="w-full text-sm text-foreground/80 bg-transparent border border-border/40 rounded-lg px-3 py-2 resize-none outline-none placeholder:text-muted-foreground/40 focus:border-ring focus:ring-1 focus:ring-ring"
+            rows="1"
+            class="w-full text-sm text-foreground/80 bg-transparent border border-border/40 rounded-lg px-3 py-2 resize-none outline-none placeholder:text-muted-foreground/40 focus:border-ring focus:ring-1 focus:ring-ring overflow-hidden"
+            style="field-sizing: content; min-height: 2.25rem;"
             @focus="editingNoteId = tower.id"
             @blur="editingNoteId = null"
             @change="saveNotes(tower, $event.target.value)"
@@ -252,7 +253,7 @@ const emit = defineEmits(['assigned'])
 
 const gridStyle = computed(() => {
   const cols = Math.ceil(props.towers.length / 2) || 1
-  return { gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }
+  return { gridTemplateColumns: `repeat(${cols}, minmax(400px, 1fr))` }
 })
 
 const channelById = computed(() => {

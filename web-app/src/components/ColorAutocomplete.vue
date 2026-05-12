@@ -11,15 +11,27 @@
       @keydown.escape="open = false"
       @keydown="$emit('keydown', $event)"
       :placeholder="placeholder"
-      :style="badgeStyle || {}"
+      :style="isNoColor ? { color: '#b5896a' } : (badgeStyle || {})"
       :class="inputClass"
       class="h-7 w-full rounded-full border border-border/30 px-2 py-0 text-center text-[11px] shadow-none focus-visible:bg-muted/60 focus-visible:border-border/50 focus-visible:ring-0"
       v-bind="inputAttrs"
     />
     <ul
-      v-if="open && filtered.length > 0"
+      v-if="open && (showNcOption || filtered.length > 0)"
       class="absolute left-0 top-full mt-1 z-50 w-72 max-h-48 overflow-y-auto rounded-md bg-popover text-popover-foreground border border-border shadow-xl text-sm"
     >
+      <li
+        v-if="showNcOption"
+        @mousedown.prevent="selectNc"
+        :class="[
+          'flex items-center gap-2 px-3 py-1.5 cursor-pointer border-b border-border/40',
+          activeIdx === -1 ? 'bg-muted' : 'hover:bg-muted/50'
+        ]"
+      >
+        <span class="size-4 rounded-full shrink-0 border border-border/50 bg-muted" />
+        <span class="font-mono text-xs font-semibold" style="color: #b5896a">NC</span>
+        <span class="text-muted-foreground text-xs">No Color</span>
+      </li>
       <li
         v-for="(f, idx) in filtered"
         :key="f.code"
@@ -85,8 +97,14 @@ const displayValue = computed(() => {
   return resolveDisplayCode(props.modelValue)
 })
 
+const isNoColor = computed(() => (props.modelValue || '').trim().toUpperCase() === 'NC')
+const showNcOption = computed(() => {
+  const q = (props.modelValue || '').trim().toUpperCase()
+  return !q || 'NC'.startsWith(q)
+})
 const badgeStyle = computed(() => filterBadgeStyle(props.modelValue))
 const inputClass = computed(() => {
+  if (isNoColor.value) return 'font-semibold bg-muted/35'
   if (!badgeStyle.value) return 'text-muted-foreground placeholder:text-muted-foreground/35 bg-muted/35'
   return 'font-semibold text-current placeholder:text-current/55'
 })
@@ -165,6 +183,12 @@ function onBlur() {
 
 function select(f) {
   emit('update:modelValue', f.code)
+  emit('change')
+  open.value = false
+}
+
+function selectNc() {
+  emit('update:modelValue', 'NC')
   emit('change')
   open.value = false
 }

@@ -280,5 +280,11 @@
   "template.rename": "Rename",
   "template.rename.placeholder": "New name",
   "template.rename.error": "Name already taken.",
-  "show.assign_template": "Assign stage template"
+  "show.assign_template": "Assign stage template",
+  "health.title": "Completeness",
+  "health.complete": "Complete",
+  "health.noNotes": "Channels without note",
+  "health.noDevice": "Channels without device",
+  "health.noPosition": "Channels without position",
+  "health.noAddress": "Channels without address"
 }

@@ -22,6 +22,9 @@
       :presence="presence"
       :dupAddressWarning="dupWarning"
       :dupChannelWarning="dupChannelWarning"
+      :healthStats="healthStats"
+      :healthLabels="healthLabels"
+      :activeHealthFilter="healthFilter"
       :labels="{
         tabChannels: t('tab.channels'),
         tabPhotos: t('tab.photos'),
@@ -48,6 +51,7 @@
       @downloadCsv="downloadChannelsCsv(props.id, channels)"
       @eosFileSelected="onEosFileSelected($event)"
       @csvFileSelected="onCsvImportSelected($event)"
+      @healthFilter="onHealthFilter($event)"
     >
       <template v-if="mobileTab === 'gassenturm'" #subnav>
         <button
@@ -402,7 +406,7 @@ watch(mobileTab, (tab) => {
   sessionStorage.setItem(TAB_KEY, tab)
   localStorage.setItem(TAB_TIME_KEY, String(Date.now()))
   if (tab === 'floorplan') aufbauTab.value = aufbauSubTabs.value[0]?.key ?? null
-  if (tab !== 'channels') search.value = ''
+  if (tab !== 'channels') { search.value = ''; healthFilter.value = null }
 })
 
 const aufbauTab = ref(isTimedOut ? null : (sessionStorage.getItem(SUBTAB_KEY) || null))
@@ -451,7 +455,7 @@ const persistSetupDebounced = useDebounceFn(async () => {
 const towers = ref([])
 
 const {
-  channels, channelsSaving, search, eosActiveChannels, eosMergePreview,
+  channels, channelsSaving, search, healthFilter, eosActiveChannels, eosMergePreview,
   dupWarning, dupChannelWarning, dupChannelNrs, groupedChannels,
   scheduleChannelsSave, persistChannels, deleteChannel, clearChannel,
   onCsvImportSelected, onEosFileSelected, resolveEosMergePreview,
@@ -484,6 +488,32 @@ const { presence, initPresence, cleanupPresence } = useShowPresence(props.id, {
   onTowers: () => loadTowers(),
   onBars: () => loadBars(),
 })
+
+// ── Health Stats ───────────────────────────────────────────────────────────
+const healthStats = computed(() => {
+  const chs = channels.value
+  return {
+    noNotes:    chs.filter(c => !(c.notes ?? '').trim()).length,
+    noDevice:   chs.filter(c => !(c.device ?? '').trim()).length,
+    noPosition: chs.filter(c => !(c.position ?? '').trim()).length,
+    noAddress:  chs.filter(c => !(c.address ?? '').trim()).length,
+  }
+})
+
+const healthLabels = computed(() => ({
+  title:      t('health.title'),
+  complete:   t('health.complete'),
+  noNotes:    t('health.noNotes'),
+  noDevice:   t('health.noDevice'),
+  noPosition: t('health.noPosition'),
+  noAddress:  t('health.noAddress'),
+}))
+
+function onHealthFilter(type) {
+  mobileTab.value = 'channels'
+  search.value = ''
+  healthFilter.value = healthFilter.value === type ? null : type
+}
 
 // ── Editor ─────────────────────────────────────────────────────────────────
 function onSetupChange(md) {

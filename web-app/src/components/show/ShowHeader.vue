@@ -161,6 +161,21 @@
         <AlertTriangle class="size-3 mr-1" />{{ labels.dupChannel }}
       </Badge>
 
+      <!-- Health Badge -->
+      <ShowHealthBadge
+        v-if="healthLabels"
+        :noNotes="healthStats.noNotes"
+        :noDevice="healthStats.noDevice"
+        :noPosition="healthStats.noPosition"
+        :noAddress="healthStats.noAddress"
+        :activeFilter="activeHealthFilter"
+        :labels="healthLabels"
+        @filterNoNotes="emit('healthFilter', 'noNotes')"
+        @filterNoDevice="emit('healthFilter', 'noDevice')"
+        @filterNoPosition="emit('healthFilter', 'noPosition')"
+        @filterNoAddress="emit('healthFilter', 'noAddress')"
+      />
+
       <!-- Undo/Redo -->
       <TooltipProvider class="hidden sm:flex">
         <Tooltip>
@@ -241,6 +256,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import ShowHealthBadge from './ShowHealthBadge.vue'
 
 const props = defineProps({
   modelValue: { type: String, default: 'gassenturm' }, // active tab
@@ -253,6 +269,12 @@ const props = defineProps({
   dupAddressWarning: { type: Boolean, default: false },
   dupChannelWarning: { type: Boolean, default: false },
   search: { type: String, default: '' },
+  healthStats: {
+    type: Object,
+    default: () => ({ noNotes: 0, noDevice: 0, noPosition: 0, noAddress: 0 }),
+  },
+  healthLabels: { type: Object, default: null },
+  activeHealthFilter: { type: String, default: null },
   labels: {
     type: Object,
     default: () => ({
@@ -280,6 +302,7 @@ const emit = defineEmits([
   'downloadCsv',
   'eosFileSelected',
   'csvFileSelected',
+  'healthFilter',
 ])
 
 const eosFileInput = ref(null)

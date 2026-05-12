@@ -54,6 +54,7 @@ export function useShowChannels({
   const channels = ref<Channel[]>([])
   const channelsSaving = ref(false)
   const search = ref('')
+  const healthFilter = ref<'noDevice' | 'noPosition' | 'noAddress' | null>(null)
   
   const eosActiveChannels = ref<string[] | null>(null)
   const eosMergePreview = ref<EosMergePreview>({ open: false, newActive: [], nowGone: [], untouched: [] })
@@ -151,9 +152,16 @@ export function useShowChannels({
 
   const dupChannelWarning = computed(() => dupChannelNrs.value.size > 0)
 
+  const healthFilterFns: Record<string, (ch: Channel) => boolean> = {
+    noDevice:   ch => !(ch.device ?? '').trim(),
+    noPosition: ch => !(ch.position ?? '').trim(),
+    noAddress:  ch => !(ch.address ?? '').trim(),
+  }
+
   const groupedChannels = computed(() => {
     const q = search.value.toLowerCase()
-    let chs = q
+    const hf = healthFilter.value
+    let chs = (q || hf)
       ? [...channels.value].sort((a, b) => parseInt(a.channel) - parseInt(b.channel))
       : [...channels.value]
     if (q) {
@@ -163,6 +171,9 @@ export function useShowChannels({
         ch.notes?.toLowerCase().includes(q) ||
         ch.position?.toLowerCase().includes(q)
       )
+    }
+    if (hf && healthFilterFns[hf]) {
+      chs = chs.filter(healthFilterFns[hf])
     }
     const map = new Map<string, Channel[]>()
     for (const ch of chs) {
@@ -336,6 +347,7 @@ export function useShowChannels({
     channels,
     channelsSaving,
     search,
+    healthFilter,
     eosActiveChannels,
     eosMergePreview,
     dupWarning,

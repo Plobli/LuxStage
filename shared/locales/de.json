@@ -280,5 +280,11 @@
   "ocr.result.title": "Erkannter Inhalt",
   "ocr.result.hint": "Bitte prüfe das Ergebnis vor dem Übernehmen. Der Aufbau-Text wird angehängt. Erkannte Kanäle werden nur befüllt, wenn das Notiz-Feld noch leer ist.",
   "ocr.result.apply": "Übernehmen",
-  "show.assign_template": "Bühnen-Template zuweisen"
+  "show.assign_template": "Bühnen-Template zuweisen",
+  "health.title": "Vollständigkeit",
+  "health.complete": "Vollständig",
+  "health.noNotes": "Kanäle ohne Notiz",
+  "health.noDevice": "Kanäle ohne Gerät",
+  "health.noPosition": "Kanäle ohne Position",
+  "health.noAddress": "Kanäle ohne Adresse"
 }

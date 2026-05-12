@@ -510,6 +510,7 @@ const healthLabels = computed(() => ({
 }))
 
 function onHealthFilter(type) {
+  if (!type) { healthFilter.value = null; return }
   mobileTab.value = 'channels'
   search.value = ''
   healthFilter.value = healthFilter.value === type ? null : type

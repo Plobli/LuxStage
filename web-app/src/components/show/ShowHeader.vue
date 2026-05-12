@@ -174,6 +174,7 @@
         @filterNoDevice="emit('healthFilter', 'noDevice')"
         @filterNoPosition="emit('healthFilter', 'noPosition')"
         @filterNoAddress="emit('healthFilter', 'noAddress')"
+        @clearFilter="emit('healthFilter', null)"
       />
 
       <!-- Undo/Redo -->

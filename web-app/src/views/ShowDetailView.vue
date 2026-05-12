@@ -406,7 +406,7 @@ watch(mobileTab, (tab) => {
   sessionStorage.setItem(TAB_KEY, tab)
   localStorage.setItem(TAB_TIME_KEY, String(Date.now()))
   if (tab === 'floorplan') aufbauTab.value = aufbauSubTabs.value[0]?.key ?? null
-  if (tab !== 'channels') { search.value = ''; healthFilter.value = null }
+  if (tab !== 'channels') { search.value = ''; activateHealthFilter(null) }
 })
 
 const aufbauTab = ref(isTimedOut ? null : (sessionStorage.getItem(SUBTAB_KEY) || null))
@@ -454,7 +454,7 @@ const persistSetupDebounced = useDebounceFn(async () => {
 const towers = ref([])
 
 const {
-  channels, channelsSaving, search, healthFilter, eosActiveChannels, eosMergePreview,
+  channels, channelsSaving, search, healthFilter, activateHealthFilter, eosActiveChannels, eosMergePreview,
   dupWarning, dupChannelWarning, dupChannelNrs, groupedChannels,
   scheduleChannelsSave, persistChannels, deleteChannel, clearChannel,
   onCsvImportSelected, onEosFileSelected, resolveEosMergePreview,
@@ -509,10 +509,10 @@ const healthLabels = computed(() => ({
 }))
 
 function onHealthFilter(type) {
-  if (!type) { healthFilter.value = null; return }
+  if (!type) { activateHealthFilter(null); return }
   mobileTab.value = 'channels'
   search.value = ''
-  healthFilter.value = healthFilter.value === type ? null : type
+  activateHealthFilter(healthFilter.value === type ? null : type)
 }
 
 // ── Editor ─────────────────────────────────────────────────────────────────

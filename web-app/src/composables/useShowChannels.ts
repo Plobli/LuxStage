@@ -55,6 +55,8 @@ export function useShowChannels({
   const channelsSaving = ref(false)
   const search = ref('')
   const healthFilter = ref<'noDevice' | 'noPosition' | 'noAddress' | null>(null)
+  // Eingefrorene Kanal-IDs beim Aktivieren des Filters — reagiert nicht auf Tipp-Änderungen
+  const healthFilterSnapshot = ref<Set<string> | null>(null)
   
   const eosActiveChannels = ref<string[] | null>(null)
   const eosMergePreview = ref<EosMergePreview>({ open: false, newActive: [], nowGone: [], untouched: [] })
@@ -158,10 +160,21 @@ export function useShowChannels({
     noAddress:  ch => !(ch.address ?? '').trim(),
   }
 
+  function activateHealthFilter(type: 'noDevice' | 'noPosition' | 'noAddress' | null): void {
+    healthFilter.value = type
+    if (type && healthFilterFns[type]) {
+      healthFilterSnapshot.value = new Set(
+        channels.value.filter(healthFilterFns[type]).map(ch => ch.channel)
+      )
+    } else {
+      healthFilterSnapshot.value = null
+    }
+  }
+
   const groupedChannels = computed(() => {
     const q = search.value.toLowerCase()
-    const hf = healthFilter.value
-    let chs = (q || hf)
+    const snap = healthFilterSnapshot.value
+    let chs = (q || snap)
       ? [...channels.value].sort((a, b) => parseInt(a.channel) - parseInt(b.channel))
       : [...channels.value]
     if (q) {
@@ -172,8 +185,8 @@ export function useShowChannels({
         ch.position?.toLowerCase().includes(q)
       )
     }
-    if (hf && healthFilterFns[hf]) {
-      chs = chs.filter(healthFilterFns[hf])
+    if (snap) {
+      chs = chs.filter(ch => snap.has(ch.channel))
     }
     const map = new Map<string, Channel[]>()
     for (const ch of chs) {
@@ -348,6 +361,7 @@ export function useShowChannels({
     channelsSaving,
     search,
     healthFilter,
+    activateHealthFilter,
     eosActiveChannels,
     eosMergePreview,
     dupWarning,

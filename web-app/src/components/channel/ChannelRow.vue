@@ -85,35 +85,30 @@
           </div>
         </div>
 
-        <!-- Desktop: Action buttons -->
-        <div v-if="!isMobile" class="pl-1 pr-1 align-middle border-l border-border/40 flex items-center justify-center gap-0.5">
-          <Button
-            variant="ghost"
-            size="icon"
-            class="no-print size-7 rounded-sm text-muted-foreground opacity-0 transition-all group-hover/row:opacity-100 hover:bg-muted/60 hover:text-foreground"
-            title="Im Grundriss platzieren"
-            @click="emit('placeInFloorplan', ch)"
-          >
-            <MapPin class="size-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            class="no-print size-7 rounded-sm text-muted-foreground opacity-0 transition-all group-hover/row:opacity-100 hover:bg-muted/60 hover:text-foreground"
-            title="Gassenturm-Slot zuweisen"
-            @click="emit('assignTower', ch)"
-          >
-            <TowerControl class="size-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            class="no-print size-7 rounded-sm text-muted-foreground opacity-0 transition-all group-hover/row:opacity-100 hover:bg-muted/60 hover:text-foreground"
-            title="Zugstange zuweisen"
-            @click="emit('assignBar', ch)"
-          >
-            <AlignJustify class="size-3.5" />
-          </Button>
+        <!-- Desktop: Assign dropdown -->
+        <div v-if="!isMobile" class="pl-1 pr-1 align-middle border-l border-border/40 flex items-center justify-center">
+          <DropdownMenu>
+            <DropdownMenuTrigger as-child>
+              <Button
+                variant="ghost"
+                size="sm"
+                class="no-print h-7 rounded-sm px-2 text-[11px] text-muted-foreground opacity-0 transition-all group-hover/row:opacity-100 hover:bg-muted/60 hover:text-foreground"
+              >
+                <MapPin class="size-3 mr-1" />Zuweisen
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" class="w-52">
+              <DropdownMenuItem @click="emit('placeInFloorplan', ch)">
+                <MapPin class="size-3.5 mr-2 shrink-0" />Im Grundriss platzieren
+              </DropdownMenuItem>
+              <DropdownMenuItem @click="emit('assignTower', ch)">
+                <TowerControl class="size-3.5 mr-2 shrink-0" />Gassenturm-Slot zuweisen
+              </DropdownMenuItem>
+              <DropdownMenuItem @click="emit('assignBar', ch)">
+                <AlignJustify class="size-3.5 mr-2 shrink-0" />Zugstange zuweisen
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <!-- Desktop: Delete -->
@@ -215,6 +210,7 @@ import { computed, ref } from 'vue'
 import { GripVertical, X, Layers, MapPin, AlignJustify, TowerControl } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import ColorAutocomplete from '../ColorAutocomplete.vue'
 import ChannelTextarea from './ChannelTextarea.vue'

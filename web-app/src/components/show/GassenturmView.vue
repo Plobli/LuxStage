@@ -134,6 +134,8 @@
       <DialogHeader>
         <DialogTitle>{{ editingTower ? 'Gassenturm bearbeiten' : 'Neuer Gassenturm' }}</DialogTitle>
       </DialogHeader>
+
+      <!-- Formular -->
       <DialogBody>
         <div class="flex flex-col gap-1.5">
           <label class="text-xs text-muted-foreground">Name</label>
@@ -153,10 +155,29 @@
           <label class="text-xs text-muted-foreground">Anzahl Slots</label>
           <Input size="lg" v-model.number="towerForm.slot_count" type="number" min="1" max="20" />
         </div>
+
+        <!-- Warnbereich bei Slot-Reduktion -->
+        <div v-if="slotReduceConfirm" class="rounded-lg border border-destructive/40 bg-destructive/5 px-3.5 py-3 flex flex-col gap-1.5">
+          <p class="text-sm font-medium text-foreground">
+            Slot {{ slotReduceConfirm.oldCount }} bis {{ slotReduceConfirm.newCount + 1 }} werden entfernt.
+          </p>
+          <ul v-if="slotReduceConfirm.removedWithChannel.length > 0" class="flex flex-col gap-0.5">
+            <li
+              v-for="s in slotReduceConfirm.removedWithChannel"
+              :key="s.slot_index"
+              class="text-xs font-mono text-foreground/70"
+            >Slot {{ s.slot_index }} · Kanal {{ channelForId(s.channel_id)?.channel }}</li>
+          </ul>
+          <p v-else class="text-xs text-muted-foreground">Die entfernten Slots sind leer.</p>
+        </div>
       </DialogBody>
       <DialogFooter>
         <Button variant="ghost" @click="towerDialogOpen = false">Abbrechen</Button>
-        <Button @click="saveTowerForm">{{ editingTower ? 'Speichern' : 'Anlegen' }}</Button>
+        <template v-if="slotReduceConfirm">
+          <Button variant="ghost" @click="slotReduceConfirm = null">Zurück</Button>
+          <Button variant="destructive" @click="confirmSlotReduce">Entfernen</Button>
+        </template>
+        <Button v-else @click="saveTowerForm">{{ editingTower ? 'Speichern' : 'Anlegen' }}</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>
@@ -168,43 +189,40 @@
         <DialogTitle>Slot {{ pickerSlot?.slot_index }} · Kanal zuweisen</DialogTitle>
       </DialogHeader>
       <!-- Inline-Bestätigung bei belegtem Slot -->
-      <template v-if="confirmPending">
-        <DialogBody>
-          <p class="text-sm text-foreground">
-            Slot {{ pickerSlot?.slot_index }} ist mit Kanal <span class="font-mono font-semibold">{{ channelForId(pickerSlot?.channel_id)?.channel }}</span> belegt – überschreiben?
-          </p>
-        </DialogBody>
-        <DialogFooter>
-          <Button variant="ghost" @click="confirmPending = null">Abbrechen</Button>
-          <Button variant="destructive" @click="confirmOverwrite">Überschreiben</Button>
-        </DialogFooter>
-      </template>
-
       <!-- Kanalsuche -->
-      <template v-else>
-        <DialogBody>
-          <Input ref="pickerInputRef" size="lg" v-model="channelPickerSearch" placeholder="Kanalnummer suchen…" autofocus @keydown.enter="pickFirstResult" />
-          <div class="max-h-64 overflow-y-auto flex flex-col gap-1">
-            <button
-              v-for="(ch, idx) in filteredChannelsForPicker"
-              :key="ch.channel"
-              class="flex items-center gap-3 px-3 py-2 rounded-md text-left transition-colors"
-              :class="idx === 0 ? 'bg-muted/60' : 'hover:bg-muted/60'"
-              @click="pickChannel(ch)"
-            >
-              <span class="font-mono text-base font-semibold w-12 text-foreground">{{ ch.channel }}</span>
-              <span v-if="ch.color" class="text-xs text-muted-foreground">{{ ch.color }}</span>
-              <span class="text-xs text-muted-foreground truncate">{{ ch.device }}</span>
-            </button>
-            <div v-if="filteredChannelsForPicker.length === 0" class="text-xs text-muted-foreground px-3 py-4 text-center">
-              Keine Kanäle gefunden
-            </div>
+      <DialogBody>
+        <Input ref="pickerInputRef" size="lg" v-model="channelPickerSearch" placeholder="Kanalnummer suchen…" autofocus @keydown.enter="pickFirstResult" />
+        <div class="max-h-64 overflow-y-auto flex flex-col gap-1">
+          <button
+            v-for="(ch, idx) in filteredChannelsForPicker"
+            :key="ch.channel"
+            class="flex items-center gap-3 px-3 py-2 rounded-md text-left transition-colors"
+            :class="idx === 0 ? 'bg-muted/60' : 'hover:bg-muted/60'"
+            @click="pickChannel(ch)"
+          >
+            <span class="font-mono text-base font-semibold w-12 text-foreground">{{ ch.channel }}</span>
+            <span v-if="ch.color" class="text-xs text-muted-foreground">{{ ch.color }}</span>
+            <span class="text-xs text-muted-foreground truncate">{{ ch.device }}</span>
+          </button>
+          <div v-if="filteredChannelsForPicker.length === 0" class="text-xs text-muted-foreground px-3 py-4 text-center">
+            Keine Kanäle gefunden
           </div>
-        </DialogBody>
-        <DialogFooter>
-          <Button variant="ghost" @click="slotPickerOpen = false">Abbrechen</Button>
-        </DialogFooter>
-      </template>
+        </div>
+
+        <!-- Warnbereich bei belegtem Slot -->
+        <div v-if="confirmPending" class="rounded-lg border border-destructive/40 bg-destructive/5 px-3.5 py-3">
+          <p class="text-sm font-medium text-foreground">
+            Slot {{ pickerSlot?.slot_index }} ist mit Kanal <span class="font-mono">{{ channelForId(pickerSlot?.channel_id)?.channel }}</span> belegt – überschreiben?
+          </p>
+        </div>
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="ghost" @click="slotPickerOpen = false">Abbrechen</Button>
+        <template v-if="confirmPending">
+          <Button variant="ghost" @click="confirmPending = null">Zurück</Button>
+          <Button variant="destructive" @click="confirmOverwrite">Überschreiben</Button>
+        </template>
+      </DialogFooter>
     </DialogContent>
   </Dialog>
 </template>
@@ -264,6 +282,7 @@ async function saveNotes(tower, value) {
 const towerDialogOpen = ref(false)
 const editingTower = ref(null)
 const towerForm = ref({ name: '', side: '', stage_area: '', slot_count: 4 })
+const slotReduceConfirm = ref(null)
 
 function openNewTowerDialog() {
   editingTower.value = null
@@ -274,16 +293,31 @@ function openNewTowerDialog() {
 function openEditTowerDialog(tower) {
   editingTower.value = tower
   towerForm.value = { name: tower.name, side: tower.side, stage_area: tower.stage_area, slot_count: tower.slot_count }
+  slotReduceConfirm.value = null
   towerDialogOpen.value = true
 }
 
 async function saveTowerForm() {
   if (!towerForm.value.name) return
   if (editingTower.value) {
+    const oldCount = editingTower.value.slot_count
+    const newCount = towerForm.value.slot_count
+    if (newCount < oldCount) {
+      const removedSlots = slotsFor(editingTower.value).filter(s => s.slot_index > newCount)
+      const removedWithChannel = removedSlots.filter(s => s.channel_id && channelForId(s.channel_id))
+      slotReduceConfirm.value = { oldCount, newCount, removedWithChannel }
+      return
+    }
     await props.saveTowerFn(editingTower.value.id, { ...towerForm.value })
   } else {
     await props.addTowerFn({ ...towerForm.value })
   }
+  towerDialogOpen.value = false
+}
+
+async function confirmSlotReduce() {
+  slotReduceConfirm.value = null
+  await props.saveTowerFn(editingTower.value.id, { ...towerForm.value })
   towerDialogOpen.value = false
 }
 

@@ -174,6 +174,7 @@
               :channels="channels"
               :towers="towers"
               :bars="bars"
+              :pending-channel="pendingFloorplanChannel"
               @change="onFloorplanChange"
               @upload-image="onFloorplanImageUpload"
               @delete-image="onFloorplanImageDelete"
@@ -539,6 +540,7 @@ function onOpenBarFromFloorplan(_barId) {
 }
 
 const activeChannelForAssign = ref(null)
+const pendingFloorplanChannel = ref(null)
 
 async function onAssignTower(ch) {
   if (!ch.id) await persistChannels()
@@ -555,8 +557,11 @@ async function onAssignBar(ch) {
 }
 
 function onPlaceInFloorplan(ch) {
-  activeChannelForAssign.value = ch
-  mobileTab.value = 'floorplan'
+  pendingFloorplanChannel.value = null
+  nextTick(() => {
+    pendingFloorplanChannel.value = channels.value.find(c => c.channel === ch.channel) ?? ch
+    mobileTab.value = 'floorplan'
+  })
 }
 
 const newSectionDialog = ref(false)

@@ -1,5 +1,17 @@
 <template>
   <div class="relative flex h-full overflow-hidden bg-background text-foreground">
+    <!-- Placement status banner -->
+    <Transition name="placement-banner">
+      <div v-if="pendingChannelForPlacement" class="absolute top-0 left-14 right-0 z-30 flex items-center gap-3 px-4 py-2 bg-destructive text-white text-sm font-medium shadow-md">
+        <span>
+          <span class="font-bold">Kanal {{ pendingChannelForPlacement.channel }}</span>
+          <span v-if="pendingChannelForPlacement.device" class="opacity-80"> · {{ pendingChannelForPlacement.device }}</span>
+          <span class="ml-2 opacity-90">— im Plan klicken oder</span>
+          <kbd class="ml-1 px-1.5 py-0.5 rounded text-xs bg-white/20 font-mono">ESC</kbd>
+          <span class="opacity-90"> abbrechen</span>
+        </span>
+      </div>
+    </Transition>
     <!-- Left Toolbar -->
     <div class="w-[56px] bg-muted/30 border-r border-border flex flex-col items-center py-2 gap-1 z-10 shrink-0">
       <ToolBtn :active="activeTool === 'select'" title="Auswählen (V)" @click="activeTool = 'select'">
@@ -21,7 +33,7 @@
       <ToolBtn :active="activeTool === 'text'" title="Text (T)" @click="activeTool = 'text'">
         <Type class="w-5 h-5" />
       </ToolBtn>
-      <ToolBtn :active="activeTool === 'channel'" title="Kanal platzieren (C)" @click="activeTool = 'channel'">
+      <ToolBtn :active="activeTool === 'channel' || activeTool === 'channel-pending'" title="Kanal platzieren (C)" @click="activeTool = 'channel'">
         <CircleDot class="w-5 h-5" />
       </ToolBtn>
       <ToolBtn :active="activeTool === 'tower'" title="Gassenturm platzieren" @click="openTowerPlacer">
@@ -64,7 +76,7 @@
     <div
       ref="containerEl"
       class="flex-1 relative overflow-hidden"
-      :class="(activeTool === 'pan' || spaceHeld) ? 'cursor-grab' : activeTool === 'ruler' ? 'cursor-crosshair' : activeTool !== 'select' ? 'cursor-crosshair' : 'cursor-default'"
+      :class="(activeTool === 'pan' || spaceHeld) ? 'cursor-grab' : activeTool === 'channel-pending' ? 'cursor-none' : activeTool === 'ruler' ? 'cursor-crosshair' : activeTool !== 'select' ? 'cursor-crosshair' : 'cursor-default'"
       :style="isPanning ? 'cursor:grabbing' : ''"
       @mousedown="onContainerMouseDown"
       @mousemove="onContainerMouseMove"
@@ -245,6 +257,18 @@
           </div>
         </div>
         <div class="w-2 h-2 bg-popover border-b border-r border-border rotate-45 mx-auto -mt-1"></div>
+      </div>
+
+      <!-- Ghost cursor for channel placement -->
+      <div
+        v-if="activeTool === 'channel-pending' && ghostPos && pendingChannelForPlacement"
+        class="absolute pointer-events-none z-40"
+        :style="{ left: ghostPos.x + 'px', top: ghostPos.y + 'px', transform: 'translate(-50%, -50%)' }"
+      >
+        <svg width="80" height="40" viewBox="-40 -20 80 40" style="overflow: visible;">
+          <rect x="-31" y="-18" width="62" height="36" rx="18" fill="#dc3740" opacity="0.85" />
+          <text x="0" y="0" fill="#fff" font-size="18" font-weight="bold" text-anchor="middle" dominant-baseline="central">{{ pendingChannelForPlacement.channel }}</text>
+        </svg>
       </div>
 
       <!-- Inline Text Editor -->
@@ -507,6 +531,7 @@ const props = defineProps({
   channels: { type: Array, default: () => [] },
   towers: { type: Array, default: () => [] },
   bars: { type: Array, default: () => [] },
+  pendingChannel: { type: Object, default: null },
 })
 const emit = defineEmits(['change', 'jump-to-channel', 'upload-image', 'delete-image', 'snapshot', 'open-tower', 'open-bar'])
 
@@ -530,6 +555,8 @@ const history = ref([])
 const historyIndex = ref(-1)
 const lassoRect = ref(null)
 const pendingDirectionId = ref(null)
+const pendingChannelForPlacement = ref(null)
+const ghostPos = ref(null)
 
 const bgImage = ref(null)
 const bgImageSrc = ref('')
@@ -873,6 +900,8 @@ function onContainerMouseDown(e) {
     preview.value = { x1: pos.x, y1: pos.y, x2: pos.x, y2: pos.y, x: pos.x, y: pos.y, w: 0, h: 0, cx: pos.x, cy: pos.y, rx: 0, ry: 0 }
   } else if (activeTool.value === 'channel' || activeTool.value === 'text') {
     drawStart.value = pos
+  } else if (activeTool.value === 'channel-pending' && pendingChannelForPlacement.value) {
+    drawStart.value = pos
   }
 }
 
@@ -882,7 +911,12 @@ function onContainerMouseMove(e) {
     panOffset.value = { x: panStart.value.ox + (e.clientX - panStart.value.mx) / s, y: panStart.value.oy + (e.clientY - panStart.value.my) / s }
     return
   }
-  
+
+  if (activeTool.value === 'channel-pending') {
+    const rect = containerEl.value?.getBoundingClientRect()
+    if (rect) ghostPos.value = { x: e.clientX - rect.left, y: e.clientY - rect.top }
+  }
+
   const pos = getPointerPos(e)
 
   if (activeTool.value === 'channel-direction' && pendingDirectionId.value) {
@@ -933,6 +967,19 @@ function onContainerMouseMove(e) {
 }
 
 function onContainerMouseUp(e) {
+  if (activeTool.value === 'channel-pending' && pendingChannelForPlacement.value && drawStart.value) {
+    const pos = getPointerPos(e)
+    const ch = pendingChannelForPlacement.value
+    const id = uuid()
+    addElement({ id, type: 'channel', x: snap(pos.x), y: snap(pos.y), channel: ch.channel, rotation: 0 })
+    pendingChannelForPlacement.value = null
+    ghostPos.value = null
+    pendingDirectionId.value = id
+    activeTool.value = 'channel-direction'
+    drawStart.value = null
+    emitChange()
+    return
+  }
   if (activeTool.value === 'channel-direction' && pendingDirectionId.value) {
     const el = elements.value.find(x => x.id === pendingDirectionId.value)
     if (el) { el.rotation = Math.atan2(getPointerPos(e).y - el.y, getPointerPos(e).x - el.x) * 180 / Math.PI; emitChange() }
@@ -1323,7 +1370,7 @@ function handleKeyDown(e) {
     if (e.key === 'c' && activeTool.value !== 'select') { activeTool.value = 'channel'; return }
     if (e.key === 'g' || e.key === 'G') { showGrid.value = !showGrid.value; return }
     if (e.key === 'f' || e.key === 'F') { resetView(); return }
-    if (e.key === 'Escape') { if(activeTool.value==='channel-direction') pendingDirectionId.value=null; activeTool.value = 'select'; selectedIds.value = new Set(); return }
+    if (e.key === 'Escape') { if(activeTool.value==='channel-direction') pendingDirectionId.value=null; if(activeTool.value==='channel-pending') { pendingChannelForPlacement.value=null; ghostPos.value=null } activeTool.value = 'select'; selectedIds.value = new Set(); return }
     if (e.key === 'Delete' || e.key === 'Backspace') { deleteSelected(); return }
     if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key) && selectedIds.value.size > 0) {
       e.preventDefault(); const step = e.shiftKey ? 10 : 1
@@ -1375,6 +1422,13 @@ watch(() => props.initialCanvasData, (newVal) => {
   parseData(newVal); history.value = [exportData()]; historyIndex.value = 0
 }, { immediate: true })
 
+watch(() => props.pendingChannel, (ch) => {
+  if (!ch) return
+  pendingChannelForPlacement.value = ch
+  activeTool.value = 'channel-pending'
+  ghostPos.value = null
+})
+
 watch(() => props.bars, (newBars) => {
   if (!scalePixelsPerMeter.value) return
   let changed = false
@@ -1397,4 +1451,6 @@ watch(() => props.bars, (newBars) => {
 @reference "../style.css";
 .fade-panel-enter-active, .fade-panel-leave-active { transition: opacity 0.12s ease, transform 0.12s ease; }
 .fade-panel-enter-from, .fade-panel-leave-to { opacity: 0; transform: scale(0.95); }
+.placement-banner-enter-active, .placement-banner-leave-active { transition: opacity 0.15s ease, transform 0.15s ease; }
+.placement-banner-enter-from, .placement-banner-leave-to { opacity: 0; transform: translateY(-100%); }
 </style>

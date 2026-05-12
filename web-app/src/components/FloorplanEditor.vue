@@ -92,7 +92,7 @@
           </g>
 
           <!-- Elements -->
-          <g v-for="el in elements" :key="el.id" :transform="getTransform(el)" @mousedown.stop="onNodeMouseDown(el.id, $event)" @dblclick.stop="onNodeDblClick(el.id)" @mouseenter="hoveredId = el.id" @mouseleave="hoveredId = null">
+          <g v-for="el in elements" :key="el.id" :transform="getTransform(el)" @mousedown.stop="onNodeMouseDown(el.id, $event)" @dblclick.stop="onNodeDblClick(el.id)" @mouseenter="hoveredId = el.id; showTooltip(el, $event)" @mouseleave="hoveredId = null; hideTooltip()" @mousemove="showTooltip(el, $event)">
             <!-- Highlight when selected -->
             <rect v-if="selectedIds.has(el.id) && el.type !== 'line' && el.type !== 'channel'"
                   :x="getBounds(el).x" :y="getBounds(el).y" :width="getBounds(el).w" :height="getBounds(el).h"
@@ -130,9 +130,7 @@
               <rect v-if="towerForEl(el)?.side" :x="el.x + (el.w || 120) - 22" :y="el.y + 5" width="17" height="15" rx="3" fill="var(--color-accent)" />
               <text v-if="towerForEl(el)?.side" :x="el.x + (el.w || 120) - 13.5" :y="el.y + 12.5" fill="var(--color-accent-foreground)" :font-size="'var(--text-xs)'" font-weight="bold" text-anchor="middle" dominant-baseline="middle">{{ towerForEl(el)?.side }}</text>
               <!-- Name -->
-              <text :x="el.x + (el.w || 120) / 2" :y="el.y + (el.h || 70) / 2 - 6" fill="var(--color-foreground)" :font-size="'var(--text-xl)'" font-weight="700" text-anchor="middle" dominant-baseline="middle">{{ towerForEl(el)?.name || el.towerName || 'Turm' }}</text>
-              <!-- Slot count -->
-              <text :x="el.x + (el.w || 120) / 2" :y="el.y + (el.h || 70) / 2 + 10" fill="var(--color-muted-foreground)" :font-size="'var(--text-xs)'" text-anchor="middle" dominant-baseline="middle">{{ filledSlotsLabel(el) }}</text>
+              <text :x="el.x + (el.w || 120) / 2" :y="el.y + (el.h || 70) / 2" fill="var(--color-foreground)" :font-size="'var(--text-sm)'" font-weight="700" text-anchor="middle" dominant-baseline="middle">{{ (towerForEl(el)?.name || el.towerName || 'Turm').slice(0, 11) }}</text>
             </g>
 
             <!-- Bar Node -->
@@ -152,15 +150,15 @@
                 <circle
                   :cx="el.x + fixtureXOffset(fx.position, barForEl(el)?.length_cm, el.w || 160)"
                   :cy="el.y + (el.h || 28) / 2"
-                  r="14"
+                  r="18"
                   fill="#dc3740"
                   stroke="rgba(220,55,64,0.4)"
-                  stroke-width="4"
+                  stroke-width="3"
                 />
                 <text
                   :x="el.x + fixtureXOffset(fx.position, barForEl(el)?.length_cm, el.w || 160)"
                   :y="el.y + (el.h || 28) / 2"
-                  fill="white" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="central"
+                  fill="white" font-size="13" font-weight="700" text-anchor="middle" dominant-baseline="central"
                 >{{ channelNrById(fx.channel_id) }}</text>
               </g>
             </g>
@@ -231,6 +229,22 @@
             <text x="-4" y="16" fill="#e5e7eb" font-size="11" font-family="sans-serif">{{ el.notes }}</text>
           </g>
         </svg>
+      </div>
+
+      <!-- Hover Tooltip -->
+      <div
+        v-if="tooltip.visible"
+        class="absolute z-50 pointer-events-none"
+        :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px', transform: 'translate(-50%, -100%) translateY(-8px)' }"
+      >
+        <div class="bg-popover text-popover-foreground border border-border rounded-lg shadow-lg px-3 py-2 text-sm max-w-55">
+          <div class="font-bold text-foreground">{{ tooltip.title }}</div>
+          <div v-if="tooltip.sub" class="text-muted-foreground text-xs mt-0.5">{{ tooltip.sub }}</div>
+          <div v-if="tooltip.channels?.length" class="flex flex-wrap gap-1 mt-1.5">
+            <span v-for="ch in tooltip.channels" :key="ch" class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-destructive text-white font-bold text-xs">{{ ch }}</span>
+          </div>
+        </div>
+        <div class="w-2 h-2 bg-popover border-b border-r border-border rotate-45 mx-auto -mt-1"></div>
       </div>
 
       <!-- Inline Text Editor -->
@@ -577,10 +591,41 @@ const filteredChannels = computed(() => {
 })
 
 const isElementDragging = ref(false)
+const elementWasDragged = ref(false)
 const isResizing = ref(false)
 const isArrowRotating = ref(false)
 const hoveredId = ref(null)
 const propertiesOpen = ref(false)
+const tooltip = ref({ visible: false, x: 0, y: 0, title: '', sub: '', channels: [] })
+
+function showTooltip(el, e) {
+  if (isElementDragging.value || isResizing.value) return
+  const rect = containerEl.value?.getBoundingClientRect()
+  if (!rect) return
+  const x = e.clientX - rect.left
+  const y = e.clientY - rect.top
+  let title = '', sub = '', channels = []
+  if (el.type === 'tower') {
+    const t = towerForEl(el)
+    title = t?.name || el.towerName || 'Turm'
+    sub = t ? `${filledSlotsLabel(el)}${t.stage_area ? ' · ' + t.stage_area : ''}${t.side ? ' · ' + t.side : ''}` : ''
+    channels = (t?.slots ?? []).filter(s => s.channel_id).map(s => props.channels.find(c => c.id === s.channel_id)?.channel ?? '?')
+  } else if (el.type === 'bar') {
+    const b = barForEl(el)
+    title = b?.name || el.barName || 'Stange'
+    sub = b ? `${fixturesLabel(el)}${b.zug_nr ? ' · Zug ' + b.zug_nr : ''}${b.length_cm ? ' · ' + b.length_cm + ' cm' : ''}` : ''
+    channels = (b?.fixtures ?? []).map(f => channelNrById(f.channel_id))
+  } else if (el.type === 'channel') {
+    title = `Kanal ${el.channel}`
+    const info = props.channels.find(ch => ch.channel === el.channel)
+    sub = [info?.device, info?.position].filter(Boolean).join(' · ')
+  }
+  if (!title) return
+  tooltip.value = { visible: true, x, y, title, sub, channels }
+}
+function hideTooltip() {
+  tooltip.value = { ...tooltip.value, visible: false }
+}
 
 const rulerPoints = ref([])
 const scalePixelsPerMeter = ref(0)
@@ -783,6 +828,7 @@ function onNodeMouseDown(id, e) {
   }
 
   isElementDragging.value = true
+  elementWasDragged.value = false
   const pos = getPointerPos(e)
   drawStart.value = pos
 
@@ -863,6 +909,7 @@ function onContainerMouseMove(e) {
   if (isElementDragging.value && drawStart.value) {
     const dx = pos.x - drawStart.value.x
     const dy = pos.y - drawStart.value.y
+    if (Math.hypot(dx, dy) > 3) elementWasDragged.value = true
     clipboard.value.forEach(init => {
       const el = elements.value.find(x => x.id === init.id)
       if (!el) return
@@ -904,9 +951,9 @@ function onContainerMouseUp(e) {
     return
   }
   if (isElementDragging.value) {
+    const wasDragged = elementWasDragged.value
     isElementDragging.value = false
-    const upPos = getPointerPos(e)
-    const dragDist = drawStart.value ? Math.hypot(upPos.x - drawStart.value.x, upPos.y - drawStart.value.y) : 999
+    elementWasDragged.value = false
     elements.value.forEach(el => {
       if(!selectedIds.value.has(el.id)) return
       if(el.type === 'line'){ el.x1=snap(el.x1); el.y1=snap(el.y1); el.x2=snap(el.x2); el.y2=snap(el.y2) }
@@ -914,7 +961,7 @@ function onContainerMouseUp(e) {
     })
     drawStart.value = null
     emitChange()
-    if (dragDist < 5 && selectedIds.value.size === 1) propertiesOpen.value = true
+    if (!wasDragged && selectedIds.value.size === 1) propertiesOpen.value = true
     return
   }
 
@@ -1158,13 +1205,74 @@ function pushHistory() {
   h.push(snap); if (h.length > 100) h = h.slice(-100)
   history.value = h; historyIndex.value = history.value.length - 1
 }
+// Helle Fallback-Werte für CSS-Variablen im Snapshot (Theme-unabhängig)
+const SNAPSHOT_CSS_VARS = {
+  '--color-card': '#ffffff',
+  '--color-card-foreground': '#0a0a0a',
+  '--color-foreground': '#0a0a0a',
+  '--color-muted-foreground': '#6b7280',
+  '--color-accent': '#dc3740',
+  '--color-accent-foreground': '#ffffff',
+  '--color-ring': '#dc3740',
+  '--color-background': '#ffffff',
+  '--color-border': '#e5e7eb',
+  '--text-xs': '10px',
+  '--text-sm': '12px',
+  '--text-base': '14px',
+  '--text-xl': '18px',
+}
+
+function resolveCssVarsInSvg(svgEl) {
+  const resolve = (val) => {
+    if (!val) return val
+    return val.replace(/var\(([^),]+)(?:,[^)]+)?\)/g, (_, name) => {
+      return SNAPSHOT_CSS_VARS[name.trim()] ?? '#000000'
+    })
+  }
+  svgEl.querySelectorAll('*').forEach(el => {
+    for (const attr of ['fill', 'stroke', 'color']) {
+      const v = el.getAttribute(attr)
+      if (v && v.includes('var(')) el.setAttribute(attr, resolve(v))
+    }
+    if (el.style?.fill?.includes('var(')) el.style.fill = resolve(el.style.fill)
+    if (el.style?.stroke?.includes('var(')) el.style.stroke = resolve(el.style.stroke)
+    const fs = el.getAttribute('font-size')
+    if (fs && fs.includes('var(')) el.setAttribute('font-size', resolve(fs))
+  })
+}
+
 async function captureSnapshot() {
   if (!svgRef.value) return null
   const canvas = document.createElement('canvas')
   canvas.width = stageSize.value.width; canvas.height = stageSize.value.height
   const ctx = canvas.getContext('2d')
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
   if (bgImage.value) ctx.drawImage(bgImage.value, 0, 0, canvas.width, canvas.height)
-  return canvas.toDataURL('image/jpeg', 0.8)
+  await new Promise(resolve => {
+    const svg = svgRef.value.cloneNode(true)
+    const bgImgNode = svg.querySelector('#bg-image')
+    if (bgImgNode) bgImgNode.remove()
+    resolveCssVarsInSvg(svg)
+    // Explizite Größe setzen damit Browser den SVG korrekt rendert
+    svg.setAttribute('width', stageSize.value.width)
+    svg.setAttribute('height', stageSize.value.height)
+    let svgStr = new XMLSerializer().serializeToString(svg)
+    if (!svgStr.match(/^<svg[^>]+xmlns="http:\/\/www\.w3\.org\/2000\/svg"/)) {
+      svgStr = svgStr.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"')
+    }
+    const blob = new Blob([svgStr], { type: 'image/svg+xml' })
+    const url = URL.createObjectURL(blob)
+    const img = new Image()
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, stageSize.value.width, stageSize.value.height)
+      URL.revokeObjectURL(url)
+      resolve()
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); resolve() }
+    img.src = url
+  })
+  return canvas.toDataURL('image/jpeg', 0.85)
 }
 function undo() {
   if (historyIndex.value <= 0) return
@@ -1251,6 +1359,11 @@ onMounted(() => {
     })
     resizeObserver.observe(containerEl.value)
   }
+  // Snapshot nach dem Laden des Hintergrundbilds neu erzeugen
+  setTimeout(async () => {
+    const snap = await captureSnapshot()
+    if (snap) emit('change', exportData(), snap)
+  }, 1500)
 })
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)

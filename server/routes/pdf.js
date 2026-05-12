@@ -23,8 +23,12 @@ export async function pdfRoutes(req, res, pathname) {
       path: photos.getPhotoPath(slug, f),
       caption: captionsMap[f]?.caption ?? '',
     }))
+    const towers = db.readTowers(slug)
+    const bars = db.readBars(slug)
     await generatePDF(show, channels, sectionsMap, templateSections, photoEntries, res, {
       snapshotPath: floorplan.getFloorplanSnapshotPath(show.id),
+      towers,
+      bars,
     })
     return
   }

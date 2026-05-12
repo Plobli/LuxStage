@@ -61,8 +61,7 @@
             v-for="slot in slotsFor(tower)"
             :key="slot.slot_index"
             :data-slot-index="slot.slot_index"
-            class="flex items-center gap-3 px-4 py-3.5 border-b border-border/60 hover:bg-muted/20 transition-colors cursor-pointer"
-            @click="openSlotPicker(tower, slot)"
+            class="flex items-center gap-3 px-4 py-3.5 border-b border-border/60 hover:bg-muted/20 transition-colors"
           >
             <div class="flex items-center gap-1 shrink-0" @click.stop>
               <GripVertical class="drag-handle size-3.5 text-muted-foreground/50 cursor-grab active:cursor-grabbing" />
@@ -168,28 +167,44 @@
       <DialogHeader>
         <DialogTitle>Slot {{ pickerSlot?.slot_index }} · Kanal zuweisen</DialogTitle>
       </DialogHeader>
-      <DialogBody>
-        <Input ref="pickerInputRef" size="lg" v-model="channelPickerSearch" placeholder="Kanalnummer suchen…" autofocus @keydown.enter="pickFirstResult" />
-        <div class="max-h-64 overflow-y-auto flex flex-col gap-1">
-          <button
-            v-for="(ch, idx) in filteredChannelsForPicker"
-            :key="ch.channel"
-            class="flex items-center gap-3 px-3 py-2 rounded-md text-left transition-colors"
-            :class="idx === 0 ? 'bg-muted/60' : 'hover:bg-muted/60'"
-            @click="pickChannel(ch)"
-          >
-            <span class="font-mono text-base font-semibold w-12 text-foreground">{{ ch.channel }}</span>
-            <span v-if="ch.color" class="text-xs text-muted-foreground">{{ ch.color }}</span>
-            <span class="text-xs text-muted-foreground truncate">{{ ch.device }}</span>
-          </button>
-          <div v-if="filteredChannelsForPicker.length === 0" class="text-xs text-muted-foreground px-3 py-4 text-center">
-            Keine Kanäle gefunden
+      <!-- Inline-Bestätigung bei belegtem Slot -->
+      <template v-if="confirmPending">
+        <DialogBody>
+          <p class="text-sm text-foreground">
+            Slot {{ pickerSlot?.slot_index }} ist mit Kanal <span class="font-mono font-semibold">{{ channelForId(pickerSlot?.channel_id)?.channel }}</span> belegt – überschreiben?
+          </p>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="ghost" @click="confirmPending = null">Abbrechen</Button>
+          <Button variant="destructive" @click="confirmOverwrite">Überschreiben</Button>
+        </DialogFooter>
+      </template>
+
+      <!-- Kanalsuche -->
+      <template v-else>
+        <DialogBody>
+          <Input ref="pickerInputRef" size="lg" v-model="channelPickerSearch" placeholder="Kanalnummer suchen…" autofocus @keydown.enter="pickFirstResult" />
+          <div class="max-h-64 overflow-y-auto flex flex-col gap-1">
+            <button
+              v-for="(ch, idx) in filteredChannelsForPicker"
+              :key="ch.channel"
+              class="flex items-center gap-3 px-3 py-2 rounded-md text-left transition-colors"
+              :class="idx === 0 ? 'bg-muted/60' : 'hover:bg-muted/60'"
+              @click="pickChannel(ch)"
+            >
+              <span class="font-mono text-base font-semibold w-12 text-foreground">{{ ch.channel }}</span>
+              <span v-if="ch.color" class="text-xs text-muted-foreground">{{ ch.color }}</span>
+              <span class="text-xs text-muted-foreground truncate">{{ ch.device }}</span>
+            </button>
+            <div v-if="filteredChannelsForPicker.length === 0" class="text-xs text-muted-foreground px-3 py-4 text-center">
+              Keine Kanäle gefunden
+            </div>
           </div>
-        </div>
-      </DialogBody>
-      <DialogFooter>
-        <Button variant="ghost" @click="slotPickerOpen = false">Abbrechen</Button>
-      </DialogFooter>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="ghost" @click="slotPickerOpen = false">Abbrechen</Button>
+        </DialogFooter>
+      </template>
     </DialogContent>
   </Dialog>
 </template>
@@ -290,6 +305,7 @@ const pickerSlot = ref(null)
 const pickerTower = ref(null)
 const channelPickerSearch = ref('')
 const pickerInputRef = ref(null)
+const confirmPending = ref(null) // channel to assign after overwrite confirmation
 
 const filteredChannelsForPicker = computed(() => {
   const q = channelPickerSearch.value.trim().toLowerCase()
@@ -306,36 +322,54 @@ function openSlotPicker(tower, slot) {
   pickerTower.value = tower
   pickerSlot.value = slot
   channelPickerSearch.value = ''
+  confirmPending.value = null
   slotPickerOpen.value = true
 }
 
 async function pickFirstResult() {
   const first = filteredChannelsForPicker.value[0]
   if (!first || !pickerTower.value) return
+  const existing = pickerSlot.value?.channel_id ? channelForId(pickerSlot.value.channel_id) : null
+  if (existing && existing.id !== first.id) {
+    confirmPending.value = first
+    return
+  }
+  void doAssign(first)
+}
+
+function pickChannel(ch) {
+  if (!pickerTower.value) return
+  const existing = pickerSlot.value?.channel_id ? channelForId(pickerSlot.value.channel_id) : null
+  if (existing && existing.id !== ch.id) {
+    confirmPending.value = ch
+    return
+  }
+  void doAssign(ch)
+}
+
+async function confirmOverwrite() {
+  if (confirmPending.value) await doAssign(confirmPending.value)
+  confirmPending.value = null
+}
+
+async function doAssign(ch) {
+  if (!pickerTower.value) return
   const slotIndex = pickerSlot.value?.slot_index ?? 0
   const tower = pickerTower.value
   props.pushSnapshotFn()
-  props.assignSlotFn(tower.id, slotIndex, first.id)
+  props.assignSlotFn(tower.id, slotIndex, ch.id)
   emit('assigned')
 
   const nextSlot = slotsFor(tower).find(s => s.slot_index === slotIndex + 1)
   if (nextSlot && !nextSlot.channel_id) {
     pickerSlot.value = nextSlot
     channelPickerSearch.value = ''
+    confirmPending.value = null
     await nextTick()
     pickerInputRef.value?.$el?.querySelector('input')?.focus()
   } else {
     slotPickerOpen.value = false
   }
-}
-
-function pickChannel(ch) {
-  if (!pickerTower.value) return
-  const slotIndex = pickerSlot.value?.slot_index ?? 0
-  props.pushSnapshotFn()
-  props.assignSlotFn(pickerTower.value.id, slotIndex, ch.id)
-  slotPickerOpen.value = false
-  emit('assigned')
 }
 
 watch(() => props.preselectedChannelId, (id) => {

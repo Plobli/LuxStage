@@ -267,19 +267,51 @@ export async function generatePDF(show, channels, sectionsMap, templateSections,
   if (floorplan?.snapshotPath) {
     let snapshotBuffer = null
     try { snapshotBuffer = fs.readFileSync(floorplan.snapshotPath) } catch {}
-    if (snapshotBuffer) {
-      doc.addPage({ size: 'A4', layout: 'landscape' })
-      pageNum++
-      const lPageW = doc.page.width
-      const lPageH = doc.page.height
-      const lUsableW = lPageW - PAGE_MARGIN * 2
-      const lPrintableBottom = lPageH - PAGE_MARGIN - mm(8)
-      const imgY = PAGE_MARGIN + mm(9)
-      doc.image(snapshotBuffer, PAGE_MARGIN, imgY, {
-        fit: [lUsableW, lPrintableBottom - imgY],
-        align: 'center',
-        valign: 'top',
-      })
+    if (snapshotBuffer && snapshotBuffer.length > 100) {
+      doc.addPage()
+      addFooter()
+
+      doc.font(FONT_BOLD).fontSize(13).fillColor('black')
+        .text('Grundriss', PAGE_MARGIN, PAGE_MARGIN, { lineBreak: false })
+
+      const imgY = PAGE_MARGIN + mm(12)
+      const imgMaxH = pageH - imgY - PAGE_MARGIN - mm(8)
+
+      try {
+        doc.image(snapshotBuffer, PAGE_MARGIN, imgY, {
+          fit: [usableW, imgMaxH],
+          align: 'center',
+          valign: 'top',
+        })
+        doc.y = PAGE_MARGIN
+      } catch {
+        doc.font(FONT_NORMAL).fontSize(9).fillColor('#888888')
+          .text('Grundriss konnte nicht geladen werden.', PAGE_MARGIN, imgY)
+      }
+    }
+  }
+
+  // ── Gassentürme & Zugstangen ──────────────────────────────────────────────
+  const towers = floorplan?.towers ?? []
+  const bars = floorplan?.bars ?? []
+
+  if (towers.length > 0 || bars.length > 0) {
+    doc.addPage()
+    addFooter()
+    let ty = PAGE_MARGIN
+
+    if (towers.length > 0) {
+      doc.font(FONT_BOLD).fontSize(13).fillColor('black').text('Gassentürme', PAGE_MARGIN, ty, { lineBreak: false })
+      ty += mm(9)
+      ty = drawTowerCards(doc, towers, channels, PAGE_MARGIN, usableW, ty, printableBottom, addFooter)
+      ty += mm(8)
+    }
+
+    if (bars.length > 0) {
+      if (ty + mm(30) > printableBottom) { doc.addPage(); addFooter(); ty = PAGE_MARGIN }
+      doc.font(FONT_BOLD).fontSize(13).fillColor('black').text('Zugstangen', PAGE_MARGIN, ty, { lineBreak: false })
+      ty += mm(9)
+      drawBarRows(doc, bars, channels, PAGE_MARGIN, usableW, ty, printableBottom, addFooter)
     }
   }
 
@@ -573,6 +605,217 @@ function renderSetupBlocks(doc, blocks, margin, usableW) {
       doc.moveDown(0.3)
     }
   }
+}
+
+// Gassentürme als Karten-Grid (3 Spalten), Slots vertikal von oben nach unten
+function drawTowerCards(doc, towers, channels, margin, usableW, startY, bottomLimit, addFooter) {
+  const COLS = 3
+  const GAP = mm(4)
+  const cardW = (usableW - GAP * (COLS - 1)) / COLS
+  const CARD_PAD = mm(3)
+  const CARD_HEADER_H = mm(10)
+  const SLOT_H = mm(6.5)
+  const CIRCLE_R = mm(2.8)
+
+  // Kartenhöhe berechnen
+  function cardHeight(tower) {
+    const slotCount = (tower.slots ?? []).length
+    return CARD_HEADER_H + slotCount * SLOT_H + mm(2)
+  }
+
+  let col = 0
+  let rowY = startY
+  // Höhe der aktuellen Reihe = Maximum der Karten in dieser Reihe
+  let rowCards = []
+
+  function flushRow() {
+    if (rowCards.length === 0) return
+    const maxH = Math.max(...rowCards.map(c => c.h))
+    rowY += maxH + GAP
+    rowCards = []
+    col = 0
+  }
+
+  for (const tower of towers) {
+    const cardH = cardHeight(tower)
+
+    if (col === 0 && rowY + cardH > bottomLimit) {
+      doc.addPage(); addFooter(); rowY = PAGE_MARGIN
+    }
+
+    const cx = margin + col * (cardW + GAP)
+
+    // Karten-Rahmen
+    doc.roundedRect(cx, rowY, cardW, cardH, 4).fillAndStroke('#f8f8f8', '#dddddd')
+    doc.fillColor('black')
+
+    // Header-Hintergrund
+    doc.roundedRect(cx, rowY, cardW, CARD_HEADER_H, 4).fill('#eeeeee')
+    // untere Ecken gerade machen
+    doc.rect(cx, rowY + CARD_HEADER_H - 4, cardW, 4).fill('#eeeeee')
+    doc.fillColor('black')
+
+    // Name
+    doc.font(FONT_BOLD).fontSize(9).fillColor('#111111')
+      .text(tower.name ?? '', cx + CARD_PAD, rowY + mm(2), { width: cardW - CARD_PAD * 2 - mm(12), lineBreak: false, ellipsis: true })
+
+    // Slot-Count oben rechts in Rot
+    const filledSlots = (tower.slots ?? []).filter(s => s.channel_id)
+    const slotLabel = `${filledSlots.length}/${tower.slot_count ?? tower.slots?.length ?? 0}`
+    doc.font(FONT_BOLD).fontSize(7).fillColor('#dc3740')
+      .text(slotLabel, cx + cardW - CARD_PAD - mm(12), rowY + mm(2), { width: mm(12), align: 'right', lineBreak: false })
+
+    // Bereich · Seite
+    const meta = [tower.stage_area, tower.side].filter(Boolean).join(' · ')
+    if (meta) {
+      doc.font(FONT_NORMAL).fontSize(6.5).fillColor('#888888')
+        .text(meta, cx + CARD_PAD, rowY + mm(6), { width: cardW - CARD_PAD * 2, lineBreak: false, ellipsis: true })
+    }
+
+    // Slots vertikal
+    const allSlots = [...(tower.slots ?? [])].sort((a, b) => a.slot_index - b.slot_index)
+    let sy = rowY + CARD_HEADER_H
+    for (const slot of allSlots) {
+      const ch = slot.channel_id ? channels.find(c => c.id === slot.channel_id) : null
+
+      // Slot-Trennlinie
+      doc.moveTo(cx + mm(1), sy).lineTo(cx + cardW - mm(1), sy).lineWidth(0.3).stroke('#dddddd').lineWidth(1)
+
+      // Slot-Index
+      doc.font(FONT_NORMAL).fontSize(6).fillColor('#aaaaaa')
+        .text(String(slot.slot_index), cx + mm(2), sy + (SLOT_H - mm(2.5)) / 2, { width: mm(4), align: 'right', lineBreak: false })
+
+      if (ch) {
+        // Kanal-Kreis
+        const circleCx = cx + mm(9)
+        const circleCy = sy + SLOT_H / 2
+        doc.circle(circleCx, circleCy, CIRCLE_R).fill('#dc3740')
+        const textH = doc.font(FONT_BOLD).fontSize(6).currentLineHeight()
+        doc.fillColor('white').text(String(ch.channel), circleCx - CIRCLE_R, circleCy - textH / 2, { width: CIRCLE_R * 2, align: 'center', lineBreak: false })
+        doc.fillColor('black')
+
+        // Farbcode-Badge
+        if (ch.color) {
+          const hex = leeHex(ch.color)
+          const badgeX = cx + mm(14)
+          const badgeW = mm(12)
+          const badgeH = mm(4)
+          const badgeY = sy + (SLOT_H - badgeH) / 2
+          if (hex) {
+            doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 2).fill(hex)
+            const contrast = contrastColor(hex)
+            doc.font(FONT_BOLD).fontSize(5.5).fillColor(contrast)
+              .text(ch.color, badgeX, badgeY + mm(0.8), { width: badgeW, align: 'center', lineBreak: false })
+          } else {
+            doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 2).fillAndStroke('#eeeeee', '#cccccc')
+            doc.font(FONT_NORMAL).fontSize(5.5).fillColor('#555555')
+              .text(ch.color, badgeX, badgeY + mm(0.8), { width: badgeW, align: 'center', lineBreak: false })
+          }
+          doc.fillColor('black')
+        }
+
+        // Gerätename
+        const deviceX = cx + mm(28)
+        const deviceW = cardW - mm(28) - CARD_PAD
+        if (ch.device && deviceW > mm(5)) {
+          doc.font(FONT_NORMAL).fontSize(6.5).fillColor('#333333')
+            .text(ch.device, deviceX, sy + (SLOT_H - mm(2.5)) / 2, { width: deviceW, lineBreak: false, ellipsis: true })
+        }
+      } else {
+        doc.font(FONT_NORMAL).fontSize(6.5).fillColor('#cccccc')
+          .text('—', cx + mm(9), sy + (SLOT_H - mm(2.5)) / 2, { width: cardW - mm(12), lineBreak: false })
+      }
+
+      sy += SLOT_H
+    }
+
+    rowCards.push({ h: cardH })
+    col++
+    if (col >= COLS) flushRow()
+  }
+  flushRow()
+  return rowY
+}
+
+// Zugstangen als visuelle Zeilen mit Kanal-Kreisen
+function drawBarRows(doc, bars, channels, margin, usableW, startY, bottomLimit, addFooter) {
+  const BAR_H = mm(26)
+  const CIRCLE_R = mm(3.5)
+  const GAP = mm(3)
+
+  let ty = startY
+  for (const bar of bars) {
+    if (ty + BAR_H > bottomLimit) { doc.addPage(); addFooter(); ty = PAGE_MARGIN }
+
+    // Hintergrund
+    doc.roundedRect(margin, ty, usableW, BAR_H, 3).fillAndStroke('#f8f8f8', '#dddddd')
+    doc.fillColor('black')
+
+    // Name links
+    doc.font(FONT_BOLD).fontSize(9).fillColor('#111111')
+      .text(bar.name ?? '', margin + mm(3), ty + mm(2), { width: mm(40), lineBreak: false, ellipsis: true })
+
+    // Meta: Länge + Zug
+    const meta = [bar.length_cm ? `${bar.length_cm} cm` : null, bar.zug_nr ? `Zug ${bar.zug_nr}` : null].filter(Boolean).join(' · ')
+    doc.font(FONT_NORMAL).fontSize(7).fillColor('#888888')
+      .text(meta, margin + mm(3), ty + mm(7), { width: mm(40), lineBreak: false })
+
+    // Stangen-Linie — etwas oberhalb der Mitte für Positionstext darunter
+    const lineLeft = margin + mm(47)
+    const lineRight = margin + usableW - mm(3)
+    const lineY = ty + mm(13)
+    doc.moveTo(lineLeft, lineY).lineTo(lineRight, lineY).lineWidth(2).stroke('#10b981').lineWidth(1)
+
+    // Endmarkierungen
+    doc.moveTo(lineLeft, lineY - mm(2)).lineTo(lineLeft, lineY + mm(2)).lineWidth(1).stroke('#10b981')
+    doc.moveTo(lineRight, lineY - mm(2)).lineTo(lineRight, lineY + mm(2)).lineWidth(1).stroke('#10b981')
+
+    // Fixture-Circles mit Positions-Label darunter
+    const fixtures = bar.fixtures ?? []
+    const barLenCm = bar.length_cm || 600
+    const linePx = lineRight - lineLeft
+    for (const fx of fixtures) {
+      const posFrac = (fx.position + barLenCm / 2) / barLenCm
+      const cx = lineLeft + posFrac * linePx
+      const ch = channels.find(c => c.id === fx.channel_id)
+      const nr = ch?.channel ?? '?'
+
+      // Kreis
+      doc.circle(cx, lineY, CIRCLE_R).fill('#dc3740')
+      const textH = doc.font(FONT_BOLD).fontSize(6.5).currentLineHeight()
+      doc.fillColor('white').text(String(nr), cx - CIRCLE_R, lineY - textH / 2, { width: CIRCLE_R * 2, align: 'center', lineBreak: false })
+      doc.fillColor('black')
+
+      // Positionswert darunter (cm von Mitte, positiv = RS, negativ = LKS)
+      const posLabel = fx.position === 0 ? '0' : (fx.position > 0 ? `+${fx.position}` : String(fx.position))
+      doc.font(FONT_NORMAL).fontSize(5.5).fillColor('#666666')
+        .text(posLabel, cx - mm(5), lineY + CIRCLE_R + mm(1), { width: mm(10), align: 'center', lineBreak: false })
+    }
+
+    ty += BAR_H + GAP
+  }
+  return ty
+}
+
+function drawGenericRow(doc, y, usableW, cells, colWidths, isHeader) {
+  const rowH = ROW_MIN_H
+  if (isHeader) {
+    doc.rect(PAGE_MARGIN, y, usableW, rowH).fill('#f4f4f4')
+    doc.fill('black')
+  }
+  doc.moveTo(PAGE_MARGIN, y).lineTo(PAGE_MARGIN + usableW, y).stroke('#dddddd')
+  doc.moveTo(PAGE_MARGIN, y + rowH).lineTo(PAGE_MARGIN + usableW, y + rowH).stroke('#dddddd')
+  let x = PAGE_MARGIN
+  for (let i = 0; i < cells.length; i++) {
+    const w = colWidths[i]
+    const textH = doc.font(isHeader ? FONT_BOLD : FONT_NORMAL).fontSize(8).currentLineHeight()
+    const textY = y + (rowH - textH) / 2
+    doc.fillColor(isHeader ? '#666666' : 'black')
+      .text(String(cells[i] ?? ''), x + mm(1.5), textY, { width: w - mm(3), lineBreak: false, ellipsis: true })
+    x += w
+  }
+  doc.fillColor('black')
+  return y + rowH
 }
 
 function groupByPosition(channels) {

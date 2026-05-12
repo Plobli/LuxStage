@@ -402,6 +402,7 @@ watch(mobileTab, (tab) => {
   sessionStorage.setItem(TAB_KEY, tab)
   localStorage.setItem(TAB_TIME_KEY, String(Date.now()))
   if (tab === 'floorplan') aufbauTab.value = aufbauSubTabs.value[0]?.key ?? null
+  if (tab !== 'channels') search.value = ''
 })
 
 const aufbauTab = ref(isTimedOut ? null : (sessionStorage.getItem(SUBTAB_KEY) || null))

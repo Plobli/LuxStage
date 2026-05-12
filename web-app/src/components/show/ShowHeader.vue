@@ -200,11 +200,12 @@
       </TooltipProvider>
       <span v-if="saving" class="text-xs text-muted-foreground shrink-0">…</span>
 
-      <!-- Search -->
-      <div class="relative">
+      <!-- Search: nur im Kanäle-Tab -->
+      <div v-if="modelValue === 'channels'" class="relative">
         <Input
           :value="search"
           @input="emit('update:search', $event.target.value)"
+          @keydown.esc="emit('update:search', '')"
           type="search"
           :placeholder="labels.search"
           class="h-8 w-48 xl:w-56 pl-8 text-xs"
@@ -259,7 +260,7 @@ const props = defineProps({
       tabChannels: 'Kanäle', tabInfo: 'Info', tabPhotos: 'Fotos', tabFloorplan: 'Grundriss',
       undo: 'Rückgängig', redo: 'Wiederholen',
       dupAddress: 'Doppelte Adresse', dupChannel: 'Doppelter Kanal',
-      search: 'Suchen',
+      search: 'In Kanälen suchen …',
       history: 'Verlauf',
       import: 'Importieren', export: 'Exportieren',
       eosImport: 'EOS importieren', csvImport: 'CSV importieren',

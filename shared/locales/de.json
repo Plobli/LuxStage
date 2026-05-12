@@ -54,7 +54,7 @@
   "channel.list.empty": "Noch keine Kanäle vorhanden.",
   "channel.add": "Kanal hinzufügen",
   "channel.edit": "Kanal bearbeiten",
-  "channel.search": "Suchen …",
+  "channel.search": "In Kanälen suchen …",
   "channel.dup_address": "Doppelte DMX-Adresse!",
   "channel.dup_channel": "Doppelte Kanalnummer!",
   "channel.export": "CSV exportieren",

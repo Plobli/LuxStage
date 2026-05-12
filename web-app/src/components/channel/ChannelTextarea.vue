@@ -7,7 +7,12 @@
     @focus="handleFocus"
     @update:model-value="handleInput"
     @blur="handleBlur"
-    class="block min-h-10 w-full resize-none overflow-hidden rounded-none border-0 bg-transparent px-3 py-3 text-sm leading-4 text-foreground shadow-none transition-colors placeholder:text-muted-foreground/25 focus-visible:outline-none focus-visible:ring-0"
+    :class="[
+      'block min-h-10 w-full resize-none overflow-hidden rounded border-0 px-3 py-3 text-sm leading-4 text-foreground shadow-none transition-colors placeholder:text-muted-foreground/25 focus-visible:outline-none focus-visible:ring-0',
+      isFocused
+        ? 'bg-primary/10 ring-1 ring-primary/60 cursor-text'
+        : 'bg-transparent cursor-text hover:bg-muted/40 hover:ring-1 hover:ring-border',
+    ]"
   />
 </template>
 
@@ -23,6 +28,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'input', 'focus', 'blur'])
 const textareaEl = ref(null)
+const isFocused = ref(false)
 
 function getNativeTextarea() {
   return textareaEl.value?.$el instanceof HTMLTextAreaElement
@@ -44,11 +50,13 @@ function handleInput(val) {
 }
 
 function handleFocus(event) {
+  isFocused.value = true
   emit('focus', event)
   nextTick(autoResize)
 }
 
 function handleBlur(event) {
+  isFocused.value = false
   emit('blur', event)
   nextTick(autoResize)
 }

@@ -446,7 +446,6 @@ const persistSetupDebounced = useDebounceFn(async () => {
   setupSaving.value = true
   try {
     await updateMeta(props.id, { ...meta.value, setupMarkdown: pendingSetupMd })
-    meta.value.datum = new Date().toISOString().split('T')[0]
   } finally {
     setupSaving.value = false
   }

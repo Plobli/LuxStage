@@ -19,12 +19,12 @@
           @keydown.esc.prevent="cancelName"
           class="text-xl font-semibold text-foreground bg-transparent border-b border-accent outline-none max-w-50 min-w-20"
         />
-        <span class="text-xs text-muted-foreground shrink-0">{{ showDate }}</span>
+        <span v-if="showDate" class="text-xs text-muted-foreground shrink-0">Stand: {{ showDate }}</span>
       </div>
       <Separator orientation="vertical" class="h-6" />
 
       <!-- Tab-Switcher: wächst automatisch, wird kompakt auf Mobile -->
-      <div class="flex flex-1 min-w-0">
+      <div class="flex flex-1 min-w-0 overflow-x-auto">
         <Tabs :model-value="modelValue" @update:model-value="emit('update:modelValue', $event)" class="w-auto">
           <TabsList class="bg-muted h-10 p-1 gap-0.5">
             <TabsTrigger value="gassenturm" class="text-xs sm:text-sm px-2 sm:px-4 py-1.5 font-medium">
@@ -42,9 +42,6 @@
           </TabsList>
         </Tabs>
       </div>
-
-      <!-- Spacer -->
-      <div class="flex-1 hidden sm:block" />
 
       <!-- Desktop Actions -->
       <div class="no-print hidden lg:flex items-center gap-x-2 shrink-0">

@@ -37,7 +37,7 @@
               <div class="flex flex-1 items-center justify-between truncate bg-card">
                 <div class="flex-1 truncate px-4 py-3 text-sm">
                   <span class="font-medium text-foreground">{{ show.name || show.id }}</span>
-                  <p class="text-muted-foreground">{{ show.datum }}</p>
+                  <p v-if="show.datum" class="text-muted-foreground">Stand: {{ show.datum }}</p>
                   <p v-if="show.last_edited_by" class="text-muted-foreground text-xs mt-1 truncate">
                     {{ show.last_edited_by }}, {{ formatEditedAt(show.last_edited_at) }}
                   </p>

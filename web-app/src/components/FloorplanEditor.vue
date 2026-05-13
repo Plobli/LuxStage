@@ -4,11 +4,11 @@
     <Transition name="placement-banner">
       <div v-if="pendingChannelForPlacement" class="absolute top-0 left-14 right-0 z-30 flex items-center gap-3 px-4 py-2 bg-destructive text-white text-sm font-medium shadow-md">
         <span>
-          <span class="font-bold">Kanal {{ pendingChannelForPlacement.channel }}</span>
+          <span class="font-bold">{{ t('floorplan.place.channel', { channel: pendingChannelForPlacement.channel }) }}</span>
           <span v-if="pendingChannelForPlacement.device" class="opacity-80"> · {{ pendingChannelForPlacement.device }}</span>
           <span class="ml-2 opacity-90">— im Plan klicken oder</span>
           <kbd class="ml-1 px-1.5 py-0.5 rounded text-xs bg-white/20 font-mono">ESC</kbd>
-          <span class="opacity-90"> abbrechen</span>
+          <span class="opacity-90"> {{ t('floorplan.place.esc') }}</span>
         </span>
       </div>
     </Transition>
@@ -324,7 +324,7 @@
         <template v-if="selectedElement.type === 'bar'">
           <template v-if="barForEl(selectedElement)">
             <div class="flex flex-col gap-1">
-              <div v-if="barForEl(selectedElement).zug_nr" class="text-sm text-muted-foreground">Zug {{ barForEl(selectedElement).zug_nr }}</div>
+              <div v-if="barForEl(selectedElement).zug_nr" class="text-sm text-muted-foreground">{{ t('floorplan.bar.zug', { nr: barForEl(selectedElement).zug_nr }) }}</div>
               <div class="text-sm text-muted-foreground">{{ fixturesLabel(selectedElement) }}</div>
             </div>
             <div class="flex flex-wrap gap-2">
@@ -364,12 +364,12 @@
         <template v-if="['line','rect','ellipse'].includes(selectedElement.type)">
           <div class="flex items-center gap-3">
             <input type="color" :value="selectedElement.color || '#6b7280'" @input="e => { selectedElement.color = e.target.value; emitChange() }" class="w-9 h-9 rounded-xl cursor-pointer bg-transparent border border-border p-0.5" />
-            <span class="text-sm text-muted-foreground flex-1">Farbe</span>
+            <span class="text-sm text-muted-foreground flex-1">{{ t('floorplan.field.color') }}</span>
             <Input v-model.number="selectedElement.strokeWidth" type="number" min="1" max="20" class="w-20" @input="emitChange" />
           </div>
           <div v-if="selectedElement.type !== 'line'" class="flex items-center gap-3">
             <input type="color" :value="selectedElement.fill === 'transparent' || !selectedElement.fill ? '#000000' : selectedElement.fill" @input="e => { selectedElement.fill = e.target.value; emitChange() }" class="w-9 h-9 rounded-xl cursor-pointer bg-transparent border border-border p-0.5" />
-            <span class="text-sm text-muted-foreground flex-1">Füllung</span>
+            <span class="text-sm text-muted-foreground flex-1">{{ t('floorplan.field.fill') }}</span>
             <Button variant="outline" size="sm" @click="toggleFill(selectedElement)">
               {{ selectedElement.fill && selectedElement.fill !== 'transparent' ? 'Transparent' : 'Füllen' }}
             </Button>
@@ -379,7 +379,7 @@
 
         <!-- Notiz -->
         <div v-if="selectedElement.type !== 'text' && selectedElement.type !== 'tower'" class="flex flex-col gap-2 pt-2 border-t border-border">
-          <Label>Notiz</Label>
+          <Label>{{ t('floorplan.field.note') }}</Label>
           <textarea
             v-model="selectedElement.notes"
             placeholder="Notiz hinzufügen…"
@@ -393,14 +393,14 @@
       <DialogFooter v-if="selectedElement" class="justify-between">
         <!-- Links: Löschen -->
         <Button variant="ghost" class="text-destructive hover:text-destructive hover:bg-destructive/10" @click="deleteSelected">
-          <Trash2 class="size-4" />Löschen
+          <Trash2 class="size-4" />{{ t('floorplan.action.delete') }}
         </Button>
         <!-- Rechts: Aktion -->
         <div class="flex gap-2">
           <Button v-if="selectedElement.type === 'channel'" variant="outline" @click="jumpToChannel">→ Zum Kanal</Button>
           <Button v-else-if="selectedElement.type === 'bar'" variant="outline" @click="() => { propertiesOpen = false; emit('open-bar', selectedElement.barId) }">→ zur Zugstange</Button>
           <Button v-else-if="selectedElement.type === 'tower'" variant="outline" @click="() => { propertiesOpen = false; emit('open-tower', selectedElement.towerId) }">→ zum Gassenturm</Button>
-          <Button v-else variant="outline" @click="duplicateSelected"><Copy class="size-4" />Duplizieren</Button>
+          <Button v-else variant="outline" @click="duplicateSelected"><Copy class="size-4" />{{ t('floorplan.action.duplicate') }}</Button>
         </div>
       </DialogFooter>
     </DialogContent>
@@ -413,24 +413,24 @@
         <DialogTitle>{{ selectedIds.size }} Elemente ausgewählt</DialogTitle>
       </DialogHeader>
       <DialogFooter>
-        <Button variant="outline" @click="selectedIds = new Set()">Abbrechen</Button>
+        <Button variant="outline" @click="selectedIds = new Set()">{{ t('action.cancel') }}</Button>
         <Button variant="destructive" @click="deleteSelected">
-          <Trash2 class="size-4" />Löschen
+          <Trash2 class="size-4" />{{ t('floorplan.action.delete') }}
         </Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>
 
     <div class="absolute top-2 left-15 z-20 flex items-center gap-2 bg-background/80 backdrop-blur border border-border rounded p-1">
-      <Button size="sm" :variant="showGrid ? 'default' : 'ghost'" @click="showGrid = !showGrid" class="h-7 px-2 text-xs" title="Gitter anzeigen (G)">Gitter</Button>
-      <Button size="sm" :variant="snapToGrid ? 'default' : 'ghost'" @click="snapToGrid = !snapToGrid" class="h-7 px-2 text-xs" title="Am Gitter einrasten">Einrasten</Button>
+      <Button size="sm" :variant="showGrid ? 'default' : 'ghost'" @click="showGrid = !showGrid" class="h-7 px-2 text-xs" title="Gitter anzeigen (G)">{{ t('floorplan.grid') }}</Button>
+      <Button size="sm" :variant="snapToGrid ? 'default' : 'ghost'" @click="snapToGrid = !snapToGrid" class="h-7 px-2 text-xs" title="Am Gitter einrasten">{{ t('floorplan.snap') }}</Button>
     </div>
   </div>
 
   <!-- Reassign Dialog -->
   <Dialog :open="!!reassignTargetId" @update:open="val => { if (!val) reassignTargetId = null }">
     <DialogContent class="sm:max-w-lg flex flex-col max-h-[80vh]">
-      <DialogHeader><DialogTitle>Kanal neu zuweisen</DialogTitle></DialogHeader>
+      <DialogHeader><DialogTitle>{{ t('floorplan.reassign.title') }}</DialogTitle></DialogHeader>
       <DialogBody class="flex-1 overflow-y-auto">
         <Input v-model="channelSearch" placeholder="Suchen…" autofocus />
         <div class="flex flex-col gap-1">
@@ -439,53 +439,53 @@
           </Button>
         </div>
       </DialogBody>
-      <DialogFooter><Button variant="outline" @click="reassignTargetId = null">Abbrechen</Button></DialogFooter>
+      <DialogFooter><Button variant="outline" @click="reassignTargetId = null">{{ t('action.cancel') }}</Button></DialogFooter>
     </DialogContent>
   </Dialog>
 
   <!-- Tower Picker Dialog -->
   <Dialog :open="showTowerPicker" @update:open="val => { if (!val) showTowerPicker = false }">
     <DialogContent class="sm:max-w-lg flex flex-col max-h-[80vh]">
-      <DialogHeader><DialogTitle>Gassenturm platzieren</DialogTitle></DialogHeader>
+      <DialogHeader><DialogTitle>{{ t('floorplan.tower.title') }}</DialogTitle></DialogHeader>
       <DialogBody class="flex-1 overflow-y-auto">
         <div class="flex flex-col gap-1">
           <Button v-for="tower in props.towers" :key="tower.id" variant="ghost" :disabled="towerAlreadyPlaced(tower.id)" @click="placeTowerNode(tower)" class="w-full justify-start h-auto py-2" :class="towerAlreadyPlaced(tower.id) && 'opacity-40'">
             <div class="text-left"><div class="font-semibold">{{ tower.name }}</div><div class="text-xs text-muted-foreground">{{ tower.stage_area }}{{ tower.side ? ' · ' + tower.side : '' }}</div></div>
           </Button>
-          <div v-if="!props.towers.length" class="text-sm text-muted-foreground py-4 text-center">Noch keine Gassentürme angelegt</div>
+          <div v-if="!props.towers.length" class="text-sm text-muted-foreground py-4 text-center">{{ t('floorplan.tower.empty') }}</div>
         </div>
       </DialogBody>
-      <DialogFooter><Button variant="outline" @click="showTowerPicker = false">Abbrechen</Button></DialogFooter>
+      <DialogFooter><Button variant="outline" @click="showTowerPicker = false">{{ t('action.cancel') }}</Button></DialogFooter>
     </DialogContent>
   </Dialog>
 
   <!-- Bar Picker Dialog -->
   <Dialog :open="showBarPicker" @update:open="val => { if (!val) showBarPicker = false }">
     <DialogContent class="sm:max-w-lg flex flex-col max-h-[80vh]">
-      <DialogHeader><DialogTitle>Zugstange platzieren</DialogTitle></DialogHeader>
+      <DialogHeader><DialogTitle>{{ t('floorplan.bar.title') }}</DialogTitle></DialogHeader>
       <DialogBody class="flex-1 overflow-y-auto">
         <div class="flex flex-col gap-1">
           <Button v-for="bar in props.bars" :key="bar.id" variant="ghost" :disabled="barAlreadyPlaced(bar.id)" @click="placeBarNode(bar)" class="w-full justify-start h-auto py-2" :class="barAlreadyPlaced(bar.id) && 'opacity-40'">
             <div class="text-left"><div class="font-semibold">{{ bar.name }}</div><div class="text-xs text-muted-foreground">{{ bar.length_cm }} cm{{ bar.zug_nr ? ' · Zug ' + bar.zug_nr : '' }}</div></div>
           </Button>
-          <div v-if="!props.bars.length" class="text-sm text-muted-foreground py-4 text-center">Noch keine Zugstangen angelegt</div>
+          <div v-if="!props.bars.length" class="text-sm text-muted-foreground py-4 text-center">{{ t('floorplan.bar.empty') }}</div>
         </div>
       </DialogBody>
-      <DialogFooter><Button variant="outline" @click="showBarPicker = false">Abbrechen</Button></DialogFooter>
+      <DialogFooter><Button variant="outline" @click="showBarPicker = false">{{ t('action.cancel') }}</Button></DialogFooter>
     </DialogContent>
   </Dialog>
 
   <!-- Ruler Distance Dialog -->
   <Dialog :open="showRulerDialog" @update:open="val => { if (!val) cancelRuler() }">
     <DialogContent class="sm:max-w-sm">
-      <DialogHeader><DialogTitle>Strecke eingeben</DialogTitle></DialogHeader>
+      <DialogHeader><DialogTitle>{{ t('floorplan.ruler.title') }}</DialogTitle></DialogHeader>
       <DialogBody>
-        <p class="text-sm text-muted-foreground mb-3">Wie lang ist die markierte Strecke in Metern?</p>
+        <p class="text-sm text-muted-foreground mb-3">{{ t('floorplan.ruler.hint') }}</p>
         <Input v-model="rulerDistanceInput" type="text" inputmode="decimal" placeholder="z. B. 6" autofocus @keydown.enter="commitRuler" />
       </DialogBody>
       <DialogFooter>
-        <Button variant="outline" @click="cancelRuler">Abbrechen</Button>
-        <Button @click="commitRuler">Übernehmen</Button>
+        <Button variant="outline" @click="cancelRuler">{{ t('action.cancel') }}</Button>
+        <Button @click="commitRuler">{{ t('floorplan.ruler.confirm') }}</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>
@@ -493,7 +493,7 @@
   <!-- Channel Picker Dialog -->
   <Dialog :open="showChannelPicker" @update:open="val => { if (!val) showChannelPicker = false }">
     <DialogContent class="sm:max-w-lg flex flex-col max-h-[80vh]">
-      <DialogHeader><DialogTitle>Kanal wählen</DialogTitle></DialogHeader>
+      <DialogHeader><DialogTitle>{{ t('floorplan.channel.title') }}</DialogTitle></DialogHeader>
       <DialogBody class="flex-1 overflow-y-auto">
         <Input v-model="channelSearch" placeholder="Suchen…" autofocus />
         <div class="flex flex-col gap-1">
@@ -502,13 +502,15 @@
           </Button>
         </div>
       </DialogBody>
-      <DialogFooter><Button variant="outline" @click="showChannelPicker = false">Abbrechen</Button></DialogFooter>
+      <DialogFooter><Button variant="outline" @click="showChannelPicker = false">{{ t('action.cancel') }}</Button></DialogFooter>
     </DialogContent>
   </Dialog>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { useLocale } from '@/composables/useLocale.js'
+const { t } = useLocale()
 import { getToken } from '@/api/client'
 import { uuid } from '../utils/uuid.js'
 import {

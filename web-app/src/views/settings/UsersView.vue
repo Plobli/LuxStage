@@ -31,7 +31,7 @@
     <div class="grid max-w-7xl grid-cols-1 gap-x-8 gap-y-10 px-4 py-16 sm:px-6 md:grid-cols-3 lg:px-8">
       <div>
         <h2 class="text-base/7 font-semibold text-foreground">{{ t('settings.users.new') }}</h2>
-        <p class="mt-1 text-sm/6 text-muted-foreground">Legt einen neuen Benutzer an. Das initiale Passwort wird automatisch generiert und per E-Mail zugestellt.</p>
+        <p class="mt-1 text-sm/6 text-muted-foreground">{{ t('settings.users.new.hint') }}</p>
       </div>
       <form class="md:col-span-2" @submit.prevent="doCreateUser">
         <div class="space-y-4 sm:max-w-xl">
@@ -67,7 +67,7 @@
     <div class="grid max-w-7xl grid-cols-1 gap-x-8 gap-y-10 px-4 py-16 sm:px-6 md:grid-cols-3 lg:px-8">
       <div>
         <h2 class="text-base/7 font-semibold text-foreground">{{ t('settings.account.reset_password') }}</h2>
-        <p class="mt-1 text-sm/6 text-muted-foreground">Setzt das Passwort eines Benutzers zurück und zeigt das neue temporäre Passwort an.</p>
+        <p class="mt-1 text-sm/6 text-muted-foreground">{{ t('settings.users.reset_password.hint') }}</p>
       </div>
       <form class="md:col-span-2" @submit.prevent="doResetPassword">
         <div class="sm:max-w-xl space-y-2">

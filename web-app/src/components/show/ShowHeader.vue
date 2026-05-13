@@ -19,7 +19,7 @@
           @keydown.esc.prevent="cancelName"
           class="text-xl font-semibold text-foreground bg-transparent border-b border-accent outline-none max-w-50 min-w-20"
         />
-        <span v-if="showDate" class="text-xs text-muted-foreground shrink-0">Stand: {{ showDate }}</span>
+        <span v-if="showDate" class="text-xs text-muted-foreground shrink-0">{{ t('show.header.last_updated') }} {{ showDate }}</span>
       </div>
       <Separator orientation="vertical" class="h-6" />
 
@@ -88,7 +88,7 @@
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" class="text-muted-foreground hover:text-foreground">
               <MoreVertical class="size-5" />
-              <span class="sr-only">Menü öffnen</span>
+              <span class="sr-only">{{ t('show.header.menu_open') }}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" class="w-48">
@@ -235,6 +235,8 @@
 
 <script setup>
 import { ref, computed, nextTick } from 'vue'
+import { useLocale } from '@/composables/useLocale.js'
+const { t } = useLocale()
 import { Search, Undo2, Redo2, ChevronDown, AlertTriangle, MoreVertical } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'

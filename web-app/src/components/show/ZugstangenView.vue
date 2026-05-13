@@ -3,7 +3,7 @@
     <!-- Zugstangen-Liste -->
     <div class="flex-1 overflow-y-auto">
       <div v-if="bars.length === 0" class="flex items-center justify-center h-32 text-sm text-muted-foreground">
-        Noch keine Zugstangen
+        {{ t('zugstange.empty') }}
       </div>
 
       <!-- Eine Zeile pro Zugstange -->
@@ -121,7 +121,7 @@
     <!-- Neue Zugstange -->
     <div class="shrink-0 border-t border-border px-5 py-3 flex justify-end">
       <Button variant="ghost" size="sm" class="text-xs text-muted-foreground border border-dashed border-border/60" @click="openNewBarDialog">
-        <Plus class="size-3 mr-1.5" /> Neue Zugstange
+        <Plus class="size-3 mr-1.5" /> {{ t('zugstange.new') }}
       </Button>
     </div>
   </div>
@@ -130,21 +130,21 @@
   <Dialog :open="barDialogOpen" @update:open="barDialogOpen = $event">
     <DialogContent class="sm:max-w-lg">
       <DialogHeader>
-        <DialogTitle>{{ editingBar ? 'Zugstange bearbeiten' : 'Neue Zugstange' }}</DialogTitle>
+        <DialogTitle>{{ editingBar ? t('zugstange.dialog.edit') : t('zugstange.dialog.new') }}</DialogTitle>
       </DialogHeader>
       <DialogBody>
         <div class="flex flex-col gap-1.5">
-          <label class="text-xs text-muted-foreground">Name</label>
+          <label class="text-xs text-muted-foreground">{{ t('zugstange.field.name') }}</label>
           <Input size="lg" v-model="barForm.name" placeholder="z. B. Maschinenzug 1" autofocus />
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-xs text-muted-foreground">Länge (cm)</label>
+          <label class="text-xs text-muted-foreground">{{ t('zugstange.field.length_cm') }}</label>
           <Input size="lg" v-model.number="barForm.length_cm" type="number" min="50" max="3000" />
         </div>
       </DialogBody>
       <DialogFooter>
-        <Button variant="ghost" @click="barDialogOpen = false">Abbrechen</Button>
-        <Button @click="saveBarForm">{{ editingBar ? 'Speichern' : 'Anlegen' }}</Button>
+        <Button variant="ghost" @click="barDialogOpen = false">{{ t('action.cancel') }}</Button>
+        <Button @click="saveBarForm">{{ editingBar ? t('action.save') : t('zugstange.action.create') }}</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>
@@ -153,7 +153,7 @@
   <Dialog :open="fixturePickerOpen" @update:open="fixturePickerOpen = $event">
     <DialogContent class="sm:max-w-lg">
       <DialogHeader>
-        <DialogTitle>Scheinwerfer hinzufügen</DialogTitle>
+        <DialogTitle>{{ t('zugstange.fixture.add') }}</DialogTitle>
       </DialogHeader>
       <DialogBody>
         <Input size="lg" v-model="fixtureSearch" placeholder="Kanal suchen…" autofocus @keydown.enter="selectFirstAndConfirm" />
@@ -170,13 +170,13 @@
           </button>
         </div>
         <div v-if="pickerChannel" class="flex flex-col gap-1.5 border-t border-border pt-3">
-          <label class="text-xs text-muted-foreground">Position auf Stange (cm, 0 = Mitte)</label>
+          <label class="text-xs text-muted-foreground">{{ t('zugstange.fixture.position') }}</label>
           <Input size="lg" v-model.number="pickerPosition" type="number" :min="-(pickerBar?.length_cm || 600)/2" :max="(pickerBar?.length_cm || 600)/2" />
         </div>
       </DialogBody>
       <DialogFooter>
-        <Button variant="ghost" @click="fixturePickerOpen = false">Abbrechen</Button>
-        <Button :disabled="!pickerChannel" @click="confirmAddFixture">Hinzufügen</Button>
+        <Button variant="ghost" @click="fixturePickerOpen = false">{{ t('action.cancel') }}</Button>
+        <Button :disabled="!pickerChannel" @click="confirmAddFixture">{{ t('action.add') }}</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>
@@ -184,6 +184,8 @@
 
 <script setup>
 import { ref, computed, onBeforeUnmount } from 'vue'
+import { useLocale } from '@/composables/useLocale.js'
+const { t } = useLocale()
 import { Plus, Pencil, Trash2 } from 'lucide-vue-next'
 import { useDragReorder } from '@/composables/useDragReorder'
 import { Button } from '@/components/ui/button'
@@ -286,7 +288,8 @@ async function saveBarForm() {
 }
 function confirmRemoveFixture(fx, bar) {
   const nr = channelNr(fx.channel_id)
-  if (confirm(`Scheinwerfer ${nr !== '?' ? `Kanal ${nr}` : fx.channel_id} von "${bar.name}" entfernen?`)) {
+  const fixture = nr !== '?' ? `Kanal ${nr}` : fx.channel_id
+  if (confirm(t('zugstange.fixture.remove.confirm', { fixture, bar: bar.name }))) {
     props.unassignFixtureFn(bar.id, fx.channel_id)
   }
 }
@@ -297,7 +300,7 @@ async function saveInlineField(bar, field, value) {
 }
 
 function confirmDeleteBar(bar) {
-  if (confirm(`Zugstange "${bar.name}" wirklich löschen?`)) {
+  if (confirm(t('zugstange.delete.confirm', { name: bar.name }))) {
     props.deleteBarFn(bar.id)
   }
 }

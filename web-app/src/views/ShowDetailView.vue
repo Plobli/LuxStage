@@ -76,7 +76,7 @@
     <div v-if="loading" class="flex flex-1 items-center justify-center">
       <div class="flex flex-col items-center gap-3">
         <Loader2 class="size-8 animate-spin text-accent" />
-        <span class="text-sm text-muted-foreground">Wird geladen…</span>
+        <span class="text-sm text-muted-foreground">{{ t('error.loading') }}</span>
       </div>
     </div>
 
@@ -279,22 +279,22 @@
     <Dialog :open="newSectionDialog" @update:open="newSectionDialog = $event">
       <DialogContent class="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Neuer Tab</DialogTitle>
+          <DialogTitle>{{ t('section.dialog.title') }}</DialogTitle>
         </DialogHeader>
         <DialogBody>
           <div>
-            <Label for="newSectionName">Name</Label>
+            <Label for="newSectionName">{{ t('field.name') }}</Label>
             <Input
               size="lg"
               id="newSectionName"
               v-model="newSectionName"
-              placeholder="z. B. Hängerei"
+              :placeholder="t('section.dialog.name.placeholder')"
               @keydown.enter.prevent="confirmNewSection"
               @keydown.esc.prevent="newSectionDialog = false"
             />
           </div>
           <div>
-            <Label>Typ</Label>
+            <Label>{{ t('section.dialog.type') }}</Label>
             <div class="flex flex-col gap-2">
               <button
                 :class="['flex items-center gap-4 rounded-xl border p-4 text-left transition-colors', newSectionType === 'markdown' ? 'border-white/20 bg-white/6' : 'border-white/8 hover:border-white/12 hover:bg-white/3']"
@@ -302,8 +302,8 @@
               >
                 <div :class="['size-4 shrink-0 rounded-full border-2 transition-colors', newSectionType === 'markdown' ? 'border-white bg-white' : 'border-white/30']" />
                 <div>
-                  <div class="text-sm font-semibold text-foreground">Text</div>
-                  <div class="text-xs text-muted-foreground mt-1">Freitext mit Formatierung – für Beschreibungen und Notizen</div>
+                  <div class="text-sm font-semibold text-foreground">{{ t('section.type.markdown.title') }}</div>
+                  <div class="text-xs text-muted-foreground mt-1">{{ t('section.type.markdown.desc') }}</div>
                 </div>
               </button>
               <button
@@ -312,16 +312,16 @@
               >
                 <div :class="['size-4 shrink-0 rounded-full border-2 transition-colors', newSectionType === 'kv-table' ? 'border-white bg-white' : 'border-white/30']" />
                 <div>
-                  <div class="text-sm font-semibold text-foreground">Felder</div>
-                  <div class="text-xs text-muted-foreground mt-1">Strukturierte Schlüssel-Wert-Paare – für technische Daten</div>
+                  <div class="text-sm font-semibold text-foreground">{{ t('section.type.fields.title') }}</div>
+                  <div class="text-xs text-muted-foreground mt-1">{{ t('section.type.fields.desc') }}</div>
                 </div>
               </button>
             </div>
           </div>
         </DialogBody>
         <DialogFooter>
-          <Button variant="outline" @click="newSectionDialog = false">Abbrechen</Button>
-          <Button :disabled="!newSectionName.trim()" @click="confirmNewSection">Erstellen</Button>
+          <Button variant="outline" @click="newSectionDialog = false">{{ t('action.cancel') }}</Button>
+          <Button :disabled="!newSectionName.trim()" @click="confirmNewSection">{{ t('action.create') }}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -2,7 +2,7 @@
   <div class="flex flex-col h-full overflow-hidden">
   <div class="flex-1 overflow-x-auto overflow-y-auto p-4">
     <div v-if="towers.length === 0" class="flex items-center justify-center h-48 text-sm text-muted-foreground">
-      Noch keine Gassentürme
+      {{ t('gassenturm.empty') }}
     </div>
 
     <!-- 2 Zeilen, responsive Spalten -->
@@ -54,7 +54,7 @@
           v-else
           class="mx-4 mt-3 mb-1 text-left text-xs text-muted-foreground/30 hover:text-muted-foreground/60 transition-colors"
           @click="editingNoteId = tower.id"
-        >+ Notiz</button>
+        >{{ t('gassenturm.add_note') }}</button>
 
         <!-- Slots -->
         <div :key="slotRenderKey" :ref="el => initSortable(el, tower)" class="flex flex-col flex-1">
@@ -85,7 +85,7 @@
                   </template>
                 </div>
               </template>
-              <span v-else class="text-xs text-muted-foreground/60">leer</span>
+              <span v-else class="text-xs text-muted-foreground/60">{{ t('gassenturm.slot_empty') }}</span>
             </div>
             <div class="shrink-0 flex gap-0.5">
               <Button
@@ -115,7 +115,7 @@
           @click="addSlot(tower)"
         >
           <Plus class="size-3" />
-          Slot hinzufügen
+          {{ t('gassenturm.add_slot') }}
         </button>
       </div>
     </div>
@@ -124,7 +124,7 @@
   <!-- Neuer Gassenturm -->
   <div class="shrink-0 border-t border-border px-5 py-3 flex justify-end">
     <Button variant="ghost" size="sm" class="text-xs text-muted-foreground border border-dashed border-border/60" @click="openNewTowerDialog">
-      <Plus class="size-3 mr-1.5" /> Neuer Gassenturm
+      <Plus class="size-3 mr-1.5" /> {{ t('gassenturm.new') }}
     </Button>
   </div>
   </div>
@@ -133,34 +133,34 @@
   <Dialog :open="towerDialogOpen" @update:open="towerDialogOpen = $event">
     <DialogContent class="sm:max-w-lg">
       <DialogHeader>
-        <DialogTitle>{{ editingTower ? 'Gassenturm bearbeiten' : 'Neuer Gassenturm' }}</DialogTitle>
+        <DialogTitle>{{ editingTower ? t('gassenturm.dialog.edit') : t('gassenturm.dialog.new') }}</DialogTitle>
       </DialogHeader>
 
       <!-- Formular -->
       <DialogBody>
         <div class="flex flex-col gap-1.5">
-          <label class="text-xs text-muted-foreground">Name</label>
+          <label class="text-xs text-muted-foreground">{{ t('gassenturm.field.name') }}</label>
           <Input size="lg" v-model="towerForm.name" placeholder="z. B. Gassenturm 1" autofocus />
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div class="flex flex-col gap-1.5">
-            <label class="text-xs text-muted-foreground">Bühnenbereich</label>
+            <label class="text-xs text-muted-foreground">{{ t('gassenturm.field.stage_area') }}</label>
             <Input size="lg" v-model="towerForm.stage_area" placeholder="z. B. Vorbühne Links" />
           </div>
           <div class="flex flex-col gap-1.5">
-            <label class="text-xs text-muted-foreground">Seite</label>
+            <label class="text-xs text-muted-foreground">{{ t('gassenturm.field.side') }}</label>
             <Input size="lg" v-model="towerForm.side" placeholder="L / R" class="w-full" />
           </div>
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-xs text-muted-foreground">Anzahl Slots</label>
+          <label class="text-xs text-muted-foreground">{{ t('gassenturm.field.slot_count') }}</label>
           <Input size="lg" v-model.number="towerForm.slot_count" type="number" min="1" max="20" />
         </div>
 
         <!-- Warnbereich bei Slot-Reduktion -->
         <div v-if="slotReduceConfirm" class="rounded-lg border border-destructive/40 bg-destructive/5 px-3.5 py-3 flex flex-col gap-1.5">
           <p class="text-sm font-medium text-foreground">
-            Slot {{ slotReduceConfirm.oldCount }} bis {{ slotReduceConfirm.newCount + 1 }} werden entfernt.
+            {{ t('gassenturm.slots.removed', { from: slotReduceConfirm.newCount + 1, to: slotReduceConfirm.oldCount }) }}
           </p>
           <ul v-if="slotReduceConfirm.removedWithChannel.length > 0" class="flex flex-col gap-0.5">
             <li
@@ -169,16 +169,16 @@
               class="text-xs font-mono text-foreground/70"
             >Slot {{ s.slot_index }} · Kanal {{ channelForId(s.channel_id)?.channel }}</li>
           </ul>
-          <p v-else class="text-xs text-muted-foreground">Die entfernten Slots sind leer.</p>
+          <p v-else class="text-xs text-muted-foreground">{{ t('gassenturm.slots.empty') }}</p>
         </div>
       </DialogBody>
       <DialogFooter>
-        <Button variant="ghost" @click="towerDialogOpen = false">Abbrechen</Button>
+        <Button variant="ghost" @click="towerDialogOpen = false">{{ t('action.cancel') }}</Button>
         <template v-if="slotReduceConfirm">
-          <Button variant="ghost" @click="slotReduceConfirm = null">Zurück</Button>
-          <Button variant="destructive" @click="confirmSlotReduce">Entfernen</Button>
+          <Button variant="ghost" @click="slotReduceConfirm = null">{{ t('action.back') }}</Button>
+          <Button variant="destructive" @click="confirmSlotReduce">{{ t('gassenturm.action.remove') }}</Button>
         </template>
-        <Button v-else @click="saveTowerForm">{{ editingTower ? 'Speichern' : 'Anlegen' }}</Button>
+        <Button v-else @click="saveTowerForm">{{ editingTower ? t('action.save') : t('gassenturm.action.create') }}</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>
@@ -187,7 +187,7 @@
   <Dialog :open="slotPickerOpen" @update:open="slotPickerOpen = $event">
     <DialogContent class="sm:max-w-lg">
       <DialogHeader>
-        <DialogTitle>Slot {{ pickerSlot?.slot_index }} · Kanal zuweisen</DialogTitle>
+        <DialogTitle>{{ t('gassenturm.slot.assign', { slot: pickerSlot?.slot_index }) }}</DialogTitle>
       </DialogHeader>
       <!-- Inline-Bestätigung bei belegtem Slot -->
       <!-- Kanalsuche -->
@@ -206,22 +206,22 @@
             <span class="text-xs text-muted-foreground truncate">{{ ch.device }}</span>
           </button>
           <div v-if="filteredChannelsForPicker.length === 0" class="text-xs text-muted-foreground px-3 py-4 text-center">
-            Keine Kanäle gefunden
+            {{ t('gassenturm.channel.none') }}
           </div>
         </div>
 
         <!-- Warnbereich bei belegtem Slot -->
         <div v-if="confirmPending" class="rounded-lg border border-destructive/40 bg-destructive/5 px-3.5 py-3">
           <p class="text-sm font-medium text-foreground">
-            Slot {{ pickerSlot?.slot_index }} ist mit Kanal <span class="font-mono">{{ channelForId(pickerSlot?.channel_id)?.channel }}</span> belegt – überschreiben?
+            {{ t('gassenturm.slot.occupied', { slot: pickerSlot?.slot_index, channel: channelForId(pickerSlot?.channel_id)?.channel }) }}
           </p>
         </div>
       </DialogBody>
       <DialogFooter>
-        <Button variant="ghost" @click="slotPickerOpen = false">Abbrechen</Button>
+        <Button variant="ghost" @click="slotPickerOpen = false">{{ t('action.cancel') }}</Button>
         <template v-if="confirmPending">
-          <Button variant="ghost" @click="confirmPending = null">Zurück</Button>
-          <Button variant="destructive" @click="confirmOverwrite">Überschreiben</Button>
+          <Button variant="ghost" @click="confirmPending = null">{{ t('action.back') }}</Button>
+          <Button variant="destructive" @click="confirmOverwrite">{{ t('gassenturm.action.overwrite') }}</Button>
         </template>
       </DialogFooter>
     </DialogContent>
@@ -230,6 +230,8 @@
 
 <script setup>
 import { ref, computed, watch, onBeforeUnmount, nextTick } from 'vue'
+import { useLocale } from '@/composables/useLocale.js'
+const { t } = useLocale()
 import { Plus, Pencil, Trash2, X, ChevronsUpDown, GripVertical } from 'lucide-vue-next'
 import Sortable from 'sortablejs'
 import { filterBadgeStyle } from '@/utils/filterColors.js'
@@ -323,7 +325,7 @@ async function confirmSlotReduce() {
 }
 
 function confirmDeleteTower(tower) {
-  if (confirm(`Gassenturm "${tower.name}" wirklich löschen?`)) {
+  if (confirm(t('gassenturm.delete.confirm', { name: tower.name }))) {
     props.pushSnapshotFn()
     props.deleteTowerFn(tower.id)
   }

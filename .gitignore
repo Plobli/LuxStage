@@ -42,6 +42,7 @@ Procfile
 start.sh
 dev.sh
 ecosystem.config.cjs
+Dev-Server-App/
 
 # Laufzeit-Daten
 data/

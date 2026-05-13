@@ -12,7 +12,7 @@
     <div class="grid max-w-7xl grid-cols-1 gap-x-8 gap-y-10 px-4 py-16 sm:px-6 md:grid-cols-3 lg:px-8">
       <div>
         <h2 class="text-base/7 font-semibold text-foreground">{{ t('settings.account.change_password') }}</h2>
-        <p class="mt-1 text-sm/6 text-muted-foreground">Ändere das Passwort für deinen Account.</p>
+        <p class="mt-1 text-sm/6 text-muted-foreground">{{ t('settings.account.change_password.hint') }}</p>
       </div>
       <form class="md:col-span-2" @submit.prevent="doChangePassword">
         <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:max-w-xl">
@@ -62,7 +62,7 @@
     <div class="grid max-w-7xl grid-cols-1 gap-x-8 gap-y-10 px-4 py-16 sm:px-6 md:grid-cols-3 lg:px-8">
       <div>
         <h2 class="text-base/7 font-semibold text-foreground">{{ t('settings.logout') }}</h2>
-        <p class="mt-1 text-sm/6 text-muted-foreground">Aktuelle Sitzung beenden.</p>
+        <p class="mt-1 text-sm/6 text-muted-foreground">{{ t('settings.account.logout.hint') }}</p>
       </div>
       <div class="md:col-span-2 flex items-start">
         <Button variant="destructive" type="button" @click="handleLogout">

@@ -62,10 +62,10 @@
               {{ t('sections.btn') }}
             </TabsTrigger>
             <TabsTrigger value="floorplan" class="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground rounded-none px-4 py-2 border-b-2 border-transparent">
-              Grundriss
+              {{ t('tab.floorplan') }}
             </TabsTrigger>
             <TabsTrigger value="bars" class="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground rounded-none px-4 py-2 border-b-2 border-transparent">
-              Zugstangen
+              {{ t('tab.bars') }}
             </TabsTrigger>
           </TabsList>
 
@@ -152,10 +152,10 @@
           <!-- Zugstangen -->
           <TabsContent value="bars" class="mt-0 outline-none max-w-xl space-y-3">
             <div class="text-sm text-muted-foreground">
-              Zugstangen werden beim Erstellen einer Show automatisch übernommen (ohne Scheinwerfer).
+              {{ t('zugstange.hint') }}
             </div>
             <div v-if="templateBars.length === 0" class="text-sm text-muted-foreground border border-dashed border-border rounded-lg px-4 py-6 text-center">
-              Noch keine Zugstangen
+              {{ t('zugstange.empty') }}
             </div>
             <div
               v-for="(bar, idx) in templateBars" :key="bar.id"
@@ -179,7 +179,7 @@
               </Button>
             </div>
             <Button variant="outline" size="sm" class="w-full border-dashed" @click="openNewTemplateBar">
-              <Plus class="size-3 mr-1.5" /> Zugstange hinzufügen
+              <Plus class="size-3 mr-1.5" /> {{ t('zugstange.add') }}
             </Button>
           </TabsContent>
 
@@ -228,9 +228,9 @@
               {{ templateDisplayName(tpl.name) || tpl.name }}
             </Button>
             <div class="flex flex-wrap gap-x-4 mt-1 text-xs text-muted-foreground">
-              <span>{{ tpl.channelCount }} {{ tpl.channelCount === 1 ? 'Kanal' : 'Kanäle' }}</span>
+              <span>{{ tpl.channelCount }} {{ tpl.channelCount === 1 ? t('template.channel.singular') : t('template.channel.plural') }}</span>
               <span v-if="tpl.oscHost">OSC: {{ tpl.oscHost }}</span>
-              <span v-if="tpl.updatedAt">Geändert: {{ formatDate(tpl.updatedAt) }}</span>
+              <span v-if="tpl.updatedAt">{{ t('template.updated_at', { date: formatDate(tpl.updatedAt) }) }}</span>
             </div>
           </div>
           <div class="flex flex-none items-center gap-x-4">
@@ -249,27 +249,27 @@
     <Dialog :open="tbarDialogOpen" @update:open="tbarDialogOpen = $event">
       <DialogContent class="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{{ editingTbar ? 'Zugstange bearbeiten' : 'Neue Zugstange' }}</DialogTitle>
+          <DialogTitle>{{ editingTbar ? t('zugstange.dialog.edit') : t('zugstange.dialog.new') }}</DialogTitle>
         </DialogHeader>
         <DialogBody>
           <div>
-            <Label>Name</Label>
-            <Input size="lg" v-model="tbarForm.name" placeholder="z. B. Bühnenportal" autofocus />
+            <Label>{{ t('zugstange.field.name') }}</Label>
+            <Input size="lg" v-model="tbarForm.name" :placeholder="t('zugstange.name.placeholder')" autofocus />
           </div>
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <Label>Zugnummer</Label>
+              <Label>{{ t('zugstange.field.zug_nr') }}</Label>
               <Input size="lg" v-model="tbarForm.zug_nr" placeholder="z. B. 12" />
             </div>
             <div>
-              <Label>Länge (cm)</Label>
+              <Label>{{ t('zugstange.field.length_cm') }}</Label>
               <Input size="lg" v-model.number="tbarForm.length_cm" type="number" min="50" max="3000" />
             </div>
           </div>
         </DialogBody>
         <DialogFooter>
-          <Button variant="ghost" @click="tbarDialogOpen = false">Abbrechen</Button>
-          <Button @click="saveTbarForm">{{ editingTbar ? 'Speichern' : 'Anlegen' }}</Button>
+          <Button variant="ghost" @click="tbarDialogOpen = false">{{ t('action.cancel') }}</Button>
+          <Button @click="saveTbarForm">{{ editingTbar ? t('action.save') : t('zugstange.action.create') }}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -411,7 +411,7 @@ const { draggedId: barDraggedId, dragOverId: barDragOverId, onDragStart: onBarDr
 )
 const tbarDialogOpen = ref(false)
 const editingTbar = ref(null)
-const tbarForm = ref({ name: '', zug_nr: '', length_cm: 600 })
+const tbarForm = ref({ name: '', zug_nr: '', length_cm: 1100 })
 
 const emptySet = new Set()
 
@@ -512,7 +512,7 @@ async function openDetail(name) {
 
 function openNewTemplateBar() {
   editingTbar.value = null
-  tbarForm.value = { name: '', zug_nr: '', length_cm: 600 }
+  tbarForm.value = { name: '', zug_nr: '', length_cm: 1100 }
   tbarDialogOpen.value = true
 }
 function openEditTemplateBar(bar) {

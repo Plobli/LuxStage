@@ -30,7 +30,7 @@
       >
         <span class="size-4 rounded-full shrink-0 border border-border/50 bg-muted" />
         <span class="font-mono text-xs font-semibold" style="color: #b5896a">NC</span>
-        <span class="text-muted-foreground text-xs">No Color</span>
+        <span class="text-muted-foreground text-xs">{{ t('color.no_color') }}</span>
       </li>
       <li
         v-for="(f, idx) in filtered"
@@ -56,6 +56,8 @@
 import { ref, computed, watch } from 'vue'
 import { Input } from '@/components/ui/input'
 import { ALL_FILTERS, filterBadgeStyle } from '../utils/filterColors.js'
+import { useLocale } from '@/composables/useLocale.js'
+const { t } = useLocale()
 
 const props = defineProps({
   modelValue: { type: String, default: '' },

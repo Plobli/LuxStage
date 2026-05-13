@@ -94,18 +94,18 @@
                 size="sm"
                 class="no-print h-7 rounded-sm px-2 text-[11px] text-muted-foreground opacity-0 transition-all group-hover/row:opacity-100 hover:bg-muted/60 hover:text-foreground"
               >
-                <MapPin class="size-3 mr-1" />Zuweisen
+                <MapPin class="size-3 mr-1" />{{ t('channel.row.assign') }}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" class="w-52">
               <DropdownMenuItem @click="emit('placeInFloorplan', ch)">
-                <MapPin class="size-3.5 mr-2 shrink-0" />Im Grundriss platzieren
+                <MapPin class="size-3.5 mr-2 shrink-0" />{{ t('channel.row.place_floorplan') }}
               </DropdownMenuItem>
               <DropdownMenuItem @click="emit('assignTower', ch)">
-                <TowerControl class="size-3.5 mr-2 shrink-0" />Gassenturm-Slot zuweisen
+                <TowerControl class="size-3.5 mr-2 shrink-0" />{{ t('channel.row.assign_tower') }}
               </DropdownMenuItem>
               <DropdownMenuItem @click="emit('assignBar', ch)">
-                <AlignJustify class="size-3.5 mr-2 shrink-0" />Zugstange zuweisen
+                <AlignJustify class="size-3.5 mr-2 shrink-0" />{{ t('channel.row.assign_bar') }}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -128,13 +128,13 @@
         <AlertDialog :open="deleteDialogOpen" @update:open="val => { if (!val) deleteDialogOpen = false }">
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Was soll passieren?</AlertDialogTitle>
-              <AlertDialogDescription>Zeile löschen entfernt den Kanal vollständig. Leeren entfernt nur Beschreibung und Farbe.</AlertDialogDescription>
+              <AlertDialogTitle>{{ t('channel.row.delete.title') }}</AlertDialogTitle>
+              <AlertDialogDescription>{{ t('channel.row.delete.desc') }}</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter class="flex-col sm:flex-row gap-2">
-              <AlertDialogCancel @click="deleteDialogOpen = false">Abbrechen</AlertDialogCancel>
-              <Button variant="outline" @click="() => { deleteDialogOpen = false; emit('clear', ch) }">Kanal leeren</Button>
-              <AlertDialogAction class="bg-destructive text-destructive-foreground hover:bg-destructive/90" @click="() => { deleteDialogOpen = false; emit('delete', ch) }">Zeile löschen</AlertDialogAction>
+              <AlertDialogCancel @click="deleteDialogOpen = false">{{ t('action.cancel') }}</AlertDialogCancel>
+              <Button variant="outline" @click="() => { deleteDialogOpen = false; emit('clear', ch) }">{{ t('channel.row.clear') }}</Button>
+              <AlertDialogAction class="bg-destructive text-destructive-foreground hover:bg-destructive/90" @click="() => { deleteDialogOpen = false; emit('delete', ch) }">{{ t('channel.row.delete_row') }}</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -207,6 +207,8 @@
 
 <script setup>
 import { computed, ref } from 'vue'
+import { useLocale } from '@/composables/useLocale.js'
+const { t } = useLocale()
 import { GripVertical, X, Layers, MapPin, AlignJustify, TowerControl } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog'

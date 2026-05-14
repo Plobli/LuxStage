@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import zlib from 'node:zlib'
 import { fileURLToPath } from 'node:url'
 import { parseUrl, notFound, json } from './helpers.js'
 import { authenticate } from './auth.js'
@@ -40,15 +41,32 @@ const MIME = {
   '.ttf':  'font/ttf',
 }
 
-async function serveStaticFile(res, filePath, cacheControl) {
+const COMPRESSIBLE = new Set(['.js', '.css', '.html', '.json', '.svg', '.xml'])
+
+async function serveStaticFile(res, filePath, cacheControl, acceptEncoding = '', req = null) {
   const stat = await fs.promises.stat(filePath)
   if (stat.isDirectory()) throw new Error('EISDIR')
-  res.writeHead(200, {
-    'Content-Type': MIME[path.extname(filePath).toLowerCase()] || 'application/octet-stream',
-    'Content-Length': stat.size,
-    'Cache-Control': cacheControl,
-  })
-  fs.createReadStream(filePath).pipe(res)
+  const ext = path.extname(filePath).toLowerCase()
+  const contentType = MIME[ext] || 'application/octet-stream'
+  const compress = COMPRESSIBLE.has(ext) && stat.size > 1024
+  const etag = `"${stat.mtimeMs.toString(36)}-${stat.size.toString(36)}"`
+
+  if (req && req.headers['if-none-match'] === etag) {
+    res.writeHead(304, { 'Cache-Control': cacheControl, 'ETag': etag })
+    res.end()
+    return
+  }
+
+  if (compress && acceptEncoding.includes('br')) {
+    res.writeHead(200, { 'Content-Type': contentType, 'Cache-Control': cacheControl, 'Content-Encoding': 'br', 'Vary': 'Accept-Encoding', 'ETag': etag })
+    fs.createReadStream(filePath).pipe(zlib.createBrotliCompress()).pipe(res)
+  } else if (compress && acceptEncoding.includes('gzip')) {
+    res.writeHead(200, { 'Content-Type': contentType, 'Cache-Control': cacheControl, 'Content-Encoding': 'gzip', 'Vary': 'Accept-Encoding', 'ETag': etag })
+    fs.createReadStream(filePath).pipe(zlib.createGzip()).pipe(res)
+  } else {
+    res.writeHead(200, { 'Content-Type': contentType, 'Content-Length': stat.size, 'Cache-Control': cacheControl, 'ETag': etag })
+    fs.createReadStream(filePath).pipe(res)
+  }
 }
 
 async function serveStatic(req, res, pathname) {
@@ -59,16 +77,17 @@ async function serveStatic(req, res, pathname) {
 
   const isAsset = safePathname.startsWith('/assets/') || /\.[a-zA-Z0-9]+$/.test(safePathname)
   const cacheControl = safePathname.startsWith('/assets/') ? 'public, max-age=31536000, immutable' : 'no-cache'
+  const acceptEncoding = req.headers['accept-encoding'] || ''
 
   try {
-    await serveStaticFile(res, filePath, cacheControl)
+    await serveStaticFile(res, filePath, cacheControl, acceptEncoding, req)
     return
   } catch {
     if (isAsset) return notFound(res)
   }
 
   try {
-    await serveStaticFile(res, path.join(distPath, 'index.html'), 'no-cache')
+    await serveStaticFile(res, path.join(distPath, 'index.html'), 'no-cache', acceptEncoding, req)
   } catch {
     return notFound(res)
   }

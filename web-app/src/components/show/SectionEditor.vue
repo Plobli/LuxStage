@@ -125,12 +125,12 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, nextTick, onBeforeUnmount, defineAsyncComponent } from 'vue'
 import { GripVertical, X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import Sortable from 'sortablejs'
-import MarkdownEditor from '../MarkdownEditor.vue'
+const MarkdownEditor = defineAsyncComponent(() => import('../MarkdownEditor.vue'))
 import { useConfirm } from '../../composables/useConfirm.js'
 import { useLocale } from '../../composables/useLocale.js'
 import { saveShowSectionDefs } from '../../api/sections.js'

@@ -369,7 +369,7 @@ import { isOnline } from '../api/client.js'
 import { api } from '../api/client.js'
 
 import ChannelTable from '../components/channel/ChannelTable.vue'
-import SectionEditor from '../components/show/SectionEditor.vue'
+const SectionEditor = defineAsyncComponent(() => import('../components/show/SectionEditor.vue'))
 const EosMergePreviewDialog = defineAsyncComponent(() => import('../components/EosMergePreviewDialog.vue'))
 const FloorplanEditor = defineAsyncComponent(() => import('../components/FloorplanEditor.vue'))
 const GassenturmView = defineAsyncComponent(() => import('../components/show/GassenturmView.vue'))

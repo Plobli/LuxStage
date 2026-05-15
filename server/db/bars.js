@@ -24,9 +24,10 @@ export function writeBar(slug, data) {
   const id = data.id || randomUUID()
   const existing = dbContainer.db.prepare('SELECT id FROM bars WHERE id = ?').get(id)
   if (existing) {
+    const currentSortOrder = dbContainer.db.prepare('SELECT sort_order FROM bars WHERE id = ?').get(id)?.sort_order ?? 0
     dbContainer.db.prepare(`
       UPDATE bars SET name=?, zug_nr=?, length_cm=?, height_cm=?, notes=?, sort_order=? WHERE id=?
-    `).run(data.name ?? '', data.zug_nr ?? '', data.length_cm ?? 600, data.height_cm ?? null, data.notes ?? '', data.sort_order ?? 0, id)
+    `).run(data.name ?? '', data.zug_nr ?? '', data.length_cm ?? 600, data.height_cm ?? null, data.notes ?? '', data.sort_order ?? currentSortOrder, id)
   } else {
     const count = dbContainer.db.prepare('SELECT COUNT(*) as n FROM bars WHERE show_id = ?').get(show.id).n
     dbContainer.db.prepare(`

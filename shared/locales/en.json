@@ -370,5 +370,13 @@
   "floorplan.ruler.hint": "How long is the marked distance in metres?",
   "floorplan.ruler.confirm": "Apply",
   "floorplan.channel.title": "Select channel",
-  "color.no_color": "No Color"
+  "color.no_color": "No Color",
+  "template.apply_to_shows.bars": "Apply to all shows",
+  "template.apply_to_shows.bars.confirm": "Add missing bars from template \"{name}\" to all linked shows?",
+  "template.apply_to_shows.bars.result": "{shows} shows checked, {bars} bars added.",
+  "template.apply_to_shows.sections": "Apply to all shows",
+  "template.apply_to_shows.sections.confirm": "Add missing sections from template \"{name}\" to all linked shows?",
+  "template.apply_to_shows.sections.result": "{shows} shows checked, {sections} sections added.",
+  "template.apply_to_shows.done": "Done",
+  "action.apply": "Apply"
 }

@@ -24,6 +24,10 @@ export async function saveTemplate(name: string, channels: Channel[]): Promise<a
   return api.put(`/api/templates/${name}`, channels)
 }
 
+export async function applyTemplateToAllShows(name: string, scope: 'bars' | 'sections'): Promise<{ ok: boolean, shows: number, barsAdded: number, sectionsAdded: number }> {
+  return api.post(`/api/templates/${encodeURIComponent(name)}/apply-to-shows`, { scope })
+}
+
 export async function uploadTemplate({ name, text }: { name: string, text: string }): Promise<any> {
   // CSV-Text von Datei-Upload: parsen und als Array senden
   const cleanName = name.replace(/\.csv$/i, '')

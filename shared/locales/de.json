@@ -370,5 +370,14 @@
   "floorplan.ruler.hint": "Wie lang ist die markierte Strecke in Metern?",
   "floorplan.ruler.confirm": "Übernehmen",
   "floorplan.channel.title": "Kanal wählen",
-  "color.no_color": "No Color"
+  "color.no_color": "No Color",
+  "template.apply_to_shows": "Auf alle Shows anwenden",
+  "template.apply_to_shows.bars": "Auf alle Shows anwenden",
+  "template.apply_to_shows.bars.confirm": "Fehlende Zugstangen aus Template \"{name}\" auf alle zugeordneten Shows übertragen?",
+  "template.apply_to_shows.bars.result": "{shows} Shows geprüft, {bars} Zugstangen hinzugefügt.",
+  "template.apply_to_shows.sections": "Auf alle Shows anwenden",
+  "template.apply_to_shows.sections.confirm": "Fehlende Abschnitte aus Template \"{name}\" auf alle zugeordneten Shows übertragen?",
+  "template.apply_to_shows.sections.result": "{shows} Shows geprüft, {sections} Abschnitte hinzugefügt.",
+  "template.apply_to_shows.done": "Fertig",
+  "action.apply": "Anwenden"
 }

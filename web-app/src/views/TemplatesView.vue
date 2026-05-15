@@ -54,7 +54,8 @@
         </div>
 
         <Tabs v-model="activeTab" class="w-full">
-          <TabsList class="w-full justify-start border-b border-border bg-transparent p-0 h-auto rounded-none mb-6">
+          <div class="flex items-center border-b border-border mb-6">
+          <TabsList class="flex-1 justify-start bg-transparent p-0 h-auto rounded-none border-none">
             <TabsTrigger value="channels" class="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground rounded-none px-4 py-2 border-b-2 border-transparent">
               {{ t('show.channels') }}
             </TabsTrigger>
@@ -68,6 +69,7 @@
               {{ t('tab.bars') }}
             </TabsTrigger>
           </TabsList>
+          </div>
 
           <!-- Kanaltabelle -->
           <TabsContent value="channels" class="mt-0 outline-none">
@@ -105,7 +107,12 @@
           </TabsContent>
 
           <!-- Sections-Editor -->
-          <TabsContent value="sections" class="mt-0 outline-none space-y-4 max-w-2xl">
+          <TabsContent value="sections" class="mt-0 outline-none space-y-4">
+          <div class="flex justify-end">
+            <Button variant="outline" size="sm" :disabled="applyingToShows === 'sections'" @click="handleApplyToAllShows('sections')">
+              {{ applyingToShows === 'sections' ? '…' : t('template.apply_to_shows') }}
+            </Button>
+          </div>
           <div v-for="(sec, idx) in templateSections" :key="sec.id" class="border border-border rounded-lg p-4 space-y-3 bg-card">
             <div class="flex items-center gap-2">
               <div class="flex flex-col gap-0.5">
@@ -150,7 +157,12 @@
           </TabsContent>
 
           <!-- Zugstangen -->
-          <TabsContent value="bars" class="mt-0 outline-none max-w-xl space-y-3">
+          <TabsContent value="bars" class="mt-0 outline-none space-y-3">
+            <div class="flex justify-end">
+              <Button variant="outline" size="sm" :disabled="applyingToShows === 'bars'" @click="handleApplyToAllShows('bars')">
+                {{ applyingToShows === 'bars' ? '…' : t('template.apply_to_shows') }}
+              </Button>
+            </div>
             <div class="text-sm text-muted-foreground">
               {{ t('zugstange.hint') }}
             </div>
@@ -347,7 +359,7 @@ import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { ArrowLeft, Upload, Pencil, Plus, X } from 'lucide-vue-next'
 import { useLocale } from '../composables/useLocale.js'
 import { useConfirm } from '../composables/useConfirm.js'
-import { fetchTemplates, fetchTemplateChannels, saveTemplate, uploadTemplate, deleteTemplate, saveTemplateOscHost, renameTemplate } from '../api/templates.js'
+import { fetchTemplates, fetchTemplateChannels, saveTemplate, uploadTemplate, deleteTemplate, saveTemplateOscHost, renameTemplate, applyTemplateToAllShows } from '../api/templates.js'
 import { fetchTemplateSections, saveTemplateSections } from '../api/sections.js'
 import { templateDisplayName } from '../utils/templateName.js'
 import { uuid } from '../utils/uuid.js'
@@ -414,6 +426,7 @@ const editingTbar = ref(null)
 const tbarForm = ref({ name: '', zug_nr: '', length_cm: 1100 })
 
 const emptySet = new Set()
+const applyingToShows = ref('')
 
 const groupedChannels = computed(() => {
   const sorted = [...detailChannels.value].sort((a, b) => Number(a.channel) - Number(b.channel))
@@ -700,6 +713,20 @@ function onTypeChange(section, newType) {
   section.type = newType
   if (newType === 'kv-table' && !section.rows) section.rows = []
   persistSections()
+}
+
+// ── Auf alle Shows anwenden ─────────────────────────────────────────────────
+
+async function handleApplyToAllShows(scope) {
+  const ok = await confirm({ t, titleKey: `template.apply_to_shows.${scope}.confirm`, titleParams: { name: editingName.value }, confirmKey: 'action.apply', cancelKey: 'action.cancel' })
+  if (!ok) return
+  applyingToShows.value = scope
+  try {
+    const result = await applyTemplateToAllShows(editingName.value, scope)
+    alert(t(`template.apply_to_shows.${scope}.result`, { shows: result.shows, bars: result.barsAdded, sections: result.sectionsAdded }))
+  } finally {
+    applyingToShows.value = ''
+  }
 }
 
 // ── Hilfsfunktionen ─────────────────────────────────────────────────────────

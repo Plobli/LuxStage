@@ -171,3 +171,78 @@ export function reorderTemplateBars(templateId, orderedIds) {
   })
   tx()
 }
+
+// Wendet Template-Bars oder Sections-Struktur auf alle Shows mit diesem Template an.
+// scope: 'bars' | 'sections' — bestehende Einträge werden nicht überschrieben.
+export function applyTemplateToAllShows(templateName, scope) {
+  const tpl = dbContainer.db.prepare('SELECT * FROM templates WHERE name = ?').get(templateName)
+  if (!tpl) throw new Error('Template not found')
+
+  const shows = dbContainer.db.prepare('SELECT * FROM shows WHERE template = ? AND archived = 0').all(templateName)
+
+  const tBars = scope === 'bars' ? dbContainer.db.prepare('SELECT * FROM template_bars WHERE template_id = ? ORDER BY sort_order').all(tpl.id) : []
+  const tDefs = scope === 'sections' ? dbContainer.db.prepare('SELECT * FROM template_section_defs WHERE template_id = ? ORDER BY sort_order').all(tpl.id) : []
+
+  let defIds = tDefs.map(d => d.id)
+  let tRowsBySection = new Map()
+  let tFieldsBySection = new Map()
+  if (defIds.length) {
+    const ph = defIds.map(() => '?').join(',')
+    const tRowsAll   = dbContainer.db.prepare(`SELECT * FROM template_section_kv_rows WHERE section_id IN (${ph}) ORDER BY sort_order`).all(defIds)
+    const tFieldsAll = dbContainer.db.prepare(`SELECT * FROM template_section_fields WHERE section_id IN (${ph}) ORDER BY sort_order`).all(defIds)
+    tRowsBySection   = Map.groupBy(tRowsAll, r => r.section_id)
+    tFieldsBySection = Map.groupBy(tFieldsAll, f => f.section_id)
+  }
+
+  const insertBar     = dbContainer.db.prepare('INSERT INTO bars (id, show_id, name, zug_nr, length_cm, sort_order, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
+  const insertDef     = dbContainer.db.prepare('INSERT INTO section_defs (id, show_id, title, type, sort_order) VALUES (?, ?, ?, ?, ?)')
+  const insertKvRow   = dbContainer.db.prepare('INSERT INTO section_kv_rows (id, section_id, label, value, sort_order) VALUES (?, ?, ?, ?, ?)')
+  const insertField   = dbContainer.db.prepare('INSERT INTO section_fields (id, section_id, key, label, unit, sort_order) VALUES (?, ?, ?, ?, ?, ?)')
+  const insertContent = dbContainer.db.prepare('INSERT INTO section_contents (section_id, show_id, content) VALUES (?, ?, ?)')
+
+  const stats = { shows: shows.length, barsAdded: 0, sectionsAdded: 0 }
+
+  const tx = dbContainer.db.transaction(() => {
+    for (const show of shows) {
+      // Bars: fehlende nach Name hinzufügen
+      const existingBars = dbContainer.db.prepare('SELECT name FROM bars WHERE show_id = ?').all(show.id)
+      const existingBarNames = new Set(existingBars.map(b => b.name))
+      const existingBarCount = existingBars.length
+
+      for (const tb of tBars) {
+        if (!existingBarNames.has(tb.name)) {
+          const sortOrder = existingBarCount + stats.barsAdded
+          insertBar.run(randomUUID(), show.id, tb.name, tb.zug_nr, tb.length_cm, sortOrder, Date.now())
+          stats.barsAdded++
+        }
+      }
+
+      // Sections: fehlende nach Titel hinzufügen
+      const existingDefs = dbContainer.db.prepare('SELECT title FROM section_defs WHERE show_id = ?').all(show.id)
+      const existingTitles = new Set(existingDefs.map(d => d.title))
+      const existingDefCount = existingDefs.length
+
+      let secIdx = 0
+      for (const tDef of tDefs) {
+        if (!existingTitles.has(tDef.title)) {
+          const newDefId = randomUUID()
+          insertDef.run(newDefId, show.id, tDef.title, tDef.type, existingDefCount + secIdx)
+          if (tDef.type === 'kv-table') {
+            for (const tRow of (tRowsBySection.get(tDef.id) ?? [])) {
+              insertKvRow.run(randomUUID(), newDefId, tRow.label, tRow.value, tRow.sort_order)
+            }
+          } else {
+            for (const tField of (tFieldsBySection.get(tDef.id) ?? [])) {
+              insertField.run(randomUUID(), newDefId, tField.key, tField.label, tField.unit, tField.sort_order)
+            }
+            insertContent.run(newDefId, show.id, tDef.type === 'fields' ? '{}' : '')
+          }
+          secIdx++
+          stats.sectionsAdded++
+        }
+      }
+    }
+  })
+  tx()
+  return stats
+}

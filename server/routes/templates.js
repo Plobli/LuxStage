@@ -13,6 +13,7 @@ const TPL_BARS_REORDER = /^\/api\/templates\/([^/]+)\/bars\/reorder$/
 const TPL_BAR         = /^\/api\/templates\/([^/]+)\/bars\/([^/]+)$/
 const TPL_FP          = /^\/api\/templates\/([^/]+)\/floorplan$/
 const TPL_FP_IMAGE    = /^\/api\/templates\/([^/]+)\/floorplan\/image$/
+const TPL_APPLY       = /^\/api\/templates\/([^/]+)\/apply-to-shows$/
 const TPL_ID          = /^\/api\/templates\/(.+)$/
 
 function mimeFromFilename(filename) {
@@ -79,6 +80,21 @@ export async function templateRoutes(req, res, pathname) {
       const body = await readJsonBody(req, res); if (body === null) return
       const barId = db.writeTemplateBar(templateName, body)
       return json(res, 201, { id: barId })
+    }
+  }
+
+  if (m = TPL_APPLY.exec(pathname)) {
+    const templateName = decodeURIComponent(m[1])
+    if (method === 'POST') {
+      const user = requireAdmin(req, res); if (!user) return
+      const body = await readJsonBody(req, res); if (body === null) return
+      const scope = body.scope === 'sections' ? 'sections' : 'bars'
+      try {
+        const stats = db.applyTemplateToAllShows(templateName, scope)
+        return json(res, 200, { ok: true, ...stats })
+      } catch (e) {
+        return json(res, 404, { error: e.message })
+      }
     }
   }
 

@@ -25,7 +25,7 @@
             <svg class="size-4 text-muted-foreground/40 mt-0.5 shrink-0 cursor-grab" viewBox="0 0 16 16" fill="currentColor"><circle cx="5.5" cy="4" r="1.2"/><circle cx="10.5" cy="4" r="1.2"/><circle cx="5.5" cy="8" r="1.2"/><circle cx="10.5" cy="8" r="1.2"/><circle cx="5.5" cy="12" r="1.2"/><circle cx="10.5" cy="12" r="1.2"/></svg>
           <div class="min-w-0">
             <div class="text-sm font-semibold text-foreground tracking-tight truncate">{{ bar.name }}</div>
-            <div class="text-xs text-muted-foreground/60 mt-0.5 tabular-nums">{{ bar.length_cm }} cm</div>
+            <div class="text-xs text-muted-foreground/60 mt-0.5 tabular-nums">{{ formatLength(bar.length_cm) }}</div>
           </div>
           </div>
 
@@ -99,14 +99,17 @@
 
         <!-- Höhe + Anmerkungen -->
         <div class="flex items-center gap-4 mt-2 ml-46">
-          <input
-            type="number"
-            :value="bar.height_cm ?? ''"
-            min="0" max="3000"
-            placeholder="Höhe (cm)"
-            class="w-28 h-9 rounded-md border border-border/60 bg-transparent px-3 text-sm tabular-nums text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-accent"
-            @change="saveInlineField(bar, 'height_cm', $event.target.value === '' ? null : Number($event.target.value))"
-          />
+          <div class="relative w-32">
+            <input
+              type="text"
+              inputmode="decimal"
+              :value="bar.height_cm != null ? cmToDisplay(bar.height_cm) : ''"
+              placeholder="Höhe"
+              class="w-full h-9 rounded-md border border-border/60 bg-transparent px-3 pr-7 text-sm tabular-nums text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-accent"
+              @change="saveInlineField(bar, 'height_cm', $event.target.value === '' ? null : parseToCm(Number($event.target.value)))"
+            />
+            <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/50 pointer-events-none">{{ unit }}</span>
+          </div>
           <input
             type="text"
             :value="bar.notes ?? ''"
@@ -138,8 +141,8 @@
           <Input size="lg" v-model="barForm.name" placeholder="z. B. Maschinenzug 1" autofocus />
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-xs text-muted-foreground">{{ t('zugstange.field.length_cm') }}</label>
-          <Input size="lg" v-model.number="barForm.length_cm" type="number" min="50" max="3000" />
+          <label class="text-xs text-muted-foreground">{{ t('zugstange.field.length') }} ({{ unit }})</label>
+          <Input size="lg" v-model.number="barFormDisplay.length" type="number" :min="lengthMin" :max="lengthMax" :step="inputStep" />
         </div>
       </DialogBody>
       <DialogFooter>
@@ -170,8 +173,8 @@
           </button>
         </div>
         <div v-if="pickerChannel" class="flex flex-col gap-1.5 border-t border-border pt-3">
-          <label class="text-xs text-muted-foreground">{{ t('zugstange.fixture.position') }}</label>
-          <Input size="lg" v-model.number="pickerPosition" type="number" :min="-(pickerBar?.length_cm || 600)/2" :max="(pickerBar?.length_cm || 600)/2" />
+          <label class="text-xs text-muted-foreground">{{ t('zugstange.fixture.position') }} ({{ unit }})</label>
+          <Input size="lg" :modelValue="cmToDisplay(pickerPosition)" type="number" :min="cmToDisplay(-(pickerBar?.length_cm || 600)/2)" :max="cmToDisplay((pickerBar?.length_cm || 600)/2)" :step="inputStep" @update:modelValue="pickerPosition = parseToCm(Number($event))" />
         </div>
       </DialogBody>
       <DialogFooter>
@@ -185,7 +188,9 @@
 <script setup>
 import { ref, computed, onBeforeUnmount } from 'vue'
 import { useLocale } from '@/composables/useLocale.js'
+import { useMeasureUnit } from '@/composables/useMeasureUnit'
 const { t } = useLocale()
+const { unit, formatLength, cmToDisplay, parseToCm, inputStep, lengthMin, lengthMax } = useMeasureUnit()
 import { Plus, Pencil, Trash2 } from 'lucide-vue-next'
 import { useDragReorder } from '@/composables/useDragReorder'
 import { Button } from '@/components/ui/button'
@@ -248,11 +253,12 @@ function getScaleTicks(bar) {
     const snapped = Math.round(cm)
     const isCenter = snapped === 0
     const hasLabel = Math.abs(snapped % labelStep) < 0.5
+    const displayVal = cmToDisplay(snapped)
     ticks.push({
       pos: snapped,
       pct: posPercent(snapped, len),
       center: isCenter,
-      label: hasLabel ? (isCenter ? '0' : `${snapped}`) : null,
+      label: hasLabel ? (isCenter ? '0' : `${displayVal}`) : null,
     })
   }
   return ticks
@@ -266,6 +272,11 @@ function goToChannel(channelId) {
 const barDialogOpen = ref(false)
 const editingBar = ref(null)
 const barForm = ref({ name: '', zug_nr: '', length_cm: 1100 })
+// Anzeige-Wert für length-Input (in gewählter Einheit)
+const barFormDisplay = computed({
+  get: () => ({ length: cmToDisplay(barForm.value.length_cm) }),
+  set: (v) => { barForm.value.length_cm = parseToCm(v.length) },
+})
 
 function openNewBarDialog() {
   editingBar.value = null

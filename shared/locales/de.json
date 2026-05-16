@@ -85,6 +85,7 @@
   "settings.server_settings": "Server-Einstellungen",
   "settings.server_url": "Server-URL",
   "settings.server_url.placeholder": "z.B. http://192.168.1.100:3000",
+  "settings.display": "Darstellung",
   "settings.language": "Sprache",
   "settings.language.de": "Deutsch",
   "settings.language.en": "English",

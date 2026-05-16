@@ -466,7 +466,7 @@
       <DialogBody class="flex-1 overflow-y-auto">
         <div class="flex flex-col gap-1">
           <Button v-for="bar in props.bars" :key="bar.id" variant="ghost" :disabled="barAlreadyPlaced(bar.id)" @click="placeBarNode(bar)" class="w-full justify-start h-auto py-2" :class="barAlreadyPlaced(bar.id) && 'opacity-40'">
-            <div class="text-left"><div class="font-semibold">{{ bar.name }}</div><div class="text-xs text-muted-foreground">{{ bar.length_cm }} cm{{ bar.zug_nr ? ' · Zug ' + bar.zug_nr : '' }}</div></div>
+            <div class="text-left"><div class="font-semibold">{{ bar.name }}</div><div class="text-xs text-muted-foreground">{{ formatLength(bar.length_cm) }}{{ bar.zug_nr ? ' · Zug ' + bar.zug_nr : '' }}</div></div>
           </Button>
           <div v-if="!props.bars.length" class="text-sm text-muted-foreground py-4 text-center">{{ t('floorplan.bar.empty') }}</div>
         </div>
@@ -510,7 +510,9 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useLocale } from '@/composables/useLocale.js'
+import { useMeasureUnit } from '@/composables/useMeasureUnit'
 const { t } = useLocale()
+const { formatLength } = useMeasureUnit()
 import { getToken } from '@/api/client'
 import { uuid } from '../utils/uuid.js'
 import {
@@ -642,7 +644,7 @@ function showTooltip(el, e) {
   } else if (el.type === 'bar') {
     const b = barForEl(el)
     title = b?.name || el.barName || 'Stange'
-    sub = b ? `${fixturesLabel(el)}${b.zug_nr ? ' · Zug ' + b.zug_nr : ''}${b.length_cm ? ' · ' + b.length_cm + ' cm' : ''}` : ''
+    sub = b ? `${fixturesLabel(el)}${b.zug_nr ? ' · Zug ' + b.zug_nr : ''}${b.length_cm ? ' · ' + formatLength(b.length_cm) : ''}` : ''
     channels = (b?.fixtures ?? []).map(f => channelNrById(f.channel_id))
   } else if (el.type === 'channel') {
     title = `Kanal ${el.channel}`
@@ -772,7 +774,7 @@ async function loadBackground(url) {
     stageSize.value = { width: Math.round(w * scale), height: Math.round(h * scale) }
     bgImage.value = null
     bgImageSrc.value = url
-    nextTick(fitToContainer)
+    nextTick(() => { fitToContainer(); captureSnapshot().then(snap => { if (snap) emit('snapshot', snap) }) })
     return
   }
 
@@ -785,7 +787,7 @@ async function loadBackground(url) {
     stageSize.value = { width: Math.round(img.naturalWidth * scale), height: Math.round(img.naturalHeight * scale) }
     bgImage.value = img
     bgImageSrc.value = blobUrl
-    nextTick(fitToContainer)
+    nextTick(() => { fitToContainer(); captureSnapshot().then(snap => { if (snap) emit('snapshot', snap) }) })
   }
   img.src = blobUrl
 }

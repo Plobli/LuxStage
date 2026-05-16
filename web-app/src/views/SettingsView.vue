@@ -39,7 +39,7 @@ const isAdmin = computed(() => {
 
 const nav = computed(() => [
   { to: '/settings/account', label: t('settings.account') },
-  { to: '/settings/display', label: t('settings.language') },
+  { to: '/settings/display', label: t('settings.display') },
   { to: '/settings/backup', label: t('settings.backup') },
   ...(isAdmin.value ? [{ to: '/settings/server', label: t('settings.server') }] : []),
   ...(isAdmin.value ? [{ to: '/settings/users', label: 'Benutzerverwaltung' }] : []),

@@ -182,7 +182,7 @@
               <svg class="size-4 text-muted-foreground shrink-0 cursor-grab" viewBox="0 0 16 16" fill="currentColor"><circle cx="5.5" cy="4" r="1.2"/><circle cx="10.5" cy="4" r="1.2"/><circle cx="5.5" cy="8" r="1.2"/><circle cx="10.5" cy="8" r="1.2"/><circle cx="5.5" cy="12" r="1.2"/><circle cx="10.5" cy="12" r="1.2"/></svg>
               <span class="text-sm font-medium text-foreground flex-1 truncate">{{ bar.name }}</span>
               <span v-if="bar.zug_nr" class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0">{{ bar.zug_nr }}</span>
-              <span class="text-xs text-muted-foreground shrink-0">{{ bar.length_cm }} cm</span>
+              <span class="text-xs text-muted-foreground shrink-0">{{ formatLength(bar.length_cm) }}</span>
               <Button variant="ghost" size="icon" class="size-6 text-muted-foreground hover:text-foreground shrink-0" @click="openEditTemplateBar(bar)">
                 <Pencil class="size-3" />
               </Button>
@@ -274,8 +274,8 @@
               <Input size="lg" v-model="tbarForm.zug_nr" placeholder="z. B. 12" />
             </div>
             <div>
-              <Label>{{ t('zugstange.field.length_cm') }}</Label>
-              <Input size="lg" v-model.number="tbarForm.length_cm" type="number" min="50" max="3000" />
+              <Label>{{ t('zugstange.field.length') }} ({{ unit }})</Label>
+              <Input size="lg" :modelValue="tbarFormDisplay.length" type="number" :min="lengthMin" :max="lengthMax" :step="inputStep" @update:modelValue="tbarForm.length_cm = parseToCm(Number($event))" />
             </div>
           </div>
         </DialogBody>
@@ -358,6 +358,7 @@
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { ArrowLeft, Upload, Pencil, Plus, X } from 'lucide-vue-next'
 import { useLocale } from '../composables/useLocale.js'
+import { useMeasureUnit } from '../composables/useMeasureUnit'
 import { useConfirm } from '../composables/useConfirm.js'
 import { fetchTemplates, fetchTemplateChannels, saveTemplate, uploadTemplate, deleteTemplate, saveTemplateOscHost, renameTemplate, applyTemplateToAllShows } from '../api/templates.js'
 import { fetchTemplateSections, saveTemplateSections } from '../api/sections.js'
@@ -381,6 +382,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectI
 
 const { t } = useLocale()
 const { confirm } = useConfirm()
+const { unit, formatLength, cmToDisplay, parseToCm, inputStep, lengthMin, lengthMax } = useMeasureUnit()
 
 const templates = ref([])
 const loading = ref(true)
@@ -424,6 +426,10 @@ const { draggedId: barDraggedId, dragOverId: barDragOverId, onDragStart: onBarDr
 const tbarDialogOpen = ref(false)
 const editingTbar = ref(null)
 const tbarForm = ref({ name: '', zug_nr: '', length_cm: 1100 })
+const tbarFormDisplay = computed({
+  get: () => ({ length: cmToDisplay(tbarForm.value.length_cm) }),
+  set: (v) => { tbarForm.value.length_cm = parseToCm(v.length) },
+})
 
 const emptySet = new Set()
 const applyingToShows = ref('')

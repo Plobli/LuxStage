@@ -223,7 +223,10 @@
         <div class="sm:flex-auto">
           <h1 class="text-base font-semibold text-foreground">{{ t('nav.templates') }}</h1>
         </div>
-        <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+        <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex gap-2">
+          <Button variant="outline" @click="openNewDialog">
+            {{ t('template.new') }}
+          </Button>
           <Button @click="openUpload">
             {{ t('template.upload') }}
           </Button>
@@ -256,6 +259,37 @@
         </li>
       </ul>
     </template>
+
+    <!-- Neu-anlegen-Dialog -->
+    <Dialog :open="newDialogOpen" @update:open="val => { if (!val) newDialogOpen = false }">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{{ t('template.new') }}</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <div>
+            <Label>{{ t('template.name') }}</Label>
+            <Input
+              v-model="newTemplateName"
+              :placeholder="t('template.new.name.placeholder')"
+              autofocus
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="none"
+              spellcheck="false"
+              @keydown.enter.prevent="handleCreateTemplate"
+            />
+            <p v-if="newTemplateError" class="text-xs text-destructive mt-1">{{ newTemplateError }}</p>
+          </div>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="ghost" @click="newDialogOpen = false">{{ t('action.cancel') }}</Button>
+          <Button :disabled="newTemplateCreating || !newTemplateName.trim()" @click="handleCreateTemplate">
+            {{ newTemplateCreating ? '…' : t('template.new.create') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
 
     <!-- Template-Bar Dialog -->
     <Dialog :open="tbarDialogOpen" @update:open="tbarDialogOpen = $event">
@@ -394,6 +428,12 @@ const renameError = ref('')
 const renameSaving = ref(false)
 const renameInput = ref(null)
 
+// Neu anlegen
+const newDialogOpen = ref(false)
+const newTemplateName = ref('')
+const newTemplateCreating = ref(false)
+const newTemplateError = ref('')
+
 // Upload
 const uploadOpen = ref(false)
 const fileInput = ref(null)
@@ -449,6 +489,35 @@ onMounted(async () => {
   templates.value = await fetchTemplates()
   loading.value = false
 })
+
+// ── Neu anlegen ─────────────────────────────────────────────────────────────
+
+function openNewDialog() {
+  newTemplateName.value = ''
+  newTemplateError.value = ''
+  newDialogOpen.value = true
+}
+
+async function handleCreateTemplate() {
+  const name = newTemplateName.value.trim()
+  if (!name) return
+  if (templates.value.some(tpl => tpl.name === name)) {
+    newTemplateError.value = t('template.new.error.duplicate')
+    return
+  }
+  newTemplateCreating.value = true
+  newTemplateError.value = ''
+  try {
+    await saveTemplate(name, [])
+    templates.value = await fetchTemplates()
+    newDialogOpen.value = false
+    await openDetail(name)
+  } catch (e) {
+    newTemplateError.value = e?.message || t('template.upload.error')
+  } finally {
+    newTemplateCreating.value = false
+  }
+}
 
 // ── Upload ──────────────────────────────────────────────────────────────────
 

@@ -127,7 +127,7 @@
                 class="flex-1"
               />
               <Select :model-value="sec.type" @update:model-value="(value) => onTypeChange(sec, value)">
-                <SelectTrigger class="w-[180px]">
+                <SelectTrigger class="w-45">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

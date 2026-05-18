@@ -23,13 +23,11 @@ export async function showRoutes(req, res, pathname, params) {
   }
 
   if (method === 'GET' && SHOW_ARCHIVED.test(pathname)) {
-    const user = req.user
     const shows = db.listArchivedShows()
     return json(res, 200, shows.map(({ id: _id, ...s }) => ({ id: s.slug, ...s })))
   }
 
   if (method === 'POST' && SHOW_LIST.test(pathname)) {
-    const user = req.user
     const body = await readJsonBody(req, res); if (body === null) return
     const { id, name, datum, template, untertitel, spielzeit, channels } = body
     if (!id || !/^[a-z0-9_-]+$/i.test(id)) return json(res, 400, { error: 'Ungültige ID' })
@@ -57,7 +55,6 @@ export async function showRoutes(req, res, pathname, params) {
   if (m = SHOW_RESTORE.exec(pathname)) {
     const slug = m[1]
     if (method === 'POST') {
-      const user = req.user
       db.restoreShow(slug)
       return json(res, 200, { ok: true })
     }

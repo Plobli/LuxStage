@@ -865,27 +865,6 @@ function drawBarRows(doc, bars, channels, margin, usableW, startY, bottomLimit, 
   return ty
 }
 
-function drawGenericRow(doc, y, usableW, cells, colWidths, isHeader) {
-  const rowH = ROW_MIN_H
-  if (isHeader) {
-    doc.rect(PAGE_MARGIN, y, usableW, rowH).fill('#f4f4f4')
-    doc.fill('black')
-  }
-  doc.moveTo(PAGE_MARGIN, y).lineTo(PAGE_MARGIN + usableW, y).stroke('#dddddd')
-  doc.moveTo(PAGE_MARGIN, y + rowH).lineTo(PAGE_MARGIN + usableW, y + rowH).stroke('#dddddd')
-  let x = PAGE_MARGIN
-  for (let i = 0; i < cells.length; i++) {
-    const w = colWidths[i]
-    const textH = doc.font(isHeader ? FONT_BOLD : FONT_NORMAL).fontSize(8).currentLineHeight()
-    const textY = y + (rowH - textH) / 2
-    doc.fillColor(isHeader ? '#666666' : 'black')
-      .text(String(cells[i] ?? ''), x + mm(1.5), textY, { width: w - mm(3), lineBreak: false, ellipsis: true })
-    x += w
-  }
-  doc.fillColor('black')
-  return y + rowH
-}
-
 function groupByPosition(channels) {
   const map = new Map()
   for (const ch of channels) {

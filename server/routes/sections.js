@@ -13,7 +13,6 @@ export async function sectionRoutes(req, res, pathname) {
   if (m = SHOW_SECTIONS.exec(pathname)) {
     const slug = m[1]
     if (method === 'GET') {
-      const user = req.user
       const map = db.readShowSections(slug)
       return json(res, 200, [...map.entries()].map(([id, content]) => ({ id, content })))
     }
@@ -30,7 +29,6 @@ export async function sectionRoutes(req, res, pathname) {
   if (m = SHOW_SECTION_DEFS.exec(pathname)) {
     const slug = m[1]
     if (method === 'GET') {
-      const user = req.user
       return json(res, 200, db.readShowSectionDefs(slug))
     }
     if (method === 'PUT') {

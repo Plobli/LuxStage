@@ -12,7 +12,6 @@ export async function channelRoutes(req, res, pathname) {
   if (m = SHOW_CHANNELS.exec(pathname)) {
     const slug = m[1]
     if (method === 'GET') {
-      const user = req.user
       const channels = db.readChannels(slug).map(({ show_id: _, sort_order: __, ...ch }) => ch)
       return json(res, 200, channels)
     }
@@ -28,11 +27,9 @@ export async function channelRoutes(req, res, pathname) {
   if (m = SHOW_CHECKS.exec(pathname)) {
     const slug = m[1]
     if (method === 'GET') {
-      const user = req.user
       return json(res, 200, { checks: db.getChecks(slug) })
     }
     if (method === 'DELETE') {
-      const user = req.user
       db.clearChecks(slug)
       broadcast(slug, 'checks-updated', { checks: [] })
       return json(res, 200, { ok: true })

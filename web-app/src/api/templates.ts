@@ -21,7 +21,7 @@ export async function fetchTemplateChannels(name: string): Promise<Channel[]> {
 }
 
 export async function saveTemplate(name: string, channels: Channel[]): Promise<any> {
-  return api.put(`/api/templates/${name}`, channels)
+  return api.put(`/api/templates/${encodeURIComponent(name)}`, channels)
 }
 
 export async function applyTemplateToAllShows(name: string, scope: 'bars' | 'sections'): Promise<{ ok: boolean, shows: number, barsAdded: number, sectionsAdded: number }> {

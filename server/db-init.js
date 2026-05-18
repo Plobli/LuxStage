@@ -188,26 +188,13 @@ if (!lightingChecksExists) {
   `)
 }
 
-// Spalten nachträglich hinzufügen falls noch nicht vorhanden (bestehende DBs)
+// last_edited_by/at: nachträglich hinzugefügt, fehlt in älteren DBs
 const showCols = dbContainer.db.pragma('table_info(shows)').map(c => c.name)
-if (!showCols.includes('eos_active_channels')) {
-  dbContainer.db.exec('ALTER TABLE shows ADD COLUMN eos_active_channels TEXT')
-}
 if (!showCols.includes('last_edited_by')) {
   dbContainer.db.exec('ALTER TABLE shows ADD COLUMN last_edited_by TEXT')
 }
 if (!showCols.includes('last_edited_at')) {
   dbContainer.db.exec('ALTER TABLE shows ADD COLUMN last_edited_at INTEGER')
-}
-const userCols = dbContainer.db.pragma('table_info(users)').map(c => c.name)
-if (!userCols.includes('role')) {
-  dbContainer.db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'techniker'")
-}
-if (!userCols.includes('requires_password_change')) {
-  dbContainer.db.exec("ALTER TABLE users ADD COLUMN requires_password_change INTEGER NOT NULL DEFAULT 0")
-}
-if (!userCols.includes('email')) {
-  dbContainer.db.exec("ALTER TABLE users ADD COLUMN email TEXT NOT NULL DEFAULT ''")
 }
 // section_kv_rows: Zeilen für kv-table Sections
 const kvRowsTableExists = dbContainer.db.prepare(
@@ -251,11 +238,6 @@ if (!templateCols.includes('updated_at')) {
   dbContainer.db.exec('ALTER TABLE templates ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0')
 }
 
-const photoCols = dbContainer.db.pragma('table_info(photo_descriptions)').map(c => c.name)
-if (!photoCols.includes('channel_number')) {
-  dbContainer.db.exec("ALTER TABLE photo_descriptions ADD COLUMN channel_number TEXT NOT NULL DEFAULT ''")
-}
-
 // channel_photos: Mehrere Fotos pro Kanal zuordnen
 const channelPhotosExists = dbContainer.db.prepare(
   "SELECT name FROM sqlite_master WHERE type='table' AND name='channel_photos'"
@@ -273,56 +255,19 @@ if (!channelPhotosExists) {
   `)
 }
 
-// template_floorplans and show_floorplan_layers
-const tplFloorplanTables = dbContainer.db.prepare(
-  "SELECT name FROM sqlite_master WHERE type='table' AND name='template_floorplans'"
-).get()
-if (!tplFloorplanTables) {
-  dbContainer.db.exec(`
-    CREATE TABLE IF NOT EXISTS template_floorplans (
-      id          TEXT PRIMARY KEY,
-      template_id TEXT NOT NULL REFERENCES templates(id) ON DELETE CASCADE,
-      image_path  TEXT,
-      created_at  INTEGER NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS show_floorplan_layers (
-      id         TEXT PRIMARY KEY,
-      show_id    TEXT NOT NULL REFERENCES shows(id) ON DELETE CASCADE,
-      canvas_data TEXT,
-      image_path TEXT,
-      updated_at INTEGER NOT NULL
-    );
-  `)
-}
-
-// template_floorplans: add canvas_data column if missing
+// template_floorplans: canvas_data nachträglich hinzugefügt
 const tplFloorplanCols = dbContainer.db.prepare("PRAGMA table_info(template_floorplans)").all().map(c => c.name)
 if (!tplFloorplanCols.includes('canvas_data')) {
   dbContainer.db.exec('ALTER TABLE template_floorplans ADD COLUMN canvas_data TEXT')
 }
 
-// show_floorplan_layers: ensure show_floorplan_layers exists (may have been created without image_path)
-const showFloorplanLayersExists = dbContainer.db.prepare(
-  "SELECT name FROM sqlite_master WHERE type='table' AND name='show_floorplan_layers'"
-).get()
-if (!showFloorplanLayersExists) {
-  dbContainer.db.exec(`
-    CREATE TABLE IF NOT EXISTS show_floorplan_layers (
-      id         TEXT PRIMARY KEY,
-      show_id    TEXT NOT NULL REFERENCES shows(id) ON DELETE CASCADE,
-      canvas_data TEXT,
-      image_path TEXT,
-      updated_at INTEGER NOT NULL
-    );
-  `)
-} else {
+// show_floorplan_layers: image_path + canvas_data nachträglich hinzugefügt
+{
   const showFloorplanCols = dbContainer.db.pragma('table_info(show_floorplan_layers)').map(c => c.name)
   if (!showFloorplanCols.includes('image_path')) {
     dbContainer.db.exec('ALTER TABLE show_floorplan_layers ADD COLUMN image_path TEXT')
   }
   if (!showFloorplanCols.includes('canvas_data')) {
-    // Rename svg_data → canvas_data via table recreation (SQLite limitation)
-    // WARNING: existing svg_data content is discarded (format incompatible with new JSON format)
     dbContainer.db.exec(`
       CREATE TABLE show_floorplan_layers_new (
         id         TEXT PRIMARY KEY,

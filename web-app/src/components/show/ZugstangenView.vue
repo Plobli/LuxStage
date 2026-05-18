@@ -121,7 +121,7 @@
         </div>
         <div v-if="bar.fixtures.length" class="ml-46 mt-1 text-xs text-muted-foreground/60 select-all leading-relaxed">
           <span class="font-semibold text-foreground/80">{{ bar.name }}:</span>
-          {{ generateBarLine(bar, channelById, unit, cmToDisplay).slice(bar.name.length + 2) }}
+          {{ generateBarLine(bar, channelById, unit, cmToDisplay, locale).slice(bar.name.length + 2) }}
         </div>
       </div>
     </div>
@@ -215,7 +215,7 @@ import { ref, computed, onBeforeUnmount } from 'vue'
 import { useLocale } from '@/composables/useLocale.js'
 import { useMeasureUnit } from '@/composables/useMeasureUnit'
 import { generateBarLine } from '@/utils/generateHangerei'
-const { t } = useLocale()
+const { t, locale } = useLocale()
 const { unit, formatLength, cmToDisplay, parseToCm, inputStep, lengthMin, lengthMax } = useMeasureUnit()
 import { Plus, Pencil, Trash2 } from 'lucide-vue-next'
 import { useDragReorder } from '@/composables/useDragReorder'

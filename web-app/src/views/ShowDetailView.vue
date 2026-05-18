@@ -392,7 +392,7 @@ const GassenturmView = defineAsyncComponent(() => import('../components/show/Gas
 const ZugstangenView = defineAsyncComponent(() => import('../components/show/ZugstangenView.vue'))
 
 const props = defineProps({ id: { type: String, required: true } })
-const { t } = useLocale()
+const { t, locale } = useLocale()
 const { confirm } = useConfirm()
 const { onKeydown } = useKeyboardNav()
 
@@ -500,7 +500,7 @@ const { bars, loadBars, addBar, saveBar, removeBar, assignFixture, updateFixture
 
 const { unit, cmToDisplay } = useMeasureUnit()
 const channelByIdForHangerei = computed(() => new Map(channels.value.map(c => [c.id, c])))
-const hangerei = computed(() => generateHangereiEntries(bars.value, channelByIdForHangerei.value, unit.value, cmToDisplay))
+const hangerei = computed(() => generateHangereiEntries(bars.value, channelByIdForHangerei.value, unit.value, cmToDisplay, locale.value))
 
 const { presence, initPresence, cleanupPresence } = useShowPresence(props.id, {
   onChannels: handleChannelsSse,

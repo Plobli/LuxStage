@@ -748,15 +748,33 @@ function renderHangereiBars(doc, bars, channels, margin, usableW, startY, bottom
   const LINE_H = mm(5.5)
   let ty = startY
 
+  function fmtColor(color) {
+    if (!color) return undefined
+    const s = color.trim()
+    if (/^[LRlr]\d/.test(s)) return s.toUpperCase()
+    if (/^\d/.test(s)) return `L${s}`
+    return s
+  }
+
   const sorted = [...bars].sort((a, b) => a.sort_order - b.sort_order)
   for (const bar of sorted) {
     const fixtures = bar.fixtures ?? []
-    if (!fixtures.length) continue
+    if (!fixtures.length && !bar.notes) continue
+    if (!fixtures.length) {
+      const lineH = doc.font(FONT_NORMAL).fontSize(8.5).heightOfString(bar.notes, { width: usableW }) + mm(1)
+      if (ty + lineH > bottomLimit) { doc.addPage(); addFooter(); ty = PAGE_MARGIN }
+      const nameLabel = `${bar.name}: `
+      doc.font(FONT_BOLD).fontSize(8.5).fillColor('black')
+        .text(nameLabel, margin, ty, { continued: true, lineBreak: false })
+      doc.font(FONT_NORMAL).text(bar.notes, { width: usableW - doc.widthOfString(nameLabel), lineBreak: true })
+      ty += lineH + mm(1)
+      continue
+    }
 
     const fixSorted = [...fixtures].sort((a, b) => a.position - b.position)
     const parts = fixSorted.map(fx => {
       const ch = channels.find(c => c.id === fx.channel_id)
-      const tokens = ['V.', ch?.channel ?? '?', ch?.device, ch?.address ? `#${ch.address}` : undefined, ch?.color, fx.notes || undefined]
+      const tokens = [`V.${ch?.channel ?? '?'}`, ch?.device, ch?.address ? `#${ch.address}` : undefined, fmtColor(ch?.color), fx.notes || undefined]
       // Position in m
       const cm = fx.position
       let posStr

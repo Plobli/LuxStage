@@ -250,10 +250,22 @@
               :saveBarFn="saveBar"
               :deleteBarFn="removeBar"
               :assignFixtureFn="assignFixture"
+              :updateFixtureNotesFn="updateFixtureNotes"
               :unassignFixtureFn="unassignFixture"
               :reorderBarsFn="reorderBars"
               @assigned="activeChannelForAssign = null"
             />
+          </div>
+
+          <div v-show="aufbauTab === 'hangerei-generated'" class="flex-1 min-h-0 overflow-y-auto">
+            <div v-if="hangerei.length" class="px-6 py-5 flex flex-col gap-2">
+              <div v-for="entry in hangerei" :key="entry.name" class="text-sm text-foreground leading-relaxed">
+                <span class="font-semibold">{{ entry.name }}:</span> {{ entry.text }}
+              </div>
+            </div>
+            <div v-else class="flex items-center justify-center h-32 text-sm text-muted-foreground">
+              Keine Zugstangen mit zugewiesenen Kanälen vorhanden.
+            </div>
           </div>
         </div>
 
@@ -355,6 +367,7 @@ import { saveShowFloorplanSnapshot } from '../api/floorplan.js'
 import { useShowTowers } from '../composables/useShowTowers.js'
 import { restoreTowersSnapshot } from '../api/towers.js'
 import { useShowBars } from '../composables/useShowBars.js'
+import { useMeasureUnit } from '../composables/useMeasureUnit'
 
 import ShowHeader from '../components/show/ShowHeader.vue'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
@@ -365,6 +378,7 @@ import { fetchShow, updateMeta, restoreHistory, createSnapshot } from '../api/sh
 import { saveShowSectionDefs } from '../api/sections.ts'
 import { uuid } from '../utils/uuid.js'
 import { downloadChannelsCsv } from '../api/channels.js'
+import { generateHangereiEntries } from '../utils/generateHangerei'
 import PhotoGallery from '../components/show/PhotoGallery.vue'
 const HistorySlideOver = defineAsyncComponent(() => import('../components/show/HistorySlideOver.vue'))
 import { isOnline } from '../api/client.js'
@@ -429,6 +443,7 @@ const {
 const AUFBAU_FIXED_TABS = [
   { key: 'gassenturm', label: 'Gassentürme' },
   { key: 'zugstangen', label: 'Zugstangen' },
+  { key: 'hangerei-generated', label: 'Hängerei (generiert)' },
 ]
 const aufbauSubTabs = computed(() => {
   const sectionTabs = [...sectionDefs.value]
@@ -481,7 +496,11 @@ const {
 })
 
 const { loadTowers, addTower, saveTower, removeTower, assignSlot } = useShowTowers(props.id, channels, towers)
-const { bars, loadBars, addBar, saveBar, removeBar, assignFixture, unassignFixture, reorderBars } = useShowBars(props.id, channels)
+const { bars, loadBars, addBar, saveBar, removeBar, assignFixture, updateFixtureNotes, unassignFixture, reorderBars } = useShowBars(props.id, channels)
+
+const { unit, cmToDisplay } = useMeasureUnit()
+const channelByIdForHangerei = computed(() => new Map(channels.value.map(c => [c.id, c])))
+const hangerei = computed(() => generateHangereiEntries(bars.value, channelByIdForHangerei.value, unit.value, cmToDisplay))
 
 const { presence, initPresence, cleanupPresence } = useShowPresence(props.id, {
   onChannels: handleChannelsSse,

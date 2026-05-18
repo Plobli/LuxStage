@@ -411,6 +411,13 @@ if (!barsTableExists) {
     dbContainer.db.exec("ALTER TABLE bars ADD COLUMN notes TEXT NOT NULL DEFAULT ''")
 }
 
+// Migration: notes auf bar_fixtures
+{
+  const cols = dbContainer.db.prepare("PRAGMA table_info(bar_fixtures)").all().map(c => c.name)
+  if (!cols.includes('notes'))
+    dbContainer.db.exec("ALTER TABLE bar_fixtures ADD COLUMN notes TEXT NOT NULL DEFAULT ''")
+}
+
 // Migration: notes auf towers
 {
   const cols = dbContainer.db.prepare("PRAGMA table_info(towers)").all().map(c => c.name)

@@ -52,19 +52,25 @@ export function reorderBars(slug, orderedIds) {
   tx()
 }
 
-export function writeBarFixture(barId, channelId, position) {
+export function writeBarFixture(barId, channelId, position, notes) {
   const id = randomUUID()
   dbContainer.db.prepare(`
-    INSERT INTO bar_fixtures (id, bar_id, channel_id, position)
-    VALUES (?, ?, ?, ?)
-    ON CONFLICT(bar_id, channel_id) DO UPDATE SET position = excluded.position
-  `).run(id, barId, channelId, position ?? 0)
+    INSERT INTO bar_fixtures (id, bar_id, channel_id, position, notes)
+    VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT(bar_id, channel_id) DO UPDATE SET position = excluded.position, notes = excluded.notes
+  `).run(id, barId, channelId, position ?? 0, notes ?? '')
 
   const bar = dbContainer.db.prepare('SELECT * FROM bars WHERE id = ?').get(barId)
   if (bar) {
     const mountRef = JSON.stringify({ type: 'bar', barId, barName: bar.name, zugNr: bar.zug_nr, position: position ?? 0 })
     dbContainer.db.prepare('UPDATE channels SET mount_ref = ? WHERE id = ?').run(mountRef, channelId)
   }
+}
+
+export function updateBarFixtureNotes(barId, channelId, notes) {
+  dbContainer.db.prepare(
+    'UPDATE bar_fixtures SET notes = ? WHERE bar_id = ? AND channel_id = ?'
+  ).run(notes ?? '', barId, channelId)
 }
 
 export function removeBarFixture(barId, channelId) {

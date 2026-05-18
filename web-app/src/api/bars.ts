@@ -5,6 +5,7 @@ export interface BarFixture {
   bar_id: string
   channel_id: string
   position: number
+  notes?: string
 }
 
 export interface Bar {
@@ -15,6 +16,8 @@ export interface Bar {
   length_cm: number
   sort_order: number
   fixtures: BarFixture[]
+  height_cm?: number | null
+  notes?: string | null
 }
 
 export async function fetchBars(showId: string): Promise<Bar[]> {
@@ -33,8 +36,12 @@ export async function deleteBar(showId: string, barId: string): Promise<void> {
   return api.delete(`/api/shows/${showId}/bars/${barId}`)
 }
 
-export async function addBarFixture(showId: string, barId: string, channelId: string, position: number): Promise<void> {
-  return api.post(`/api/shows/${showId}/bars/${barId}/fixtures`, { channelId, position })
+export async function addBarFixture(showId: string, barId: string, channelId: string, position: number, notes?: string): Promise<void> {
+  return api.post(`/api/shows/${showId}/bars/${barId}/fixtures`, { channelId, position, notes: notes ?? '' })
+}
+
+export async function patchBarFixtureNotes(showId: string, barId: string, channelId: string, notes: string): Promise<void> {
+  return api.patch(`/api/shows/${showId}/bars/${barId}/fixtures/${channelId}`, { notes })
 }
 
 export async function removeBarFixture(showId: string, barId: string, channelId: string): Promise<void> {

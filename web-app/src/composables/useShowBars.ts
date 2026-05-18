@@ -1,5 +1,5 @@
 import { ref, type Ref } from 'vue'
-import { fetchBars, createBar, updateBar, deleteBar as apiDeleteBar, addBarFixture, removeBarFixture, reorderBars as apiReorderBars, type Bar } from '../api/bars'
+import { fetchBars, createBar, updateBar, deleteBar as apiDeleteBar, addBarFixture, patchBarFixtureNotes, removeBarFixture, reorderBars as apiReorderBars, type Bar } from '../api/bars'
 import type { Channel } from '../api/channels'
 
 export function useShowBars(showId: string, channels?: Ref<Channel[]>) {
@@ -49,6 +49,14 @@ export function useShowBars(showId: string, channels?: Ref<Channel[]>) {
     bars.value = bars.value.filter(b => b.id !== barId)
   }
 
+  async function updateFixtureNotes(barId: string, channelId: string, notes: string) {
+    await patchBarFixtureNotes(showId, barId, channelId, notes)
+    const bar = bars.value.find(b => b.id === barId)
+    if (!bar) return
+    const fx = bar.fixtures.find(f => f.channel_id === channelId)
+    if (fx) fx.notes = notes
+  }
+
   async function assignFixture(barId: string, channelId: string, position: number) {
     await addBarFixture(showId, barId, channelId, position)
     const bar = bars.value.find(b => b.id === barId)
@@ -58,7 +66,7 @@ export function useShowBars(showId: string, channels?: Ref<Channel[]>) {
     if (existing) {
       existing.position = position
     } else {
-      bar.fixtures.push({ id: '', bar_id: barId, channel_id: channelId, position })
+      bar.fixtures.push({ id: '', bar_id: barId, channel_id: channelId, position, notes: '' })
       bar.fixtures.sort((a, b) => a.position - b.position)
     }
 
@@ -92,5 +100,5 @@ export function useShowBars(showId: string, channels?: Ref<Channel[]>) {
     bars.value = orderedIds.map(id => bars.value.find(b => b.id === id)!).filter(Boolean)
   }
 
-  return { bars, loading, loadBars, addBar, saveBar, removeBar, assignFixture, unassignFixture, reorderBars }
+  return { bars, loading, loadBars, addBar, saveBar, removeBar, assignFixture, updateFixtureNotes, unassignFixture, reorderBars }
 }

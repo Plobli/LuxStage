@@ -309,6 +309,12 @@ export async function generatePDF(show, channels, sectionsMap, templateSections,
 
     if (bars.length > 0) {
       if (ty + mm(30) > printableBottom) { doc.addPage(); addFooter(); ty = PAGE_MARGIN }
+      doc.font(FONT_BOLD).fontSize(13).fillColor('black').text('Hängerei', PAGE_MARGIN, ty, { lineBreak: false })
+      ty += mm(9)
+      ty = renderHangereiBars(doc, bars, channels, PAGE_MARGIN, usableW, ty, printableBottom, addFooter)
+      ty += mm(8)
+
+      if (ty + mm(20) > printableBottom) { doc.addPage(); addFooter(); ty = PAGE_MARGIN }
       doc.font(FONT_BOLD).fontSize(13).fillColor('black').text('Zugstangen', PAGE_MARGIN, ty, { lineBreak: false })
       ty += mm(9)
       drawBarRows(doc, bars, channels, PAGE_MARGIN, usableW, ty, printableBottom, addFooter)
@@ -735,6 +741,50 @@ function drawTowerCards(doc, towers, channels, margin, usableW, startY, bottomLi
   }
   flushRow()
   return rowY
+}
+
+// Hängerei als Textliste (eine Zeile pro Zug)
+function renderHangereiBars(doc, bars, channels, margin, usableW, startY, bottomLimit, addFooter) {
+  const LINE_H = mm(5.5)
+  let ty = startY
+
+  const sorted = [...bars].sort((a, b) => a.sort_order - b.sort_order)
+  for (const bar of sorted) {
+    const fixtures = bar.fixtures ?? []
+    if (!fixtures.length) continue
+
+    const fixSorted = [...fixtures].sort((a, b) => a.position - b.position)
+    const parts = fixSorted.map(fx => {
+      const ch = channels.find(c => c.id === fx.channel_id)
+      const tokens = ['V.', ch?.channel ?? '?', ch?.device, ch?.address ? `#${ch.address}` : undefined, ch?.color, fx.notes || undefined]
+      // Position in m
+      const cm = fx.position
+      let posStr
+      if (cm === 0) posStr = 'Mitte'
+      else {
+        const val = Math.abs(cm) / 100
+        const valStr = Number.isInteger(val) ? val : parseFloat(val.toFixed(2))
+        posStr = `${valStr}m ${cm < 0 ? 'Links' : 'Rechts'}`
+      }
+      tokens.push(posStr)
+      return tokens.filter(Boolean).join(' ')
+    })
+    let line = `${bar.name}: ${parts.join(' • ')}`
+    if (bar.notes) line += ` • ${bar.notes}`
+
+    // Seitenumbruch
+    const lineH = doc.font(FONT_NORMAL).fontSize(8.5).heightOfString(line, { width: usableW }) + mm(1)
+    if (ty + lineH > bottomLimit) { doc.addPage(); addFooter(); ty = PAGE_MARGIN }
+
+    const nameLabel = `${bar.name}: `
+    doc.font(FONT_BOLD).fontSize(8.5).fillColor('black')
+      .text(nameLabel, margin, ty, { continued: true, lineBreak: false })
+    const rest = line.slice(nameLabel.length)
+    doc.font(FONT_NORMAL)
+      .text(rest, { width: usableW - doc.widthOfString(nameLabel), lineBreak: true })
+    ty += lineH + mm(1)
+  }
+  return ty
 }
 
 // Zugstangen als visuelle Zeilen mit Kanal-Kreisen

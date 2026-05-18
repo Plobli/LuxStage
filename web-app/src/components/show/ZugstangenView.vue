@@ -74,7 +74,8 @@
               >
                 <button
                   class="size-10 rounded-full border-2 border-accent bg-accent/30 backdrop-blur-sm flex items-center justify-center hover:bg-accent/50 transition-all shadow-lg"
-                  @click.stop="goToChannel(fx.channel_id)"
+                  :class="fx.notes ? 'ring-2 ring-yellow-400/60' : ''"
+                  @click.stop="openFixtureEditDialog(fx, bar)"
                 >
                   <span class="text-xs font-bold text-white tabular-nums drop-shadow-sm">{{ channelNr(fx.channel_id) }}</span>
                 </button>
@@ -118,6 +119,10 @@
             @change="saveInlineField(bar, 'notes', $event.target.value)"
           />
         </div>
+        <div v-if="bar.fixtures.length" class="ml-46 mt-1 text-xs text-muted-foreground/60 select-all leading-relaxed">
+          <span class="font-semibold text-foreground/80">{{ bar.name }}:</span>
+          {{ generateBarLine(bar, channelById, unit, cmToDisplay).slice(bar.name.length + 2) }}
+        </div>
       </div>
     </div>
 
@@ -148,6 +153,26 @@
       <DialogFooter>
         <Button variant="ghost" @click="barDialogOpen = false">{{ t('action.cancel') }}</Button>
         <Button @click="saveBarForm">{{ editingBar ? t('action.save') : t('zugstange.action.create') }}</Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
+
+  <!-- Fixture Edit Dialog -->
+  <Dialog :open="fixtureEditOpen" @update:open="fixtureEditOpen = $event">
+    <DialogContent class="sm:max-w-sm">
+      <DialogHeader>
+        <DialogTitle>Kanal {{ channelNr(fixtureEditFx?.channel_id) }} — {{ fixtureEditBar?.name }}</DialogTitle>
+      </DialogHeader>
+      <DialogBody>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs text-muted-foreground">Anmerkung</label>
+          <Input size="lg" v-model="fixtureEditNotes" placeholder="z. B. 3m Seil, Sonderfarbe…" autofocus @keydown.enter="saveFixtureEdit" />
+        </div>
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="ghost" class="mr-auto text-xs text-muted-foreground" @click="goToChannel(fixtureEditFx?.channel_id); fixtureEditOpen = false">Zum Kanal →</Button>
+        <Button variant="ghost" @click="fixtureEditOpen = false">{{ t('action.cancel') }}</Button>
+        <Button @click="saveFixtureEdit">{{ t('action.save') }}</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>
@@ -189,6 +214,7 @@
 import { ref, computed, onBeforeUnmount } from 'vue'
 import { useLocale } from '@/composables/useLocale.js'
 import { useMeasureUnit } from '@/composables/useMeasureUnit'
+import { generateBarLine } from '@/utils/generateHangerei'
 const { t } = useLocale()
 const { unit, formatLength, cmToDisplay, parseToCm, inputStep, lengthMin, lengthMax } = useMeasureUnit()
 import { Plus, Pencil, Trash2 } from 'lucide-vue-next'
@@ -205,6 +231,7 @@ const props = defineProps({
   saveBarFn: { type: Function, required: true },
   deleteBarFn: { type: Function, required: true },
   assignFixtureFn: { type: Function, required: true },
+  updateFixtureNotesFn: { type: Function, required: true },
   unassignFixtureFn: { type: Function, required: true },
   reorderBarsFn: { type: Function, default: null },
 })
@@ -314,6 +341,26 @@ function confirmDeleteBar(bar) {
   if (confirm(t('zugstange.delete.confirm', { name: bar.name }))) {
     props.deleteBarFn(bar.id)
   }
+}
+
+// Fixture Edit Dialog
+const fixtureEditOpen = ref(false)
+const fixtureEditFx = ref(null)
+const fixtureEditBar = ref(null)
+const fixtureEditNotes = ref('')
+
+function openFixtureEditDialog(fx, bar) {
+  fixtureEditFx.value = fx
+  fixtureEditBar.value = bar
+  fixtureEditNotes.value = fx.notes ?? ''
+  fixtureEditOpen.value = true
+}
+
+async function saveFixtureEdit() {
+  if (!fixtureEditFx.value || !fixtureEditBar.value) return
+  await props.updateFixtureNotesFn(fixtureEditBar.value.id, fixtureEditFx.value.channel_id, fixtureEditNotes.value)
+  fixtureEditFx.value.notes = fixtureEditNotes.value
+  fixtureEditOpen.value = false
 }
 
 // Fixture Picker

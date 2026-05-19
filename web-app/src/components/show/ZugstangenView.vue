@@ -185,16 +185,22 @@
       </DialogHeader>
       <DialogBody>
         <Input size="lg" v-model="fixtureSearch" placeholder="Kanal suchen…" autofocus @keydown.enter="selectFirstAndConfirm" />
-        <div class="max-h-48 overflow-y-auto flex flex-col gap-1">
+        <div class="max-h-64 overflow-y-auto flex flex-col">
           <button
-            v-for="(ch, idx) in filteredChannelsForPicker"
+            v-for="ch in filteredChannelsForPicker"
             :key="ch.channel"
-            class="flex items-center gap-3 px-3 py-2 rounded-md text-left transition-colors"
-            :class="idx === 0 ? 'bg-muted/60' : 'hover:bg-muted/60'"
+            class="flex items-center gap-4 px-4 py-3 text-left transition-colors border-b border-border/30 last:border-b-0"
+            :class="pickerChannel?.id === ch.id ? 'bg-accent/20 border-l-2 border-l-accent' : 'hover:bg-muted/40 border-l-2 border-l-transparent'"
             @click="pickerChannel = ch; fixtureSearch = ''"
           >
-            <span :class="pickerChannel?.id === ch.id ? 'text-accent font-bold' : ''" class="font-mono text-base w-10">{{ ch.channel }}</span>
-            <span class="text-xs text-muted-foreground truncate">{{ ch.device }}</span>
+            <span class="text-2xl font-bold tabular-nums w-10 shrink-0" :class="pickerChannel?.id === ch.id ? 'text-accent' : 'text-foreground'">{{ ch.channel }}</span>
+            <div class="flex flex-col min-w-0 flex-1">
+              <span class="text-sm font-semibold truncate" :class="pickerChannel?.id === ch.id ? 'text-accent' : 'text-foreground'">{{ ch.device }}</span>
+              <span v-if="ch.address || ch.color" class="text-xs text-muted-foreground mt-0.5">
+                <span v-if="ch.address">DMX {{ ch.address }}</span><span v-if="ch.address && ch.color"> · </span><span v-if="ch.color">{{ ch.color }}</span>
+              </span>
+            </div>
+            <svg v-if="pickerChannel?.id === ch.id" class="size-4 shrink-0 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
           </button>
         </div>
         <div v-if="pickerChannel" class="flex flex-col gap-1.5 border-t border-border pt-3">

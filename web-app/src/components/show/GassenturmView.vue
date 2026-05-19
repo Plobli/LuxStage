@@ -193,19 +193,23 @@
       <!-- Kanalsuche -->
       <DialogBody>
         <Input ref="pickerInputRef" size="lg" v-model="channelPickerSearch" placeholder="Kanalnummer suchen…" autofocus @keydown.enter="pickFirstResult" />
-        <div class="max-h-64 overflow-y-auto flex flex-col gap-1">
+        <div class="max-h-64 overflow-y-auto flex flex-col">
           <button
-            v-for="(ch, idx) in filteredChannelsForPicker"
+            v-for="ch in filteredChannelsForPicker"
             :key="ch.channel"
-            class="flex items-center gap-3 px-3 py-2 rounded-md text-left transition-colors"
-            :class="idx === 0 ? 'bg-muted/60' : 'hover:bg-muted/60'"
+            class="flex items-center gap-4 px-4 py-3 text-left transition-colors border-b border-border/30 last:border-b-0"
+            :class="confirmPending?.id === ch.id ? 'bg-accent/10' : 'hover:bg-muted/40'"
             @click="pickChannel(ch)"
           >
-            <span class="font-mono text-base font-semibold w-12 text-foreground">{{ ch.channel }}</span>
-            <span v-if="ch.color" class="text-xs text-muted-foreground">{{ ch.color }}</span>
-            <span class="text-xs text-muted-foreground truncate">{{ ch.device }}</span>
+            <span class="text-2xl font-bold tabular-nums w-10 shrink-0 text-foreground">{{ ch.channel }}</span>
+            <div class="flex flex-col min-w-0 flex-1">
+              <span class="text-sm font-semibold text-foreground truncate">{{ ch.device }}</span>
+              <span v-if="ch.address || ch.color" class="text-xs text-muted-foreground mt-0.5">
+                <span v-if="ch.address">DMX {{ ch.address }}</span><span v-if="ch.address && ch.color"> · </span><span v-if="ch.color">{{ ch.color }}</span>
+              </span>
+            </div>
           </button>
-          <div v-if="filteredChannelsForPicker.length === 0" class="text-xs text-muted-foreground px-3 py-4 text-center">
+          <div v-if="filteredChannelsForPicker.length === 0" class="text-xs text-muted-foreground px-4 py-4 text-center">
             {{ t('gassenturm.channel.none') }}
           </div>
         </div>

@@ -42,6 +42,7 @@
   "field.channel_number": "Kanal",
   "field.address": "Adresse",
   "field.device": "Gerät",
+  "field.quantity": "Anz.",
   "field.color": "Farbe",
   "field.notes": "Notizen",
   "field.description": "Beschreibung",

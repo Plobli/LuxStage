@@ -15,12 +15,12 @@ export function writeChannels(slug, channels, editedBy = null) {
   if (!show) throw new Error(`Show not found: ${slug}`)
 
   const upsert = dbContainer.db.prepare(`
-    INSERT INTO channels (id, show_id, channel, address, device, position, color, notes, mount_ref, sort_order)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO channels (id, show_id, channel, address, device, position, color, notes, mount_ref, quantity, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
       channel = excluded.channel, address = excluded.address, device = excluded.device,
       position = excluded.position, color = excluded.color, notes = excluded.notes,
-      mount_ref = excluded.mount_ref, sort_order = excluded.sort_order
+      mount_ref = excluded.mount_ref, quantity = excluded.quantity, sort_order = excluded.sort_order
   `)
 
   const tx = dbContainer.db.transaction(() => {
@@ -34,7 +34,7 @@ export function writeChannels(slug, channels, editedBy = null) {
       const id = idByNumber.get(ch.channel) ?? (ch.id || randomUUID())
       incomingIds.add(id)
       const mountRef = ch.mount_ref ? (typeof ch.mount_ref === 'string' ? ch.mount_ref : JSON.stringify(ch.mount_ref)) : null
-      upsert.run(id, show.id, ch.channel ?? '', ch.address ?? '', ch.device ?? '', ch.position ?? '', ch.color ?? '', ch.notes ?? '', mountRef, i)
+      upsert.run(id, show.id, ch.channel ?? '', ch.address ?? '', ch.device ?? '', ch.position ?? '', ch.color ?? '', ch.notes ?? '', mountRef, ch.quantity ?? 1, i)
     }
 
     // Kanäle löschen, die nicht mehr in der Liste sind

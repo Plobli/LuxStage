@@ -6,7 +6,7 @@
         :class="isMobile
           ? `border-t border-border/60 ${rowIndex % 2 === 0 ? 'bg-card' : 'bg-muted/40'}`
           : 'group/row grid border-t border-border/60 bg-card transition-colors'
-              + ' grid-cols-[2rem_10rem_7rem_minmax(14rem,22%)_1fr_7rem_2.5rem] items-center'"
+              + ' grid-cols-[2rem_10rem_7rem_6rem_minmax(14rem,22%)_1fr_7rem_2.5rem] items-center'"
       >
         <!-- Desktop: Drag handle -->
         <div v-if="!isMobile" class="flex py-0 pl-1 pr-0 align-middle">
@@ -54,6 +54,18 @@
           />
         </div>
 
+        <!-- Desktop: Anzahl -->
+        <div
+          v-if="!isMobile"
+          class="px-1 py-0 align-middle border-l border-border/40 h-full flex items-center justify-center transition-colors duration-300"
+          :class="quantityFlash ? 'bg-green-500/20' : ''"
+        >
+          <QuantitySelect
+            :modelValue="ch.quantity ?? 1"
+            @update:modelValue="ch.quantity = $event; emit('change')"
+          />
+        </div>
+
         <!-- Desktop: Gerät -->
         <div v-if="!isMobile" class="px-0 py-0 align-middle border-l border-border/40 h-full flex items-center">
           <ChannelTextarea
@@ -62,7 +74,7 @@
             data-nav-col="2"
             @focus="emit('recordFocus')"
             @input="emit('change')"
-            @blur="emit('commitFocus')"
+            @blur="onDeviceBlur"
             @keydown="onKeydownCol2"
           />
         </div>
@@ -216,6 +228,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from '@/components/ui/input'
 import ColorAutocomplete from '../ColorAutocomplete.vue'
 import ChannelTextarea from './ChannelTextarea.vue'
+import QuantitySelect from './QuantitySelect.vue'
 import { useIsMobile } from '@/composables/useBreakpoint.js'
 
 const props = defineProps({
@@ -236,13 +249,28 @@ const emit = defineEmits([
 ])
 
 const deleteDialogOpen = ref(false)
+const quantityFlash = ref(false)
+
+function onDeviceBlur() {
+  emit('commitFocus')
+  const ch = props.ch
+  const match = (ch.device ?? '').match(/^(\d+)\s*x\s*/i)
+  if (match) {
+    const n = Math.min(99, Math.max(1, parseInt(match[1])))
+    ch.quantity = n
+    ch.device = ch.device.slice(match[0].length)
+    emit('change')
+    quantityFlash.value = true
+    setTimeout(() => { quantityFlash.value = false }, 600)
+  }
+}
 
 const isMobile = useIsMobile()
 
-function onKeydownCol0(e) { props.onKeydownFn?.(e, props.rowIndex, 0, 4, props.onAddRow) }
-function onKeydownCol1(e) { props.onKeydownFn?.(e, props.rowIndex, 1, 4, null) }
-function onKeydownCol2(e) { props.onKeydownFn?.(e, props.rowIndex, 2, 4, null) }
-function onKeydownCol3(e) { props.onKeydownFn?.(e, props.rowIndex, 3, 4, props.onAddRow) }
+function onKeydownCol0(e) { props.onKeydownFn?.(e, props.rowIndex, 0, 5, props.onAddRow) }
+function onKeydownCol1(e) { props.onKeydownFn?.(e, props.rowIndex, 1, 5, null) }
+function onKeydownCol2(e) { props.onKeydownFn?.(e, props.rowIndex, 2, 5, null) }
+function onKeydownCol3(e) { props.onKeydownFn?.(e, props.rowIndex, 3, 5, props.onAddRow) }
 
 const mountRefLabel = computed(() => {
   const raw = props.ch?.mount_ref

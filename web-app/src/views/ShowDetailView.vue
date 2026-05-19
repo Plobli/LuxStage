@@ -110,6 +110,7 @@
                 channel: t('field.channel'),
                 color: t('field.color'),
                 device: t('field.device'),
+                quantity: t('field.quantity'),
                 notes: t('field.notes'),
                 editPosition: t('channel.position.edit'),
                 noCategory: t('channel.no_category'),

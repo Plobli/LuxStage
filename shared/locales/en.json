@@ -42,6 +42,7 @@
   "field.channel_number": "Chan",
   "field.address": "Address",
   "field.device": "Device",
+  "field.quantity": "Qty.",
   "field.color": "Color",
   "field.notes": "Notes",
   "field.description": "Description",

@@ -318,6 +318,9 @@ const channelCols = dbContainer.db.pragma('table_info(channels)').map(c => c.nam
 if (!channelCols.includes('mount_ref')) {
   dbContainer.db.exec("ALTER TABLE channels ADD COLUMN mount_ref TEXT")
 }
+if (!channelCols.includes('quantity')) {
+  dbContainer.db.exec("ALTER TABLE channels ADD COLUMN quantity INTEGER NOT NULL DEFAULT 1")
+}
 
 // bars: Zugstangen pro Show
 const barsTableExists = dbContainer.db.prepare(

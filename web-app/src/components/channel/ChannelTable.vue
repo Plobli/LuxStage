@@ -1,10 +1,11 @@
 <template>
   <div class="flex h-full flex-col overflow-hidden bg-card">
     <div class="shrink-0 sticky top-0 z-20 border-b border-border/90 bg-muted shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_8px_rgba(0,0,0,0.10)]">
-      <div v-if="!isMobile" class="grid min-h-8 grid-cols-[2rem_10rem_7rem_minmax(14rem,22%)_minmax(16rem,1fr)_2.5rem] items-center px-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/90">
+      <div v-if="!isMobile" class="grid min-h-8 grid-cols-[2rem_10rem_7rem_6rem_minmax(14rem,22%)_minmax(16rem,1fr)_2.5rem] items-center px-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/90">
         <div></div>
         <div>{{ labels.channel }}</div>
         <div class="px-0">{{ labels.color }}</div>
+        <div class="px-0 text-center">{{ labels.quantity }}</div>
         <div class="px-0">{{ labels.device }}</div>
         <div class="px-1.5">{{ labels.notes }}</div>
         <div></div>
@@ -154,7 +155,7 @@
             </div>
           </div>
           <!-- Desktop add form -->
-          <div v-else class="grid grid-cols-[2rem_10rem_7rem_minmax(14rem,22%)_minmax(16rem,1fr)_2.5rem] items-center gap-0">
+          <div v-else class="grid grid-cols-[2rem_10rem_7rem_6rem_minmax(14rem,22%)_minmax(16rem,1fr)_2.5rem] items-center gap-0">
             <div></div>
             <div class="px-3">
               <div class="flex items-center gap-1.5">
@@ -174,6 +175,15 @@
             </div>
             <div class="px-2">
               <ColorAutocomplete v-model="addForm.color" @change="() => {}" :placeholder="labels.color" />
+            </div>
+            <div class="px-2">
+              <input
+                type="number"
+                min="1"
+                max="99"
+                v-model.number="addForm.quantity"
+                class="h-8 w-full rounded border border-border/40 bg-transparent px-2 py-0 text-center text-sm text-foreground shadow-none focus-visible:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              />
             </div>
             <div class="px-2">
               <Textarea
@@ -244,7 +254,7 @@ const props = defineProps({
   labels: {
     type: Object,
     default: () => ({
-      channel: 'Kanal', color: 'Farbe', device: 'Gerät', notes: 'Notizen',
+      channel: 'Kanal', color: 'Farbe', device: 'Gerät', quantity: 'Anz.', notes: 'Notizen',
       editPosition: 'Bearbeiten', noCategory: '–', add: 'Kanal hinzufügen',
       delete: 'Löschen', empty: 'Keine Kanäle', channelNr: 'Nr', addressExample: 'z.B. 1',
     }),
@@ -349,7 +359,7 @@ function savePosition() {
 // ── Add channel ────────────────────────────────────────────────────────────
 function startAdd(position) {
   addingPosition.value = position
-  addForm.value = { channel: '', address: '', device: '', position, color: '', notes: '' }
+  addForm.value = { channel: '', address: '', device: '', position, color: '', notes: '', quantity: 1 }
 }
 
 function saveAdd() {

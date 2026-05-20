@@ -1,5 +1,6 @@
 import type { Bar } from '../api/bars'
 import type { Channel } from '../api/channels'
+import type { Tower } from '../api/towers'
 import type { MeasureUnit } from '../composables/useMeasureUnit'
 
 export function formatHangPosition(cm: number, unit: MeasureUnit, cmToDisplay: (n: number) => number): string {
@@ -75,6 +76,48 @@ export function generateHangereiEntries(
       const text = line.startsWith(sep) ? line.slice(sep.length) : line
       return [{ name: bar.name, text }]
     })
+}
+
+export interface GassenturmEntry {
+  name: string
+  text: string
+}
+
+export function generateGassenturmEntries(
+  towers: Tower[],
+  channelById: Map<string, Channel>,
+  locale = 'de'
+): GassenturmEntry[] {
+  const prefix = locale === 'en' ? 'Ch.' : 'V.'
+  return [...towers]
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .flatMap(tower => {
+      const filled = [...(tower.slots ?? [])]
+        .sort((a, b) => a.slot_index - b.slot_index)
+        .filter(s => s.channel_id)
+      if (!filled.length) return []
+
+      const header = [tower.name, tower.stage_area, tower.side].filter(Boolean).join(' ')
+      const parts = filled.map(slot => {
+        const ch = channelById.get(slot.channel_id!)
+        return [
+          `${prefix}${ch?.channel ?? '?'}`,
+          ch?.device || undefined,
+          formatColor(ch?.color),
+        ].filter(Boolean).join(' ')
+      })
+      return [{ name: header, text: parts.join(', ') }]
+    })
+}
+
+export function generateGassenturm(
+  towers: Tower[],
+  channelById: Map<string, Channel>,
+  locale = 'de'
+): string {
+  return generateGassenturmEntries(towers, channelById, locale)
+    .map(e => `${e.name}: ${e.text}`)
+    .join('\n')
 }
 
 export function generateHangerei(

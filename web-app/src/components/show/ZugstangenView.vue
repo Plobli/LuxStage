@@ -126,6 +126,19 @@
       </div>
     </div>
 
+    <!-- Generierter Text -->
+    <div v-if="props.generatedEntries.length" class="shrink-0 border-t border-border">
+      <button class="w-full px-5 py-3 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors" @click="showGenerated = !showGenerated">
+        <ChevronDown class="size-3.5 transition-transform" :class="showGenerated ? 'rotate-180' : ''" />
+        Generierter Text
+      </button>
+      <div v-show="showGenerated" class="px-5 pb-4 flex flex-col gap-1.5">
+        <div v-for="entry in props.generatedEntries" :key="entry.name" class="text-sm text-foreground leading-relaxed select-all">
+          <span class="font-semibold">{{ entry.name }}:</span> {{ entry.text }}
+        </div>
+      </div>
+    </div>
+
     <!-- Neue Zugstange -->
     <div class="shrink-0 border-t border-border px-5 py-3 flex justify-end">
       <Button variant="ghost" size="sm" class="text-xs text-muted-foreground border border-dashed border-border/60" @click="openNewBarDialog">
@@ -222,8 +235,9 @@ import { useLocale } from '@/composables/useLocale.js'
 import { useMeasureUnit } from '@/composables/useMeasureUnit'
 import { generateBarLine } from '@/utils/generateHangerei'
 const { t, locale } = useLocale()
+const showGenerated = ref(false)
 const { unit, formatLength, cmToDisplay, parseToCm, inputStep, lengthMin, lengthMax } = useMeasureUnit()
-import { Plus, Pencil, Trash2 } from 'lucide-vue-next'
+import { Plus, Pencil, Trash2, ChevronDown } from 'lucide-vue-next'
 import { useDragReorder } from '@/composables/useDragReorder'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -233,6 +247,7 @@ const props = defineProps({
   bars: { type: Array, required: true },
   channels: { type: Array, required: true },
   preselectedChannelId: { type: String, default: null },
+  generatedEntries: { type: Array, default: () => [] },
   addBarFn: { type: Function, required: true },
   saveBarFn: { type: Function, required: true },
   deleteBarFn: { type: Function, required: true },

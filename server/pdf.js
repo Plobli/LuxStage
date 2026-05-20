@@ -303,6 +303,8 @@ export async function generatePDF(show, channels, sectionsMap, templateSections,
     if (towers.length > 0) {
       doc.font(FONT_BOLD).fontSize(13).fillColor('black').text('Gassentürme', PAGE_MARGIN, ty, { lineBreak: false })
       ty += mm(9)
+      ty = renderGassenturmText(doc, towers, channels, PAGE_MARGIN, usableW, ty, printableBottom, addFooter)
+      ty += mm(5)
       ty = drawTowerCards(doc, towers, channels, PAGE_MARGIN, usableW, ty, printableBottom, addFooter)
       ty += mm(8)
     }
@@ -741,6 +743,44 @@ function drawTowerCards(doc, towers, channels, margin, usableW, startY, bottomLi
   }
   flushRow()
   return rowY
+}
+
+// Gassentürme als Textliste (eine Zeile pro Turm)
+function renderGassenturmText(doc, towers, channels, margin, usableW, startY, bottomLimit, addFooter) {
+  const LINE_H = mm(5.5)
+  let ty = startY
+
+  function fmtColor(color) {
+    if (!color) return undefined
+    const s = color.trim()
+    if (/^[LRlr]\d/.test(s)) return s.toUpperCase()
+    if (/^\d/.test(s)) return `L${s}`
+    return s
+  }
+
+  const sorted = [...towers].sort((a, b) => a.sort_order - b.sort_order)
+  for (const tower of sorted) {
+    const filled = [...(tower.slots ?? [])].sort((a, b) => a.slot_index - b.slot_index).filter(s => s.channel_id)
+    if (!filled.length) continue
+
+    const header = [tower.name, tower.stage_area, tower.side].filter(Boolean).join(' ')
+    const parts = filled.map(slot => {
+      const ch = channels.find(c => c.id === slot.channel_id)
+      return [`V.${ch?.channel ?? '?'}`, ch?.device, fmtColor(ch?.color)].filter(Boolean).join(' ')
+    })
+    const line = `${header}: ${parts.join(', ')}`
+
+    const lineH = doc.font(FONT_NORMAL).fontSize(8.5).heightOfString(line, { width: usableW }) + mm(1)
+    if (ty + lineH > bottomLimit) { doc.addPage(); addFooter(); ty = PAGE_MARGIN }
+
+    const nameLabel = `${header}: `
+    doc.font(FONT_BOLD).fontSize(8.5).fillColor('black')
+      .text(nameLabel, margin, ty, { continued: true, lineBreak: false })
+    doc.font(FONT_NORMAL)
+      .text(parts.join(', '), { width: usableW - doc.widthOfString(nameLabel), lineBreak: true })
+    ty += lineH + mm(1)
+  }
+  return ty
 }
 
 // Hängerei als Textliste (eine Zeile pro Zug)

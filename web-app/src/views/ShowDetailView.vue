@@ -233,6 +233,7 @@
               :towers="towers"
               :channels="channels"
               :preselectedChannelId="aufbauTab === 'gassenturm' ? activeChannelForAssign?.id : null"
+              :generatedEntries="gassenturmGenerated"
               :addTowerFn="addTower"
               :saveTowerFn="saveTower"
               :deleteTowerFn="removeTower"
@@ -247,6 +248,7 @@
               :bars="bars"
               :channels="channels"
               :preselectedChannelId="aufbauTab === 'zugstangen' ? activeChannelForAssign?.id : null"
+              :generatedEntries="hangerei"
               :addBarFn="addBar"
               :saveBarFn="saveBar"
               :deleteBarFn="removeBar"
@@ -256,17 +258,6 @@
               :reorderBarsFn="reorderBars"
               @assigned="activeChannelForAssign = null"
             />
-          </div>
-
-          <div v-show="aufbauTab === 'hangerei-generated'" class="flex-1 min-h-0 overflow-y-auto">
-            <div v-if="hangerei.length" class="px-6 py-5 flex flex-col gap-2">
-              <div v-for="entry in hangerei" :key="entry.name" class="text-sm text-foreground leading-relaxed">
-                <span class="font-semibold">{{ entry.name }}:</span> {{ entry.text }}
-              </div>
-            </div>
-            <div v-else class="flex items-center justify-center h-32 text-sm text-muted-foreground">
-              Keine Zugstangen mit zugewiesenen Kanälen vorhanden.
-            </div>
           </div>
         </div>
 
@@ -379,7 +370,7 @@ import { fetchShow, updateMeta, restoreHistory, createSnapshot } from '../api/sh
 import { saveShowSectionDefs } from '../api/sections.ts'
 import { uuid } from '../utils/uuid.js'
 import { downloadChannelsCsv } from '../api/channels.js'
-import { generateHangereiEntries } from '../utils/generateHangerei'
+import { generateHangereiEntries, generateGassenturmEntries } from '../utils/generateHangerei'
 import PhotoGallery from '../components/show/PhotoGallery.vue'
 const HistorySlideOver = defineAsyncComponent(() => import('../components/show/HistorySlideOver.vue'))
 import { isOnline } from '../api/client.js'
@@ -444,7 +435,6 @@ const {
 const AUFBAU_FIXED_TABS = [
   { key: 'gassenturm', label: 'Gassentürme' },
   { key: 'zugstangen', label: 'Zugstangen' },
-  { key: 'hangerei-generated', label: 'Hängerei (generiert)' },
 ]
 const aufbauSubTabs = computed(() => {
   const sectionTabs = [...sectionDefs.value]
@@ -502,6 +492,7 @@ const { bars, loadBars, addBar, saveBar, removeBar, assignFixture, updateFixture
 const { unit, cmToDisplay } = useMeasureUnit()
 const channelByIdForHangerei = computed(() => new Map(channels.value.map(c => [c.id, c])))
 const hangerei = computed(() => generateHangereiEntries(bars.value, channelByIdForHangerei.value, unit.value, cmToDisplay, locale.value))
+const gassenturmGenerated = computed(() => generateGassenturmEntries(towers.value, channelByIdForHangerei.value, locale.value))
 
 const { presence, initPresence, cleanupPresence } = useShowPresence(props.id, {
   onChannels: handleChannelsSse,

@@ -121,6 +121,19 @@
     </div>
   </div>
 
+  <!-- Generierter Text -->
+  <div v-if="props.generatedEntries.length" class="shrink-0 border-t border-border">
+    <button class="w-full px-5 py-3 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors" @click="showGenerated = !showGenerated">
+      <ChevronDown class="size-3.5 transition-transform" :class="showGenerated ? 'rotate-180' : ''" />
+      Generierter Text
+    </button>
+    <div v-show="showGenerated" class="px-5 pb-4 flex flex-col gap-1.5">
+      <div v-for="entry in props.generatedEntries" :key="entry.name" class="text-sm text-foreground leading-relaxed select-all">
+        <span class="font-semibold">{{ entry.name }}:</span> {{ entry.text }}
+      </div>
+    </div>
+  </div>
+
   <!-- Neuer Gassenturm -->
   <div class="shrink-0 border-t border-border px-5 py-3 flex justify-end">
     <Button variant="ghost" size="sm" class="text-xs text-muted-foreground border border-dashed border-border/60" @click="openNewTowerDialog">
@@ -236,7 +249,8 @@
 import { ref, computed, watch, onBeforeUnmount, nextTick } from 'vue'
 import { useLocale } from '@/composables/useLocale.js'
 const { t } = useLocale()
-import { Plus, Pencil, Trash2, X, ChevronsUpDown, GripVertical } from 'lucide-vue-next'
+const showGenerated = ref(false)
+import { Plus, Pencil, Trash2, X, ChevronsUpDown, GripVertical, ChevronDown } from 'lucide-vue-next'
 import Sortable from 'sortablejs'
 import { filterBadgeStyle } from '@/utils/filterColors.js'
 import { Button } from '@/components/ui/button'
@@ -248,6 +262,7 @@ const props = defineProps({
   channels: { type: Array, required: true },
   activeChannelIds: { type: Array, default: () => [] },
   preselectedChannelId: { type: String, default: null },
+  generatedEntries: { type: Array, default: () => [] },
   addTowerFn: { type: Function, required: true },
   saveTowerFn: { type: Function, required: true },
   deleteTowerFn: { type: Function, required: true },

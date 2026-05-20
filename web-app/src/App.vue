@@ -78,17 +78,36 @@
               <RouterLink
                 :to="item.to"
                 :title="item.name"
-                class="group relative flex gap-x-3 rounded-md p-3 text-sm/6 font-semibold"
-                :class="isActiveRoute(item) ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'"
+                class="group relative flex flex-col items-center gap-1 rounded-md px-2 py-2 w-16"
+                :class="isActiveRoute(item) ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'"
               >
-                <component :is="item.icon" class="size-6 shrink-0" aria-hidden="true" />
-                <span v-if="item.badge?.value" class="absolute top-2 right-2 size-2 rounded-full bg-accent" />
-                <span class="sr-only">{{ item.name }}</span>
+                <div
+                  class="flex items-center justify-center rounded-lg p-2 transition-colors"
+                  :class="isActiveRoute(item) ? 'bg-[hsl(357,61%,45%)]' : 'group-hover:bg-white/5'"
+                >
+                  <component :is="item.icon" class="size-5 shrink-0" aria-hidden="true" />
+                </div>
+                <span v-if="item.badge?.value" class="absolute top-1 right-1 size-2 rounded-full bg-accent" />
+                <span v-if="!item.hideLabel" class="text-[10px] leading-none">{{ item.name }}</span>
               </RouterLink>
             </li>
           </ul>
         </nav>
         <div class="absolute bottom-0 left-0 right-0 pb-2 flex flex-col items-center gap-1">
+          <RouterLink
+            to="/settings"
+            :title="t('nav.settings')"
+            class="group relative flex flex-col items-center gap-1 rounded-md px-2 py-2 w-16"
+            :class="route.path.startsWith('/settings') ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'"
+          >
+            <div
+              class="flex items-center justify-center rounded-lg p-2 transition-colors"
+              :class="route.path.startsWith('/settings') ? 'bg-[hsl(357,61%,45%)]' : 'group-hover:bg-white/5'"
+            >
+              <Settings class="size-5 shrink-0" aria-hidden="true" />
+            </div>
+            <span v-if="updateAvailable" class="absolute top-1 right-1 size-2 rounded-full bg-accent" />
+          </RouterLink>
           <Button
             variant="ghost"
             size="icon"
@@ -99,10 +118,6 @@
             <LogOut class="size-6 shrink-0" aria-hidden="true" />
             <span class="sr-only">{{ t('nav.logout') }}</span>
           </Button>
-          <div class="text-center leading-tight">
-            <div class="text-[9px] text-muted-foreground/60">Web {{ appVersion }}</div>
-            <div v-if="serverVersion" class="text-[9px] text-muted-foreground/60">Srv {{ serverVersion }}</div>
-          </div>
         </div>
       </div>
 
@@ -226,7 +241,6 @@ const navigation = [
   { name: t('nav.shows'), to: '/', routeName: 'shows', icon: Layers },
   { name: t('nav.archive'), to: '/archive', routeName: 'archive', icon: Archive },
   { name: t('nav.templates'), to: '/templates', routeName: 'templates', icon: Files },
-  { name: t('nav.settings'), to: '/settings', routeName: 'settings', icon: Settings, badge: updateAvailable },
 ]
 
 async function handleLogout() {

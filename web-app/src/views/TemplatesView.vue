@@ -225,9 +225,6 @@
           <h1 class="text-base font-semibold text-foreground">{{ t('nav.templates') }}</h1>
         </div>
         <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex gap-2">
-          <Button variant="outline" @click="openNewDialog">
-            {{ t('template.new') }}
-          </Button>
           <Button @click="openUpload">
             {{ t('template.upload') }}
           </Button>
@@ -386,6 +383,11 @@
         </div>
       </DialogContent>
     </Dialog>
+
+  <!-- FAB -->
+  <Button @click="openNewDialog" class="fixed bottom-6 right-6 h-11 px-5 rounded-full shadow-lg bg-red-500 hover:bg-red-600 text-white border-0 flex items-center gap-2">
+    + {{ t('template.new') }}
+  </Button>
   </div>
 </template>
 

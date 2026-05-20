@@ -5,11 +5,6 @@
       <div class="sm:flex-auto">
         <h1 class="text-2xl font-semibold text-foreground">{{ t('nav.shows') }}</h1>
       </div>
-      <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-        <Button @click="openCreate">
-          {{ t('show.new') }}
-        </Button>
-      </div>
     </div>
 
     <!-- Loading -->
@@ -138,6 +133,11 @@
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+  <!-- FAB -->
+  <Button @click="openCreate" class="fixed bottom-6 right-6 h-11 px-5 rounded-full shadow-lg bg-red-500 hover:bg-red-600 text-white border-0 flex items-center gap-2">
+    + {{ t('show.new') }}
+  </Button>
   </div>
 </template>
 

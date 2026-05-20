@@ -11,8 +11,8 @@
         v-for="bar in bars"
         :key="bar.id"
         draggable="true"
-        class="group/row flex flex-col px-6 pt-4 pb-3 border-b border-border/50 hover:bg-white/2 transition-colors"
-        :class="dragOverId === bar.id ? 'bg-white/5 border-l-2 border-l-primary' : draggedId === bar.id ? 'opacity-40' : ''"
+        class="group/row flex flex-col px-6 pt-4 pb-5 border-b border-border/50 transition-colors"
+        :class="dragOverId === bar.id ? 'bg-white/5 border-l-2 border-l-primary' : draggedId === bar.id ? 'opacity-40' : bars.indexOf(bar) % 2 === 1 ? 'bg-white/4' : ''"
         @dragstart="onBarDragStart(bar.id)"
         @dragover="onBarDragOver($event, bar.id)"
         @drop="onBarDrop(bar.id)"
@@ -106,7 +106,7 @@
               inputmode="decimal"
               :value="bar.height_cm != null ? cmToDisplay(bar.height_cm) : ''"
               placeholder="Höhe"
-              class="w-full h-9 rounded-md border border-border/60 bg-transparent px-3 pr-7 text-sm tabular-nums text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-accent"
+              class="w-full h-9 rounded-md border border-border bg-transparent px-3 pr-7 text-sm tabular-nums text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-accent"
               @change="saveInlineField(bar, 'height_cm', $event.target.value === '' ? null : parseToCm(Number($event.target.value)))"
             />
             <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/50 pointer-events-none">{{ unit }}</span>
@@ -115,13 +115,9 @@
             type="text"
             :value="bar.notes ?? ''"
             placeholder="Anmerkung…"
-            class="flex-1 h-9 rounded-md border border-border/60 bg-transparent px-3 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-accent"
+            class="flex-1 h-9 rounded-md border border-border bg-transparent px-3 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-accent"
             @change="saveInlineField(bar, 'notes', $event.target.value)"
           />
-        </div>
-        <div v-if="bar.fixtures.length" class="ml-46 mt-1 text-xs text-muted-foreground/60 select-all leading-relaxed">
-          <span class="font-semibold text-foreground/80">{{ bar.name }}:</span>
-          {{ generateBarLine(bar, channelById, unit, cmToDisplay, locale).slice(bar.name.length + 2) }}
         </div>
       </div>
     </div>
@@ -218,8 +214,7 @@
 import { ref, computed, onBeforeUnmount } from 'vue'
 import { useLocale } from '@/composables/useLocale.js'
 import { useMeasureUnit } from '@/composables/useMeasureUnit'
-import { generateBarLine } from '@/utils/generateHangerei'
-const { t, locale } = useLocale()
+const { t } = useLocale()
 
 const { unit, formatLength, cmToDisplay, parseToCm, inputStep, lengthMin, lengthMax } = useMeasureUnit()
 import { Plus, Pencil, Trash2 } from 'lucide-vue-next'

@@ -1,16 +1,15 @@
 <template>
   <div class="relative flex flex-col h-full overflow-hidden">
-  <div class="flex-1 overflow-x-auto overflow-y-auto p-4">
+<div class="flex-1 overflow-y-auto p-4">
     <div v-if="towers.length === 0" class="flex items-center justify-center h-48 text-sm text-muted-foreground">
       {{ t('gassenturm.empty') }}
     </div>
 
-    <!-- 2 Zeilen, responsive Spalten -->
-    <div class="grid grid-rows-2 grid-flow-col gap-3" :style="gridStyle">
+    <div class="flex flex-wrap gap-3">
       <div
         v-for="tower in towers"
         :key="tower.id"
-        class="rounded-xl border border-border/60 bg-card overflow-hidden flex flex-col"
+        class="rounded-xl border border-border/60 bg-card overflow-hidden flex flex-col w-full sm:w-100"
       >
         <!-- Header -->
         <div class="flex items-start justify-between px-4 pt-4 pb-3 min-h-20">
@@ -37,57 +36,49 @@
         <!-- Divider -->
         <div class="h-px bg-border mx-4" />
 
-        <!-- Notiz -->
-        <div v-if="tower.notes || editingNoteId === tower.id" class="px-4 pt-3 pb-1">
-          <textarea
-            :value="tower.notes"
-            placeholder="Notiz…"
-            rows="1"
-            class="w-full text-sm text-foreground/80 bg-transparent border border-border/40 rounded-lg px-3 py-2 resize-none outline-none placeholder:text-muted-foreground/40 focus:border-ring focus:ring-1 focus:ring-ring overflow-hidden"
-            style="field-sizing: content; min-height: 2.25rem;"
-            @focus="editingNoteId = tower.id"
-            @blur="editingNoteId = null"
-            @change="saveNotes(tower, $event.target.value)"
-          />
-        </div>
-        <button
-          v-else
-          class="mx-4 mt-3 mb-1 text-left text-xs text-muted-foreground/30 hover:text-muted-foreground/60 transition-colors"
-          @click="editingNoteId = tower.id"
-        >{{ t('gassenturm.add_note') }}</button>
-
         <!-- Slots -->
-        <div :key="slotRenderKey" :ref="el => initSortable(el, tower)" class="flex flex-col flex-1">
-          <div
+        <div
+          :key="slotRenderKey"
+          :ref="el => initSortable(el, tower)"
+          class="flex-1"
+          style="display: grid; grid-template-columns: auto 3.5rem 3rem auto 1fr auto; grid-auto-rows: 3.25rem;"
+        >
+          <template
             v-for="slot in slotsFor(tower)"
             :key="slot.slot_index"
             :data-slot-index="slot.slot_index"
-            class="flex items-center gap-3 px-4 py-3.5 border-b border-border/60 hover:bg-muted/20 transition-colors"
           >
-            <div class="flex items-center gap-1 shrink-0" @click.stop>
+            <!-- Drag handle + Slot-Nr -->
+            <div class="flex items-center gap-1 pl-4 pr-2 py-3.5 border-b border-border/60 hover:bg-muted/20 transition-colors" @click.stop>
               <GripVertical class="drag-handle size-3.5 text-muted-foreground/50 cursor-grab active:cursor-grabbing" />
               <span class="w-4 text-xs text-muted-foreground/40 font-mono text-right">{{ slot.slot_index }}</span>
             </div>
-            <div class="flex-1 min-w-0">
-              <template v-if="slot.channel_id && channelForId(slot.channel_id)">
-                <div class="flex items-center px-2 gap-3 truncate">
-                  <span class="font-mono font-bold text-xl text-foreground shrink-0 leading-none">{{ channelForId(slot.channel_id)?.channel }}</span>
-                  <template v-if="channelForId(slot.channel_id)?.color">
-                    <span class="text-muted-foreground/30 shrink-0">·</span>
-                    <span
-                      class="text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0"
-                      :style="filterBadgeStyle(channelForId(slot.channel_id)?.color) ?? { backgroundColor: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }"
-                    >{{ channelForId(slot.channel_id)?.color }}</span>
-                  </template>
-                  <template v-if="channelForId(slot.channel_id)?.device">
-                    <span class="text-muted-foreground/30 shrink-0">·</span>
-                    <span class="text-sm text-foreground truncate flex items-baseline gap-1"><span v-if="showQuantity(slot.channel_id)">{{ channelForId(slot.channel_id)?.quantity }}</span>{{ channelForId(slot.channel_id)?.device }}</span>
-                  </template>
-                </div>
-              </template>
+            <!-- Kanalnummer -->
+            <div class="flex items-center py-3.5 border-b border-border/60 hover:bg-muted/20 transition-colors">
+              <span v-if="slot.channel_id && channelForId(slot.channel_id)" class="font-mono font-bold text-xl text-foreground leading-none">{{ channelForId(slot.channel_id)?.channel }}</span>
               <span v-else class="text-xs text-muted-foreground/60">{{ t('gassenturm.slot_empty') }}</span>
             </div>
-            <div class="shrink-0 flex gap-0.5">
+            <!-- Farb-Badge (immer gleich breit) -->
+            <div class="flex items-center justify-center py-3.5 border-b border-border/60 hover:bg-muted/20 transition-colors">
+              <span
+                v-if="slot.channel_id && channelForId(slot.channel_id)?.color"
+                class="text-[10px] px-1.5 py-0.5 rounded font-medium"
+                :style="filterBadgeStyle(channelForId(slot.channel_id)?.color) ?? { backgroundColor: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }"
+              >{{ channelForId(slot.channel_id)?.color }}</span>
+            </div>
+            <!-- Separator -->
+            <div class="flex items-center py-3.5 border-b border-border/60 hover:bg-muted/20 transition-colors">
+              <span v-if="slot.channel_id && channelForId(slot.channel_id)?.device" class="text-muted-foreground/30 px-1">·</span>
+            </div>
+            <!-- Device -->
+            <div class="flex items-center py-3.5 border-b border-border/60 hover:bg-muted/20 transition-colors min-w-0">
+              <span v-if="slot.channel_id && channelForId(slot.channel_id)?.device" class="text-sm text-foreground truncate flex items-baseline gap-1">
+                <span v-if="showQuantity(slot.channel_id)">{{ channelForId(slot.channel_id)?.quantity }}</span>
+                {{ channelForId(slot.channel_id)?.device }}
+              </span>
+            </div>
+            <!-- Aktionen -->
+            <div class="flex items-center gap-0.5 pr-4 py-3.5 border-b border-border/60 hover:bg-muted/20 transition-colors shrink-0">
               <Button
                 v-if="slot.channel_id"
                 variant="ghost"
@@ -106,7 +97,7 @@
                 <ChevronsUpDown class="size-3" />
               </Button>
             </div>
-          </div>
+          </template>
         </div>
 
         <!-- Slot hinzufügen -->
@@ -117,6 +108,25 @@
           <Plus class="size-3" />
           {{ t('gassenturm.add_slot') }}
         </button>
+
+        <!-- Notiz -->
+        <div v-if="tower.notes || editingNoteId === tower.id" class="px-4 pt-3 pb-3 border-t border-border/30">
+          <textarea
+            :value="tower.notes"
+            placeholder="Notiz…"
+            rows="1"
+            class="w-full text-sm text-foreground/80 bg-transparent border border-border/40 rounded-lg px-3 py-2 resize-none outline-none placeholder:text-muted-foreground/40 focus:border-ring focus:ring-1 focus:ring-ring overflow-hidden"
+            style="field-sizing: content; min-height: 2.25rem;"
+            @focus="editingNoteId = tower.id"
+            @blur="editingNoteId = null"
+            @change="saveNotes(tower, $event.target.value)"
+          />
+        </div>
+        <button
+          v-else
+          class="mx-4 mt-2 mb-3 text-left text-xs text-muted-foreground/30 hover:text-muted-foreground/60 transition-colors"
+          @click="editingNoteId = tower.id"
+        >{{ t('gassenturm.add_note') }}</button>
       </div>
     </div>
 
@@ -256,10 +266,6 @@ const props = defineProps({
 
 const emit = defineEmits(['assigned'])
 
-const gridStyle = computed(() => {
-  const cols = Math.ceil(props.towers.length / 2) || 1
-  return { gridTemplateColumns: `repeat(${cols}, minmax(400px, 1fr))` }
-})
 
 const channelById = computed(() => {
   const map = new Map()
@@ -470,3 +476,19 @@ function clearSlot(towerId, slotIndex) {
   props.assignSlotFn(towerId, slotIndex, null)
 }
 </script>
+
+<style scoped>
+@keyframes bounce-x {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(5px); }
+}
+.animate-bounce-x {
+  animation: bounce-x 1.2s ease-in-out infinite;
+}
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+</style>

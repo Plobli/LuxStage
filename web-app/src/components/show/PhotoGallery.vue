@@ -1,14 +1,6 @@
 <template>
   <section class="space-y-4">
-    <div class="flex items-center justify-between gap-3 mb-4">
-      <slot name="heading" />
-      <Button variant="outline" size="sm" as-child class="cursor-pointer shrink-0">
-        <label>
-          + {{ labels.add }}
-          <input type="file" accept="image/*" multiple class="sr-only" @change="onFileInput" />
-        </label>
-      </Button>
-    </div>
+    <slot name="heading" />
 
     <!-- Upload progress -->
     <div v-if="uploadQueue.length > 0" class="mb-3 space-y-1">
@@ -272,4 +264,6 @@ function onLightboxKey(e) {
 
 onMounted(() => window.addEventListener('keydown', onLightboxKey))
 onBeforeUnmount(() => window.removeEventListener('keydown', onLightboxKey))
+
+defineExpose({ onFileInput })
 </script>

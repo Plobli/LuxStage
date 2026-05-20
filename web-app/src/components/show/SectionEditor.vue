@@ -7,7 +7,7 @@
       :data-section-id="sec.id"
       class="group/sec relative border-b border-border/60"
     >
-      <div class="shrink-0 sticky top-0 z-10 flex min-h-10 items-center gap-3 border-b border-border/90 bg-muted px-4">
+      <div v-if="!singleSectionId" class="shrink-0 sticky top-0 z-10 flex min-h-10 items-center gap-3 border-b border-border/90 bg-muted px-4">
           <Input
             :value="sec.title"
             :placeholder="labels.titlePlaceholder"
@@ -25,7 +25,7 @@
       <!-- kv-table: echte <table>, identisch zur Kanaltabelle -->
       <div v-if="sec.type === 'kv-table'">
         <!-- Header -->
-        <div class="shrink-0 sticky top-10 z-10 border-b border-border/90 bg-muted shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_8px_rgba(0,0,0,0.10)]">
+        <div :class="['shrink-0 sticky z-10 border-b border-border/90 bg-muted shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_8px_rgba(0,0,0,0.10)]', singleSectionId ? 'top-0' : 'top-10']">
           <div class="grid min-h-8 grid-cols-[2rem_1fr_1fr_2.5rem] items-center px-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/90">
             <div></div>
             <div>{{ labels.fieldLabel }}</div>

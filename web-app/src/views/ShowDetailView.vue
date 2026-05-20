@@ -1,94 +1,90 @@
 <template>
-  <div class="flex flex-col h-dvh bg-background overflow-hidden">
+  <div class="flex h-dvh overflow-hidden" style="background: hsl(240 10% 3%)">
 
-    <!-- ── Top Navigation Bar ─────────────────────────────────────────────── -->
-    <!-- Skeleton während Laden -->
-    <div v-if="loading" class="sticky top-0 z-40 flex flex-col border-b border-border bg-background">
-      <div class="flex h-16 shrink-0 items-center gap-x-4 px-4 sm:px-6 lg:px-8">
-        <div class="h-5 w-40 rounded bg-muted animate-pulse" />
-        <div class="h-4 w-24 rounded bg-muted animate-pulse" />
-      </div>
-      <div class="flex h-10 items-center border-t border-border/50 bg-muted/50" />
-    </div>
-    <ShowHeader
-      v-else
-      v-model="mobileTab"
-      v-model:search="search"
-      :showName="meta.name"
-      :showDate="showDateFormatted"
-      :canUndo="canUndo"
-      :canRedo="canRedo"
-      :saving="channelsSaving || sectionsSaving || setupSaving"
-      :presence="presence"
-      :dupAddressWarning="dupWarning"
-      :dupChannelWarning="dupChannelWarning"
-      :healthStats="healthStats"
-      :healthLabels="healthLabels"
-      :activeHealthFilter="healthFilter"
+    <!-- ── Sidebar (Desktop) ──────────────────────────────────────────────── -->
+    <ShowSidebar
+      class="hidden lg:flex"
+      :activeTab="mobileTab"
+      :activeSubTab="aufbauTab"
+      :sectionDefs="sectionDefs"
       :labels="{
-        tabChannels: t('tab.channels'),
-        tabPhotos: t('tab.photos'),
-        tabFloorplan: t('tab.floorplan'),
-        tabGassenturm: t('tab.gassenturm'),
-        undo: t('action.undo'),
-        redo: t('action.redo'),
-        dupAddress: t('channel.dup_address'),
-        dupChannel: t('channel.dup_channel'),
-        search: t('channel.search'),
-        history: t('history.btn'),
-        import: t('nav.import'),
-        export: t('nav.export'),
-        eosImport: t('eos.import.button'),
-        csvImport: t('channel.import'),
-        pdf: t('show.pdf'),
-        csvExport: t('channel.export'),
+        channels: t('tab.channels'),
+        groupGeneral: t('nav.general'),
+        groupAufbau: t('tab.gassenturm'),
+        buehne: t('tab.buehne'),
+        obermaschinerie: t('tab.obermaschinerie'),
+        groupMedia: 'Medien',
+        photos: t('tab.photos'),
+        floorplan: t('tab.floorplan'),
+        addSection: t('sections.add'),
       }"
-      @update:showName="onRenameShow($event)"
-      @undo="undo()"
-      @redo="redo()"
-      @openHistory="openHistory()"
-      @openPdf="openPdf()"
-      @downloadCsv="downloadChannelsCsv(props.id, channels)"
-      @eosFileSelected="onEosFileSelected($event)"
-      @csvFileSelected="onCsvImportSelected($event)"
-      @healthFilter="onHealthFilter($event)"
-    >
-      <template v-if="mobileTab === 'gassenturm'" #subnav>
-        <button
-          v-for="sub in aufbauSubTabs"
-          :key="sub.key"
-          :class="[
-            'text-sm px-3 py-1.5 rounded-md font-medium transition-colors',
-            aufbauTab === sub.key
-              ? 'bg-accent/15 text-accent'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
-          ]"
-          @click="aufbauTab = sub.key"
-        >{{ sub.label }}</button>
-        <button
-          class="text-xs px-3 py-1.5 rounded-md font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-muted/40"
-          @click="addSectionFromSubtab"
-        >+</button>
-      </template>
-    </ShowHeader>
+      @navigate="onSidebarNavigate($event)"
+      @addSection="addSectionFromSubtab"
+    />
 
-    <!-- ── Loading ────────────────────────────────────────────────────────── -->
-    <div v-if="loading" class="flex flex-1 items-center justify-center">
-      <div class="flex flex-col items-center gap-3">
-        <Loader2 class="size-8 animate-spin text-accent" />
-        <span class="text-sm text-muted-foreground">{{ t('error.loading') }}</span>
-      </div>
-    </div>
-
-    <!-- ── Main Layout ────────────────────────────────────────────────────── -->
-    <template v-else>
+    <!-- ── Rechte Seite: Header + Content ─────────────────────────────────── -->
     <div
       :inert="!isOnline || undefined"
       :class="{ 'opacity-40 pointer-events-none select-none': !isOnline }"
-      class="flex flex-1 min-h-0 overflow-hidden"
+      class="flex flex-1 min-w-0 flex-col overflow-hidden"
     >
-      <!-- ── Content Area ──────────────────────────────────────────── -->
-      <div class="flex flex-1 min-w-0 min-h-0 flex-col overflow-hidden">
+      <!-- ── Top Navigation Bar ───────────────────────────────────────── -->
+      <!-- Skeleton während Laden -->
+      <div v-if="loading" class="sticky top-0 z-40 flex flex-col border-b border-border bg-background">
+        <div class="flex h-16 shrink-0 items-center gap-x-4 px-4 sm:px-6 lg:px-8">
+          <div class="h-5 w-40 rounded bg-muted animate-pulse" />
+          <div class="h-4 w-24 rounded bg-muted animate-pulse" />
+        </div>
+        <div class="flex h-10 items-center border-t border-border/50 bg-muted/50" />
+      </div>
+      <ShowHeader
+        v-else
+        :activeTab="mobileTab"
+        v-model:search="search"
+        :showName="meta.name"
+        :showDate="showDateFormatted"
+        :canUndo="canUndo"
+        :canRedo="canRedo"
+        :saving="channelsSaving || sectionsSaving || setupSaving"
+        :presence="presence"
+        :dupAddressWarning="dupWarning"
+        :dupChannelWarning="dupChannelWarning"
+        :healthStats="healthStats"
+        :healthLabels="healthLabels"
+        :activeHealthFilter="healthFilter"
+        :labels="{
+          undo: t('action.undo'),
+          redo: t('action.redo'),
+          dupAddress: t('channel.dup_address'),
+          dupChannel: t('channel.dup_channel'),
+          search: t('channel.search'),
+          history: t('history.btn'),
+          import: t('nav.import'),
+          export: t('nav.export'),
+          eosImport: t('eos.import.button'),
+          csvImport: t('channel.import'),
+          pdf: t('show.pdf'),
+          csvExport: t('channel.export'),
+        }"
+        @update:showName="onRenameShow($event)"
+        @undo="undo()"
+        @redo="redo()"
+        @openHistory="openHistory()"
+        @openPdf="openPdf()"
+        @downloadCsv="downloadChannelsCsv(props.id, channels)"
+        @eosFileSelected="onEosFileSelected($event)"
+        @csvFileSelected="onCsvImportSelected($event)"
+        @healthFilter="onHealthFilter($event)"
+      />
+
+      <!-- ── Loading ──────────────────────────────────────────────────── -->
+      <div v-if="loading" class="flex flex-1 items-center justify-center">
+        <div class="flex flex-col items-center gap-3">
+          <Loader2 class="size-8 animate-spin text-accent" />
+          <span class="text-sm text-muted-foreground">{{ t('error.loading') }}</span>
+        </div>
+      </div>
+      <div v-else class="flex flex-1 min-h-0 overflow-hidden pb-14 lg:pb-0">
 
         <!-- Channels View -->
         <div
@@ -137,16 +133,11 @@
         <!-- Photos View -->
         <div
           v-show="mobileTab === 'photos'"
-          class="flex flex-col flex-1 min-h-0 overflow-hidden"
+          class="relative flex flex-col flex-1 min-h-0 overflow-hidden"
         >
-          <div class="shrink-0 flex min-h-10 items-center justify-between border-b border-border/90 bg-muted px-4">
-            <span class="text-sm font-semibold text-accent">{{ t('show.photos') }}</span>
-            <span v-if="photos.length > 0" class="text-xs tabular-nums text-muted-foreground">
-              {{ photos.length }}
-            </span>
-          </div>
           <div class="flex-1 min-h-0 overflow-y-auto p-4">
             <PhotoGallery
+              ref="photoGalleryRef"
               :showId="props.id"
               :photos="photos"
               :labels="{
@@ -160,6 +151,10 @@
               @update:photos="photos = $event"
             />
           </div>
+          <label class="absolute bottom-6 right-6 h-11 px-5 rounded-full shadow-lg bg-accent hover:bg-accent/90 text-accent-foreground flex items-center gap-2 cursor-pointer text-sm font-medium">
+            <Plus class="size-4" /> {{ t('photo.add') }}
+            <input type="file" accept="image/*" multiple class="sr-only" @change="photoGalleryRef?.onFileInput($event)" />
+          </label>
         </div>
 
         <!-- Floorplan View -->
@@ -167,11 +162,6 @@
           v-show="mobileTab === 'floorplan'"
           class="flex flex-col flex-1 min-h-0 overflow-hidden"
         >
-          <div class="flex items-center gap-3 px-4 py-2.5 border-b border-border bg-card shrink-0">
-            <span class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              {{ t('tab.floorplan') }}
-            </span>
-          </div>
           <div class="flex-1 min-h-0">
             <FloorplanEditor
               :image-url="floorplan.image_url ? api.url(floorplan.image_url) : null"
@@ -225,6 +215,12 @@
                 @commitFocus="commitFocus"
                 @sectionChange="persistSectionsDebounced"
               />
+              <!-- Generierte Texte aus Bühne + Obermaschinerie — nur in der Aufbau-Section -->
+              <GeneratedTextAccordion
+                v-if="sub.sectionId === aufbauSectionId && (gassenturmGenerated.length || hangerei.length)"
+                :gassenturmEntries="gassenturmGenerated"
+                :hangereiEntries="hangerei"
+              />
             </div>
           </template>
 
@@ -233,7 +229,6 @@
               :towers="towers"
               :channels="channels"
               :preselectedChannelId="aufbauTab === 'gassenturm' ? activeChannelForAssign?.id : null"
-              :generatedEntries="gassenturmGenerated"
               :addTowerFn="addTower"
               :saveTowerFn="saveTower"
               :deleteTowerFn="removeTower"
@@ -248,7 +243,6 @@
               :bars="bars"
               :channels="channels"
               :preselectedChannelId="aufbauTab === 'zugstangen' ? activeChannelForAssign?.id : null"
-              :generatedEntries="hangerei"
               :addBarFn="addBar"
               :saveBarFn="saveBar"
               :deleteBarFn="removeBar"
@@ -262,10 +256,27 @@
         </div>
 
       </div>
-    </div>
-    </template>
 
-    <!-- ── Overlays ───────────────────────────────────────────────────────── -->
+      <!-- ── Bottom-Nav-Bar (Mobile) ──────────────────────────────── -->
+      <nav class="lg:hidden fixed bottom-0 left-0 right-0 z-30 flex items-stretch border-t border-border bg-background">
+        <button
+          v-for="item in bottomNavItems"
+          :key="item.key"
+          :class="[
+            'flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium transition-colors',
+            item.active
+              ? 'text-accent'
+              : 'text-muted-foreground hover:text-foreground'
+          ]"
+          @click="item.action()"
+        >
+          <component :is="item.icon" class="size-5" />
+          <span>{{ item.label }}</span>
+        </button>
+      </nav>
+      </div>
+
+      <!-- ── Overlays ───────────────────────────────────────────────────────── -->
     <HistorySlideOver
       :open="historyOpen"
       :showId="props.id"
@@ -339,12 +350,13 @@
       @confirm="resolveEosMergePreview(true)"
       @cancel="resolveEosMergePreview(false)"
     />
+
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount, defineAsyncComponent } from 'vue'
-import { Loader2 } from 'lucide-vue-next'
+import { Loader2, Radio, Layers, Images, Map as MapIcon, Construction, Plus } from 'lucide-vue-next'
 import { useDebounceFn } from '@vueuse/core'
 import { useLocale } from '../composables/useLocale.js'
 import { useConfirm } from '../composables/useConfirm.js'
@@ -362,6 +374,7 @@ import { useShowBars } from '../composables/useShowBars.js'
 import { useMeasureUnit } from '../composables/useMeasureUnit'
 
 import ShowHeader from '../components/show/ShowHeader.vue'
+import ShowSidebar from '../components/show/ShowSidebar.vue'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -382,6 +395,7 @@ const EosMergePreviewDialog = defineAsyncComponent(() => import('../components/E
 const FloorplanEditor = defineAsyncComponent(() => import('../components/FloorplanEditor.vue'))
 const GassenturmView = defineAsyncComponent(() => import('../components/show/GassenturmView.vue'))
 const ZugstangenView = defineAsyncComponent(() => import('../components/show/ZugstangenView.vue'))
+const GeneratedTextAccordion = defineAsyncComponent(() => import('../components/show/GeneratedTextAccordion.vue'))
 
 const props = defineProps({ id: { type: String, required: true } })
 const { t, locale } = useLocale()
@@ -423,6 +437,7 @@ watch(aufbauTab, (tab) => {
 })
 
 // ── Composables ────────────────────────────────────────────────────────────
+const photoGalleryRef = ref(null)
 const { photos, loadPhotos } = useShowPhotos(props.id)
 const { floorplan, loadFloorplan, onFloorplanChange, onFloorplanImageUpload, onFloorplanImageDelete } = useShowFloorplan(props.id)
 
@@ -493,6 +508,8 @@ const { unit, cmToDisplay } = useMeasureUnit()
 const channelByIdForHangerei = computed(() => new Map(channels.value.map(c => [c.id, c])))
 const hangerei = computed(() => generateHangereiEntries(bars.value, channelByIdForHangerei.value, unit.value, cmToDisplay, locale.value))
 const gassenturmGenerated = computed(() => generateGassenturmEntries(towers.value, channelByIdForHangerei.value, locale.value))
+
+const aufbauSectionId = computed(() => sectionDefs.value.find(s => s.title === 'Aufbau')?.id ?? null)
 
 const { presence, initPresence, cleanupPresence } = useShowPresence(props.id, {
   onChannels: handleChannelsSse,
@@ -600,6 +617,42 @@ async function onAssignBar(ch) {
   aufbauTab.value = 'zugstangen'
 }
 
+function onSidebarNavigate({ tab, subTab }) {
+  mobileTab.value = tab
+  if (subTab !== undefined) aufbauTab.value = subTab
+}
+
+const bottomNavItems = computed(() => [
+  {
+    key: 'channels',
+    label: t('tab.channels'),
+    icon: Radio,
+    active: mobileTab.value === 'channels',
+    action: () => { mobileTab.value = 'channels' },
+  },
+  {
+    key: 'gassenturm',
+    label: t('tab.gassenturm'),
+    icon: Construction,
+    active: mobileTab.value === 'gassenturm',
+    action: () => { mobileTab.value = 'gassenturm' },
+  },
+  {
+    key: 'photos',
+    label: t('tab.photos'),
+    icon: Images,
+    active: mobileTab.value === 'photos',
+    action: () => { mobileTab.value = 'photos' },
+  },
+  {
+    key: 'floorplan',
+    label: t('tab.floorplan'),
+    icon: MapIcon,
+    active: mobileTab.value === 'floorplan',
+    action: () => { mobileTab.value = 'floorplan' },
+  },
+])
+
 function onPlaceInFloorplan(ch) {
   pendingFloorplanChannel.value = null
   nextTick(() => {
@@ -646,6 +699,13 @@ onMounted(async () => {
     setupMarkdown.value = showData.setupMarkdown ?? ''
     eosActiveChannels.value = showData.eosActiveChannels ?? null
 
+    // Aufbau-Section automatisch anlegen falls nicht vorhanden
+    if (!sectionDefs.value.some(s => s.title === 'Aufbau')) {
+      const id = uuid()
+      const newDefs = [...sectionDefs.value, { id, title: 'Aufbau', type: 'markdown', order: sectionDefs.value.length }]
+      sectionDefs.value = newDefs
+      await saveShowSectionDefs(props.id, newDefs)
+    }
   } catch (e) {
     console.error('Ladefehler:', e)
   } finally {

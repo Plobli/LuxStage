@@ -391,6 +391,22 @@ if (!templateBarsTableExists) {
   `)
 }
 
+// Migration: section_defs Umbenennung (Stände→Raum, Besonderheiten→Hinweise)
+{
+  const done = dbContainer.db.prepare(
+    "SELECT value FROM settings WHERE key = 'migration_section_rename_2026'"
+  ).get()
+  if (!done) {
+    dbContainer.db.exec(`
+      UPDATE section_defs SET title = 'Raum'     WHERE title = 'Stände';
+      UPDATE section_defs SET title = 'Hinweise' WHERE title = 'Besonderheiten';
+      UPDATE template_section_defs SET title = 'Raum'     WHERE title = 'Stände';
+      UPDATE template_section_defs SET title = 'Hinweise' WHERE title = 'Besonderheiten';
+      INSERT INTO settings (key, value) VALUES ('migration_section_rename_2026', '1');
+    `)
+  }
+}
+
 export function resetDb() {
   if (dbContainer.db) dbContainer.db.close()
   dbContainer.db = new Database(':memory:')

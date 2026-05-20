@@ -81,7 +81,7 @@
                   </template>
                   <template v-if="channelForId(slot.channel_id)?.device">
                     <span class="text-muted-foreground/30 shrink-0">·</span>
-                    <span class="text-sm text-foreground truncate">{{ channelForId(slot.channel_id)?.device }}</span>
+                    <span class="text-sm text-foreground truncate flex items-baseline gap-1"><span v-if="showQuantity(slot.channel_id)">{{ channelForId(slot.channel_id)?.quantity }}</span>{{ channelForId(slot.channel_id)?.device }}</span>
                   </template>
                 </div>
               </template>
@@ -270,6 +270,21 @@ const channelById = computed(() => {
 
 function channelForId(channelId) {
   return channelById.value.get(channelId) ?? null
+}
+
+const channelUsageCount = computed(() => {
+  const counts = new Map()
+  for (const tower of props.towers) {
+    for (const slot of tower.slots ?? []) {
+      if (slot.channel_id) counts.set(slot.channel_id, (counts.get(slot.channel_id) ?? 0) + 1)
+    }
+  }
+  return counts
+})
+
+function showQuantity(channelId) {
+  const ch = channelForId(channelId)
+  return ch && (ch.quantity ?? 1) > 1 && (channelUsageCount.value.get(channelId) ?? 0) === 1
 }
 
 function slotsFor(tower) {

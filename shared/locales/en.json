@@ -294,6 +294,7 @@
   "show.assign_template": "Assign stage template",
   "health.title": "Completeness",
   "health.complete": "Complete",
+  "health.incomplete": "incomplete channels",
   "health.noNotes": "Channels without note",
   "health.noDevice": "Channels without device",
   "health.noPosition": "Channels without position",

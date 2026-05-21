@@ -86,7 +86,7 @@
 
       <!-- Health Badge -->
       <ShowHealthBadge
-        v-if="healthLabels"
+        v-if="healthLabels && activeTab === 'channels'"
         :noNotes="healthStats.noNotes"
         :noDevice="healthStats.noDevice"
         :noPosition="healthStats.noPosition"

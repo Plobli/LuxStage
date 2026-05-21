@@ -294,6 +294,7 @@
   "show.assign_template": "Bühnen-Template zuweisen",
   "health.title": "Vollständigkeit",
   "health.complete": "Vollständig",
+  "health.incomplete": "unvollständige Kanäle",
   "health.noNotes": "Kanäle ohne Notiz",
   "health.noDevice": "Kanäle ohne Gerät",
   "health.noPosition": "Kanäle ohne Position",

@@ -5,11 +5,12 @@
         <button
           class="no-print flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors hover:bg-muted/60"
           :class="[total === 0 ? 'text-green-500' : 'text-yellow-400', activeFilter ? 'bg-yellow-500/10 ring-1 ring-yellow-500/30' : '']"
+          :title="total === 0 ? labels.complete : `${total} ${labels.incomplete}`"
         >
           <CheckCircle2 v-if="total === 0" class="size-3.5" />
           <AlertCircle v-else class="size-3.5" />
           <span class="tabular-nums hidden sm:inline">
-            {{ total === 0 ? labels.complete : total }}
+            {{ total === 0 ? labels.complete : `${total} ${labels.incomplete}` }}
           </span>
         </button>
       </DropdownMenuTrigger>
@@ -79,6 +80,7 @@ const props = defineProps<{
   labels: {
     title: string
     complete: string
+    incomplete: string
     noNotes: string
     noDevice: string
     noPosition: string

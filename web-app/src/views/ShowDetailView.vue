@@ -532,6 +532,7 @@ const healthStats = computed(() => {
 const healthLabels = computed(() => ({
   title:      t('health.title'),
   complete:   t('health.complete'),
+  incomplete: t('health.incomplete'),
   noNotes:    t('health.noNotes'),
   noDevice:   t('health.noDevice'),
   noPosition: t('health.noPosition'),

@@ -11,8 +11,8 @@
         v-for="bar in bars"
         :key="bar.id"
         draggable="true"
-        class="group/row flex flex-col px-6 pt-4 pb-5 border-b border-border/50 transition-colors"
-        :class="dragOverId === bar.id ? 'bg-white/5 border-l-2 border-l-primary' : draggedId === bar.id ? 'opacity-40' : bars.indexOf(bar) % 2 === 1 ? 'bg-white/4' : ''"
+        class="group/row flex flex-col px-5 pt-3.5 pb-4 mx-3 my-1.5 rounded-lg border border-border/40 transition-colors border-l-2"
+        :class="dragOverId === bar.id ? 'bg-white/8 border-l-primary' : draggedId === bar.id ? 'opacity-40 border-l-border/40' : 'bg-white/3 border-l-white/10'"
         @dragstart="onBarDragStart(bar.id)"
         @dragover="onBarDragOver($event, bar.id)"
         @drop="onBarDrop(bar.id)"
@@ -88,7 +88,7 @@
           </div>
 
           <!-- Aktionen (nur bei Hover) -->
-          <div class="flex items-center gap-0.5 shrink-0 opacity-0 group-hover/row:opacity-100 transition-opacity">
+          <div class="flex items-center gap-0.5 shrink-0">
             <Button variant="ghost" size="icon" class="size-7 text-muted-foreground/60 hover:text-foreground" @click="openEditBarDialog(bar)">
               <Pencil class="size-3.5" />
             </Button>
@@ -123,7 +123,7 @@
     </div>
 
     <!-- Neue Zugstange -->
-    <Button @click="openNewBarDialog" class="absolute bottom-6 right-6 h-11 px-5 rounded-full shadow-lg bg-accent hover:bg-accent/90 text-accent-foreground flex items-center gap-2">
+    <Button variant="accent" @click="openNewBarDialog" class="absolute bottom-6 right-6 h-11 px-5 rounded-full shadow-lg flex items-center gap-2">
       <Plus class="size-4" /> {{ t('zugstange.new') }}
     </Button>
   </div>

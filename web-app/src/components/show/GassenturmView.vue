@@ -133,7 +133,7 @@
   </div>
 
   <!-- Neuer Gassenturm -->
-  <Button @click="openNewTowerDialog" class="absolute bottom-6 right-6 h-11 px-5 rounded-full shadow-lg bg-accent hover:bg-accent/90 text-accent-foreground flex items-center gap-2">
+  <Button variant="accent" @click="openNewTowerDialog" class="absolute bottom-6 right-6 h-11 px-5 rounded-full shadow-lg flex items-center gap-2">
     <Plus class="size-4" /> {{ t('gassenturm.new') }}
   </Button>
   </div>

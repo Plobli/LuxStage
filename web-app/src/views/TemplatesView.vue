@@ -232,7 +232,13 @@
       </div>
 
       <div v-if="loading" class="text-sm text-muted-foreground">…</div>
-      <div v-else-if="templates.length === 0" class="text-sm text-muted-foreground">{{ t('template.list.empty') }}</div>
+      <div v-else-if="templates.length === 0" class="flex flex-col items-center justify-center py-24 gap-4 text-center">
+        <p class="text-muted-foreground text-sm">{{ t('template.list.empty') }}</p>
+        <Button variant="accent" @click="openUpload" class="flex items-center gap-2">
+          <Upload class="size-4" />
+          {{ t('template.upload') }}
+        </Button>
+      </div>
 
       <ul v-else role="list" class="divide-y divide-border">
         <li v-for="tpl in templates" :key="tpl.name" class="flex items-center justify-between gap-x-6 py-5">
@@ -385,7 +391,7 @@
     </Dialog>
 
   <!-- FAB -->
-  <Button @click="openNewDialog" class="fixed bottom-6 right-6 h-11 px-5 rounded-full shadow-lg bg-red-500 hover:bg-red-600 text-white border-0 flex items-center gap-2">
+  <Button variant="accent" @click="openNewDialog" class="fixed bottom-6 right-6 h-11 px-5 shadow-lg border-0 flex items-center gap-2">
     + {{ t('template.new') }}
   </Button>
   </div>

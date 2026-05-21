@@ -11,7 +11,13 @@
     <div v-if="loading" class="text-sm text-muted-foreground">…</div>
 
     <!-- Leerer Zustand -->
-    <div v-else-if="shows.length === 0" class="text-sm text-muted-foreground">{{ t('show.list.empty') }}</div>
+    <div v-else-if="shows.length === 0" class="flex flex-col items-center justify-center py-24 gap-4 text-center">
+      <p class="text-muted-foreground text-sm">{{ t('show.list.empty') }}</p>
+      <Button variant="accent" @click="openCreate" class="flex items-center gap-2">
+        <Plus class="size-4" />
+        {{ t('show.create') }}
+      </Button>
+    </div>
 
     <!-- Gruppierte Show-Listen -->
     <template v-else>
@@ -33,7 +39,7 @@
                 <div class="flex-1 truncate px-4 py-3 text-sm">
                   <span class="font-medium text-foreground">{{ show.name || show.id }}</span>
                   <p v-if="show.datum" class="text-muted-foreground">Stand: {{ show.datum }}</p>
-                  <p v-if="show.last_edited_by" class="text-muted-foreground text-xs mt-1 truncate">
+                  <p v-if="show.last_edited_by" class="text-muted-foreground text-xs mt-1 truncate" :title="`${show.last_edited_by}, ${formatEditedAt(show.last_edited_at)}`">
                     {{ show.last_edited_by }}, {{ formatEditedAt(show.last_edited_at) }}
                   </p>
                 </div>
@@ -135,7 +141,7 @@
     </Dialog>
 
   <!-- FAB -->
-  <Button @click="openCreate" class="fixed bottom-6 right-6 h-11 px-5 rounded-full shadow-lg bg-accent hover:bg-accent/90 text-accent-foreground border-0 flex items-center gap-2">
+  <Button variant="accent" @click="openCreate" class="fixed bottom-6 right-6 h-11 px-5 shadow-lg border-0 flex items-center gap-2">
     + {{ t('show.new') }}
   </Button>
   </div>
@@ -144,7 +150,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Archive, Loader2, Pencil } from 'lucide-vue-next'
+import { Archive, Loader2, Pencil, Plus } from 'lucide-vue-next'
 import { useLocale } from '../composables/useLocale.js'
 import { fetchShows, createShow, archiveShow, updateMeta } from '../api/shows.js'
 import { fetchTemplates, fetchTemplateChannels } from '../api/templates.js'

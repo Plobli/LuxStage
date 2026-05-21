@@ -34,6 +34,7 @@
   "show.list.empty": "No shows yet.",
   "show.list.archived_empty": "No archived shows.",
   "show.archive.empty": "No archived shows",
+  "show.archive.empty.hint": "Shows can be archived from the shows list.",
   "show.setup": "Setup",
   "show.setup.placeholder": "Setup notes, special conditions, remarks …",
   "mode.preparation": "Setup",

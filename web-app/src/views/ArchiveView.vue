@@ -28,8 +28,9 @@
 
     <div v-if="loading" class="text-sm text-muted-foreground">…</div>
 
-    <div v-else-if="shows.length === 0" class="text-sm text-muted-foreground">
-      {{ t('show.archive.empty') }}
+    <div v-else-if="shows.length === 0" class="flex flex-col items-center justify-center py-24 gap-2 text-center">
+      <p class="text-muted-foreground text-sm">{{ t('show.archive.empty') }}</p>
+      <p class="text-muted-foreground/60 text-xs">{{ t('show.archive.empty.hint') }}</p>
     </div>
 
     <ul v-else role="list" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">

@@ -83,7 +83,7 @@
               >
                 <div
                   class="flex items-center justify-center rounded-lg p-2 transition-colors"
-                  :class="isActiveRoute(item) ? 'bg-[hsl(357,61%,45%)]' : 'group-hover:bg-white/5'"
+                  :class="isActiveRoute(item) ? 'bg-accent/85 text-accent-foreground' : 'group-hover:bg-white/5'"
                 >
                   <component :is="item.icon" class="size-5 shrink-0" aria-hidden="true" />
                 </div>

@@ -86,8 +86,8 @@ const NavItem = defineComponent({
       class: [
         'w-full flex items-center px-3 py-2 rounded-lg text-sm text-left transition-colors',
         props.active
-          ? 'bg-white/10 text-foreground font-semibold'
-          : 'text-foreground/85 hover:text-foreground hover:bg-white/5'
+          ? 'bg-accent/85 text-accent-foreground font-semibold'
+          : 'text-foreground/85 hover:bg-accent/85 hover:text-accent-foreground'
       ].join(' ')
     }, slots.default?.())
   }

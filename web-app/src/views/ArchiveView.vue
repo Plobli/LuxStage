@@ -52,7 +52,7 @@
               <Button
                 variant="ghost"
                 size="icon"
-                class="text-muted-foreground hover:text-foreground"
+                class="text-muted-foreground"
                 @click="restore(show.id)"
                 :title="t('show.restore')"
               >
@@ -61,7 +61,7 @@
               <Button
                 variant="ghost"
                 size="icon"
-                class="text-muted-foreground hover:text-destructive"
+                class="text-muted-foreground"
                 @click="confirmDelete(show)"
                 :title="t('show.delete')"
               >

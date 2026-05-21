@@ -418,11 +418,11 @@ const historyOpen = ref(false)
 const TAB_KEY = `show-tab-${props.id}`
 const SUBTAB_KEY = `show-subtab-${props.id}`
 const TAB_TIME_KEY = `show-tab-time-${props.id}`
-const TAB_TIMEOUT_MS = 2 * 60 * 60 * 1000 // 2 Stunden
+const TAB_TIMEOUT_MS = 24 * 60 * 60 * 1000 // 24 Stunden
 
 const isTimedOut = Date.now() - Number(localStorage.getItem(TAB_TIME_KEY) || 0) > TAB_TIMEOUT_MS
 
-const mobileTab = ref(isTimedOut ? 'gassenturm' : (sessionStorage.getItem(TAB_KEY) || 'gassenturm'))
+const mobileTab = ref(isTimedOut ? 'channels' : (sessionStorage.getItem(TAB_KEY) || 'channels'))
 if (!localStorage.getItem(TAB_TIME_KEY)) localStorage.setItem(TAB_TIME_KEY, String(Date.now()))
 watch(mobileTab, (tab) => {
   sessionStorage.setItem(TAB_KEY, tab)
@@ -431,7 +431,7 @@ watch(mobileTab, (tab) => {
   if (tab !== 'channels') { search.value = ''; activateHealthFilter(null) }
 })
 
-const aufbauTab = ref(isTimedOut ? null : (sessionStorage.getItem(SUBTAB_KEY) || null))
+const aufbauTab = ref(isTimedOut ? null : (sessionStorage.getItem(SUBTAB_KEY) ?? null))
 watch(aufbauTab, (tab) => {
   if (tab) sessionStorage.setItem(SUBTAB_KEY, tab)
 })

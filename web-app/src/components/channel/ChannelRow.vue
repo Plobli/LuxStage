@@ -128,7 +128,7 @@
           <Button
             variant="ghost"
             size="icon"
-            class="no-print size-7 rounded-sm text-muted-foreground opacity-0 transition-all group-hover/row:opacity-100 hover:bg-red-500/10 hover:text-red-400"
+            class="no-print size-7 rounded-sm text-muted-foreground opacity-0 transition-all group-hover/row:opacity-100"
             @click="deleteDialogOpen = true"
             :title="deleteTitle"
           >

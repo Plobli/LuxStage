@@ -5,7 +5,7 @@
     <template v-if="editingName">
       <!-- Header -->
       <div class="flex items-center gap-x-4 mb-8">
-        <Button variant="ghost" size="icon" class="text-muted-foreground hover:text-foreground" @click="editingName = null">
+        <Button variant="ghost" size="icon" class="text-muted-foreground" @click="editingName = null">
           <ArrowLeft class="size-5" />
         </Button>
         <template v-if="renamingName">
@@ -30,7 +30,7 @@
         </template>
         <template v-else>
           <h1 class="text-2xl font-semibold text-foreground">{{ templateDisplayName(editingName) || editingName }}</h1>
-          <Button variant="ghost" size="icon" class="text-muted-foreground hover:text-foreground" :title="t('template.rename')" @click="startRename">
+          <Button variant="ghost" size="icon" class="text-muted-foreground" :title="t('template.rename')" @click="startRename">
             <Pencil class="size-4" />
           </Button>
         </template>
@@ -117,8 +117,8 @@
           <div v-for="(sec, idx) in templateSections" :key="sec.id" class="border border-border rounded-lg p-4 space-y-3 bg-card">
             <div class="flex items-center gap-2">
               <div class="flex flex-col gap-0.5">
-                <Button variant="ghost" size="icon" class="h-6 w-6 text-muted-foreground hover:text-foreground disabled:opacity-30" :disabled="idx === 0" @click="moveSection(idx, -1)">▲</Button>
-                <Button variant="ghost" size="icon" class="h-6 w-6 text-muted-foreground hover:text-foreground disabled:opacity-30" :disabled="idx === templateSections.length - 1" @click="moveSection(idx, 1)">▼</Button>
+                <Button variant="ghost" size="icon" class="h-6 w-6 text-muted-foreground disabled:opacity-30" :disabled="idx === 0" @click="moveSection(idx, -1)">▲</Button>
+                <Button variant="ghost" size="icon" class="h-6 w-6 text-muted-foreground disabled:opacity-30" :disabled="idx === templateSections.length - 1" @click="moveSection(idx, 1)">▼</Button>
               </div>
               <Input
                 :model-value="sec.title"
@@ -138,7 +138,7 @@
                   </SelectGroup>
                 </SelectContent>
               </Select>
-              <Button variant="ghost" size="icon" class="shrink-0 text-muted-foreground hover:text-destructive" @click="deleteSection(idx)">✕</Button>
+              <Button variant="ghost" size="icon" class="shrink-0 text-muted-foreground" @click="deleteSection(idx)">✕</Button>
             </div>
             <div v-if="sec.type === 'kv-table' || sec.type === 'fields'" class="space-y-2 pl-6">
               <div v-for="(row, fidx) in (sec.rows ?? sec.fields ?? [])" :key="row.key" class="flex items-center gap-2">
@@ -149,7 +149,7 @@
                   @change="persistSections"
                   class="flex-1"
                 />
-                <Button variant="ghost" size="icon" class="shrink-0 text-muted-foreground hover:text-destructive" @click="deleteField(sec, fidx)">✕</Button>
+                <Button variant="ghost" size="icon" class="shrink-0 text-muted-foreground" @click="deleteField(sec, fidx)">✕</Button>
               </div>
               <Button variant="outline" size="sm" @click="addField(sec)">+ {{ t('sections.field.add') }}</Button>
             </div>
@@ -184,10 +184,10 @@
               <span class="text-sm font-medium text-foreground flex-1 truncate">{{ bar.name }}</span>
               <span v-if="bar.zug_nr" class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0">{{ bar.zug_nr }}</span>
               <span class="text-xs text-muted-foreground shrink-0">{{ formatLength(bar.length_cm) }}</span>
-              <Button variant="ghost" size="icon" class="size-6 text-muted-foreground hover:text-foreground shrink-0" @click="openEditTemplateBar(bar)">
+              <Button variant="ghost" size="icon" class="size-6 text-muted-foreground shrink-0" @click="openEditTemplateBar(bar)">
                 <Pencil class="size-3" />
               </Button>
-              <Button variant="ghost" size="icon" class="size-6 text-muted-foreground hover:text-red-400 shrink-0" @click="removeTemplateBar(bar.id, idx)">
+              <Button variant="ghost" size="icon" class="size-6 text-muted-foreground shrink-0" @click="removeTemplateBar(bar.id, idx)">
                 <X class="size-3" />
               </Button>
             </div>
@@ -256,7 +256,7 @@
             <Button variant="outline" size="sm" @click="openDetail(tpl.name)">
               {{ t('action.edit') }}
             </Button>
-            <Button variant="ghost" size="sm" class="text-red-400 hover:text-red-300 hover:bg-red-500/10" @click="handleDelete(tpl.name)">
+            <Button variant="destructive" size="sm" @click="handleDelete(tpl.name)">
               {{ t('action.delete') }}
             </Button>
           </div>
@@ -392,7 +392,7 @@
 
   <!-- FAB -->
   <Button variant="accent" @click="openNewDialog" class="fixed bottom-6 right-6 h-11 px-5 shadow-lg border-0 flex items-center gap-2">
-    + {{ t('template.new') }}
+    <Plus class="size-4" /> {{ t('template.new') }}
   </Button>
   </div>
 </template>

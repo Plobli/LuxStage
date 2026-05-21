@@ -24,10 +24,10 @@
             </div>
           </div>
           <div class="flex items-center gap-0.5 shrink-0 ml-2 -mt-1">
-            <Button variant="ghost" size="icon" class="size-7 text-muted-foreground/50 hover:text-foreground" @click="openEditTowerDialog(tower)">
+            <Button variant="ghost" size="icon" class="size-7 text-muted-foreground/50" @click="openEditTowerDialog(tower)">
               <Pencil class="size-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" class="size-7 text-muted-foreground/50 hover:text-destructive" @click="confirmDeleteTower(tower)">
+            <Button variant="ghost" size="icon" class="size-7 text-muted-foreground/50" @click="confirmDeleteTower(tower)">
               <Trash2 class="size-3.5" />
             </Button>
           </div>
@@ -83,7 +83,7 @@
                 v-if="slot.channel_id"
                 variant="ghost"
                 size="icon"
-                class="size-6 text-muted-foreground/40 hover:text-destructive"
+                class="size-6 text-muted-foreground/40"
                 @click.stop="clearSlot(tower.id, slot.slot_index)"
               >
                 <X class="size-3" />
@@ -91,7 +91,7 @@
               <Button
                 variant="ghost"
                 size="icon"
-                class="size-6 text-muted-foreground/40 hover:text-foreground"
+                class="size-6 text-muted-foreground/40"
                 @click.stop="openSlotPicker(tower, slot)"
               >
                 <ChevronsUpDown class="size-3" />

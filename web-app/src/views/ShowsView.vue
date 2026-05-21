@@ -47,7 +47,7 @@
                   <Button
                     variant="ghost"
                     size="icon"
-                    class="text-muted-foreground hover:text-foreground"
+                    class="text-muted-foreground"
                     @click="openAssign(show)"
                     :title="t('show.assign_template')"
                   >
@@ -56,7 +56,7 @@
                   <Button
                     variant="ghost"
                     size="icon"
-                    class="text-muted-foreground hover:text-foreground"
+                    class="text-muted-foreground"
                     @click="archive(show.id)"
                     :title="t('show.archive')"
                   >
@@ -142,7 +142,7 @@
 
   <!-- FAB -->
   <Button variant="accent" @click="openCreate" class="fixed bottom-6 right-6 h-11 px-5 shadow-lg border-0 flex items-center gap-2">
-    + {{ t('show.new') }}
+    <Plus class="size-4" /> {{ t('show.new') }}
   </Button>
   </div>
 </template>

@@ -8,14 +8,14 @@
             v-if="currentEntry"
             variant="ghost"
             size="sm"
-            class="h-auto px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
+            class="h-auto px-2 py-1 text-xs text-muted-foreground"
             @click="currentEntry = null"
           >
             {{ labels.back }}
           </Button>
           <SheetTitle class="text-sm font-semibold text-foreground m-0 p-0">{{ labels.title }}</SheetTitle>
         </div>
-        <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-foreground" @click="emit('close')">
+        <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground" @click="emit('close')">
           <X class="size-4" />
         </Button>
       </div>

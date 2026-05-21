@@ -17,7 +17,7 @@
             @change="persistSectionDefs"
             class="h-7 min-w-40 flex-1 border-0 bg-transparent px-0 text-sm font-semibold text-accent shadow-none placeholder:text-muted-foreground/60 focus-visible:ring-0"
           />
-          <Button variant="ghost" size="icon" class="size-6 rounded-sm text-muted-foreground/50 transition-colors hover:bg-red-500/10 hover:text-red-400 shrink-0" @click="deleteSectionDef(sortedSections.indexOf(sec))">
+          <Button variant="ghost" size="icon" class="size-6 rounded-sm text-muted-foreground/50 transition-colors shrink-0" @click="deleteSectionDef(sortedSections.indexOf(sec))">
             <X class="size-4" />
           </Button>
       </div>
@@ -72,7 +72,7 @@
                 />
               </td>
               <td class="w-10 pl-1 pr-1 align-middle text-center border-l border-border/40">
-                <Button variant="ghost" size="icon" class="size-7 rounded-sm text-muted-foreground opacity-0 transition-all group-hover/row:opacity-100 hover:bg-red-500/10 hover:text-red-400" @click="deleteKvRow(sec, row.id)">
+                <Button variant="ghost" size="icon" class="size-7 rounded-sm text-muted-foreground opacity-0 transition-all group-hover/row:opacity-100" @click="deleteKvRow(sec, row.id)">
                   <X class="size-4" />
                 </Button>
               </td>
@@ -90,7 +90,7 @@
           <tbody>
             <tr class="border-t border-border/60 bg-card">
               <td colspan="4" class="px-4 py-1.5">
-                <Button variant="ghost" size="sm" class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground hover:bg-muted/60 hover:text-foreground" @click="addKvRow(sec)">{{ labels.fieldAdd }}</Button>
+                <Button variant="ghost" size="sm" class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground" @click="addKvRow(sec)">{{ labels.fieldAdd }}</Button>
               </td>
             </tr>
           </tbody>
@@ -119,8 +119,8 @@
 
   <!-- Add section buttons (not in single-section mode) -->
   <div v-if="!singleSectionId" class="flex items-center gap-2 border-b border-border/60 px-4 py-2">
-    <Button variant="ghost" size="sm" class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground hover:bg-muted/60 hover:text-foreground" @click="addMarkdownSection">{{ labels.addMarkdown }}</Button>
-    <Button v-if="!hasKvTableType()" variant="ghost" size="sm" class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground hover:bg-muted/60 hover:text-foreground" @click="addKvTableSection">{{ labels.addFields }}</Button>
+    <Button variant="ghost" size="sm" class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground" @click="addMarkdownSection">{{ labels.addMarkdown }}</Button>
+    <Button v-if="!hasKvTableType()" variant="ghost" size="sm" class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground" @click="addKvTableSection">{{ labels.addFields }}</Button>
   </div>
 </template>
 

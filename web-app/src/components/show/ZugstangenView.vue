@@ -89,10 +89,10 @@
 
           <!-- Aktionen (nur bei Hover) -->
           <div class="flex items-center gap-0.5 shrink-0">
-            <Button variant="ghost" size="icon" class="size-7 text-muted-foreground/60 hover:text-foreground" @click="openEditBarDialog(bar)">
+            <Button variant="ghost" size="icon" class="size-7 text-muted-foreground/60" @click="openEditBarDialog(bar)">
               <Pencil class="size-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" class="size-7 text-muted-foreground/60 hover:text-red-400" @click="confirmDeleteBar(bar)">
+            <Button variant="ghost" size="icon" class="size-7 text-muted-foreground/60" @click="confirmDeleteBar(bar)">
               <Trash2 class="size-3.5" />
             </Button>
           </div>

@@ -26,7 +26,7 @@
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" :disabled="!canUndo" class="no-print h-8 w-8 text-muted-foreground hover:text-foreground" @click="emit('undo')">
+              <Button variant="ghost" size="icon" :disabled="!canUndo" class="no-print h-8 w-8 text-muted-foreground" @click="emit('undo')">
                 <Undo2 class="size-4" />
                 <span class="sr-only">{{ labels.undo }}</span>
               </Button>
@@ -35,7 +35,7 @@
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" :disabled="!canRedo" class="no-print h-8 w-8 text-muted-foreground hover:text-foreground" @click="emit('redo')">
+              <Button variant="ghost" size="icon" :disabled="!canRedo" class="no-print h-8 w-8 text-muted-foreground" @click="emit('redo')">
                 <Redo2 class="size-4" />
                 <span class="sr-only">{{ labels.redo }}</span>
               </Button>
@@ -115,7 +115,10 @@
 
       <!-- Desktop Actions -->
       <div class="no-print hidden lg:flex items-center gap-x-2 shrink-0">
-        <Button variant="outline" size="sm" class="text-muted-foreground hover:text-foreground" @click="emit('openHistory')">{{ labels.history }}</Button>
+        <Button variant="ghost" size="sm" class="text-muted-foreground gap-1.5" @click="emit('openHistory')">
+          <History class="size-3.5" />
+          {{ labels.history }}
+        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" class="text-muted-foreground hover:text-foreground flex items-center gap-1">
@@ -156,7 +159,7 @@
       <div class="lg:hidden flex items-center shrink-0">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" class="text-muted-foreground hover:text-foreground">
+            <Button variant="ghost" size="icon" class="text-muted-foreground">
               <MoreVertical class="size-5" />
               <span class="sr-only">{{ t('show.header.menu_open') }}</span>
             </Button>
@@ -194,7 +197,7 @@
 import { ref, computed, nextTick } from 'vue'
 import { useLocale } from '@/composables/useLocale.js'
 const { t } = useLocale()
-import { Search, Undo2, Redo2, ChevronDown, AlertTriangle, MoreVertical } from 'lucide-vue-next'
+import { Search, Undo2, Redo2, ChevronDown, AlertTriangle, MoreVertical, History } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'

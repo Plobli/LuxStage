@@ -127,13 +127,13 @@
                 autofocus
                 v-model="addForm.channel"
                 :placeholder="labels.channelNr"
-                class="h-8 w-[5.5ch] border-0 bg-transparent px-1 py-0 text-center font-mono text-base font-semibold leading-none text-foreground shadow-none placeholder:text-muted-foreground/35 focus-visible:bg-muted/20 focus-visible:ring-0"
+                class="h-8 w-[5.5ch] border-0 bg-transparent px-1 py-0 text-center font-mono text-base font-semibold leading-none text-foreground shadow-none placeholder:text-muted-foreground/60 focus-visible:bg-muted/20 focus-visible:ring-0"
               />
-              <span class="select-none font-mono text-sm text-muted-foreground/30">/</span>
+              <span class="select-none font-mono text-sm text-muted-foreground/50">/</span>
               <Input
                 v-model="addForm.address"
                 :placeholder="labels.addressExample"
-                class="h-8 w-[8ch] border-0 bg-transparent px-1 py-0 text-center text-xs text-muted-foreground shadow-none placeholder:text-muted-foreground/25 focus-visible:bg-muted/20 focus-visible:ring-0"
+                class="h-8 w-[8ch] border-0 bg-transparent px-1 py-0 text-center text-xs text-muted-foreground shadow-none placeholder:text-muted-foreground/60 focus-visible:bg-muted/20 focus-visible:ring-0"
               />
               <div class="flex-1">
                 <ColorAutocomplete v-model="addForm.color" @change="() => {}" :placeholder="labels.color" />
@@ -144,13 +144,13 @@
                 v-model="addForm.device"
                 rows="1"
                 :placeholder="labels.device"
-                class="h-8 min-h-8 flex-1 resize-none border-0 bg-transparent px-2 py-1.5 text-sm leading-none text-foreground shadow-none transition-colors placeholder:text-muted-foreground/25 hover:bg-muted/10 focus-visible:bg-muted/20 focus-visible:outline-none focus-visible:ring-0"
+                class="h-8 min-h-8 flex-1 resize-none border-0 bg-transparent px-2 py-1.5 text-sm leading-none text-foreground shadow-none transition-colors placeholder:text-muted-foreground/60 hover:bg-muted/10 focus-visible:bg-muted/20 focus-visible:outline-none focus-visible:ring-0"
               />
               <Textarea
                 v-model="addForm.notes"
                 rows="1"
                 :placeholder="labels.notes"
-                class="h-8 min-h-8 flex-1 resize-none border-0 bg-transparent px-2 py-1.5 text-sm leading-none text-foreground shadow-none transition-colors placeholder:text-muted-foreground/25 hover:bg-muted/10 focus-visible:bg-muted/20 focus-visible:outline-none focus-visible:ring-0"
+                class="h-8 min-h-8 flex-1 resize-none border-0 bg-transparent px-2 py-1.5 text-sm leading-none text-foreground shadow-none transition-colors placeholder:text-muted-foreground/60 hover:bg-muted/10 focus-visible:bg-muted/20 focus-visible:outline-none focus-visible:ring-0"
               />
             </div>
           </div>
@@ -163,13 +163,13 @@
                   autofocus
                   v-model="addForm.channel"
                   :placeholder="labels.channelNr"
-                  class="h-7 w-[5.5ch] border-0 bg-transparent px-1 py-0 text-center font-mono text-base font-semibold leading-none text-foreground shadow-none placeholder:text-muted-foreground/35 focus-visible:bg-muted/20 focus-visible:ring-0"
+                  class="h-7 w-[5.5ch] border-0 bg-transparent px-1 py-0 text-center font-mono text-base font-semibold leading-none text-foreground shadow-none placeholder:text-muted-foreground/60 focus-visible:bg-muted/20 focus-visible:ring-0"
                 />
-                <span class="select-none font-mono text-sm text-muted-foreground/30">/</span>
+                <span class="select-none font-mono text-sm text-muted-foreground/50">/</span>
                 <Input
                   v-model="addForm.address"
                   :placeholder="labels.addressExample"
-                  class="h-7 w-[8ch] border-0 bg-transparent px-1 py-0 text-center text-xs text-muted-foreground shadow-none placeholder:text-muted-foreground/25 focus-visible:bg-muted/20 focus-visible:ring-0"
+                  class="h-7 w-[8ch] border-0 bg-transparent px-1 py-0 text-center text-xs text-muted-foreground shadow-none placeholder:text-muted-foreground/60 focus-visible:bg-muted/20 focus-visible:ring-0"
                 />
               </div>
             </div>
@@ -189,14 +189,14 @@
               <Textarea
                 v-model="addForm.device"
                 rows="1"
-                class="h-8 min-h-8 w-full resize-none border-0 bg-transparent px-2 py-1.5 text-sm leading-none text-foreground shadow-none transition-colors placeholder:text-muted-foreground/25 hover:bg-muted/10 focus-visible:bg-muted/20 focus-visible:outline-none focus-visible:ring-0"
+                class="h-8 min-h-8 w-full resize-none border-0 bg-transparent px-2 py-1.5 text-sm leading-none text-foreground shadow-none transition-colors placeholder:text-muted-foreground/60 hover:bg-muted/10 focus-visible:bg-muted/20 focus-visible:outline-none focus-visible:ring-0"
               />
             </div>
             <div class="px-2">
               <Textarea
                 v-model="addForm.notes"
                 rows="1"
-                class="h-8 min-h-8 w-full resize-none border-0 bg-transparent px-2 py-1.5 text-sm leading-none text-foreground shadow-none transition-colors placeholder:text-muted-foreground/25 hover:bg-muted/10 focus-visible:bg-muted/20 focus-visible:outline-none focus-visible:ring-0"
+                class="h-8 min-h-8 w-full resize-none border-0 bg-transparent px-2 py-1.5 text-sm leading-none text-foreground shadow-none transition-colors placeholder:text-muted-foreground/60 hover:bg-muted/10 focus-visible:bg-muted/20 focus-visible:outline-none focus-visible:ring-0"
               />
             </div>
             <div class="flex justify-center">

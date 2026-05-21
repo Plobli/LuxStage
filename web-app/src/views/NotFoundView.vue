@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col items-center justify-center min-h-dvh gap-4 text-center px-4">
-    <p class="text-6xl font-bold text-muted-foreground/30">404</p>
+    <p class="text-6xl font-bold text-muted-foreground/60">404</p>
     <h1 class="text-xl font-semibold text-foreground">{{ t('not_found.title') }}</h1>
     <p class="text-sm text-muted-foreground max-w-xs">{{ t('not_found.text') }}</p>
     <RouterLink

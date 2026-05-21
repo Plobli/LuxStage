@@ -20,7 +20,7 @@
             </div>
             <div class="flex items-center gap-2 mt-0.5">
               <span v-if="tower.stage_area" class="text-xs text-muted-foreground truncate">{{ tower.stage_area }}</span>
-              <span class="text-xs text-muted-foreground/50 shrink-0">{{ tower.slot_count }} Slots</span>
+              <span class="text-xs text-muted-foreground/80 shrink-0">{{ tower.slot_count }} Slots</span>
             </div>
           </div>
           <div class="flex items-center gap-0.5 shrink-0 ml-2 -mt-1">
@@ -51,12 +51,12 @@
             <!-- Drag handle + Slot-Nr -->
             <div class="flex items-center gap-1 pl-4 pr-2 py-3.5 border-b border-border/60 hover:bg-muted/20 transition-colors" @click.stop>
               <GripVertical class="drag-handle size-3.5 text-muted-foreground/50 cursor-grab active:cursor-grabbing" />
-              <span class="w-4 text-xs text-muted-foreground/40 font-mono text-right">{{ slot.slot_index }}</span>
+              <span class="w-4 text-xs text-muted-foreground/70 font-mono text-right">{{ slot.slot_index }}</span>
             </div>
             <!-- Kanalnummer -->
             <div class="flex items-center py-3.5 border-b border-border/60 hover:bg-muted/20 transition-colors">
               <span v-if="slot.channel_id && channelForId(slot.channel_id)" class="font-mono font-bold text-xl text-foreground leading-none">{{ channelForId(slot.channel_id)?.channel }}</span>
-              <span v-else class="text-xs text-muted-foreground/60">{{ t('gassenturm.slot_empty') }}</span>
+              <span v-else class="text-xs text-muted-foreground/80">{{ t('gassenturm.slot_empty') }}</span>
             </div>
             <!-- Farb-Badge (immer gleich breit) -->
             <div class="flex items-center justify-center py-3.5 border-b border-border/60 hover:bg-muted/20 transition-colors">
@@ -68,7 +68,7 @@
             </div>
             <!-- Separator -->
             <div class="flex items-center py-3.5 border-b border-border/60 hover:bg-muted/20 transition-colors">
-              <span v-if="slot.channel_id && channelForId(slot.channel_id)?.device" class="text-muted-foreground/30 px-1">·</span>
+              <span v-if="slot.channel_id && channelForId(slot.channel_id)?.device" class="text-muted-foreground/50 px-1">·</span>
             </div>
             <!-- Device -->
             <div class="flex items-center py-3.5 border-b border-border/60 hover:bg-muted/20 transition-colors min-w-0">
@@ -115,7 +115,7 @@
             :value="tower.notes"
             placeholder="Notiz…"
             rows="1"
-            class="w-full text-sm text-foreground/80 bg-transparent border border-border/40 rounded-lg px-3 py-2 resize-none outline-none placeholder:text-muted-foreground/40 focus:border-ring focus:ring-1 focus:ring-ring overflow-hidden"
+            class="w-full text-sm text-foreground/80 bg-transparent border border-border/40 rounded-lg px-3 py-2 resize-none outline-none placeholder:text-muted-foreground/60 focus:border-ring focus:ring-1 focus:ring-ring overflow-hidden"
             style="field-sizing: content; min-height: 2.25rem;"
             @focus="editingNoteId = tower.id"
             @blur="editingNoteId = null"
@@ -124,7 +124,7 @@
         </div>
         <button
           v-else
-          class="mx-4 mt-2 mb-3 text-left text-xs text-muted-foreground/30 hover:text-muted-foreground/60 transition-colors"
+          class="mx-4 mt-2 mb-3 text-left text-xs text-muted-foreground/60 hover:text-muted-foreground/80 transition-colors"
           @click="editingNoteId = tower.id"
         >{{ t('gassenturm.add_note') }}</button>
       </div>

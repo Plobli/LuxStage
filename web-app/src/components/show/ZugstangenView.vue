@@ -22,10 +22,10 @@
         <div class="flex items-center gap-6">
           <!-- Drag Handle + Name + Länge -->
           <div class="w-40 shrink-0 flex items-start gap-2">
-            <svg class="size-4 text-muted-foreground/40 mt-0.5 shrink-0 cursor-grab" viewBox="0 0 16 16" fill="currentColor"><circle cx="5.5" cy="4" r="1.2"/><circle cx="10.5" cy="4" r="1.2"/><circle cx="5.5" cy="8" r="1.2"/><circle cx="10.5" cy="8" r="1.2"/><circle cx="5.5" cy="12" r="1.2"/><circle cx="10.5" cy="12" r="1.2"/></svg>
+            <svg class="size-4 text-muted-foreground/60 mt-0.5 shrink-0 cursor-grab" viewBox="0 0 16 16" fill="currentColor"><circle cx="5.5" cy="4" r="1.2"/><circle cx="10.5" cy="4" r="1.2"/><circle cx="5.5" cy="8" r="1.2"/><circle cx="10.5" cy="8" r="1.2"/><circle cx="5.5" cy="12" r="1.2"/><circle cx="10.5" cy="12" r="1.2"/></svg>
           <div class="min-w-0">
             <div class="text-sm font-semibold text-foreground tracking-tight truncate">{{ bar.name }}</div>
-            <div class="text-xs text-muted-foreground/60 mt-0.5 tabular-nums">{{ formatLength(bar.length_cm) }}</div>
+            <div class="text-xs text-muted-foreground/80 mt-0.5 tabular-nums">{{ formatLength(bar.length_cm) }}</div>
           </div>
           </div>
 
@@ -106,16 +106,16 @@
               inputmode="decimal"
               :value="bar.height_cm != null ? cmToDisplay(bar.height_cm) : ''"
               placeholder="Höhe"
-              class="w-full h-9 rounded-md border border-border bg-transparent px-3 pr-7 text-sm tabular-nums text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-accent"
+              class="w-full h-9 rounded-md border border-border bg-transparent px-3 pr-7 text-sm tabular-nums text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-accent"
               @change="saveInlineField(bar, 'height_cm', $event.target.value === '' ? null : parseToCm(Number($event.target.value)))"
             />
-            <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/50 pointer-events-none">{{ unit }}</span>
+            <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/80 pointer-events-none">{{ unit }}</span>
           </div>
           <input
             type="text"
             :value="bar.notes ?? ''"
             placeholder="Anmerkung…"
-            class="flex-1 h-9 rounded-md border border-border bg-transparent px-3 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-accent"
+            class="flex-1 h-9 rounded-md border border-border bg-transparent px-3 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-accent"
             @change="saveInlineField(bar, 'notes', $event.target.value)"
           />
         </div>

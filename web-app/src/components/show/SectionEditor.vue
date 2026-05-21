@@ -15,7 +15,7 @@
             @blur="emit('commitFocus')"
             @input="sec.title = $event.target.value"
             @change="persistSectionDefs"
-            class="h-7 min-w-40 flex-1 border-0 bg-transparent px-0 text-sm font-semibold text-accent shadow-none placeholder:text-muted-foreground/40 focus-visible:ring-0"
+            class="h-7 min-w-40 flex-1 border-0 bg-transparent px-0 text-sm font-semibold text-accent shadow-none placeholder:text-muted-foreground/60 focus-visible:ring-0"
           />
           <Button variant="ghost" size="icon" class="size-6 rounded-sm text-muted-foreground/50 transition-colors hover:bg-red-500/10 hover:text-red-400 shrink-0" @click="deleteSectionDef(sortedSections.indexOf(sec))">
             <X class="size-4" />
@@ -60,7 +60,7 @@
                   :placeholder="labels.fieldLabel"
                   @focus="emit('recordFocus')"
                   @blur="emit('commitFocus'); persistKvRows(sec)"
-                  class="h-full min-h-10 w-full rounded-none border-0 bg-transparent px-3 py-0 text-sm font-medium text-foreground shadow-none placeholder:text-muted-foreground/35 focus-visible:ring-0"
+                  class="h-full min-h-10 w-full rounded-none border-0 bg-transparent px-3 py-0 text-sm font-medium text-foreground shadow-none placeholder:text-muted-foreground/60 focus-visible:ring-0"
                 />
               </td>
               <td class="py-0 px-0 align-middle border-l border-border/40 h-full">
@@ -68,7 +68,7 @@
                   v-model="row.value"
                   @focus="emit('recordFocus')"
                   @blur="emit('commitFocus'); persistKvRows(sec)"
-                  class="h-full min-h-10 w-full rounded-none border-0 bg-transparent px-3 py-0 text-sm text-foreground shadow-none placeholder:text-muted-foreground/30 focus-visible:ring-0"
+                  class="h-full min-h-10 w-full rounded-none border-0 bg-transparent px-3 py-0 text-sm text-foreground shadow-none placeholder:text-muted-foreground/60 focus-visible:ring-0"
                 />
               </td>
               <td class="w-10 pl-1 pr-1 align-middle text-center border-l border-border/40">

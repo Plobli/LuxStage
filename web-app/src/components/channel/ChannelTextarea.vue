@@ -8,7 +8,7 @@
     @update:model-value="handleInput"
     @blur="handleBlur"
     :class="[
-      'block min-h-10 w-full resize-none overflow-hidden rounded border-0 px-3 py-3 text-sm leading-4 text-foreground shadow-none transition-colors placeholder:text-muted-foreground/25 focus-visible:outline-none focus-visible:ring-0',
+      'block min-h-10 w-full resize-none overflow-hidden rounded border-0 px-3 py-3 text-sm leading-4 text-foreground shadow-none transition-colors placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-0',
       isFocused
         ? 'bg-primary/10 ring-1 ring-primary/60 cursor-text'
         : 'bg-transparent cursor-text hover:bg-muted/40 hover:ring-1 hover:ring-border',

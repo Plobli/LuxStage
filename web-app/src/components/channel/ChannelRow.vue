@@ -29,16 +29,16 @@
               @click.stop="emit('toggleStatus', ch)"
               :title="ch.channel ? 'Status umschalten' : ''"
               :class="[dupChannelNrs.has(ch.channel) ? 'ring-1 ring-yellow-400/60' : '', channelStatusClass]"
-              class="h-full min-h-14 w-full self-stretch cursor-pointer rounded-none border-0 bg-transparent px-1 py-0 text-center font-mono text-xl font-semibold shadow-none transition-colors placeholder:text-muted-foreground/30 focus-visible:ring-0"
+              class="h-full min-h-14 w-full self-stretch cursor-pointer rounded-none border-0 bg-transparent px-1 py-0 text-center font-mono text-xl font-semibold shadow-none transition-colors placeholder:text-muted-foreground/60 focus-visible:ring-0"
             />
-            <span class="flex w-3 select-none items-center justify-center self-stretch font-mono text-sm text-muted-foreground/30">/</span>
+            <span class="flex w-3 select-none items-center justify-center self-stretch font-mono text-sm text-muted-foreground/50">/</span>
             <Input
               v-model="ch.address"
               @focus="emit('recordFocus')"
               @input="emit('change')"
               @blur="emit('commitFocus')"
               @click.stop
-              class="h-full min-h-14 w-full self-stretch rounded-none border-0 bg-transparent px-1 py-0 text-center text-xs text-muted-foreground shadow-none placeholder:text-muted-foreground/25 focus-visible:ring-0"
+              class="h-full min-h-14 w-full self-stretch rounded-none border-0 bg-transparent px-1 py-0 text-center text-xs text-muted-foreground shadow-none placeholder:text-muted-foreground/60 focus-visible:ring-0"
             />
           </div>
         </div>
@@ -167,16 +167,16 @@
                 @click.stop="emit('toggleStatus', ch)"
                 :title="ch.channel ? 'Status umschalten' : ''"
                 :class="[dupChannelNrs.has(ch.channel) ? 'ring-1 ring-yellow-400/60' : '', channelStatusClass]"
-                class="w-12 h-8 cursor-pointer rounded border-0 bg-transparent px-1 py-0 text-center font-mono text-base font-semibold shadow-none transition-colors placeholder:text-muted-foreground/30 focus-visible:ring-0"
+                class="w-12 h-8 cursor-pointer rounded border-0 bg-transparent px-1 py-0 text-center font-mono text-base font-semibold shadow-none transition-colors placeholder:text-muted-foreground/60 focus-visible:ring-0"
               />
-              <span class="text-xs text-muted-foreground/40">/</span>
+              <span class="text-xs text-muted-foreground/50">/</span>
               <Input
                 v-model="ch.address"
                 @focus="emit('recordFocus')"
                 @input="emit('change')"
                 @blur="emit('commitFocus')"
                 @click.stop
-                class="w-16 h-8 rounded border-0 bg-transparent px-1 py-0 text-center text-xs text-muted-foreground shadow-none placeholder:text-muted-foreground/25 focus-visible:ring-0"
+                class="w-16 h-8 rounded border-0 bg-transparent px-1 py-0 text-center text-xs text-muted-foreground shadow-none placeholder:text-muted-foreground/60 focus-visible:ring-0"
               />
             </div>
             <div class="shrink-0 w-28">

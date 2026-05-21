@@ -107,7 +107,7 @@ const showNcOption = computed(() => {
 const badgeStyle = computed(() => filterBadgeStyle(props.modelValue))
 const inputClass = computed(() => {
   if (isNoColor.value) return 'font-semibold bg-muted/35'
-  if (!badgeStyle.value) return 'text-muted-foreground placeholder:text-muted-foreground/35 bg-muted/35'
+  if (!badgeStyle.value) return 'text-muted-foreground placeholder:text-muted-foreground/60 bg-muted/35'
   return 'font-semibold text-current placeholder:text-current/55'
 })
 

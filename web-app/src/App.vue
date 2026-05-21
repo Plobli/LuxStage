@@ -56,7 +56,7 @@
                       <LogOut class="size-5 shrink-0" aria-hidden="true" />
                       {{ t('nav.logout') }}
                     </Button>
-                    <div class="px-6 mt-2 text-xs text-muted-foreground/60">
+                    <div class="px-6 mt-2 text-xs text-muted-foreground/80">
                       Web {{ appVersion }}<span v-if="serverVersion"> · Srv {{ serverVersion }}</span>
                     </div>
                   </div>

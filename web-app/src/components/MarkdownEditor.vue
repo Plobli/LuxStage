@@ -1,7 +1,7 @@
 <template>
-  <div class="overflow-hidden bg-background/35" :class="$attrs.class ?? 'rounded-2xl border border-border/50'">
+  <div class="overflow-hidden bg-background/40" :class="$attrs.class ?? 'rounded-2xl border border-border/50'">
     <!-- Toolbar -->
-    <div v-if="editor" class="flex flex-wrap items-center gap-1 border-b border-border/40 bg-muted/10 px-3 py-2">
+    <div v-if="editor" class="flex flex-wrap items-center gap-1 border-b border-border/50 bg-muted/20 px-3 py-1.5 backdrop-blur-sm">
       <Toggle
         size="sm"
         :pressed="editor.isActive('bold')"
@@ -39,13 +39,6 @@
         class="h-8 rounded-full px-3 data-[state=on]:bg-background data-[state=on]:text-foreground"
         :title="t('editor.list.ordered')"
       >1.</Toggle>
-      <Toggle
-        size="sm"
-        :pressed="editor.isActive('taskList')"
-        @mousedown.prevent="editor.chain().focus().toggleTaskList().run()"
-        class="h-8 rounded-full px-3 data-[state=on]:bg-background data-[state=on]:text-foreground"
-        :title="t('editor.list.task')"
-      >☑</Toggle>
       <Separator orientation="vertical" class="mx-1 h-4" />
       <Toggle
         size="sm"

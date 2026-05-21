@@ -1,6 +1,6 @@
 <template>
   <nav class="flex flex-col w-64 shrink-0 border-r border-border overflow-y-auto" style="background: hsl(240 10% 7%)">
-    <div class="flex flex-col gap-0.5 p-4 pt-5">
+    <div class="flex flex-col gap-0.5 p-4 pt-7">
 
       <!-- Gruppe: Allgemein -->
       <div class="mb-1 px-3 text-[10px] font-medium text-muted-foreground/70 uppercase tracking-widest">

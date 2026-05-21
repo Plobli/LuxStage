@@ -72,7 +72,7 @@
         <div class="flex h-16 shrink-0 items-center justify-center">
           <img src="/favicon.png" alt="LuxStage" class="h-9 w-9 rounded-xl" />
         </div>
-        <nav class="mt-8">
+        <nav class="mt-6.5">
           <ul role="list" class="flex flex-col items-center space-y-1">
             <li v-for="item in navigation" :key="item.name">
               <RouterLink

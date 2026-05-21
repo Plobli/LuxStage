@@ -1,5 +1,35 @@
 <template>
-  <div class="flex h-dvh overflow-hidden" style="background: hsl(240 10% 3%)">
+  <div class="flex flex-col h-dvh overflow-hidden" style="background: hsl(240 10% 3%)">
+
+    <!-- ── Header (volle Breite) ──────────────────────────────────────────── -->
+    <!-- Titelzeile: volle Breite -->
+    <div v-if="loading" class="shrink-0 flex h-12 items-center gap-x-4 px-4 sm:px-6 lg:px-8 border-b border-border" style="background: hsl(240 10% 6%)">
+      <div class="h-6 w-48 rounded bg-muted animate-pulse" />
+      <div class="h-4 w-24 rounded bg-muted animate-pulse" />
+    </div>
+    <ShowHeader
+      v-else
+      :showName="meta.name"
+      :showDate="showDateFormatted"
+      :labels="{
+        history: t('history.btn'),
+        import: t('nav.import'),
+        export: t('nav.export'),
+        eosImport: t('eos.import.button'),
+        csvImport: t('channel.import'),
+        pdf: t('show.pdf'),
+        csvExport: t('channel.export'),
+      }"
+      @update:showName="onRenameShow($event)"
+      @openHistory="openHistory()"
+      @openPdf="openPdf()"
+      @downloadCsv="downloadChannelsCsv(props.id, channels)"
+      @eosFileSelected="onEosFileSelected($event)"
+      @csvFileSelected="onCsvImportSelected($event)"
+    />
+
+    <!-- ── Unterer Bereich: Sidebar + Content ─────────────────────────────── -->
+    <div class="flex flex-1 min-h-0 overflow-hidden">
 
     <!-- ── Sidebar (Desktop) ──────────────────────────────────────────────── -->
     <ShowSidebar
@@ -22,27 +52,19 @@
       @addSection="addSectionFromSubtab"
     />
 
-    <!-- ── Rechte Seite: Header + Content ─────────────────────────────────── -->
+    <!-- ── Content ────────────────────────────────────────────────────────── -->
     <div
       :inert="!isOnline || undefined"
       :class="{ 'opacity-40 pointer-events-none select-none': !isOnline }"
       class="flex flex-1 min-w-0 flex-col overflow-hidden"
     >
-      <!-- ── Top Navigation Bar ───────────────────────────────────────── -->
-      <!-- Skeleton während Laden -->
-      <div v-if="loading" class="sticky top-0 z-40 flex flex-col border-b border-border bg-background">
-        <div class="flex h-16 shrink-0 items-center gap-x-4 px-4 sm:px-6 lg:px-8">
-          <div class="h-5 w-40 rounded bg-muted animate-pulse" />
-          <div class="h-4 w-24 rounded bg-muted animate-pulse" />
-        </div>
-        <div class="flex h-10 items-center border-t border-border/50 bg-muted/50" />
-      </div>
-      <ShowHeader
+
+      <!-- ── Aktionszeile ──────────────────────────────────────────────── -->
+      <div v-if="loading" class="shrink-0 flex h-10 border-b border-border" style="background: hsl(240 10% 6%)" />
+      <ShowActionBar
         v-else
         :activeTab="mobileTab"
         v-model:search="search"
-        :showName="meta.name"
-        :showDate="showDateFormatted"
         :canUndo="canUndo"
         :canRedo="canRedo"
         :saving="channelsSaving || sectionsSaving || setupSaving"
@@ -58,22 +80,9 @@
           dupAddress: t('channel.dup_address'),
           dupChannel: t('channel.dup_channel'),
           search: t('channel.search'),
-          history: t('history.btn'),
-          import: t('nav.import'),
-          export: t('nav.export'),
-          eosImport: t('eos.import.button'),
-          csvImport: t('channel.import'),
-          pdf: t('show.pdf'),
-          csvExport: t('channel.export'),
         }"
-        @update:showName="onRenameShow($event)"
         @undo="undo()"
         @redo="redo()"
-        @openHistory="openHistory()"
-        @openPdf="openPdf()"
-        @downloadCsv="downloadChannelsCsv(props.id, channels)"
-        @eosFileSelected="onEosFileSelected($event)"
-        @csvFileSelected="onCsvImportSelected($event)"
         @healthFilter="onHealthFilter($event)"
       />
 
@@ -275,6 +284,7 @@
         </button>
       </nav>
       </div>
+    </div> <!-- /Sidebar+Content wrapper -->
 
       <!-- ── Overlays ───────────────────────────────────────────────────────── -->
     <HistorySlideOver
@@ -374,6 +384,7 @@ import { useShowBars } from '../composables/useShowBars.js'
 import { useMeasureUnit } from '../composables/useMeasureUnit'
 
 import ShowHeader from '../components/show/ShowHeader.vue'
+import ShowActionBar from '../components/show/ShowActionBar.vue'
 import ShowSidebar from '../components/show/ShowSidebar.vue'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'

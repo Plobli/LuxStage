@@ -68,7 +68,10 @@ export function useShowChannels({
     ignoreSseCount++
     try {
       await saveChannels(showId, channels.value)
-      if (meta.value) meta.value.datum = new Date().toISOString().split('T')[0]
+      if (meta.value) {
+        meta.value.datum = new Date().toISOString().split('T')[0]
+        await updateMeta(showId, { ...meta.value })
+      }
       invalidate('shows')
     } finally {
       channelsSaving.value = false

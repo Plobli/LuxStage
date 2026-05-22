@@ -1,7 +1,9 @@
 <template>
   <div class="px-4 py-10 sm:px-6 lg:px-8">
-    <div class="border-b border-border pb-5 mb-6">
-      <h2 class="text-2xl font-semibold text-foreground">{{ t('nav.archive') }}</h2>
+    <div class="sm:flex sm:items-center mb-8">
+      <div class="sm:flex-auto">
+        <h1 class="text-2xl font-semibold text-foreground">{{ t('nav.archive') }}</h1>
+      </div>
     </div>
 
     <!-- Bestätigungsdialog Löschen -->
@@ -39,16 +41,22 @@
         :key="show.id"
         class="col-span-1"
       >
-        <Card class="flex h-full overflow-hidden">
-          <div class="flex w-16 shrink-0 items-center justify-center bg-secondary text-sm font-medium text-secondary-foreground border-r border-border">
-            {{ initials(show.name || show.id) }}
+        <Card class="overflow-hidden px-4 py-3 flex flex-col gap-2">
+          <div>
+            <p class="font-semibold text-foreground text-base leading-tight">{{ show.name || show.id }}</p>
           </div>
-          <div class="flex flex-1 items-center justify-between truncate bg-card">
-            <div class="flex-1 truncate px-4 py-3 text-sm">
-              <span class="font-medium text-foreground">{{ show.name || show.id }}</span>
-              <p v-if="show.datum" class="text-muted-foreground">Stand: {{ show.datum }}</p>
-            </div>
-            <div class="shrink-0 pr-4 flex gap-2">
+          <div class="flex flex-wrap gap-2 text-xs text-muted-foreground">
+            <span v-if="show.template" class="flex items-center gap-1 bg-muted rounded px-2 py-0.5">
+              <Tag class="size-3" />{{ show.template }}
+            </span>
+            <span v-if="show.datum" class="flex items-center gap-1 bg-muted rounded px-2 py-0.5">
+              <CalendarDays class="size-3" />{{ formatDatum(show.datum) }}
+            </span>
+          </div>
+          <div class="flex items-center justify-between border-t border-border pt-2 mt-1">
+            <span v-if="show.last_edited_by" class="text-xs text-muted-foreground truncate">Letzte Bearbeitung: {{ show.last_edited_by }}</span>
+            <span v-else class="flex-1" />
+            <div class="flex gap-1 shrink-0">
               <Button
                 variant="ghost"
                 size="icon"
@@ -56,7 +64,7 @@
                 @click="restore(show.id)"
                 :title="t('show.restore')"
               >
-                <Undo class="size-4" aria-hidden="true" />
+                <Undo class="size-4" />
               </Button>
               <Button
                 variant="ghost"
@@ -65,7 +73,7 @@
                 @click="confirmDelete(show)"
                 :title="t('show.delete')"
               >
-                <Trash2 class="size-4" aria-hidden="true" />
+                <Trash2 class="size-4" />
               </Button>
             </div>
           </div>
@@ -77,7 +85,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Undo, Trash2 } from 'lucide-vue-next'
+import { CalendarDays, Tag, Undo, Trash2 } from 'lucide-vue-next'
 import { fetchArchivedShows, restoreShow, deleteShowPermanent } from '../api/shows.js'
 import { useLocale } from '../composables/useLocale.js'
 
@@ -91,8 +99,10 @@ const shows = ref([])
 const loading = ref(true)
 const deleteTarget = ref(null)
 
-function initials(name) {
-  return name.split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase()
+function formatDatum(d) {
+  if (!d) return ''
+  const [y, m, day] = d.split('-')
+  return `${day}.${m}.${y}`
 }
 
 onMounted(async () => {

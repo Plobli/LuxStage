@@ -222,7 +222,7 @@
     <template v-else>
       <div class="sm:flex sm:items-center mb-8">
         <div class="sm:flex-auto">
-          <h1 class="text-base font-semibold text-foreground">{{ t('nav.templates') }}</h1>
+          <h1 class="text-2xl font-semibold text-foreground">{{ t('nav.templates') }}</h1>
         </div>
         <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex gap-2">
           <Button @click="openUpload">
@@ -241,18 +241,16 @@
       </div>
 
       <ul v-else role="list" class="divide-y divide-border">
-        <li v-for="tpl in templates" :key="tpl.name" class="flex items-center justify-between gap-x-6 py-5">
+        <li v-for="tpl in templates" :key="tpl.name" class="flex items-center justify-between gap-x-6 py-5 cursor-pointer hover:bg-muted/50 -mx-4 px-4 rounded-lg transition-colors" @click="openDetail(tpl.name)">
           <div class="min-w-0 flex-1">
-            <Button variant="link" class="min-w-0 text-left px-0 font-semibold" @click="openDetail(tpl.name)">
-              {{ templateDisplayName(tpl.name) || tpl.name }}
-            </Button>
+            <p class="font-semibold text-foreground">{{ templateDisplayName(tpl.name) || tpl.name }}</p>
             <div class="flex flex-wrap gap-x-4 mt-1 text-xs text-muted-foreground">
               <span>{{ tpl.channelCount }} {{ tpl.channelCount === 1 ? t('template.channel.singular') : t('template.channel.plural') }}</span>
               <span v-if="tpl.oscHost">OSC: {{ tpl.oscHost }}</span>
               <span v-if="tpl.updatedAt">{{ t('template.updated_at', { date: formatDate(tpl.updatedAt) }) }}</span>
             </div>
           </div>
-          <div class="flex flex-none items-center gap-x-4">
+          <div class="flex flex-none items-center gap-x-4" @click.stop>
             <Button variant="outline" size="sm" @click="openDetail(tpl.name)">
               {{ t('action.edit') }}
             </Button>
@@ -823,7 +821,7 @@ function formatDate(ts) {
 // ── Löschen ─────────────────────────────────────────────────────────────────
 
 async function handleDelete(name) {
-  const ok = await confirm({ t, titleKey: 'template.delete.confirm', messageParams: { name }, confirmKey: 'action.delete', cancelKey: 'action.cancel' })
+  const ok = await confirm({ t, titleKey: 'template.delete.confirm', titleParams: { name }, confirmKey: 'action.delete', cancelKey: 'action.cancel' })
   if (!ok) return
   await deleteTemplate(name)
   templates.value = templates.value.filter(t => t.name !== name)

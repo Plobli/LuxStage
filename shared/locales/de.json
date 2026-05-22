@@ -21,6 +21,8 @@
   "show.template.none": "Kein Spielort",
   "show.archived": "Archivierte Shows",
   "show.archive": "Archivieren",
+  "show.archive.confirm.title": "Show archivieren?",
+  "show.archive.confirm.text": "\"{name}\" wird archiviert und kann jederzeit wiederhergestellt werden.",
   "show.restore": "Wiederherstellen",
   "show.unarchive": "Wiederherstellen",
   "show.delete": "Endgültig löschen",

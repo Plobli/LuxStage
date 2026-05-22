@@ -78,7 +78,7 @@
           </Alert>
         </div>
         <div class="mt-8">
-          <Button type="submit" variant="secondary" :disabled="resetLoading">
+          <Button type="submit" :disabled="resetLoading">
             {{ resetLoading ? '…' : t('settings.account.reset_password.submit') }}
           </Button>
         </div>

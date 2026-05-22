@@ -65,7 +65,7 @@
         <p class="mt-1 text-sm/6 text-muted-foreground">{{ t('settings.account.logout.hint') }}</p>
       </div>
       <div class="md:col-span-2 flex items-start">
-        <Button variant="destructive" type="button" @click="handleLogout">
+        <Button variant="outline" type="button" @click="handleLogout">
           {{ t('settings.logout') }}
         </Button>
       </div>

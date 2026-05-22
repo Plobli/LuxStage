@@ -11,7 +11,6 @@
         <Button
           type="button"
           @click="downloadBackup"
-          variant="outline"
         >
           {{ t('settings.backup.download') }}
         </Button>

@@ -47,9 +47,6 @@
                 <span v-if="show.last_edited_by" class="text-xs text-muted-foreground truncate">Letzte Bearbeitung: {{ show.last_edited_by }}</span>
                 <span v-else class="flex-1" />
                 <div class="flex gap-1 shrink-0">
-                  <Button variant="ghost" size="icon" class="text-muted-foreground" @click="openAssign(show)" :title="t('show.assign_template')">
-                    <Pencil class="size-4" />
-                  </Button>
                   <Button variant="ghost" size="icon" class="text-muted-foreground" @click="archive(show.id)" :title="t('show.archive')">
                     <Archive class="size-4" />
                   </Button>
@@ -102,35 +99,6 @@
         </DialogFooter>
       </DialogContent>
     </Dialog>
-    <!-- Bühnen-Template zuweisen: Dialog -->
-    <Dialog :open="assignDialogOpen" @update:open="assignDialogOpen = $event">
-      <DialogContent class="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{{ t('show.assign_template') }}</DialogTitle>
-        </DialogHeader>
-        <DialogBody>
-          <p v-if="assignShow" class="text-sm text-muted-foreground">{{ assignShow.name || assignShow.id }}</p>
-          <Select v-model="assignTemplate">
-            <SelectTrigger size="lg" class="w-full">
-              <SelectValue :placeholder="t('show.template.none')" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__none__">{{ t('show.template.none') }}</SelectItem>
-              <SelectItem v-for="tpl in templates" :key="tpl.name" :value="tpl.name">
-                {{ templateDisplayName(tpl.name) }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </DialogBody>
-        <DialogFooter>
-          <Button variant="outline" @click="assignDialogOpen = false">{{ t('action.cancel') }}</Button>
-          <Button :disabled="assignSaving" @click="handleAssign">
-            {{ assignSaving ? '…' : t('action.save') }}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-
   <!-- FAB -->
   <Button variant="accent" @click="openCreate" class="fixed bottom-6 right-6 h-11 px-5 shadow-lg border-0 flex items-center gap-2">
     <Plus class="size-4" /> {{ t('show.new') }}
@@ -141,14 +109,15 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Archive, CalendarDays, Loader2, Pencil, Plus, Tag } from 'lucide-vue-next'
+import { Archive, CalendarDays, Loader2, Plus, Tag } from 'lucide-vue-next'
 import { useLocale } from '../composables/useLocale.js'
-import { fetchShows, createShow, archiveShow, updateMeta } from '../api/shows.js'
+import { fetchShows, createShow, archiveShow } from '../api/shows.js'
 import { fetchTemplates, fetchTemplateChannels } from '../api/templates.js'
 import { cached, invalidate } from '../api/cache.js'
 import { saveChannels } from '../api/channels.js'
 import { templateDisplayName } from '../utils/templateName.js'
 
+import { useConfirm } from '../composables/useConfirm.js'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
@@ -164,6 +133,7 @@ import {
 
 const router = useRouter()
 const { t } = useLocale()
+const { confirm } = useConfirm()
 
 const shows = ref([])
 const templates = ref([])
@@ -171,12 +141,6 @@ const loading = ref(true)
 const creating = ref(false)
 const drawerOpen = ref(false)
 const form = ref({ name: '', datum: new Date().toISOString().slice(0, 10), template: '__none__' })
-
-const assignDialogOpen = ref(false)
-const assignShow = ref(null)
-const assignTemplate = ref('__none__')
-const assignSaving = ref(false)
-
 
 function formatDatum(d) {
   if (!d) return ''
@@ -256,29 +220,10 @@ function openCreate() {
   drawerOpen.value = true
 }
 
-function openAssign(show) {
-  assignShow.value = show
-  assignTemplate.value = show.template || '__none__'
-  assignDialogOpen.value = true
-}
-
-async function handleAssign() {
-  assignSaving.value = true
-  try {
-    const tplVal = assignTemplate.value === '__none__' ? null : assignTemplate.value
-    await updateMeta(assignShow.value.id, { template: tplVal })
-    invalidate('shows')
-    const show = shows.value.find(s => s.id === assignShow.value.id)
-    if (show) show.template = tplVal || ''
-    assignDialogOpen.value = false
-  } catch (e) {
-    console.error('Failed to assign template:', e)
-  } finally {
-    assignSaving.value = false
-  }
-}
-
 async function archive(showId) {
+  const show = shows.value.find(s => s.id === showId)
+  const ok = await confirm({ t, titleKey: 'show.archive.confirm.title', messageKey: 'show.archive.confirm.text', messageParams: { name: show?.name || showId }, confirmKey: 'show.archive', cancelKey: 'action.cancel' })
+  if (!ok) return
   const idx = shows.value.findIndex(s => s.id === showId)
   const removed = shows.value.splice(idx, 1)[0]
   try {

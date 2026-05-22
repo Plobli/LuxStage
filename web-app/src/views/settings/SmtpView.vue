@@ -41,7 +41,7 @@
           <Button type="submit" :disabled="loading">
             {{ loading ? '…' : t('settings.smtp.save') }}
           </Button>
-          <Button type="button" variant="secondary" :disabled="testLoading" @click="doTest">
+          <Button type="button" variant="outline" :disabled="testLoading" @click="doTest">
             {{ testLoading ? '…' : t('settings.smtp.test') }}
           </Button>
         </div>

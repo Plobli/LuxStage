@@ -98,26 +98,26 @@
             to="/settings"
             :title="t('nav.settings')"
             class="group relative flex flex-col items-center gap-1 rounded-md px-2 py-2 w-16"
-            :class="route.path.startsWith('/settings') ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'"
+            :class="route.path.startsWith('/settings') ? 'text-accent-foreground' : 'text-muted-foreground hover:text-foreground'"
           >
             <div
               class="flex items-center justify-center rounded-lg p-2 transition-colors"
-              :class="route.path.startsWith('/settings') ? 'bg-[hsl(357,61%,45%)]' : 'group-hover:bg-white/5'"
+              :class="route.path.startsWith('/settings') ? 'bg-accent/85' : 'group-hover:bg-white/5'"
             >
               <Settings class="size-5 shrink-0" aria-hidden="true" />
             </div>
             <span v-if="updateAvailable" class="absolute top-1 right-1 size-2 rounded-full bg-accent" />
           </RouterLink>
-          <Button
-            variant="ghost"
-            size="icon"
+          <button
             @click="handleLogout"
             :title="t('nav.logout')"
-            class="size-12 text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-md"
+            class="group flex flex-col items-center gap-1 rounded-md px-2 py-2 w-16 text-muted-foreground hover:text-foreground"
           >
-            <LogOut class="size-6 shrink-0" aria-hidden="true" />
+            <div class="flex items-center justify-center rounded-lg p-2 transition-colors group-hover:bg-white/5">
+              <LogOut class="size-5 shrink-0" aria-hidden="true" />
+            </div>
             <span class="sr-only">{{ t('nav.logout') }}</span>
-          </Button>
+          </button>
         </div>
       </div>
 

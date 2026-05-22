@@ -1,6 +1,6 @@
 <template>
   <div class="shrink-0 border-b border-border" style="background: hsl(240 10% 6%)">
-    <div class="flex h-12 shrink-0 items-center gap-x-3 px-4 sm:px-6 lg:px-8">
+    <div class="flex h-12 shrink-0 items-center gap-x-3 px-4 sm:px-6 lg:px-7">
       <div class="flex items-baseline gap-x-3 min-w-0 flex-1">
         <h1
           v-if="!editingName"

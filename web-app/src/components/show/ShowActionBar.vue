@@ -1,7 +1,7 @@
 <template>
-  <div class="shrink-0 flex h-10 items-center gap-x-3 px-4 sm:px-6 lg:px-8 border-b border-border" style="background: hsl(240 10% 6%)">
+  <div class="shrink-0 flex h-10 items-center border-b border-border" style="background: hsl(240 10% 6%)">
     <!-- Undo/Redo + Saving -->
-    <div class="flex items-center gap-x-1 shrink-0">
+    <div class="flex items-center gap-x-1 shrink-0 px-4 sm:px-6 lg:px-5">
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -22,73 +22,72 @@
       </TooltipProvider>
       <span v-if="saving" class="text-xs text-muted-foreground">…</span>
     </div>
-
-    <div class="flex-1" />
-
-    <!-- Presence -->
-    <div v-if="presenceWithActivity.length > 1" class="hidden sm:flex items-center -space-x-1.5 shrink-0">
-      <TooltipProvider>
-        <Tooltip v-for="u in presenceWithActivity.slice(0, 4)" :key="u.username">
-          <TooltipTrigger asChild>
-            <div
-              :style="{ backgroundColor: userColor(u.username) }"
-              :class="{ 'ring-2 ring-green-400/80': u.isActive }"
-              class="size-6 rounded-full ring-2 ring-background flex items-center justify-center text-[10px] font-semibold text-white uppercase relative transition-all"
-            >
-              {{ u.username[0] }}
-              <div v-if="u.isActive" class="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full bg-green-400 ring-1 ring-background" />
-              <span v-if="u.devices.includes('ios')" class="absolute -top-0.5 -right-0.5 text-xs">📱</span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            <div class="text-sm">
-              <p class="font-semibold">{{ u.username }}</p>
-              <p class="text-xs text-muted-foreground">
-                {{ u.devices.includes('ios') ? 'iOS' : 'Web' }}{{ u.devices.length > 1 ? ' + ' + (u.devices.length - 1) : '' }}
-              </p>
-            </div>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-      <div v-if="presenceWithActivity.length > 4" class="size-6 rounded-full bg-muted ring-2 ring-background flex items-center justify-center text-[9px] text-muted-foreground">+{{ presenceWithActivity.length - 4 }}</div>
-    </div>
-
-    <!-- Warnings -->
-    <Badge v-if="dupAddressWarning" variant="outline" class="text-yellow-400 border-yellow-500/30 bg-yellow-500/10 text-xs hidden sm:flex shrink-0">
-      <AlertTriangle class="size-3 mr-1" />{{ labels.dupAddress }}
-    </Badge>
-    <Badge v-if="dupChannelWarning" variant="outline" class="text-yellow-400 border-yellow-500/30 bg-yellow-500/10 text-xs hidden sm:flex shrink-0">
-      <AlertTriangle class="size-3 mr-1" />{{ labels.dupChannel }}
-    </Badge>
-
-    <!-- Health Badge -->
-    <ShowHealthBadge
-      v-if="healthLabels && activeTab === 'channels'"
-      :noNotes="healthStats.noNotes"
-      :noDevice="healthStats.noDevice"
-      :noPosition="healthStats.noPosition"
-      :noAddress="healthStats.noAddress"
-      :activeFilter="activeHealthFilter"
-      :labels="healthLabels"
-      @filterNoNotes="emit('healthFilter', 'noNotes')"
-      @filterNoDevice="emit('healthFilter', 'noDevice')"
-      @filterNoPosition="emit('healthFilter', 'noPosition')"
-      @filterNoAddress="emit('healthFilter', 'noAddress')"
-      @clearFilter="emit('healthFilter', null)"
-    />
-
-    <!-- Search -->
-    <div v-if="activeTab === 'channels'" class="relative shrink-0">
+    <div v-if="activeTab === 'channels'" class="relative flex-1 self-stretch">
       <Input
         :value="search"
         @input="emit('update:search', $event.target.value)"
         @keydown.esc="emit('update:search', '')"
         type="search"
         :placeholder="labels.search"
-        class="h-8 w-48 xl:w-56 pl-8 text-xs"
+        class="h-full w-full pl-8 text-xs border-0 border-l border-border rounded-none bg-transparent focus-visible:ring-0 focus-visible:bg-white/5"
       />
       <Search class="absolute left-2 top-1/2 -translate-y-1/2 size-3 text-muted-foreground pointer-events-none" aria-hidden="true" />
     </div>
+
+    <div class="flex items-center gap-x-3 shrink-0 pr-4 sm:pr-6 lg:pr-8">
+      <!-- Presence -->
+      <div v-if="presenceWithActivity.length > 1" class="hidden sm:flex items-center -space-x-1.5">
+        <TooltipProvider>
+          <Tooltip v-for="u in presenceWithActivity.slice(0, 4)" :key="u.username">
+            <TooltipTrigger asChild>
+              <div
+                :style="{ backgroundColor: userColor(u.username) }"
+                :class="{ 'ring-2 ring-green-400/80': u.isActive }"
+                class="size-6 rounded-full ring-2 ring-background flex items-center justify-center text-[10px] font-semibold text-white uppercase relative transition-all"
+              >
+                {{ u.username[0] }}
+                <div v-if="u.isActive" class="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full bg-green-400 ring-1 ring-background" />
+                <span v-if="u.devices.includes('ios')" class="absolute -top-0.5 -right-0.5 text-xs">📱</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <div class="text-sm">
+                <p class="font-semibold">{{ u.username }}</p>
+                <p class="text-xs text-muted-foreground">
+                  {{ u.devices.includes('ios') ? 'iOS' : 'Web' }}{{ u.devices.length > 1 ? ' + ' + (u.devices.length - 1) : '' }}
+                </p>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <div v-if="presenceWithActivity.length > 4" class="size-6 rounded-full bg-muted ring-2 ring-background flex items-center justify-center text-[9px] text-muted-foreground">+{{ presenceWithActivity.length - 4 }}</div>
+      </div>
+
+      <!-- Warnings -->
+      <Badge v-if="dupAddressWarning" variant="outline" class="text-yellow-400 border-yellow-500/30 bg-yellow-500/10 text-xs hidden sm:flex">
+        <AlertTriangle class="size-3 mr-1" />{{ labels.dupAddress }}
+      </Badge>
+      <Badge v-if="dupChannelWarning" variant="outline" class="text-yellow-400 border-yellow-500/30 bg-yellow-500/10 text-xs hidden sm:flex">
+        <AlertTriangle class="size-3 mr-1" />{{ labels.dupChannel }}
+      </Badge>
+
+      <!-- Health Badge -->
+      <ShowHealthBadge
+        v-if="healthLabels && activeTab === 'channels'"
+        :noNotes="healthStats.noNotes"
+        :noDevice="healthStats.noDevice"
+        :noPosition="healthStats.noPosition"
+        :noAddress="healthStats.noAddress"
+        :activeFilter="activeHealthFilter"
+        :labels="healthLabels"
+        @filterNoNotes="emit('healthFilter', 'noNotes')"
+        @filterNoDevice="emit('healthFilter', 'noDevice')"
+        @filterNoPosition="emit('healthFilter', 'noPosition')"
+        @filterNoAddress="emit('healthFilter', 'noAddress')"
+        @clearFilter="emit('healthFilter', null)"
+      />
+    </div>
+
   </div>
 </template>
 

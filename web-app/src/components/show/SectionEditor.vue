@@ -5,7 +5,7 @@
       v-for="sec in sortedSections"
       :key="sec.id"
       :data-section-id="sec.id"
-      class="group/sec relative border-b border-border/60"
+      class="group/sec relative"
     >
       <div v-if="!singleSectionId" class="shrink-0 sticky top-0 z-10 flex min-h-10 items-center gap-3 border-b border-border/90 bg-muted px-4">
           <Input

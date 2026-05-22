@@ -56,7 +56,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits);
 </script>
 
 <template>
-  <SelectPortal :disabled="true">
+  <SelectPortal>
     <SelectContent
       v-bind="{ ...forwarded, ...$attrs }"
       :style="{ width: 'var(--reka-popper-anchor-width)' }"

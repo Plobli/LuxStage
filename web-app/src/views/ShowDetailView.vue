@@ -11,6 +11,7 @@
       v-else
       :showName="meta.name"
       :showDate="showDateFormatted"
+      :showMeta="meta"
       :labels="{
         history: t('history.btn'),
         import: t('nav.import'),
@@ -21,6 +22,7 @@
         csvExport: t('channel.export'),
       }"
       @update:showName="onRenameShow($event)"
+      @update:meta="onUpdateMeta($event)"
       @openHistory="openHistory()"
       @openPdf="openPdf()"
       @downloadCsv="downloadChannelsCsv(props.id, channels)"
@@ -571,6 +573,12 @@ function onSetupChange(md) {
 // ── History ─────────────────────────────────────────────────────────────────
 async function onRenameShow(name) {
   meta.value.name = name
+  await updateMeta(props.id, { ...meta.value })
+  invalidate('shows')
+}
+
+async function onUpdateMeta(fields) {
+  meta.value = { ...meta.value, ...fields }
   await updateMeta(props.id, { ...meta.value })
   invalidate('shows')
 }

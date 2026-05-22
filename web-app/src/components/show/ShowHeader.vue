@@ -17,7 +17,16 @@
           @keydown.esc.prevent="cancelName"
           class="text-2xl font-semibold text-foreground bg-transparent border-b border-accent outline-none min-w-20 flex-1"
         />
-        <span v-if="showDate" class="text-sm text-muted-foreground shrink-0">{{ showDate }}</span>
+        <button
+          v-if="showDate"
+          class="text-sm text-muted-foreground shrink-0 hover:text-foreground transition-colors flex items-center gap-1"
+          @click="openMetaDialog"
+        >{{ showDate }}<Pencil class="size-3 opacity-40" /></button>
+        <button
+          v-else
+          class="text-sm text-muted-foreground/50 shrink-0 hover:text-muted-foreground transition-colors flex items-center gap-1"
+          @click="openMetaDialog"
+        ><Pencil class="size-3" /> Info</button>
       </div>
 
       <!-- Verlauf + Import + Export (Desktop) -->
@@ -77,13 +86,43 @@
       <input ref="csvImportInput" type="file" accept=".csv" class="hidden" @change="emit('csvFileSelected', $event)" />
     </div>
   </div>
+
+  <!-- Meta-Dialog -->
+  <Dialog :open="metaDialogOpen" @update:open="metaDialogOpen = $event">
+    <DialogContent class="sm:max-w-md">
+      <DialogHeader>
+        <DialogTitle>Show-Info</DialogTitle>
+      </DialogHeader>
+      <DialogBody>
+        <div>
+          <Label for="meta-datum">Datum</Label>
+          <Input id="meta-datum" v-model="editMeta.datum" type="date" size="lg" />
+        </div>
+        <div>
+          <Label for="meta-untertitel">Untertitel</Label>
+          <Input id="meta-untertitel" v-model="editMeta.untertitel" type="text" size="lg" placeholder="Optionaler Untertitel" />
+        </div>
+        <div>
+          <Label for="meta-spielzeit">Spielzeit</Label>
+          <Input id="meta-spielzeit" v-model="editMeta.spielzeit" type="text" size="lg" placeholder="z.B. 25/26" />
+        </div>
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="outline" @click="metaDialogOpen = false">Abbrechen</Button>
+        <Button @click="commitMeta">Speichern</Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>
 
 <script setup>
 import { ref, nextTick } from 'vue'
 import { useLocale } from '@/composables/useLocale.js'
-import { History, ChevronDown, MoreVertical } from 'lucide-vue-next'
+import { History, ChevronDown, MoreVertical, Pencil } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuTrigger, DropdownMenuSeparator,
@@ -94,6 +133,7 @@ const { t } = useLocale()
 const props = defineProps({
   showName: { type: String, default: '' },
   showDate: { type: String, default: '' },
+  showMeta: { type: Object, default: () => ({}) },
   labels: {
     type: Object,
     default: () => ({
@@ -107,6 +147,7 @@ const props = defineProps({
 
 const emit = defineEmits([
   'update:showName',
+  'update:meta',
   'openHistory', 'openPdf', 'downloadCsv',
   'eosFileSelected', 'csvFileSelected',
 ])
@@ -116,6 +157,22 @@ const csvImportInput = ref(null)
 const editingName = ref(false)
 const editName = ref('')
 const nameInput = ref(null)
+const metaDialogOpen = ref(false)
+const editMeta = ref({ datum: '', untertitel: '', spielzeit: '' })
+
+function openMetaDialog() {
+  editMeta.value = {
+    datum: props.showMeta.datum ?? '',
+    untertitel: props.showMeta.untertitel ?? '',
+    spielzeit: props.showMeta.spielzeit ?? '',
+  }
+  metaDialogOpen.value = true
+}
+
+function commitMeta() {
+  emit('update:meta', { ...editMeta.value })
+  metaDialogOpen.value = false
+}
 
 async function startEditName() {
   editName.value = props.showName

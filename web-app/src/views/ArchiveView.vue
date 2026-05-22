@@ -35,62 +35,51 @@
       <p class="text-muted-foreground/60 text-xs">{{ t('show.archive.empty.hint') }}</p>
     </div>
 
-    <ul v-else role="list" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-      <li
-        v-for="show in shows"
-        :key="show.id"
-        class="col-span-1"
-      >
-        <Card class="overflow-hidden px-4 py-3 flex flex-col gap-2">
-          <div>
-            <p class="font-semibold text-foreground text-base leading-tight">{{ show.name || show.id }}</p>
+    <template v-else>
+      <!-- Spalten-Header -->
+      <div class="grid grid-cols-[1fr_8rem_7rem_1fr_4.5rem] gap-0 px-4 mb-1 text-xs font-medium text-muted-foreground/60 uppercase tracking-wider select-none">
+        <span>Name</span>
+        <span class="hidden sm:block">Stand</span>
+        <span class="hidden lg:block">Spielzeit</span>
+        <span class="hidden md:block">Letzte Bearbeitung</span>
+        <span></span>
+      </div>
+
+      <div class="rounded-xl overflow-hidden">
+        <div
+          v-for="(show, i) in shows"
+          :key="show.id"
+          class="group grid grid-cols-[1fr_8rem_7rem_1fr_4.5rem] gap-0 items-center px-4 py-2.5 transition-colors hover:bg-muted/50"
+          :class="i > 0 ? 'border-t border-border/40' : ''"
+        >
+          <div class="min-w-0 pr-4">
+            <span class="font-medium text-foreground text-sm truncate block">{{ show.name || show.id }}</span>
+            <span v-if="show.untertitel" class="text-xs text-muted-foreground/60 truncate block">{{ show.untertitel }}</span>
           </div>
-          <div class="flex flex-wrap gap-2 text-xs text-muted-foreground">
-            <span v-if="show.template" class="flex items-center gap-1 bg-muted rounded px-2 py-0.5">
-              <Tag class="size-3" />{{ show.template }}
-            </span>
-            <span v-if="show.datum" class="flex items-center gap-1 bg-muted rounded px-2 py-0.5">
-              <CalendarDays class="size-3" />{{ formatDatum(show.datum) }}
-            </span>
+          <span class="text-sm text-muted-foreground hidden sm:block">{{ formatDatum(show.datum) }}</span>
+          <span class="text-sm text-muted-foreground hidden lg:block">{{ show.spielzeit || '—' }}</span>
+          <span class="text-sm text-muted-foreground truncate hidden md:block">{{ show.last_edited_by }}</span>
+          <div class="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button variant="ghost" size="icon" class="size-7 text-muted-foreground hover:text-foreground" @click="restore(show.id)" :title="t('show.restore')">
+              <Undo class="size-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" class="size-7 text-muted-foreground hover:text-destructive" @click="confirmDelete(show)" :title="t('show.delete')">
+              <Trash2 class="size-3.5" />
+            </Button>
           </div>
-          <div class="flex items-center justify-between border-t border-border pt-2 mt-1">
-            <span v-if="show.last_edited_by" class="text-xs text-muted-foreground truncate">Letzte Bearbeitung: {{ show.last_edited_by }}</span>
-            <span v-else class="flex-1" />
-            <div class="flex gap-1 shrink-0">
-              <Button
-                variant="ghost"
-                size="icon"
-                class="text-muted-foreground"
-                @click="restore(show.id)"
-                :title="t('show.restore')"
-              >
-                <Undo class="size-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                class="text-muted-foreground"
-                @click="confirmDelete(show)"
-                :title="t('show.delete')"
-              >
-                <Trash2 class="size-4" />
-              </Button>
-            </div>
-          </div>
-        </Card>
-      </li>
-    </ul>
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { CalendarDays, Tag, Undo, Trash2 } from 'lucide-vue-next'
+import { Undo, Trash2 } from 'lucide-vue-next'
 import { fetchArchivedShows, restoreShow, deleteShowPermanent } from '../api/shows.js'
 import { useLocale } from '../composables/useLocale.js'
 
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
 
 const { t } = useLocale()

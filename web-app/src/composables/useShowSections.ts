@@ -1,6 +1,7 @@
 import { ref, type Ref } from 'vue'
 import { useDebounceFn } from '@vueuse/core'
 import { fetchShowSections, saveShowSections, fetchShowSectionDefs, saveShowSectionDefs } from '../api/sections'
+import { invalidate } from '../api/cache'
 
 export interface SectionDef {
   id: string;
@@ -34,6 +35,7 @@ export function useShowSections(showId: string, meta: Ref<any>) {
       const sections: SectionContent[] = [...sectionContents.value.entries()].map(([id, content]) => ({ id, content }))
       await saveShowSections(showId, sections)
       if (meta.value) meta.value.datum = new Date().toISOString().split('T')[0]
+      invalidate('shows')
     } finally {
       sectionsSaving.value = false
     }

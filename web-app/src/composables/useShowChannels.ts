@@ -2,6 +2,7 @@ import { ref, computed, type Ref } from 'vue'
 import { useDebounceFn } from '@vueuse/core'
 import { fetchChannels, saveChannels, mergeChannels, parseChannelsCsv, type Channel } from '../api/channels'
 import { updateMeta } from '../api/shows'
+import { invalidate } from '../api/cache'
 import { useUndoRedo } from './useUndoRedo'
 import { type SectionDef } from './useShowSections'
 import type { Tower } from '../api/towers'
@@ -68,6 +69,7 @@ export function useShowChannels({
     try {
       await saveChannels(showId, channels.value)
       if (meta.value) meta.value.datum = new Date().toISOString().split('T')[0]
+      invalidate('shows')
     } finally {
       channelsSaving.value = false
     }

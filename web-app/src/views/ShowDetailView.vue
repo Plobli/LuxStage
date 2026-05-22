@@ -391,6 +391,7 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { fetchShow, updateMeta, restoreHistory, createSnapshot } from '../api/shows.js'
+import { invalidate } from '../api/cache.js'
 import { saveShowSectionDefs } from '../api/sections.ts'
 import { uuid } from '../utils/uuid.js'
 import { downloadChannelsCsv } from '../api/channels.js'
@@ -480,6 +481,7 @@ const persistSetupDebounced = useDebounceFn(async () => {
   setupSaving.value = true
   try {
     await updateMeta(props.id, { ...meta.value, setupMarkdown: pendingSetupMd })
+    invalidate('shows')
   } finally {
     setupSaving.value = false
   }
@@ -570,6 +572,7 @@ function onSetupChange(md) {
 async function onRenameShow(name) {
   meta.value.name = name
   await updateMeta(props.id, { ...meta.value })
+  invalidate('shows')
 }
 
 function openHistory() {

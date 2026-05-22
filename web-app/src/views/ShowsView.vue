@@ -31,36 +31,27 @@
             :key="show.id"
             class="col-span-1"
           >
-            <Card class="flex h-full overflow-hidden cursor-pointer hover:bg-muted/50 transition-colors" @click="router.push(`/shows/${show.id}`)">
-              <div class="flex w-16 shrink-0 items-center justify-center bg-secondary text-sm font-medium text-secondary-foreground border-r border-border">
-                {{ initials(show.name || show.id) }}
+            <Card class="overflow-hidden cursor-pointer hover:bg-muted/50 transition-colors px-4 py-3 flex flex-col gap-2" @click="router.push(`/shows/${show.id}`)">
+              <div>
+                <p class="font-semibold text-foreground text-base leading-tight">{{ show.name || show.id }}</p>
               </div>
-              <div class="flex flex-1 items-center justify-between truncate bg-card">
-                <div class="flex-1 truncate px-4 py-3 text-sm">
-                  <span class="font-medium text-foreground">{{ show.name || show.id }}</span>
-                  <p v-if="show.datum" class="text-muted-foreground">Stand: {{ show.datum }}</p>
-                  <p v-if="show.last_edited_by" class="text-muted-foreground text-xs mt-1 truncate" :title="`${show.last_edited_by}, ${formatEditedAt(show.last_edited_at)}`">
-                    {{ show.last_edited_by }}, {{ formatEditedAt(show.last_edited_at) }}
-                  </p>
-                </div>
-                <div class="shrink-0 pr-2 flex gap-1" @click.stop>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    class="text-muted-foreground"
-                    @click="openAssign(show)"
-                    :title="t('show.assign_template')"
-                  >
-                    <Pencil class="size-4" aria-hidden="true" />
+              <div class="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                <span v-if="show.template" class="flex items-center gap-1 bg-muted rounded px-2 py-0.5">
+                  <Tag class="size-3" />{{ templateDisplayName(show.template) }}
+                </span>
+                <span v-if="show.datum" class="flex items-center gap-1 bg-muted rounded px-2 py-0.5">
+                  <CalendarDays class="size-3" />Stand: {{ formatDatum(show.datum) }}
+                </span>
+              </div>
+              <div class="flex items-center justify-between border-t border-border pt-2 mt-1" @click.stop>
+                <span v-if="show.last_edited_by" class="text-xs text-muted-foreground truncate">Letzte Bearbeitung: {{ show.last_edited_by }}</span>
+                <span v-else class="flex-1" />
+                <div class="flex gap-1 shrink-0">
+                  <Button variant="ghost" size="icon" class="text-muted-foreground" @click="openAssign(show)" :title="t('show.assign_template')">
+                    <Pencil class="size-4" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    class="text-muted-foreground"
-                    @click="archive(show.id)"
-                    :title="t('show.archive')"
-                  >
-                    <Archive class="size-4" aria-hidden="true" />
+                  <Button variant="ghost" size="icon" class="text-muted-foreground" @click="archive(show.id)" :title="t('show.archive')">
+                    <Archive class="size-4" />
                   </Button>
                 </div>
               </div>
@@ -150,7 +141,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Archive, Loader2, Pencil, Plus } from 'lucide-vue-next'
+import { Archive, CalendarDays, Loader2, Pencil, Plus, Tag } from 'lucide-vue-next'
 import { useLocale } from '../composables/useLocale.js'
 import { fetchShows, createShow, archiveShow, updateMeta } from '../api/shows.js'
 import { fetchTemplates, fetchTemplateChannels } from '../api/templates.js'
@@ -186,15 +177,11 @@ const assignShow = ref(null)
 const assignTemplate = ref('__none__')
 const assignSaving = ref(false)
 
-function formatEditedAt(ts) {
-  if (!ts) return ''
-  const d = new Date(ts)
-  return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
-    + ', ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
-}
 
-function initials(name) {
-  return name.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase()
+function formatDatum(d) {
+  if (!d) return ''
+  const [y, m, day] = d.split('-')
+  return `${day}.${m}.${y}`
 }
 
 function generateId(name, datum) {

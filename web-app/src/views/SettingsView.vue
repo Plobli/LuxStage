@@ -1,7 +1,7 @@
 <template>
   <div class="flex h-full">
     <!-- Vertikale Sub-Navigation (Desktop) -->
-    <nav class="hidden lg:flex lg:flex-col lg:w-52 lg:shrink-0 border-r border-border px-3 py-6 gap-1">
+    <nav class="hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 border-r border-border px-3 py-6 gap-1">
       <RouterLink
         v-for="item in nav"
         :key="item.to"

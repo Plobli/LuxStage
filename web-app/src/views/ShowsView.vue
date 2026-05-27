@@ -21,7 +21,7 @@
 
     <!-- Sortier-Header -->
     <template v-else>
-      <div class="grid grid-cols-[1fr_10rem_10rem_0.5fr_2rem] gap-0 px-4 mb-1 text-xs font-medium text-muted-foreground/60 uppercase tracking-wider select-none">
+      <div class="grid grid-cols-[1fr_2rem] sm:grid-cols-[1fr_10rem_0.5fr_2rem] lg:grid-cols-[1fr_10rem_10rem_0.5fr_2rem] gap-0 px-4 mb-1 text-xs font-medium text-muted-foreground/60 uppercase tracking-wider select-none">
         <button class="flex items-center gap-1 hover:text-muted-foreground transition-colors text-left" @click="setSort('name')">
           Name <span class="opacity-60">{{ sortKey === 'name' ? (sortDir === 'asc' ? '↑' : '↓') : '' }}</span>
         </button>
@@ -31,7 +31,7 @@
         <button class="hidden lg:flex items-center gap-1 hover:text-muted-foreground transition-colors" @click="setSort('spielzeit')">
           Spielzeit <span class="opacity-60">{{ sortKey === 'spielzeit' ? (sortDir === 'asc' ? '↑' : '↓') : '' }}</span>
         </button>
-        <button class="hidden md:flex items-center gap-1 hover:text-muted-foreground transition-colors" @click="setSort('last_edited_by')">
+        <button class="hidden sm:flex items-center gap-1 hover:text-muted-foreground transition-colors" @click="setSort('last_edited_by')">
           Bearbeitung <span class="opacity-60">{{ sortKey === 'last_edited_by' ? (sortDir === 'asc' ? '↑' : '↓') : '' }}</span>
         </button>
         <div></div>
@@ -49,7 +49,7 @@
           <div
             v-for="(show, i) in group.shows"
             :key="show.id"
-            class="group grid grid-cols-[1fr_10rem_10rem_0.5fr_2rem] gap-0 items-center px-4 py-3 cursor-pointer transition-colors hover:bg-muted/50"
+            class="group grid grid-cols-[1fr_2rem] sm:grid-cols-[1fr_10rem_0.5fr_2rem] lg:grid-cols-[1fr_10rem_10rem_0.5fr_2rem] gap-0 items-center px-4 py-3 cursor-pointer transition-colors hover:bg-muted/50"
             :class="i > 0 ? 'border-t border-border/40' : ''"
             @click="router.push(`/shows/${show.id}`)"
           >
@@ -59,7 +59,7 @@
             </div>
             <span class="text-sm text-muted-foreground hidden sm:block">{{ formatDatum(show.datum) }}</span>
             <span class="text-sm text-muted-foreground hidden lg:block">{{ show.spielzeit || '—' }}</span>
-            <span class="text-sm text-muted-foreground truncate hidden md:block">{{ show.last_edited_by }}</span>
+            <span class="text-sm text-muted-foreground truncate hidden sm:block">{{ show.last_edited_by }}</span>
             <div class="flex justify-end opacity-0 group-hover:opacity-100 transition-opacity" @click.stop>
               <Button variant="ghost" size="icon" class="size-7 text-muted-foreground hover:text-foreground" @click="archive(show.id)" :title="t('show.archive')">
                 <Archive class="size-3.5" />

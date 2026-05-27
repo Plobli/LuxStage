@@ -35,7 +35,7 @@
 
     <!-- ── Sidebar (Desktop) ──────────────────────────────────────────────── -->
     <ShowSidebar
-      class="hidden lg:flex"
+      class="hidden md:flex"
       :activeTab="mobileTab"
       :activeSubTab="aufbauTab"
       :sectionDefs="sectionDefs"
@@ -95,7 +95,7 @@
           <span class="text-sm text-muted-foreground">{{ t('error.loading') }}</span>
         </div>
       </div>
-      <div v-else class="flex flex-1 min-h-0 overflow-hidden pb-14 lg:pb-0">
+      <div v-else class="flex flex-1 min-h-0 overflow-hidden pb-14 md:pb-0">
 
         <!-- Channels View -->
         <div
@@ -197,6 +197,21 @@
           v-show="mobileTab === 'gassenturm'"
           class="flex flex-col flex-1 min-h-0 overflow-hidden"
         >
+          <!-- Sub-Tab-Leiste (Mobile/Tablet) -->
+          <div class="md:hidden shrink-0 flex overflow-x-auto border-b border-border bg-surface-raised">
+            <button
+              v-for="sub in aufbauSubTabs"
+              :key="sub.key"
+              :class="[
+                'shrink-0 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors',
+                aufbauTab === sub.key
+                  ? 'border-b-2 border-accent text-accent'
+                  : 'text-muted-foreground hover:text-foreground'
+              ]"
+              @click="aufbauTab = sub.key"
+            >{{ sub.label }}</button>
+          </div>
+
           <!-- Section-Subtabs -->
           <template v-for="sub in aufbauSubTabs" :key="sub.key">
             <div
@@ -269,7 +284,7 @@
       </div>
 
       <!-- ── Bottom-Nav-Bar (Mobile) ──────────────────────────────── -->
-      <nav class="lg:hidden fixed bottom-0 left-0 right-0 z-30 flex items-stretch border-t border-border bg-background">
+      <nav class="md:hidden fixed bottom-0 left-0 right-0 z-30 flex items-stretch border-t border-border bg-background">
         <button
           v-for="item in bottomNavItems"
           :key="item.key"
@@ -441,7 +456,7 @@ if (!localStorage.getItem(TAB_TIME_KEY)) localStorage.setItem(TAB_TIME_KEY, Stri
 watch(mobileTab, (tab) => {
   sessionStorage.setItem(TAB_KEY, tab)
   localStorage.setItem(TAB_TIME_KEY, String(Date.now()))
-  if (tab === 'floorplan') aufbauTab.value = aufbauSubTabs.value[0]?.key ?? null
+  if (tab === 'floorplan' || (tab === 'gassenturm' && !aufbauTab.value)) aufbauTab.value = aufbauSubTabs.value[0]?.key ?? null
   if (tab !== 'channels') { search.value = ''; activateHealthFilter(null) }
 })
 

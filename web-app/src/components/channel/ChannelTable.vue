@@ -1,6 +1,7 @@
 <template>
-  <div class="flex h-full flex-col overflow-hidden bg-card">
-    <div class="shrink-0 sticky top-0 z-20 border-b border-border/90 bg-muted shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_8px_rgba(0,0,0,0.10)]">
+  <div ref="rootEl" class="h-full overflow-x-auto overflow-y-auto bg-card channel-list">
+    <div class="min-w-230">
+    <div class="sticky top-0 z-20 border-b border-border/90 bg-muted shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_8px_rgba(0,0,0,0.10)]">
       <div v-if="!isMobile" class="grid min-h-8 grid-cols-[2rem_10rem_7rem_6rem_minmax(14rem,22%)_minmax(16rem,1fr)_2.5rem] items-center px-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/90">
         <div></div>
         <div>{{ labels.channel }}</div>
@@ -12,7 +13,7 @@
       </div>
     </div>
 
-    <div class="flex-1 min-h-0 overflow-y-auto bg-card channel-list">
+    <div class="bg-card">
       <template v-for="item of virtualItems" :key="item.id">
         <template v-if="item.type === 'header'">
           <!-- Header row (group position) -->
@@ -83,6 +84,7 @@
             :deleteTitle="labels.delete"
             :onKeydownFn="onKeydownFn"
             :onAddRow="() => startAdd(item.group.position)"
+            :isMobileProp="isMobile"
             @change="emit('change')"
             @recordFocus="emit('recordFocus')"
             @commitFocus="emit('commitFocus')"
@@ -229,13 +231,14 @@
           </div>
         </template>
       </template>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
-import { useIsMobile } from '@/composables/useBreakpoint.js'
+import { useContainerWidth } from '@/composables/useContainerWidth'
 import { Check } from 'lucide-vue-next'
 import Sortable from 'sortablejs'
 import ChannelRow from './ChannelRow.vue'
@@ -261,7 +264,8 @@ const props = defineProps({
   },
 })
 
-const isMobile = useIsMobile()
+const rootEl = ref(null)
+const isMobile = useContainerWidth(rootEl)
 
 const emit = defineEmits([
   'change',

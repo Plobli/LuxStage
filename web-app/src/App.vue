@@ -7,7 +7,7 @@
     <div v-else class="h-full bg-background">
       <!-- Mobile Sidebar -->
       <Transition name="fade">
-        <div v-if="sidebarOpen" class="relative z-50 lg:hidden" @keydown.esc="sidebarOpen = false">
+        <div v-if="sidebarOpen" class="relative z-50 md:hidden" @keydown.esc="sidebarOpen = false">
           <Transition name="fade">
             <div v-if="sidebarOpen" class="fixed inset-0 bg-background/80 backdrop-blur-sm" @click="sidebarOpen = false" />
           </Transition>
@@ -68,7 +68,7 @@
       </Transition>
 
       <!-- Desktop Sidebar (statisch, schmal – nur Icons) -->
-      <div class="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:block lg:w-20 lg:overflow-y-auto lg:pb-4 border-r border-border bg-surface-high">
+      <div class="hidden md:fixed md:inset-y-0 md:left-0 md:z-50 md:block md:w-20 md:overflow-y-auto md:pb-4 border-r border-border bg-surface-high">
         <div class="flex h-16 shrink-0 items-center justify-center">
           <img src="/favicon.png" alt="LuxStage" class="h-9 w-9 rounded-xl" />
         </div>
@@ -122,7 +122,7 @@
       </div>
 
       <!-- Mobile Top-Bar -->
-      <div class="sticky top-0 z-40 flex items-center gap-x-6 bg-background px-4 py-4 shadow-xs sm:px-6 lg:hidden border-b border-border">
+      <div class="sticky top-0 z-40 flex items-center gap-x-6 bg-background px-4 py-4 shadow-xs sm:px-6 md:hidden border-b border-border">
         <Button variant="ghost" size="icon" class="-m-2.5 p-2.5 text-muted-foreground lg:hidden" @click="sidebarOpen = true">
           <span class="sr-only">Sidebar öffnen</span>
           <Menu class="size-6" aria-hidden="true" />
@@ -134,7 +134,7 @@
       </div>
 
       <!-- Main Content -->
-      <main class="lg:pl-20 bg-background h-dvh overflow-y-auto">
+      <main class="md:pl-20 bg-background h-dvh overflow-y-auto">
         <!-- Offline-Banner -->
         <Alert v-if="!isOnline" variant="destructive" class="sticky top-0 z-50 rounded-none border-x-0 border-t-0 py-2">
           <AlertTriangle class="size-4" />

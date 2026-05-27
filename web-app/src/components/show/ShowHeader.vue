@@ -1,7 +1,7 @@
 <template>
   <div class="shrink-0 border-b border-border bg-surface-raised">
-    <div class="flex h-12 shrink-0 items-center gap-x-3 px-4 sm:px-6 lg:px-7">
-      <div class="flex items-baseline gap-x-3 min-w-0 flex-1">
+    <div class="flex min-h-12 shrink-0 items-center gap-x-3 px-4 sm:px-6 lg:px-7 py-2">
+      <div class="flex flex-col sm:flex-row sm:items-baseline gap-x-3 gap-y-0.5 min-w-0 flex-1">
         <h1
           v-if="!editingName"
           class="text-2xl font-semibold text-foreground truncate cursor-text hover:text-foreground/70 transition-colors"
@@ -19,18 +19,18 @@
         />
         <button
           v-if="showDate"
-          class="text-sm text-muted-foreground shrink-0 hover:text-foreground transition-colors flex items-center gap-1"
+          class="text-sm text-muted-foreground shrink-0 hover:text-foreground transition-colors flex items-center gap-1 min-h-11 sm:min-h-0"
           @click="openMetaDialog"
         >{{ showDate }}<Pencil class="size-3 opacity-40" /></button>
         <button
           v-else
-          class="text-sm text-muted-foreground/50 shrink-0 hover:text-muted-foreground transition-colors flex items-center gap-1"
+          class="text-sm text-muted-foreground/50 shrink-0 hover:text-muted-foreground transition-colors flex items-center gap-1 min-h-11 sm:min-h-0"
           @click="openMetaDialog"
         ><Pencil class="size-3" /> Info</button>
       </div>
 
       <!-- Verlauf + Import + Export (Desktop) -->
-      <div class="no-print hidden lg:flex items-center gap-x-2 shrink-0">
+      <div class="no-print hidden md:flex items-center gap-x-2 shrink-0">
         <Button variant="ghost" size="sm" class="text-muted-foreground gap-1.5" @click="emit('openHistory')">
           <History class="size-3.5" />
           {{ labels.history }}
@@ -62,7 +62,7 @@
       </div>
 
       <!-- Mobile Menu -->
-      <div class="lg:hidden flex items-center shrink-0">
+      <div class="md:hidden flex items-center shrink-0">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" class="text-muted-foreground">

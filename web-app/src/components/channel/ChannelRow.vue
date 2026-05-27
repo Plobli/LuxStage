@@ -240,6 +240,7 @@ const props = defineProps({
   deleteTitle: { type: String, default: '' },
   onKeydownFn: { type: Function, default: null },
   onAddRow: { type: Function, default: null },
+  isMobileProp: { type: Boolean, default: null },
 })
 
 const emit = defineEmits([
@@ -265,7 +266,8 @@ function onDeviceBlur() {
   }
 }
 
-const isMobile = useIsMobile()
+const _isMobileViewport = useIsMobile()
+const isMobile = computed(() => props.isMobileProp !== null ? props.isMobileProp : _isMobileViewport.value)
 
 function onKeydownCol0(e) { props.onKeydownFn?.(e, props.rowIndex, 0, 5, props.onAddRow) }
 function onKeydownCol1(e) { props.onKeydownFn?.(e, props.rowIndex, 1, 5, null) }

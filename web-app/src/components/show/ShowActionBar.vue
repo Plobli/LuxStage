@@ -5,7 +5,7 @@
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" :disabled="!canUndo" class="no-print h-8 w-8 text-muted-foreground" @click="emit('undo')">
+            <Button variant="ghost" size="icon" :disabled="!canUndo" class="no-print h-9 w-9 md:h-8 md:w-8 text-muted-foreground" @click="emit('undo')">
               <Undo2 class="size-4" /><span class="sr-only">{{ labels.undo }}</span>
             </Button>
           </TooltipTrigger>
@@ -13,7 +13,7 @@
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" :disabled="!canRedo" class="no-print h-8 w-8 text-muted-foreground" @click="emit('redo')">
+            <Button variant="ghost" size="icon" :disabled="!canRedo" class="no-print h-9 w-9 md:h-8 md:w-8 text-muted-foreground" @click="emit('redo')">
               <Redo2 class="size-4" /><span class="sr-only">{{ labels.redo }}</span>
             </Button>
           </TooltipTrigger>

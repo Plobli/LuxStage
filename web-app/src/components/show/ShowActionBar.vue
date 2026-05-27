@@ -1,5 +1,5 @@
 <template>
-  <div class="shrink-0 flex h-10 items-center border-b border-border" style="background: hsl(240 10% 6%)">
+  <div class="shrink-0 flex h-10 items-center border-b border-border bg-surface-raised">
     <!-- Undo/Redo + Saving -->
     <div class="flex items-center gap-x-1 shrink-0 px-4 sm:px-6 lg:px-5">
       <TooltipProvider>

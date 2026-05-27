@@ -1,9 +1,9 @@
 <template>
-  <div class="flex flex-col h-dvh overflow-hidden" style="background: hsl(240 10% 3%)">
+  <div class="flex flex-col h-dvh overflow-hidden bg-surface-deep">
 
     <!-- ── Header (volle Breite) ──────────────────────────────────────────── -->
     <!-- Titelzeile: volle Breite -->
-    <div v-if="loading" class="shrink-0 flex h-12 items-center gap-x-4 px-4 sm:px-6 lg:px-8 border-b border-border" style="background: hsl(240 10% 6%)">
+    <div v-if="loading" class="shrink-0 flex h-12 items-center gap-x-4 px-4 sm:px-6 lg:px-8 border-b border-border bg-surface-raised">
       <div class="h-6 w-48 rounded bg-muted animate-pulse" />
       <div class="h-4 w-24 rounded bg-muted animate-pulse" />
     </div>
@@ -62,7 +62,7 @@
     >
 
       <!-- ── Aktionszeile ──────────────────────────────────────────────── -->
-      <div v-if="loading" class="shrink-0 flex h-10 border-b border-border" style="background: hsl(240 10% 6%)" />
+      <div v-if="loading" class="shrink-0 flex h-10 border-b border-border bg-surface-raised" />
       <ShowActionBar
         v-else
         :activeTab="mobileTab"

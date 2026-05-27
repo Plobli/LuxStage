@@ -30,6 +30,10 @@
   --color-card: hsl(var(--card));
   --color-card-foreground: hsl(var(--card-foreground));
 
+  --color-surface-deep: hsl(var(--surface-deep));
+  --color-surface-raised: hsl(var(--surface-raised));
+  --color-surface-high: hsl(var(--surface-high));
+
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
@@ -38,6 +42,9 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
+    --surface-deep: 0 0% 97%;
+    --surface-raised: 0 0% 96%;
+    --surface-high: 0 0% 94%;
     --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
     --card-foreground: 240 10% 3.9%;
@@ -60,6 +67,9 @@
   }
   .dark {
     --background: 240 10% 5%;
+    --surface-deep: 240 10% 3%;
+    --surface-raised: 240 10% 6%;
+    --surface-high: 240 10% 10%;
     --foreground: 0 0% 95%;
     --card: 240 8% 8%;
     --card-foreground: 0 0% 95%;

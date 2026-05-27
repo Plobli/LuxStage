@@ -1,5 +1,5 @@
 <template>
-  <div class="px-4 py-10 sm:px-6 lg:px-8">
+  <div class="px-4 py-8 sm:px-6 lg:px-8">
 
     <!-- Detail-Ansicht (wenn eine Vorlage ausgewählt) -->
     <template v-if="editingName">

@@ -1,5 +1,5 @@
 <template>
-  <div class="px-4 py-10 sm:px-6 lg:px-8">
+  <div class="px-4 py-8 sm:px-6 lg:px-8">
     <!-- Page Header -->
     <div class="sm:flex sm:items-center mb-8">
       <div class="sm:flex-auto">
@@ -49,7 +49,7 @@
           <div
             v-for="(show, i) in group.shows"
             :key="show.id"
-            class="group grid grid-cols-[1fr_10rem_10rem_0.5fr_2rem] gap-0 items-center px-4 py-2.5 cursor-pointer transition-colors hover:bg-muted/50"
+            class="group grid grid-cols-[1fr_10rem_10rem_0.5fr_2rem] gap-0 items-center px-4 py-3 cursor-pointer transition-colors hover:bg-muted/50"
             :class="i > 0 ? 'border-t border-border/40' : ''"
             @click="router.push(`/shows/${show.id}`)"
           >

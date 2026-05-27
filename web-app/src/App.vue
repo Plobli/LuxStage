@@ -68,7 +68,7 @@
       </Transition>
 
       <!-- Desktop Sidebar (statisch, schmal – nur Icons) -->
-      <div class="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:block lg:w-20 lg:overflow-y-auto lg:pb-4 border-r border-border" style="background: hsl(240 10% 10%)">
+      <div class="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:block lg:w-20 lg:overflow-y-auto lg:pb-4 border-r border-border bg-surface-high">
         <div class="flex h-16 shrink-0 items-center justify-center">
           <img src="/favicon.png" alt="LuxStage" class="h-9 w-9 rounded-xl" />
         </div>

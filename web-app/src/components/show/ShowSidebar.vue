@@ -1,5 +1,5 @@
 <template>
-  <nav class="flex flex-col w-64 shrink-0 border-r border-border overflow-y-auto" style="background: hsl(240 10% 7%)">
+  <nav class="flex flex-col w-64 shrink-0 border-r border-border overflow-y-auto bg-surface-raised">
     <div class="flex flex-col gap-0.5 p-4 pt-7">
 
       <!-- Gruppe: Allgemein -->
@@ -16,7 +16,7 @@
       </NavItem>
 
       <!-- Gruppe: Aufbauplan -->
-      <div class="mt-10 mb-1 px-3 text-[10px] font-medium text-muted-foreground/70 uppercase tracking-widest">
+      <div class="mt-8 mb-1 px-3 text-[10px] font-medium text-muted-foreground/70 uppercase tracking-widest">
         {{ labels.groupAufbau }}
       </div>
 
@@ -51,7 +51,7 @@
       </button>
 
       <!-- Gruppe: Medien -->
-      <div class="mt-10 mb-1 px-3 text-[10px] font-medium text-muted-foreground/70 uppercase tracking-widest">
+      <div class="mt-8 mb-1 px-3 text-[10px] font-medium text-muted-foreground/70 uppercase tracking-widest">
         {{ labels.groupMedia }}
       </div>
 

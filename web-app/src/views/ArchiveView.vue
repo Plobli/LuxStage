@@ -1,5 +1,5 @@
 <template>
-  <div class="px-4 py-10 sm:px-6 lg:px-8">
+  <div class="px-4 py-8 sm:px-6 lg:px-8">
     <div class="sm:flex sm:items-center mb-8">
       <div class="sm:flex-auto">
         <h1 class="text-2xl font-semibold text-foreground">{{ t('nav.archive') }}</h1>
@@ -49,7 +49,7 @@
         <div
           v-for="(show, i) in shows"
           :key="show.id"
-          class="group grid grid-cols-[1fr_8rem_7rem_1fr_4.5rem] gap-0 items-center px-4 py-2.5 transition-colors hover:bg-muted/50"
+          class="group grid grid-cols-[1fr_8rem_7rem_1fr_4.5rem] gap-0 items-center px-4 py-3 transition-colors hover:bg-muted/50"
           :class="i > 0 ? 'border-t border-border/40' : ''"
         >
           <div class="min-w-0 pr-4">

@@ -17,12 +17,12 @@
     <!-- Horizontale Sub-Navigation (Mobile) -->
     <div class="lg:hidden w-full">
       <nav class="border-b border-border overflow-x-auto">
-        <ul role="list" class="flex min-w-full gap-x-6 px-4 py-3 text-sm font-semibold text-muted-foreground">
-          <li v-for="item in nav" :key="item.to">
+        <ul role="list" class="flex min-w-full gap-x-6 px-4 text-sm font-semibold text-muted-foreground">
+          <li v-for="item in nav" :key="item.to" class="flex">
             <RouterLink
               :to="item.to"
-              :class="isActive(item.to) ? 'text-accent' : 'hover:text-foreground'"
-              class="transition-colors whitespace-nowrap"
+              :class="isActive(item.to) ? 'text-accent border-b-2 border-accent' : 'hover:text-foreground border-b-2 border-transparent'"
+              class="flex items-center min-h-11 py-2 transition-colors whitespace-nowrap"
             >
               {{ item.label }}
             </RouterLink>

@@ -162,7 +162,7 @@
               @update:photos="photos = $event"
             />
           </div>
-          <label class="absolute bottom-6 right-6 h-11 px-5 rounded-full shadow-lg bg-accent hover:bg-accent/90 text-accent-foreground flex items-center gap-2 cursor-pointer text-sm font-medium">
+          <label class="absolute bottom-20 right-6 md:bottom-6 h-11 px-5 rounded-full shadow-lg bg-accent hover:bg-accent/90 text-accent-foreground flex items-center gap-2 cursor-pointer text-sm font-medium">
             <Plus class="size-4" /> {{ t('photo.add') }}
             <input type="file" accept="image/*" multiple class="sr-only" @change="photoGalleryRef?.onFileInput($event)" />
           </label>
@@ -217,7 +217,7 @@
             <div
               v-if="sub.sectionId"
               v-show="aufbauTab === sub.key"
-              class="flex-1 min-h-0 overflow-y-auto"
+              class="flex-1 min-h-0 overflow-y-auto pb-14 md:pb-0"
             >
               <SectionEditor
                 :showId="props.id"
@@ -476,15 +476,15 @@ const {
   loadSections, handleSectionsSse
 } = useShowSections(props.id, meta)
 
-const AUFBAU_FIXED_TABS = [
-  { key: 'gassenturm', label: 'Gassentürme' },
-  { key: 'zugstangen', label: 'Zugstangen' },
-]
+const aufbauFixedTabs = computed(() => [
+  { key: 'gassenturm', label: t('tab.buehne') },
+  { key: 'zugstangen', label: t('tab.obermaschinerie') },
+])
 const aufbauSubTabs = computed(() => {
   const sectionTabs = [...sectionDefs.value]
     .sort((a, b) => a.order - b.order)
     .map(s => ({ key: `section:${s.id}`, label: s.title || '(kein Titel)', sectionId: s.id }))
-  return [...sectionTabs, ...AUFBAU_FIXED_TABS]
+  return [...sectionTabs, ...aufbauFixedTabs.value]
 })
 
 watch(aufbauSubTabs, (tabs) => {

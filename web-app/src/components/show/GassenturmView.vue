@@ -1,6 +1,6 @@
 <template>
   <div class="relative flex flex-col h-full overflow-hidden">
-<div class="flex-1 overflow-y-auto p-4">
+<div class="flex-1 overflow-y-auto p-4 pb-14 md:pb-0">
     <div v-if="towers.length === 0" class="flex items-center justify-center h-48 text-sm text-muted-foreground">
       {{ t('gassenturm.empty') }}
     </div>
@@ -133,7 +133,7 @@
   </div>
 
   <!-- Neuer Gassenturm -->
-  <Button variant="accent" @click="openNewTowerDialog" class="absolute bottom-6 right-6 h-11 px-5 rounded-full shadow-lg flex items-center gap-2">
+  <Button variant="accent" @click="openNewTowerDialog" class="absolute bottom-20 right-6 md:bottom-6 h-11 px-5 rounded-full shadow-lg flex items-center gap-2">
     <Plus class="size-4" /> {{ t('gassenturm.new') }}
   </Button>
   </div>

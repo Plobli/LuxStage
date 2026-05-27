@@ -22,7 +22,7 @@
       @drop.prevent="onDrop"
     >
       <p v-if="photos.length === 0 && !dragging" class="rounded-xl border border-dashed border-border bg-muted/10 px-4 py-8 text-sm text-muted-foreground text-center">{{ labels.empty }}</p>
-      <ul role="list" class="grid grid-cols-2 gap-3 xl:grid-cols-3">
+      <ul role="list" class="grid grid-cols-1 sm:grid-cols-2 gap-3 xl:grid-cols-3">
         <li v-for="filename in photos" :key="filename" class="relative group flex flex-col gap-2 rounded-xl border border-border bg-card p-2">
           <div class="aspect-[4/3] block w-full overflow-hidden rounded-lg bg-muted cursor-pointer" @click="openLightbox(filename)">
             <img :src="photoUrl(filename, { thumb: true })" :alt="filename" loading="lazy" class="pointer-events-none h-full w-full object-cover transition-opacity duration-200 group-hover:opacity-80" />

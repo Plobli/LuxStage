@@ -6,14 +6,14 @@
         size="sm"
         :pressed="editor.isActive('bold')"
         @mousedown.prevent="editor.chain().focus().toggleBold().run()"
-        class="h-8 rounded-full px-3 font-bold data-[state=on]:bg-background data-[state=on]:text-foreground"
+        class="h-11 md:h-8 rounded-full px-3 font-bold data-[state=on]:bg-background data-[state=on]:text-foreground"
         :title="t('editor.bold')"
       >B</Toggle>
       <Toggle
         size="sm"
         :pressed="editor.isActive('italic')"
         @mousedown.prevent="editor.chain().focus().toggleItalic().run()"
-        class="h-8 rounded-full px-3 italic data-[state=on]:bg-background data-[state=on]:text-foreground"
+        class="h-11 md:h-8 rounded-full px-3 italic data-[state=on]:bg-background data-[state=on]:text-foreground"
         :title="t('editor.italic')"
       >I</Toggle>
       <Separator orientation="vertical" class="mx-1 h-4" />
@@ -21,7 +21,7 @@
         size="sm"
         :pressed="editor.isActive('heading', { level: 3 })"
         @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 3 }).run()"
-        class="h-8 rounded-full px-3 font-semibold data-[state=on]:bg-background data-[state=on]:text-foreground"
+        class="h-11 md:h-8 rounded-full px-3 font-semibold data-[state=on]:bg-background data-[state=on]:text-foreground"
         :title="t('editor.heading')"
       >H</Toggle>
       <Separator orientation="vertical" class="mx-1 h-4" />
@@ -29,14 +29,14 @@
         size="sm"
         :pressed="editor.isActive('bulletList')"
         @mousedown.prevent="editor.chain().focus().toggleBulletList().run()"
-        class="h-8 rounded-full px-3 data-[state=on]:bg-background data-[state=on]:text-foreground"
+        class="h-11 md:h-8 rounded-full px-3 data-[state=on]:bg-background data-[state=on]:text-foreground"
         :title="t('editor.list.bullet')"
       >≡</Toggle>
       <Toggle
         size="sm"
         :pressed="editor.isActive('orderedList')"
         @mousedown.prevent="editor.chain().focus().toggleOrderedList().run()"
-        class="h-8 rounded-full px-3 data-[state=on]:bg-background data-[state=on]:text-foreground"
+        class="h-11 md:h-8 rounded-full px-3 data-[state=on]:bg-background data-[state=on]:text-foreground"
         :title="t('editor.list.ordered')"
       >1.</Toggle>
       <Separator orientation="vertical" class="mx-1 h-4" />
@@ -44,7 +44,7 @@
         size="sm"
         :pressed="editor.isActive('table')"
         @mousedown.prevent="editor.isActive('table') ? editor.chain().focus().deleteTable().run() : editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()"
-        class="h-8 rounded-full px-3 data-[state=on]:bg-background data-[state=on]:text-foreground"
+        class="h-11 md:h-8 rounded-full px-3 data-[state=on]:bg-background data-[state=on]:text-foreground"
         :title="t('editor.table')"
       >⊞</Toggle>
       <template v-if="editor.isActive('table')">
@@ -52,25 +52,25 @@
         <button
           type="button"
           @mousedown.prevent="editor.chain().focus().addRowAfter().run()"
-          class="h-8 rounded-full px-2.5 text-xs text-muted-foreground hover:bg-background hover:text-foreground"
+          class="h-11 md:h-8 rounded-full px-2.5 text-xs text-muted-foreground hover:bg-background hover:text-foreground"
           :title="t('editor.table.add_row_after')"
         >+↓</button>
         <button
           type="button"
           @mousedown.prevent="editor.chain().focus().addColumnAfter().run()"
-          class="h-8 rounded-full px-2.5 text-xs text-muted-foreground hover:bg-background hover:text-foreground"
+          class="h-11 md:h-8 rounded-full px-2.5 text-xs text-muted-foreground hover:bg-background hover:text-foreground"
           :title="t('editor.table.add_col_after')"
         >+→</button>
         <button
           type="button"
           @mousedown.prevent="editor.chain().focus().deleteRow().run()"
-          class="h-8 rounded-full px-2.5 text-xs text-muted-foreground hover:bg-background hover:text-red-400"
+          class="h-11 md:h-8 rounded-full px-2.5 text-xs text-muted-foreground hover:bg-background hover:text-red-400"
           :title="t('editor.table.delete_row')"
         >−↓</button>
         <button
           type="button"
           @mousedown.prevent="editor.chain().focus().deleteColumn().run()"
-          class="h-8 rounded-full px-2.5 text-xs text-muted-foreground hover:bg-background hover:text-red-400"
+          class="h-11 md:h-8 rounded-full px-2.5 text-xs text-muted-foreground hover:bg-background hover:text-red-400"
           :title="t('editor.table.delete_col')"
         >−→</button>
       </template>

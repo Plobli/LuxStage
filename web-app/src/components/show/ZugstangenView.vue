@@ -1,7 +1,7 @@
 <template>
   <div class="relative flex flex-col h-full overflow-hidden">
     <!-- Zugstangen-Liste -->
-    <div class="flex-1 overflow-y-auto">
+    <div class="flex-1 overflow-y-auto pb-14 md:pb-0">
       <div v-if="bars.length === 0" class="flex items-center justify-center h-32 text-sm text-muted-foreground">
         {{ t('zugstange.empty') }}
       </div>
@@ -123,7 +123,7 @@
     </div>
 
     <!-- Neue Zugstange -->
-    <Button variant="accent" @click="openNewBarDialog" class="absolute bottom-6 right-6 h-11 px-5 rounded-full shadow-lg flex items-center gap-2">
+    <Button variant="accent" @click="openNewBarDialog" class="absolute bottom-20 right-6 md:bottom-6 h-11 px-5 rounded-full shadow-lg flex items-center gap-2">
       <Plus class="size-4" /> {{ t('zugstange.new') }}
     </Button>
   </div>

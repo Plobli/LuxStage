@@ -104,7 +104,7 @@
           </g>
 
           <!-- Elements -->
-          <g v-for="el in elements" :key="el.id" :transform="getTransform(el)" @mousedown.stop="onNodeMouseDown(el.id, $event)" @dblclick.stop="onNodeDblClick(el.id)" @mouseenter="hoveredId = el.id; showTooltip(el, $event)" @mouseleave="hoveredId = null; hideTooltip()" @mousemove="showTooltip(el, $event)">
+          <g v-for="el in elements" :key="el.id" :transform="getTransform(el)" @mousedown="onNodeMouseDown(el.id, $event)" @dblclick.stop="onNodeDblClick(el.id)" @mouseenter="hoveredId = el.id; showTooltip(el, $event)" @mouseleave="hoveredId = null; hideTooltip()" @mousemove="showTooltip(el, $event)">
             <!-- Highlight when selected -->
             <rect v-if="selectedIds.has(el.id) && el.type !== 'line' && el.type !== 'channel'"
                   :x="getBounds(el).x" :y="getBounds(el).y" :width="getBounds(el).w" :height="getBounds(el).h"
@@ -179,17 +179,18 @@
             <g v-else-if="el.type === 'channel'" style="cursor: pointer;">
               <!-- Selection indicator -->
               <rect v-if="selectedIds.has(el.id)" :x="-pillW(el.channel)/2 - 4" :y="-22" :width="pillW(el.channel) + 8" :height="44" rx="22" fill="none" stroke="#dc3740" stroke-width="2" stroke-dasharray="4,3" />
-              <!-- Arrow -->
-              <line :x1="getArrowPoints(el.channel, el.rotation).x1" :y1="getArrowPoints(el.channel, el.rotation).y1"
+              <!-- Arrow (nur wenn kein noArrow-Flag) -->
+              <line v-if="!el.noArrow"
+                    :x1="getArrowPoints(el.channel, el.rotation).x1" :y1="getArrowPoints(el.channel, el.rotation).y1"
                     :x2="getArrowPoints(el.channel, el.rotation).x2" :y2="getArrowPoints(el.channel, el.rotation).y2"
                     stroke="#dc3740" stroke-width="3" marker-end="url(#arrowhead)" />
               <!-- Pill -->
               <rect :x="-pillW(el.channel)/2" y="-18" :width="pillW(el.channel)" :height="36" rx="18" fill="#dc3740" stroke="#dc3740" stroke-width="2" />
               <!-- Text -->
               <text x="0" y="0" fill="#fff" font-size="18" font-weight="bold" text-anchor="middle" dominant-baseline="central">{{ el.channel }}</text>
-              <!-- Rotation handle at arrow tip -->
+              <!-- Rotation handle at arrow tip (nur wenn Pfeil vorhanden) -->
               <circle
-                v-if="hoveredId === el.id || selectedIds.has(el.id)"
+                v-if="!el.noArrow && (hoveredId === el.id || selectedIds.has(el.id))"
                 :cx="getArrowPoints(el.channel, el.rotation).x2"
                 :cy="getArrowPoints(el.channel, el.rotation).y2"
                 r="7"
@@ -345,6 +346,11 @@
             <div v-if="channelInfo.device">{{ channelInfo.device }}</div>
             <div v-if="channelInfo.position">{{ channelInfo.position }}</div>
             <div v-if="channelInfo.address">{{ channelInfo.address }}</div>
+          </div>
+          <div class="flex items-center gap-3 pt-2">
+            <Button size="sm" variant="outline" @click="toggleNoArrow(selectedElement)">
+              {{ selectedElement.noArrow ? 'Pfeil hinzufügen' : 'Pfeil entfernen' }}
+            </Button>
           </div>
         </template>
 
@@ -590,7 +596,8 @@ const textareaRef = ref(null)
 
 const selectedId = computed(() => selectedIds.value.size === 1 ? [...selectedIds.value][0] : null)
 const selectedElement = computed(() => elements.value.find(e => e.id === selectedId.value))
-const usedChannels = computed(() => elements.value.filter(e => e.type === 'channel').map(e => e.channel))
+// usedChannels only used for tower/bar channel display, not for blocking placement
+const usedChannels = computed(() => [])
 const channelInfo = computed(() => {
   if (!selectedElement.value || selectedElement.value.type !== 'channel') return null
   return props.channels.find(ch => ch.channel === selectedElement.value.channel)
@@ -849,6 +856,7 @@ function getTransform(el) {
 function onNodeMouseDown(id, e) {
   if (activeTool.value !== 'select') return
   e.stopPropagation()
+  e.preventDefault()
   if (e.shiftKey) {
     const s = new Set(selectedIds.value)
     s.has(id) ? s.delete(id) : s.add(id)
@@ -1230,6 +1238,7 @@ function startArrowRotateDrag(el, event) {
   window.addEventListener('mouseup', onUp)
 }
 
+function toggleNoArrow(el) { el.noArrow = !el.noArrow; emitChange() }
 function toggleFontStyle(el) { el.fontStyle = el.fontStyle === 'bold' ? 'normal' : 'bold'; emitChange() }
 function toggleFill(el) { el.fill = (el.fill && el.fill !== 'transparent') ? 'transparent' : '#ffffff'; emitChange() }
 function exportData() {
@@ -1349,9 +1358,12 @@ function exportPNG() {
   const svg = svgRef.value.cloneNode(true)
   const bgImgNode = svg.querySelector('#bg-image')
   if (bgImgNode) bgImgNode.remove()
+  resolveCssVarsInSvg(svg)
+  svg.setAttribute('width', stageSize.value.width)
+  svg.setAttribute('height', stageSize.value.height)
   let svgStr = new XMLSerializer().serializeToString(svg)
   if (!svgStr.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)) svgStr = svgStr.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"')
-  
+
   const img = new Image()
   img.onload = () => {
     ctx.drawImage(img, 0, 0)

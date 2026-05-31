@@ -1349,7 +1349,7 @@ function resolveCssVarsInSvg(svgEl) {
 async function captureSnapshot() {
   if (!svgRef.value) return null
   const SCALE = 3
-  const PADDING = 40
+  const PADDING = 80
   const w = stageSize.value.width
   const h = stageSize.value.height
   const canvas = document.createElement('canvas')
@@ -1365,8 +1365,9 @@ async function captureSnapshot() {
     const bgImgNode = svg.querySelector('#bg-image')
     if (bgImgNode) bgImgNode.remove()
     resolveCssVarsInSvg(svg)
-    svg.setAttribute('width', w)
-    svg.setAttribute('height', h)
+    svg.setAttribute('width', w + PADDING * 2)
+    svg.setAttribute('height', h + PADDING * 2)
+    svg.setAttribute('viewBox', `${-PADDING} ${-PADDING} ${w + PADDING * 2} ${h + PADDING * 2}`)
     // Systemschrift explizit setzen damit Browser-Webfonts nicht fehlen
     const styleEl = document.createElementNS('http://www.w3.org/2000/svg', 'style')
     styleEl.textContent = '* { font-family: Arial, Helvetica, sans-serif !important; }'
@@ -1379,7 +1380,7 @@ async function captureSnapshot() {
     const url = URL.createObjectURL(blob)
     const img = new Image()
     img.onload = () => {
-      ctx.drawImage(img, PADDING, PADDING, w, h)
+      ctx.drawImage(img, 0, 0, w + PADDING * 2, h + PADDING * 2)
       URL.revokeObjectURL(url)
       resolve()
     }

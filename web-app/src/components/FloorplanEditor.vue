@@ -2,7 +2,7 @@
   <div class="relative flex h-full overflow-hidden bg-background text-foreground">
     <!-- Placement status banner -->
     <Transition name="placement-banner">
-      <div v-if="pendingChannelForPlacement" class="absolute top-0 left-14 right-0 z-30 flex items-center gap-3 px-4 py-2 bg-destructive text-white text-sm font-medium shadow-md">
+      <div v-if="pendingChannelForPlacement" class="absolute top-0 right-0 z-30 flex items-center gap-3 px-4 py-2 bg-destructive text-white text-sm font-medium shadow-md" :style="{ left: (sidebarExpanded ? 152 : 56) + 'px' }">
         <span>
           <span class="font-bold">{{ t('floorplan.place.channel', { channel: pendingChannelForPlacement.channel }) }}</span>
           <span v-if="pendingChannelForPlacement.device" class="opacity-80"> · {{ pendingChannelForPlacement.device }}</span>
@@ -13,63 +13,91 @@
       </div>
     </Transition>
     <!-- Left Toolbar -->
-    <div class="w-[56px] bg-muted/30 border-r border-border flex flex-col items-center py-2 gap-1 z-10 shrink-0">
-      <ToolBtn :active="activeTool === 'select'" title="Auswählen (V)" @click="activeTool = 'select'">
-        <MousePointer2 class="w-5 h-5" />
-      </ToolBtn>
-      <ToolBtn :active="activeTool === 'pan'" title="Verschieben (H)" @click="activeTool = 'pan'">
-        <Hand class="w-5 h-5" />
-      </ToolBtn>
-      <Separator class="w-8 my-1" />
-      <ToolBtn :active="activeTool === 'line'" title="Linie (L)" @click="activeTool = 'line'">
-        <Minus class="w-5 h-5 rotate-45" />
-      </ToolBtn>
-      <ToolBtn :active="activeTool === 'rect'" title="Rechteck (R)" @click="activeTool = 'rect'">
-        <Square class="w-5 h-5" />
-      </ToolBtn>
-      <ToolBtn :active="activeTool === 'ellipse'" title="Ellipse (E)" @click="activeTool = 'ellipse'">
-        <Circle class="w-5 h-5" />
-      </ToolBtn>
-      <ToolBtn :active="activeTool === 'text'" title="Text (T)" @click="activeTool = 'text'">
-        <Type class="w-5 h-5" />
-      </ToolBtn>
-      <ToolBtn :active="activeTool === 'channel' || activeTool === 'channel-pending'" title="Kanal platzieren (C)" @click="activeTool = 'channel'">
-        <CircleDot class="w-5 h-5" />
-      </ToolBtn>
-      <ToolBtn :active="activeTool === 'tower'" title="Gassenturm platzieren" @click="openTowerPlacer">
-        <Layers class="w-5 h-5" />
-      </ToolBtn>
-      <ToolBtn :active="activeTool === 'bar'" title="Zugstange platzieren" @click="openBarPlacer">
-        <AlignJustify class="w-5 h-5" />
-      </ToolBtn>
-      <ToolBtn :active="activeTool === 'ruler'" title="Maßstab kalibrieren" @click="activeTool = 'ruler'">
-        <Ruler class="w-5 h-5" />
-      </ToolBtn>
-      <Separator class="w-8 my-1" />
+    <div
+      class="bg-muted/30 border-r border-border flex flex-col py-2 gap-0.5 z-10 shrink-0 overflow-y-auto transition-[width]"
+      :style="sidebarExpanded ? 'width:168px' : 'width:48px'"
+    >
+      <!-- Toggle -->
+      <button
+        class="flex items-center justify-center w-8 h-8 rounded-md hover:bg-muted mx-auto mb-1 text-muted-foreground shrink-0"
+        :title="sidebarExpanded ? 'Einklappen' : 'Ausklappen'"
+        @click="sidebarExpanded = !sidebarExpanded"
+      >
+        <PanelLeft v-if="sidebarExpanded" class="w-4 h-4" />
+        <PanelRight v-else class="w-4 h-4" />
+      </button>
 
-      <ToolBtn title="Hintergrundbild hochladen" @click="imageUploadInput?.click()">
-        <Upload class="w-5 h-5" />
-      </ToolBtn>
-      <ToolBtn v-if="bgImageSrc" title="Hintergrundbild entfernen" variant="danger" @click="emit('delete-image')">
-        <ImageOff class="w-5 h-5" />
-      </ToolBtn>
+      <!-- Gruppe: Navigation -->
+      <div v-if="sidebarExpanded" class="px-3 pt-1 pb-0.5"><span class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">Navigation</span></div>
+      <SidebarBtn :active="activeTool === 'select'" :expanded="sidebarExpanded" title="Auswählen (V)" @click="activeTool = 'select'">
+        <MousePointer2 class="w-4 h-4 shrink-0" /><span v-if="sidebarExpanded" class="truncate">Auswählen</span>
+      </SidebarBtn>
+      <SidebarBtn :active="activeTool === 'pan'" :expanded="sidebarExpanded" title="Verschieben (H)" @click="activeTool = 'pan'">
+        <Hand class="w-4 h-4 shrink-0" /><span v-if="sidebarExpanded" class="truncate">Verschieben</span>
+      </SidebarBtn>
+
+      <!-- Gruppe: Zeichnen -->
+      <div v-if="sidebarExpanded" class="px-3 pt-3 pb-0.5"><span class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">Zeichnen</span></div>
+      <div v-else class="h-2"></div>
+      <SidebarBtn :active="activeTool === 'line'" :expanded="sidebarExpanded" title="Linie (L)" @click="activeTool = 'line'">
+        <Minus class="w-4 h-4 shrink-0 rotate-45" /><span v-if="sidebarExpanded" class="truncate">Linie</span>
+      </SidebarBtn>
+      <SidebarBtn :active="activeTool === 'rect'" :expanded="sidebarExpanded" title="Rechteck (R)" @click="activeTool = 'rect'">
+        <Square class="w-4 h-4 shrink-0" /><span v-if="sidebarExpanded" class="truncate">Rechteck</span>
+      </SidebarBtn>
+      <SidebarBtn :active="activeTool === 'ellipse'" :expanded="sidebarExpanded" title="Ellipse (E)" @click="activeTool = 'ellipse'">
+        <Circle class="w-4 h-4 shrink-0" /><span v-if="sidebarExpanded" class="truncate">Ellipse</span>
+      </SidebarBtn>
+      <SidebarBtn :active="activeTool === 'text'" :expanded="sidebarExpanded" title="Text (T)" @click="activeTool = 'text'">
+        <Type class="w-4 h-4 shrink-0" /><span v-if="sidebarExpanded" class="truncate">Text</span>
+      </SidebarBtn>
+
+      <!-- Gruppe: Lichttechnik -->
+      <div v-if="sidebarExpanded" class="px-3 pt-3 pb-0.5"><span class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">Lichttechnik</span></div>
+      <div v-else class="h-2"></div>
+      <SidebarBtn :active="activeTool === 'channel' || activeTool === 'channel-pending'" :expanded="sidebarExpanded" title="Kanal platzieren (C)" @click="activeTool = 'channel'">
+        <CircleDot class="w-4 h-4 shrink-0" /><span v-if="sidebarExpanded" class="truncate">Kanal</span>
+      </SidebarBtn>
+      <SidebarBtn :active="activeTool === 'tower'" :expanded="sidebarExpanded" title="Gassenturm platzieren" @click="openTowerPlacer">
+        <Layers class="w-4 h-4 shrink-0" /><span v-if="sidebarExpanded" class="truncate">Gassenturm</span>
+      </SidebarBtn>
+      <SidebarBtn :active="activeTool === 'bar'" :expanded="sidebarExpanded" title="Zugstange platzieren" @click="openBarPlacer">
+        <AlignJustify class="w-4 h-4 shrink-0" /><span v-if="sidebarExpanded" class="truncate">Zugstange</span>
+      </SidebarBtn>
+      <SidebarBtn :active="activeTool === 'ruler'" :expanded="sidebarExpanded" title="Maßstab kalibrieren" @click="activeTool = 'ruler'">
+        <Ruler class="w-4 h-4 shrink-0" /><span v-if="sidebarExpanded" class="truncate">Maßstab</span>
+      </SidebarBtn>
+
+      <!-- Gruppe: Hintergrund -->
+      <div v-if="sidebarExpanded" class="px-3 pt-3 pb-0.5"><span class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">Hintergrund</span></div>
+      <div v-else class="h-2"></div>
+      <SidebarBtn :expanded="sidebarExpanded" title="Hintergrundbild hochladen" @click="imageUploadInput?.click()">
+        <Upload class="w-4 h-4 shrink-0" /><span v-if="sidebarExpanded" class="truncate">Bild hochladen</span>
+      </SidebarBtn>
+      <SidebarBtn v-if="bgImageSrc" variant="danger" :expanded="sidebarExpanded" title="Hintergrundbild entfernen" @click="emit('delete-image')">
+        <ImageOff class="w-4 h-4 shrink-0" /><span v-if="sidebarExpanded" class="truncate">Bild entfernen</span>
+      </SidebarBtn>
       <input ref="imageUploadInput" type="file" accept="image/*" class="hidden" @change="onImageFileSelected" />
 
-      <ToolBtn title="Als PNG exportieren" @click="exportPNG">
-        <Download class="w-5 h-5" />
-      </ToolBtn>
+      <!-- Gruppe: Export -->
+      <div v-if="sidebarExpanded" class="px-3 pt-3 pb-0.5"><span class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">Export</span></div>
+      <div v-else class="h-2"></div>
+      <SidebarBtn :expanded="sidebarExpanded" title="Als PNG exportieren" @click="exportPNG">
+        <Download class="w-4 h-4 shrink-0" /><span v-if="sidebarExpanded" class="truncate">PNG speichern</span>
+      </SidebarBtn>
 
-      <div class="flex-1"></div>
-
-      <ToolBtn :disabled="historyIndex <= 0" title="Rückgängig (Ctrl+Z)" @click="undo">
-        <Undo2 class="w-5 h-5" />
-      </ToolBtn>
-      <ToolBtn :disabled="historyIndex >= history.length - 1" title="Wiederholen (Ctrl+Y)" @click="redo">
-        <Redo2 class="w-5 h-5" />
-      </ToolBtn>
-      <ToolBtn :disabled="selectedIds.size === 0" variant="danger" title="Auswahl löschen (Delete)" @click="deleteSelected">
-        <Trash2 class="w-5 h-5" />
-      </ToolBtn>
+      <!-- Gruppe: Bearbeiten -->
+      <div v-if="sidebarExpanded" class="px-3 pt-3 pb-0.5"><span class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">Bearbeiten</span></div>
+      <div v-else class="h-2"></div>
+      <SidebarBtn :disabled="historyIndex <= 0" :expanded="sidebarExpanded" title="Rückgängig (Ctrl+Z)" @click="undo">
+        <Undo2 class="w-4 h-4 shrink-0" /><span v-if="sidebarExpanded" class="truncate">Rückgängig</span>
+      </SidebarBtn>
+      <SidebarBtn :disabled="historyIndex >= history.length - 1" :expanded="sidebarExpanded" title="Wiederholen (Ctrl+Y)" @click="redo">
+        <Redo2 class="w-4 h-4 shrink-0" /><span v-if="sidebarExpanded" class="truncate">Wiederholen</span>
+      </SidebarBtn>
+      <SidebarBtn :disabled="selectedIds.size === 0" variant="danger" :expanded="sidebarExpanded" title="Auswahl löschen (Delete)" @click="deleteSelected">
+        <Trash2 class="w-4 h-4 shrink-0" /><span v-if="sidebarExpanded" class="truncate">Löschen</span>
+      </SidebarBtn>
     </div>
 
     <!-- Center Canvas -->
@@ -83,7 +111,13 @@
       @mouseup="onContainerMouseUp"
       @dblclick="onContainerDblClick"
     >
-      <div 
+      <!-- Gitter/Einrasten oben links im Canvas -->
+      <div class="absolute top-2 left-2 z-20 flex items-center gap-1 bg-background/80 backdrop-blur border border-border rounded p-1 pointer-events-auto">
+        <Button size="sm" :variant="showGrid ? 'default' : 'ghost'" @click="showGrid = !showGrid" class="h-7 px-2 text-xs" title="Gitter anzeigen (G)">{{ t('floorplan.grid') }}</Button>
+        <Button size="sm" :variant="snapToGrid ? 'default' : 'ghost'" @click="snapToGrid = !snapToGrid" class="h-7 px-2 text-xs" title="Am Gitter einrasten">{{ t('floorplan.snap') }}</Button>
+      </div>
+
+      <div
         class="absolute origin-top-left" 
         :style="{ transform: `translate(${containerOffsetX}px, ${containerOffsetY}px) scale(${stageScale}) translate(${panOffset.x}px, ${panOffset.y}px)`, width: stageSize.width + 'px', height: stageSize.height + 'px' }"
       >
@@ -236,10 +270,40 @@
           </g>
 
           <!-- Notes -->
-          <g v-for="el in elementsWithNotes" :key="'note-'+el.id" :transform="`translate(${el._noteX}, ${el._noteY})`" style="pointer-events: none;">
-            <polygon points="-6,0 6,0 0,-6" fill="rgba(30,30,30,0.75)" />
-            <rect x="-10" y="0" width="100" height="24" fill="rgba(30,30,30,0.75)" rx="3" />
-            <text x="-4" y="16" fill="#e5e7eb" font-size="11" font-family="sans-serif">{{ el.notes }}</text>
+          <g v-for="el in elementsWithNotes" :key="'note-'+el.id" style="pointer-events: none;">
+            <!-- connector line from element anchor to label -->
+            <line
+              :x1="el._anchorX" :y1="el._anchorY"
+              :x2="el._noteX" :y2="el._noteY + 10"
+              stroke="#f59e0b" stroke-width="1" stroke-dasharray="3,3" opacity="0.7"
+            />
+            <!-- anchor dot on element -->
+            <circle :cx="el._anchorX" :cy="el._anchorY" r="3" fill="#f59e0b" opacity="0.9" />
+            <!-- label pill -->
+            <g :transform="`translate(${el._noteX}, ${el._noteY})`">
+              <rect
+                :x="-(noteTextWidth(el.notes) / 2)"
+                y="0"
+                :width="noteTextWidth(el.notes)"
+                height="22"
+                rx="11"
+                fill="#1c1c24"
+                stroke="#f59e0b"
+                stroke-width="1"
+                opacity="0.95"
+              />
+              <text
+                x="0"
+                y="14"
+                fill="#f5d78e"
+                font-size="10.5"
+                font-weight="600"
+                font-family="ui-sans-serif,system-ui,sans-serif"
+                text-anchor="middle"
+                dominant-baseline="auto"
+                letter-spacing="0.03em"
+              >{{ el.notes }}</text>
+            </g>
           </g>
         </svg>
       </div>
@@ -284,233 +348,214 @@
         @keydown.escape="cancelTextEdit"
       />
 
-  </div>
-
-  <!-- Properties Dialog -->
-  <Dialog :open="propertiesOpen && !!selectedElement" @update:open="val => { if (!val) { propertiesOpen = false; selectedIds.value = new Set() } }">
-    <DialogContent class="sm:max-w-lg">
-      <DialogHeader>
-        <DialogTitle>
-          <!-- Kanal: Nummer prominent im Titel -->
-          <template v-if="selectedElement?.type === 'channel'">
-            Kanal {{ channelInfo?.channel }}
-          </template>
-          <template v-else>
-            {{ selectedElement?.type === 'bar' && barForEl(selectedElement) ? barForEl(selectedElement).name : selectedElement?.type === 'tower' && towerForEl(selectedElement) ? towerForEl(selectedElement).name : (selectedElement ? typeLabel(selectedElement.type) : '') }}
-          </template>
-        </DialogTitle>
-      </DialogHeader>
-
-      <DialogBody v-if="selectedElement">
-        <!-- Tower info -->
-        <template v-if="selectedElement.type === 'tower'">
-          <template v-if="towerForEl(selectedElement)">
-            <div class="flex flex-col gap-1">
-              <div v-if="towerForEl(selectedElement).stage_area" class="text-sm text-muted-foreground">{{ towerForEl(selectedElement).stage_area }}</div>
-              <div class="text-sm text-muted-foreground">{{ filledSlotsLabel(selectedElement) }}</div>
-            </div>
-            <div class="flex flex-wrap gap-2">
-              <div
-                v-for="slot in (towerForEl(selectedElement).slots ?? []).filter(s => s.channel_id)"
-                :key="slot.id"
-                class="flex items-center justify-center w-10 h-10 rounded-full bg-white text-black font-bold text-sm shrink-0"
-              >
-                {{ props.channels.find(c => c.id === slot.channel_id)?.channel ?? '?' }}
-              </div>
-            </div>
-          </template>
-        </template>
-
-        <!-- Bar info -->
-        <template v-if="selectedElement.type === 'bar'">
-          <template v-if="barForEl(selectedElement)">
-            <div class="flex flex-col gap-1">
-              <div v-if="barForEl(selectedElement).zug_nr" class="text-sm text-muted-foreground">{{ t('floorplan.bar.zug', { nr: barForEl(selectedElement).zug_nr }) }}</div>
-              <div class="text-sm text-muted-foreground">{{ fixturesLabel(selectedElement) }}</div>
-            </div>
-            <div class="flex flex-wrap gap-2">
-              <div
-                v-for="fixture in barForEl(selectedElement).fixtures ?? []"
-                :key="fixture.id"
-                class="flex items-center justify-center w-10 h-10 rounded-full bg-white text-black font-bold text-sm shrink-0"
-              >
-                {{ props.channels.find(c => c.id === fixture.channel_id)?.channel ?? '?' }}
-              </div>
-            </div>
-          </template>
-        </template>
-
-        <!-- Channel info -->
-        <template v-if="selectedElement.type === 'channel'">
-          <div v-if="channelInfo" class="flex flex-col gap-1 text-sm text-muted-foreground">
-            <div v-if="channelInfo.device">{{ channelInfo.device }}</div>
-            <div v-if="channelInfo.position">{{ channelInfo.position }}</div>
-            <div v-if="channelInfo.address">{{ channelInfo.address }}</div>
+    <!-- Bottom Properties Panel -->
+    <Transition name="props-panel">
+      <div
+        v-if="selectedIds.size > 0"
+        class="absolute bottom-0 left-0 right-0 z-20 bg-background/95 backdrop-blur border-t border-border flex items-center gap-4 px-4 py-2 min-h-[52px]"
+        @mousedown.stop
+      >
+        <!-- Titel / Typ -->
+        <div class="shrink-0 min-w-[90px]">
+          <div class="text-xs text-muted-foreground uppercase tracking-wider font-semibold leading-none mb-0.5">
+            <template v-if="selectedIds.size > 1">{{ selectedIds.size }} Elemente</template>
+            <template v-else-if="selectedElement">{{ typeLabel(selectedElement.type) }}</template>
           </div>
-          <div class="flex items-center gap-3 pt-2">
-            <Button size="sm" variant="outline" @click="toggleNoArrow(selectedElement)">
+          <div v-if="selectedIds.size === 1 && selectedElement" class="text-sm font-medium truncate max-w-[120px]">
+            <template v-if="selectedElement.type === 'channel'">Kanal {{ selectedElement.channel }}</template>
+            <template v-else-if="selectedElement.type === 'tower'">{{ towerForEl(selectedElement)?.name || '–' }}</template>
+            <template v-else-if="selectedElement.type === 'bar'">{{ barForEl(selectedElement)?.name || '–' }}</template>
+          </div>
+        </div>
+
+        <div class="w-px h-8 bg-border shrink-0"></div>
+
+        <!-- Element-spezifische Controls -->
+        <div v-if="selectedIds.size === 1 && selectedElement" class="flex items-center gap-3 flex-wrap flex-1 min-w-0">
+
+          <!-- Linie / Rect / Ellipse: Farbe + Stärke -->
+          <template v-if="['line','rect','ellipse'].includes(selectedElement.type)">
+            <label class="flex items-center gap-1.5 text-xs text-muted-foreground">
+              Kontur
+              <input type="color" :value="selectedElement.color || '#6b7280'" @input="e => { selectedElement.color = e.target.value; emitChange() }" class="w-7 h-7 rounded cursor-pointer bg-transparent border border-border p-0.5" />
+            </label>
+            <label class="flex items-center gap-1.5 text-xs text-muted-foreground">
+              Stärke
+              <Input v-model.number="selectedElement.strokeWidth" type="number" min="1" max="20" class="w-14 h-7 text-xs px-2" @input="emitChange" />
+            </label>
+            <template v-if="selectedElement.type !== 'line'">
+              <label class="flex items-center gap-1.5 text-xs text-muted-foreground">
+                Füllung
+                <input v-if="selectedElement.fill && selectedElement.fill !== 'transparent'" type="color" :value="selectedElement.fill" @input="e => { selectedElement.fill = e.target.value; emitChange() }" class="w-7 h-7 rounded cursor-pointer bg-transparent border border-border p-0.5" />
+              </label>
+              <Button variant="outline" size="sm" class="h-7 px-2 text-xs" @click="toggleFill(selectedElement)">
+                {{ selectedElement.fill && selectedElement.fill !== 'transparent' ? 'Transparent' : 'Füllen' }}
+              </Button>
+            </template>
+          </template>
+
+          <!-- Text -->
+          <template v-if="selectedElement.type === 'text'">
+            <Input v-model="selectedElement.text" type="text" placeholder="Text…" class="h-7 text-sm w-40" @input="emitChange" />
+            <Input v-model.number="selectedElement.fontSize" type="number" min="6" max="200" class="w-14 h-7 text-xs px-2" @input="emitChange" />
+            <Button size="sm" class="h-7 px-2 font-bold" :variant="selectedElement.fontStyle === 'bold' ? 'default' : 'ghost'" @click="toggleFontStyle(selectedElement)">B</Button>
+            <input type="color" :value="selectedElement.color || '#9ca3af'" @input="e => { selectedElement.color = e.target.value; emitChange() }" class="w-7 h-7 rounded cursor-pointer bg-transparent border border-border p-0.5" />
+          </template>
+
+          <!-- Kanal -->
+          <template v-if="selectedElement.type === 'channel'">
+            <div v-if="channelInfo" class="flex items-center gap-2 text-sm text-muted-foreground">
+              <span v-if="channelInfo.device">{{ channelInfo.device }}</span>
+              <span v-if="channelInfo.position" class="opacity-60">· {{ channelInfo.position }}</span>
+            </div>
+            <Button size="sm" variant="outline" class="h-7 px-2 text-xs" @click="toggleNoArrow(selectedElement)">
               {{ selectedElement.noArrow ? 'Pfeil hinzufügen' : 'Pfeil entfernen' }}
             </Button>
-          </div>
-        </template>
+            <Button size="sm" variant="outline" class="h-7 px-2 text-xs" @click="jumpToChannel">→ Zum Kanal</Button>
+          </template>
 
-        <!-- Text editing -->
-        <template v-if="selectedElement.type === 'text'">
-          <div class="flex flex-col gap-2">
-            <Input v-model="selectedElement.text" type="text" placeholder="Text…" @input="emitChange" />
-            <div class="flex items-center gap-2">
-              <Input v-model.number="selectedElement.fontSize" type="number" min="6" max="200" class="w-20" @input="emitChange" />
-              <Button size="sm" :variant="selectedElement.fontStyle === 'bold' ? 'default' : 'ghost'" @click="toggleFontStyle(selectedElement)" class="font-bold">B</Button>
-              <input type="color" :value="selectedElement.color || '#9ca3af'" @input="e => { selectedElement.color = e.target.value; emitChange() }" class="w-9 h-9 rounded-xl cursor-pointer bg-transparent border border-border p-0.5" />
+          <!-- Tower -->
+          <template v-if="selectedElement.type === 'tower'">
+            <div class="text-sm text-muted-foreground">{{ filledSlotsLabel(selectedElement) }}</div>
+            <div class="flex gap-1 flex-wrap">
+              <span v-for="slot in (towerForEl(selectedElement)?.slots ?? []).filter(s => s.channel_id)" :key="slot.id"
+                class="flex items-center justify-center w-7 h-7 rounded-full bg-destructive text-white font-bold text-xs">
+                {{ props.channels.find(c => c.id === slot.channel_id)?.channel ?? '?' }}
+              </span>
             </div>
-          </div>
-        </template>
+            <Button size="sm" variant="outline" class="h-7 px-2 text-xs" @click="emit('open-tower', selectedElement.towerId)">→ Gassenturm</Button>
+          </template>
 
-        <!-- Stroke/fill (line/rect/ellipse) -->
-        <template v-if="['line','rect','ellipse'].includes(selectedElement.type)">
-          <div class="flex items-center gap-3">
-            <input type="color" :value="selectedElement.color || '#6b7280'" @input="e => { selectedElement.color = e.target.value; emitChange() }" class="w-9 h-9 rounded-xl cursor-pointer bg-transparent border border-border p-0.5" />
-            <span class="text-sm text-muted-foreground flex-1">{{ t('floorplan.field.color') }}</span>
-            <Input v-model.number="selectedElement.strokeWidth" type="number" min="1" max="20" class="w-20" @input="emitChange" />
-          </div>
-          <div v-if="selectedElement.type !== 'line'" class="flex items-center gap-3">
-            <input type="color" :value="selectedElement.fill === 'transparent' || !selectedElement.fill ? '#000000' : selectedElement.fill" @input="e => { selectedElement.fill = e.target.value; emitChange() }" class="w-9 h-9 rounded-xl cursor-pointer bg-transparent border border-border p-0.5" />
-            <span class="text-sm text-muted-foreground flex-1">{{ t('floorplan.field.fill') }}</span>
-            <Button variant="outline" size="sm" @click="toggleFill(selectedElement)">
-              {{ selectedElement.fill && selectedElement.fill !== 'transparent' ? 'Transparent' : 'Füllen' }}
+          <!-- Bar -->
+          <template v-if="selectedElement.type === 'bar'">
+            <div class="text-sm text-muted-foreground">{{ fixturesLabel(selectedElement) }}</div>
+            <div class="flex gap-1 flex-wrap">
+              <span v-for="fixture in (barForEl(selectedElement)?.fixtures ?? [])" :key="fixture.id"
+                class="flex items-center justify-center w-7 h-7 rounded-full bg-destructive text-white font-bold text-xs">
+                {{ channelNrById(fixture.channel_id) }}
+              </span>
+            </div>
+            <Button size="sm" variant="outline" class="h-7 px-2 text-xs" @click="emit('open-bar', selectedElement.barId)">→ Zugstange</Button>
+          </template>
+
+          <!-- Notiz (für alle außer Text und Tower) -->
+          <template v-if="!['text','tower'].includes(selectedElement.type)">
+            <div class="w-px h-8 bg-border shrink-0"></div>
+            <input
+              v-model="selectedElement.notes"
+              type="text"
+              placeholder="Notiz…"
+              class="h-7 text-xs bg-transparent border border-input rounded-md px-2 w-36 placeholder:text-muted-foreground/50 focus:outline-none focus:border-ring"
+              @input="emitChange"
+            />
+          </template>
+
+          <!-- Duplizieren (für einfache Shapes) -->
+          <template v-if="['line','rect','ellipse','text'].includes(selectedElement.type)">
+            <Button size="sm" variant="ghost" class="h-7 px-2 text-xs" @click="duplicateSelected">
+              <Copy class="size-3 mr-1" />Duplizieren
+            </Button>
+          </template>
+        </div>
+
+        <!-- Multi-select -->
+        <div v-else-if="selectedIds.size > 1" class="flex items-center gap-2 flex-1">
+          <span class="text-sm text-muted-foreground">{{ selectedIds.size }} Elemente ausgewählt</span>
+        </div>
+
+        <div class="ml-auto shrink-0 flex items-center gap-2">
+          <Button variant="ghost" size="sm" class="h-7 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10" @click="deleteSelected">
+            <Trash2 class="size-3 mr-1" />Löschen
+          </Button>
+          <button class="text-muted-foreground hover:text-foreground p-1 rounded" @click="selectedIds = new Set()">
+            <X class="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </Transition>
+
+    </div><!-- /Center Canvas -->
+
+    <!-- Reassign Dialog -->
+    <Dialog :open="!!reassignTargetId" @update:open="val => { if (!val) reassignTargetId = null }">
+      <DialogContent class="sm:max-w-lg flex flex-col max-h-[80vh]">
+        <DialogHeader><DialogTitle>{{ t('floorplan.reassign.title') }}</DialogTitle></DialogHeader>
+        <DialogBody class="flex-1 overflow-y-auto">
+          <Input v-model="channelSearch" placeholder="Suchen…" autofocus />
+          <div class="flex flex-col gap-1">
+            <Button v-for="ch in filteredChannels" :key="ch.channel" variant="ghost" :disabled="usedChannels.includes(ch.channel)" @click="reassignChannel(ch)" class="w-full justify-start h-auto py-2" :class="usedChannels.includes(ch.channel) && 'opacity-50'">
+              <div class="text-left"><div class="font-semibold">{{ ch.channel }}</div><div class="text-xs text-muted-foreground">{{ ch.device }}</div></div>
             </Button>
           </div>
-        </template>
+        </DialogBody>
+        <DialogFooter><Button variant="outline" @click="reassignTargetId = null">{{ t('action.cancel') }}</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
 
+    <!-- Tower Picker Dialog -->
+    <Dialog :open="showTowerPicker" @update:open="val => { if (!val) showTowerPicker = false }">
+      <DialogContent class="sm:max-w-lg flex flex-col max-h-[80vh]">
+        <DialogHeader><DialogTitle>{{ t('floorplan.tower.title') }}</DialogTitle></DialogHeader>
+        <DialogBody class="flex-1 overflow-y-auto">
+          <div class="flex flex-col gap-1">
+            <Button v-for="tower in props.towers" :key="tower.id" variant="ghost" :disabled="towerAlreadyPlaced(tower.id)" @click="placeTowerNode(tower)" class="w-full justify-start h-auto py-2" :class="towerAlreadyPlaced(tower.id) && 'opacity-40'">
+              <div class="text-left"><div class="font-semibold">{{ tower.name }}</div><div class="text-xs text-muted-foreground">{{ tower.stage_area }}{{ tower.side ? ' · ' + tower.side : '' }}</div></div>
+            </Button>
+            <div v-if="!props.towers.length" class="text-sm text-muted-foreground py-4 text-center">{{ t('floorplan.tower.empty') }}</div>
+          </div>
+        </DialogBody>
+        <DialogFooter><Button variant="outline" @click="showTowerPicker = false">{{ t('action.cancel') }}</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
 
-        <!-- Notiz -->
-        <div v-if="selectedElement.type !== 'text' && selectedElement.type !== 'tower'" class="flex flex-col gap-2 pt-2 border-t border-border">
-          <Label>{{ t('floorplan.field.note') }}</Label>
-          <textarea
-            v-model="selectedElement.notes"
-            placeholder="Notiz hinzufügen…"
-            rows="2"
-            class="w-full text-sm text-foreground bg-card border border-input rounded-xl px-4 py-3 resize-none outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-1 focus:ring-ring"
-            @input="emitChange"
-          />
-        </div>
-      </DialogBody>
+    <!-- Bar Picker Dialog -->
+    <Dialog :open="showBarPicker" @update:open="val => { if (!val) showBarPicker = false }">
+      <DialogContent class="sm:max-w-lg flex flex-col max-h-[80vh]">
+        <DialogHeader><DialogTitle>{{ t('floorplan.bar.title') }}</DialogTitle></DialogHeader>
+        <DialogBody class="flex-1 overflow-y-auto">
+          <div class="flex flex-col gap-1">
+            <Button v-for="bar in props.bars" :key="bar.id" variant="ghost" :disabled="barAlreadyPlaced(bar.id)" @click="placeBarNode(bar)" class="w-full justify-start h-auto py-2" :class="barAlreadyPlaced(bar.id) && 'opacity-40'">
+              <div class="text-left"><div class="font-semibold">{{ bar.name }}</div><div class="text-xs text-muted-foreground">{{ formatLength(bar.length_cm) }}{{ bar.zug_nr ? ' · Zug ' + bar.zug_nr : '' }}</div></div>
+            </Button>
+            <div v-if="!props.bars.length" class="text-sm text-muted-foreground py-4 text-center">{{ t('floorplan.bar.empty') }}</div>
+          </div>
+        </DialogBody>
+        <DialogFooter><Button variant="outline" @click="showBarPicker = false">{{ t('action.cancel') }}</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
 
-      <DialogFooter v-if="selectedElement" class="justify-between">
-        <!-- Links: Löschen -->
-        <Button variant="ghost" class="text-destructive hover:text-destructive hover:bg-destructive/10" @click="deleteSelected">
-          <Trash2 class="size-4" />{{ t('floorplan.action.delete') }}
-        </Button>
-        <!-- Rechts: Aktion -->
-        <div class="flex gap-2">
-          <Button v-if="selectedElement.type === 'channel'" variant="outline" @click="jumpToChannel">→ Zum Kanal</Button>
-          <Button v-else-if="selectedElement.type === 'bar'" variant="outline" @click="() => { propertiesOpen = false; emit('open-bar', selectedElement.barId) }">→ zur Zugstange</Button>
-          <Button v-else-if="selectedElement.type === 'tower'" variant="outline" @click="() => { propertiesOpen = false; emit('open-tower', selectedElement.towerId) }">→ zum Gassenturm</Button>
-          <Button v-else variant="outline" @click="duplicateSelected"><Copy class="size-4" />{{ t('floorplan.action.duplicate') }}</Button>
-        </div>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
+    <!-- Ruler Distance Dialog -->
+    <Dialog :open="showRulerDialog" @update:open="val => { if (!val) cancelRuler() }">
+      <DialogContent class="sm:max-w-sm">
+        <DialogHeader><DialogTitle>{{ t('floorplan.ruler.title') }}</DialogTitle></DialogHeader>
+        <DialogBody>
+          <p class="text-sm text-muted-foreground mb-3">{{ t('floorplan.ruler.hint') }}</p>
+          <Input v-model="rulerDistanceInput" type="text" inputmode="decimal" placeholder="z. B. 6" autofocus @keydown.enter="commitRuler" />
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="outline" @click="cancelRuler">{{ t('action.cancel') }}</Button>
+          <Button @click="commitRuler">{{ t('floorplan.ruler.confirm') }}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
 
-  <!-- Multi-select Dialog -->
-  <Dialog :open="selectedIds.size > 1" @update:open="val => { if (!val) selectedIds = new Set() }">
-    <DialogContent class="sm:max-w-lg">
-      <DialogHeader hide-close>
-        <DialogTitle>{{ selectedIds.size }} Elemente ausgewählt</DialogTitle>
-      </DialogHeader>
-      <DialogFooter>
-        <Button variant="outline" @click="selectedIds = new Set()">{{ t('action.cancel') }}</Button>
-        <Button variant="destructive" @click="deleteSelected">
-          <Trash2 class="size-4" />{{ t('floorplan.action.delete') }}
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
+    <!-- Channel Picker Dialog -->
+    <Dialog :open="showChannelPicker" @update:open="val => { if (!val) showChannelPicker = false }">
+      <DialogContent class="sm:max-w-lg flex flex-col max-h-[80vh]">
+        <DialogHeader><DialogTitle>{{ t('floorplan.channel.title') }}</DialogTitle></DialogHeader>
+        <DialogBody class="flex-1 overflow-y-auto">
+          <Input v-model="channelSearch" placeholder="Suchen…" autofocus />
+          <div class="flex flex-col gap-1">
+            <Button v-for="ch in filteredChannels" :key="ch.channel" variant="ghost" :disabled="usedChannels.includes(ch.channel)" @click="placeChannelCircle(ch)" class="w-full justify-start h-auto py-2" :class="usedChannels.includes(ch.channel) && 'opacity-50'">
+              <div class="text-left"><div class="font-semibold">{{ ch.channel }}</div><div class="text-xs text-muted-foreground">{{ ch.device }}</div></div>
+            </Button>
+          </div>
+        </DialogBody>
+        <DialogFooter><Button variant="outline" @click="showChannelPicker = false">{{ t('action.cancel') }}</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
 
-    <div class="absolute top-2 left-15 z-20 flex items-center gap-2 bg-background/80 backdrop-blur border border-border rounded p-1">
-      <Button size="sm" :variant="showGrid ? 'default' : 'ghost'" @click="showGrid = !showGrid" class="h-7 px-2 text-xs" title="Gitter anzeigen (G)">{{ t('floorplan.grid') }}</Button>
-      <Button size="sm" :variant="snapToGrid ? 'default' : 'ghost'" @click="snapToGrid = !snapToGrid" class="h-7 px-2 text-xs" title="Am Gitter einrasten">{{ t('floorplan.snap') }}</Button>
-    </div>
   </div>
-
-  <!-- Reassign Dialog -->
-  <Dialog :open="!!reassignTargetId" @update:open="val => { if (!val) reassignTargetId = null }">
-    <DialogContent class="sm:max-w-lg flex flex-col max-h-[80vh]">
-      <DialogHeader><DialogTitle>{{ t('floorplan.reassign.title') }}</DialogTitle></DialogHeader>
-      <DialogBody class="flex-1 overflow-y-auto">
-        <Input v-model="channelSearch" placeholder="Suchen…" autofocus />
-        <div class="flex flex-col gap-1">
-          <Button v-for="ch in filteredChannels" :key="ch.channel" variant="ghost" :disabled="usedChannels.includes(ch.channel)" @click="reassignChannel(ch)" class="w-full justify-start h-auto py-2" :class="usedChannels.includes(ch.channel) && 'opacity-50'">
-            <div class="text-left"><div class="font-semibold">{{ ch.channel }}</div><div class="text-xs text-muted-foreground">{{ ch.device }}</div></div>
-          </Button>
-        </div>
-      </DialogBody>
-      <DialogFooter><Button variant="outline" @click="reassignTargetId = null">{{ t('action.cancel') }}</Button></DialogFooter>
-    </DialogContent>
-  </Dialog>
-
-  <!-- Tower Picker Dialog -->
-  <Dialog :open="showTowerPicker" @update:open="val => { if (!val) showTowerPicker = false }">
-    <DialogContent class="sm:max-w-lg flex flex-col max-h-[80vh]">
-      <DialogHeader><DialogTitle>{{ t('floorplan.tower.title') }}</DialogTitle></DialogHeader>
-      <DialogBody class="flex-1 overflow-y-auto">
-        <div class="flex flex-col gap-1">
-          <Button v-for="tower in props.towers" :key="tower.id" variant="ghost" :disabled="towerAlreadyPlaced(tower.id)" @click="placeTowerNode(tower)" class="w-full justify-start h-auto py-2" :class="towerAlreadyPlaced(tower.id) && 'opacity-40'">
-            <div class="text-left"><div class="font-semibold">{{ tower.name }}</div><div class="text-xs text-muted-foreground">{{ tower.stage_area }}{{ tower.side ? ' · ' + tower.side : '' }}</div></div>
-          </Button>
-          <div v-if="!props.towers.length" class="text-sm text-muted-foreground py-4 text-center">{{ t('floorplan.tower.empty') }}</div>
-        </div>
-      </DialogBody>
-      <DialogFooter><Button variant="outline" @click="showTowerPicker = false">{{ t('action.cancel') }}</Button></DialogFooter>
-    </DialogContent>
-  </Dialog>
-
-  <!-- Bar Picker Dialog -->
-  <Dialog :open="showBarPicker" @update:open="val => { if (!val) showBarPicker = false }">
-    <DialogContent class="sm:max-w-lg flex flex-col max-h-[80vh]">
-      <DialogHeader><DialogTitle>{{ t('floorplan.bar.title') }}</DialogTitle></DialogHeader>
-      <DialogBody class="flex-1 overflow-y-auto">
-        <div class="flex flex-col gap-1">
-          <Button v-for="bar in props.bars" :key="bar.id" variant="ghost" :disabled="barAlreadyPlaced(bar.id)" @click="placeBarNode(bar)" class="w-full justify-start h-auto py-2" :class="barAlreadyPlaced(bar.id) && 'opacity-40'">
-            <div class="text-left"><div class="font-semibold">{{ bar.name }}</div><div class="text-xs text-muted-foreground">{{ formatLength(bar.length_cm) }}{{ bar.zug_nr ? ' · Zug ' + bar.zug_nr : '' }}</div></div>
-          </Button>
-          <div v-if="!props.bars.length" class="text-sm text-muted-foreground py-4 text-center">{{ t('floorplan.bar.empty') }}</div>
-        </div>
-      </DialogBody>
-      <DialogFooter><Button variant="outline" @click="showBarPicker = false">{{ t('action.cancel') }}</Button></DialogFooter>
-    </DialogContent>
-  </Dialog>
-
-  <!-- Ruler Distance Dialog -->
-  <Dialog :open="showRulerDialog" @update:open="val => { if (!val) cancelRuler() }">
-    <DialogContent class="sm:max-w-sm">
-      <DialogHeader><DialogTitle>{{ t('floorplan.ruler.title') }}</DialogTitle></DialogHeader>
-      <DialogBody>
-        <p class="text-sm text-muted-foreground mb-3">{{ t('floorplan.ruler.hint') }}</p>
-        <Input v-model="rulerDistanceInput" type="text" inputmode="decimal" placeholder="z. B. 6" autofocus @keydown.enter="commitRuler" />
-      </DialogBody>
-      <DialogFooter>
-        <Button variant="outline" @click="cancelRuler">{{ t('action.cancel') }}</Button>
-        <Button @click="commitRuler">{{ t('floorplan.ruler.confirm') }}</Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
-
-  <!-- Channel Picker Dialog -->
-  <Dialog :open="showChannelPicker" @update:open="val => { if (!val) showChannelPicker = false }">
-    <DialogContent class="sm:max-w-lg flex flex-col max-h-[80vh]">
-      <DialogHeader><DialogTitle>{{ t('floorplan.channel.title') }}</DialogTitle></DialogHeader>
-      <DialogBody class="flex-1 overflow-y-auto">
-        <Input v-model="channelSearch" placeholder="Suchen…" autofocus />
-        <div class="flex flex-col gap-1">
-          <Button v-for="ch in filteredChannels" :key="ch.channel" variant="ghost" :disabled="usedChannels.includes(ch.channel)" @click="placeChannelCircle(ch)" class="w-full justify-start h-auto py-2" :class="usedChannels.includes(ch.channel) && 'opacity-50'">
-            <div class="text-left"><div class="font-semibold">{{ ch.channel }}</div><div class="text-xs text-muted-foreground">{{ ch.device }}</div></div>
-          </Button>
-        </div>
-      </DialogBody>
-      <DialogFooter><Button variant="outline" @click="showChannelPicker = false">{{ t('action.cancel') }}</Button></DialogFooter>
-    </DialogContent>
-  </Dialog>
 </template>
 
 <script setup>
@@ -523,17 +568,14 @@ import { getToken } from '@/api/client'
 import { uuid } from '../utils/uuid.js'
 import {
   Copy, MousePointer2, Hand, Minus, Square, Circle, Type, CircleDot,
-  Upload, ImageOff, Download, Undo2, Redo2, Trash2, Layers, AlignJustify, Ruler
+  Upload, ImageOff, Download, Undo2, Redo2, Trash2, Layers, AlignJustify, Ruler,
+  PanelLeft, PanelRight, X
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Slider } from '@/components/ui/slider'
-import { Separator } from '@/components/ui/separator'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-
-import ToolBtn from '@/components/ui/ToolBtn.vue'
-import PanelBtn from '@/components/ui/PanelBtn.vue'
+import SidebarBtn from '@/components/ui/SidebarBtn.vue'
 
 const props = defineProps({
   imageUrl: { type: String, default: null },
@@ -545,6 +587,7 @@ const props = defineProps({
 })
 const emit = defineEmits(['change', 'jump-to-channel', 'upload-image', 'delete-image', 'snapshot', 'open-tower', 'open-bar'])
 
+const sidebarExpanded = ref(true)
 const activeTool = ref('select')
 const elements = ref([])
 const selectedIds = ref(new Set())
@@ -603,23 +646,24 @@ const channelInfo = computed(() => {
   return props.channels.find(ch => ch.channel === selectedElement.value.channel)
 })
 
-const NOTE_GAP = 3
-const NOTE_CHANNEL_RADIUS = 14
-const NOTE_TEXT_BASELINE = 10
+const NOTE_LABEL_GAP = 22
 const elementsWithNotes = computed(() => {
   return elements.value.filter(el => el.type !== 'text' && el.notes && el.notes.trim()).map(el => {
-    let x, y
+    // _anchorX/Y: point on the element border where the line starts
+    // _noteX/Y: center of the pill label
+    let ax, ay
     if (el.type === 'line') {
-      const mx = (el.x1 + el.x2) / 2, my = (el.y1 + el.y2) / 2
-      const dx = el.x2 - el.x1, dy = el.y2 - el.y1
-      const len = Math.hypot(dx, dy) || 1
-      x = mx + (-dy / len) * NOTE_GAP
-      y = my + (dx / len) * NOTE_GAP
-    } else if (el.type === 'rect') { x = el.x + el.w / 2; y = el.y + el.h + NOTE_GAP } 
-    else if (el.type === 'ellipse') { x = el.x; y = el.y + el.ry + NOTE_GAP } 
-    else if (el.type === 'channel') { x = el.x; y = el.y + NOTE_CHANNEL_RADIUS + NOTE_GAP } 
-    else { x = el.x; y = el.y + NOTE_TEXT_BASELINE + NOTE_GAP }
-    return { ...el, _noteX: x, _noteY: y }
+      ax = (el.x1 + el.x2) / 2; ay = (el.y1 + el.y2) / 2
+    } else if (el.type === 'rect') {
+      ax = el.x + el.w / 2; ay = el.y + el.h
+    } else if (el.type === 'ellipse') {
+      ax = el.x; ay = el.y + el.ry
+    } else if (el.type === 'channel') {
+      ax = el.x; ay = el.y + 18
+    } else {
+      ax = el.x; ay = el.y + 10
+    }
+    return { ...el, _anchorX: ax, _anchorY: ay, _noteX: ax, _noteY: ay + NOTE_LABEL_GAP }
   })
 })
 
@@ -707,6 +751,7 @@ function channelNrById(channelId) {
   return props.channels.find(c => c.id === channelId)?.channel ?? '?'
 }
 function pillW(_channel) { return 62 }
+function noteTextWidth(text) { return Math.max(40, (text?.length ?? 0) * 6.2 + 20) }
 function typeLabel(type) { return { line: 'Linie', rect: 'Rechteck', ellipse: 'Ellipse', text: 'Text', channel: 'Kanal', tower: 'Gassenturm', bar: 'Zugstange' }[type] || type }
 
 function getArrowPoints(channel, rot) {
@@ -1469,4 +1514,6 @@ watch(() => props.bars, (newBars) => {
 .fade-panel-enter-from, .fade-panel-leave-to { opacity: 0; transform: scale(0.95); }
 .placement-banner-enter-active, .placement-banner-leave-active { transition: opacity 0.15s ease, transform 0.15s ease; }
 .placement-banner-enter-from, .placement-banner-leave-to { opacity: 0; transform: translateY(-100%); }
+.props-panel-enter-active, .props-panel-leave-active { transition: opacity 0.15s ease, transform 0.15s ease; }
+.props-panel-enter-from, .props-panel-leave-to { opacity: 0; transform: translateY(100%); }
 </style>

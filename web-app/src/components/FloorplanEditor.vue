@@ -1348,20 +1348,29 @@ function resolveCssVarsInSvg(svgEl) {
 
 async function captureSnapshot() {
   if (!svgRef.value) return null
+  const SCALE = 3
+  const PADDING = 40
+  const w = stageSize.value.width
+  const h = stageSize.value.height
   const canvas = document.createElement('canvas')
-  canvas.width = stageSize.value.width; canvas.height = stageSize.value.height
+  canvas.width = (w + PADDING * 2) * SCALE
+  canvas.height = (h + PADDING * 2) * SCALE
   const ctx = canvas.getContext('2d')
+  ctx.scale(SCALE, SCALE)
   ctx.fillStyle = '#ffffff'
-  ctx.fillRect(0, 0, canvas.width, canvas.height)
-  if (bgImage.value) ctx.drawImage(bgImage.value, 0, 0, canvas.width, canvas.height)
+  ctx.fillRect(0, 0, w + PADDING * 2, h + PADDING * 2)
+  if (bgImage.value) ctx.drawImage(bgImage.value, PADDING, PADDING, w, h)
   await new Promise(resolve => {
     const svg = svgRef.value.cloneNode(true)
     const bgImgNode = svg.querySelector('#bg-image')
     if (bgImgNode) bgImgNode.remove()
     resolveCssVarsInSvg(svg)
-    // Explizite Größe setzen damit Browser den SVG korrekt rendert
-    svg.setAttribute('width', stageSize.value.width)
-    svg.setAttribute('height', stageSize.value.height)
+    svg.setAttribute('width', w)
+    svg.setAttribute('height', h)
+    // Systemschrift explizit setzen damit Browser-Webfonts nicht fehlen
+    const styleEl = document.createElementNS('http://www.w3.org/2000/svg', 'style')
+    styleEl.textContent = '* { font-family: Arial, Helvetica, sans-serif !important; }'
+    svg.insertBefore(styleEl, svg.firstChild)
     let svgStr = new XMLSerializer().serializeToString(svg)
     if (!svgStr.match(/^<svg[^>]+xmlns="http:\/\/www\.w3\.org\/2000\/svg"/)) {
       svgStr = svgStr.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"')
@@ -1370,14 +1379,14 @@ async function captureSnapshot() {
     const url = URL.createObjectURL(blob)
     const img = new Image()
     img.onload = () => {
-      ctx.drawImage(img, 0, 0, stageSize.value.width, stageSize.value.height)
+      ctx.drawImage(img, PADDING, PADDING, w, h)
       URL.revokeObjectURL(url)
       resolve()
     }
     img.onerror = () => { URL.revokeObjectURL(url); resolve() }
     img.src = url
   })
-  return canvas.toDataURL('image/jpeg', 0.85)
+  return canvas.toDataURL('image/jpeg', 0.92)
 }
 function undo() {
   if (historyIndex.value <= 0) return

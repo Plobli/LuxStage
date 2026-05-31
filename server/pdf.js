@@ -278,11 +278,36 @@ export async function generatePDF(show, channels, sectionsMap, templateSections,
       const imgMaxH = pageH - imgY - PAGE_MARGIN - mm(8)
 
       try {
-        doc.image(snapshotBuffer, PAGE_MARGIN, imgY, {
-          fit: [usableW, imgMaxH],
-          align: 'center',
-          valign: 'top',
-        })
+        const ov = floorplan.snapshotOverflow ?? 0
+        if (ov > 0) {
+          // Snapshot enthält ov CSS-px Rand auf allen Seiten (bei SCALE=3 → ov*3 Bildpixel).
+          // Bilddimensionen aus JPEG-Header lesen um den Skalierungsfaktor exakt zu berechnen.
+          const { w: imgPx, h: imgHPx } = readJpegSize(snapshotBuffer)
+          if (imgPx > 0) {
+            const SCALE = 3
+            const ovPx = ov * SCALE // Rand in Bildpixeln
+            const contentPx = imgPx - ovPx * 2   // Inhaltsbreite in Bildpixeln
+            const contentHPx = imgHPx - ovPx * 2
+            // Skalierung: Inhalt soll in usableW × imgMaxH passen
+            const scale = Math.min(usableW / contentPx, imgMaxH / contentHPx)
+            const drawW = imgPx * scale       // Gesamtbreite des Bildes in pt
+            const drawH = imgHPx * scale      // Gesamthöhe in pt
+            const drawX = PAGE_MARGIN - ovPx * scale  // negativer Offset links
+            const drawY = imgY - ovPx * scale          // negativer Offset oben
+            doc.save()
+            doc.rect(PAGE_MARGIN, imgY, usableW, imgMaxH).clip()
+            doc.image(snapshotBuffer, drawX, drawY, { width: drawW, height: drawH })
+            doc.restore()
+          } else {
+            doc.image(snapshotBuffer, PAGE_MARGIN, imgY, { fit: [usableW, imgMaxH], align: 'center', valign: 'top' })
+          }
+        } else {
+          doc.image(snapshotBuffer, PAGE_MARGIN, imgY, {
+            fit: [usableW, imgMaxH],
+            align: 'center',
+            valign: 'top',
+          })
+        }
         doc.y = PAGE_MARGIN
       } catch {
         doc.font(FONT_NORMAL).fontSize(9).fillColor('#888888')
@@ -919,4 +944,23 @@ function fmt(dateStr) {
   if (!dateStr) return ''
   try { return new Date(dateStr).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) }
   catch { return dateStr }
+}
+
+// Liest Breite/Höhe aus einem JPEG-Buffer (SOF-Marker), ohne externe Bibliothek.
+function readJpegSize(buf) {
+  try {
+    let i = 2
+    while (i < buf.length - 9) {
+      if (buf[i] !== 0xff) return { w: 0, h: 0 }
+      const marker = buf[i + 1]
+      const len = buf.readUInt16BE(i + 2)
+      if (marker >= 0xc0 && marker <= 0xc3) {
+        const h = buf.readUInt16BE(i + 5)
+        const w = buf.readUInt16BE(i + 7)
+        return { w, h }
+      }
+      i += 2 + len
+    }
+  } catch {}
+  return { w: 0, h: 0 }
 }

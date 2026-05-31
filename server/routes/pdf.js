@@ -27,6 +27,7 @@ export async function pdfRoutes(req, res, pathname) {
     const bars = db.readBars(slug)
     await generatePDF(show, channels, sectionsMap, templateSections, photoEntries, res, {
       snapshotPath: floorplan.getFloorplanSnapshotPath(show.id),
+      snapshotOverflow: floorplan.getFloorplanSnapshotOverflow(show.id),
       towers,
       bars,
     })

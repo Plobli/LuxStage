@@ -1346,29 +1346,30 @@ function resolveCssVarsInSvg(svgEl) {
   })
 }
 
+const SNAPSHOT_OVERFLOW = 120 // CSS-px Rand für overflow-visible Elemente am Stage-Rand
+
 async function captureSnapshot() {
   if (!svgRef.value) return null
   const SCALE = 3
-  const PADDING = 80
+  const OV = SNAPSHOT_OVERFLOW
   const w = stageSize.value.width
   const h = stageSize.value.height
   const canvas = document.createElement('canvas')
-  canvas.width = (w + PADDING * 2) * SCALE
-  canvas.height = (h + PADDING * 2) * SCALE
+  canvas.width = (w + OV * 2) * SCALE
+  canvas.height = (h + OV * 2) * SCALE
   const ctx = canvas.getContext('2d')
   ctx.scale(SCALE, SCALE)
   ctx.fillStyle = '#ffffff'
-  ctx.fillRect(0, 0, w + PADDING * 2, h + PADDING * 2)
-  if (bgImage.value) ctx.drawImage(bgImage.value, PADDING, PADDING, w, h)
+  ctx.fillRect(0, 0, w + OV * 2, h + OV * 2)
+  if (bgImage.value) ctx.drawImage(bgImage.value, OV, OV, w, h)
   await new Promise(resolve => {
     const svg = svgRef.value.cloneNode(true)
     const bgImgNode = svg.querySelector('#bg-image')
     if (bgImgNode) bgImgNode.remove()
     resolveCssVarsInSvg(svg)
-    svg.setAttribute('width', w + PADDING * 2)
-    svg.setAttribute('height', h + PADDING * 2)
-    svg.setAttribute('viewBox', `${-PADDING} ${-PADDING} ${w + PADDING * 2} ${h + PADDING * 2}`)
-    // Systemschrift explizit setzen damit Browser-Webfonts nicht fehlen
+    svg.setAttribute('width', String(w + OV * 2))
+    svg.setAttribute('height', String(h + OV * 2))
+    svg.setAttribute('viewBox', `${-OV} ${-OV} ${w + OV * 2} ${h + OV * 2}`)
     const styleEl = document.createElementNS('http://www.w3.org/2000/svg', 'style')
     styleEl.textContent = '* { font-family: Arial, Helvetica, sans-serif !important; }'
     svg.insertBefore(styleEl, svg.firstChild)
@@ -1380,7 +1381,7 @@ async function captureSnapshot() {
     const url = URL.createObjectURL(blob)
     const img = new Image()
     img.onload = () => {
-      ctx.drawImage(img, 0, 0, w + PADDING * 2, h + PADDING * 2)
+      ctx.drawImage(img, 0, 0, w + OV * 2, h + OV * 2)
       URL.revokeObjectURL(url)
       resolve()
     }

@@ -182,7 +182,7 @@
               :bars="bars"
               :pending-channel="pendingFloorplanChannel"
               @change="onFloorplanChange"
-              @snapshot="(snap) => saveShowFloorplanSnapshot(props.id, snap).catch(() => {})"
+              @snapshot="(snap) => saveShowFloorplanSnapshot(props.id, snap, 120).catch(() => {})"
               @upload-image="onFloorplanImageUpload"
               @delete-image="onFloorplanImageDelete"
               @jump-to-channel="jumpToChannel"

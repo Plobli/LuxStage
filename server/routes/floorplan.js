@@ -48,8 +48,9 @@ export async function floorplanRoutes(req, res, pathname) {
       if (typeof data_url !== 'string' || !data_url.startsWith('data:image/')) {
         return json(res, 400, { error: 'data_url fehlt oder ungültig' })
       }
+      const overflow = typeof body.overflow === 'number' ? body.overflow : 0
       const base64 = data_url.replace(/^data:image\/\w+;base64,/, '')
-      await floorplanLib.saveFloorplanSnapshot(show.id, Buffer.from(base64, 'base64'))
+      await floorplanLib.saveFloorplanSnapshot(show.id, Buffer.from(base64, 'base64'), overflow)
       return json(res, 200, { ok: true })
     }
   }

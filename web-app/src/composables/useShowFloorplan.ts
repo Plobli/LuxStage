@@ -18,7 +18,7 @@ export function useShowFloorplan(showId: string) {
     floorplan.value = { ...floorplan.value, canvas_data: canvasData }
     saveShowFloorplan(showId, canvasData).catch(() => {})
     if (snapshotDataUrl) {
-      saveShowFloorplanSnapshot(showId, snapshotDataUrl).catch(() => {})
+      saveShowFloorplanSnapshot(showId, snapshotDataUrl, 120).catch(() => {})
     }
   }
 

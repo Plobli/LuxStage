@@ -1,5 +1,6 @@
 // LuxStage/server/floorplan.js
 import fs from 'node:fs/promises'
+import fsSync from 'node:fs'
 import path from 'node:path'
 import { config } from './config.js'
 
@@ -44,17 +45,25 @@ export function floorplanUrl(imagePath) {
   return `/api/floorplans/images/${imagePath}`
 }
 
-export async function saveFloorplanSnapshot(showId, buffer) {
+export async function saveFloorplanSnapshot(showId, buffer, overflow = 0) {
   const dir = path.join(floorplansDir(), showId)
   await fs.mkdir(dir, { recursive: true })
   const finalPath = path.join(dir, 'snapshot.png')
   const tmpPath = `${finalPath}.tmp`
   await fs.writeFile(tmpPath, buffer)
   await fs.rename(tmpPath, finalPath)
+  await fs.writeFile(path.join(dir, 'snapshot-meta.json'), JSON.stringify({ overflow }))
 }
 
 export function getFloorplanSnapshotPath(showId) {
   return path.join(floorplansDir(), showId, 'snapshot.png')
+}
+
+export function getFloorplanSnapshotOverflow(showId) {
+  try {
+    const raw = fsSync.readFileSync(path.join(floorplansDir(), showId, 'snapshot-meta.json'), 'utf8')
+    return JSON.parse(raw).overflow ?? 0
+  } catch { return 0 }
 }
 
 export async function serveFloorplanImage(imagePath, res) {

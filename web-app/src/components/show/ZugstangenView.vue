@@ -11,33 +11,56 @@
         v-for="bar in bars"
         :key="bar.id"
         draggable="true"
-        class="group/row flex flex-col px-5 pt-3.5 pb-4 mx-3 my-1.5 rounded-lg border border-border/40 transition-colors border-l-2"
-        :class="dragOverId === bar.id ? 'bg-white/8 border-l-primary' : draggedId === bar.id ? 'opacity-40 border-l-border/40' : 'bg-white/3 border-l-white/10'"
+        class="group/row flex items-center gap-6 px-5 py-4 mx-3 my-2 rounded-xl border transition-colors"
+        :class="dragOverId === bar.id ? 'bg-white/8 border-primary/50' : draggedId === bar.id ? 'opacity-40 border-border/40 bg-white/4' : 'bg-white/4 border-border/40 hover:bg-white/6'"
         @dragstart="onBarDragStart(bar.id)"
         @dragover="onBarDragOver($event, bar.id)"
         @drop="onBarDrop(bar.id)"
         @dragend="onBarDragEnd"
       >
-        <!-- Obere Zeile: Name + Visualisierung + Aktionen -->
-        <div class="flex items-center gap-6">
-          <!-- Drag Handle + Name + Länge -->
-          <div class="w-40 shrink-0 flex items-center gap-2">
-            <svg class="size-4 text-muted-foreground/40 shrink-0 cursor-grab" viewBox="0 0 16 16" fill="currentColor"><circle cx="5.5" cy="4" r="1.2"/><circle cx="10.5" cy="4" r="1.2"/><circle cx="5.5" cy="8" r="1.2"/><circle cx="10.5" cy="8" r="1.2"/><circle cx="5.5" cy="12" r="1.2"/><circle cx="10.5" cy="12" r="1.2"/></svg>
-            <div class="min-w-0">
-              <div class="text-lg font-semibold text-foreground tracking-tight truncate leading-tight">{{ bar.name }}</div>
-              <div class="inline-flex items-center mt-1.5 px-1.5 py-0.5 rounded bg-white/8 text-[10px] font-medium text-muted-foreground/70 tabular-nums tracking-wide">{{ formatLength(bar.length_cm) }}</div>
+        <!-- Linke Spalte: Name oben, Länge + Höhe unten (bündig zur Anmerkung) -->
+        <div class="w-44 shrink-0 self-stretch flex items-start gap-2">
+          <svg class="size-4 mt-1 text-muted-foreground/0 group-hover/row:text-muted-foreground/40 shrink-0 cursor-grab transition-colors" viewBox="0 0 16 16" fill="currentColor"><circle cx="5.5" cy="4" r="1.2"/><circle cx="10.5" cy="4" r="1.2"/><circle cx="5.5" cy="8" r="1.2"/><circle cx="10.5" cy="8" r="1.2"/><circle cx="5.5" cy="12" r="1.2"/><circle cx="10.5" cy="12" r="1.2"/></svg>
+          <div class="min-w-0 flex-1 self-stretch flex flex-col justify-end">
+            <div class="text-lg font-semibold text-foreground tracking-tight truncate leading-tight mb-3">{{ bar.name }}</div>
+            <!-- Länge -->
+            <div class="relative w-32">
+              <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-medium text-muted-foreground/40 uppercase tracking-wider pointer-events-none">Länge</span>
+              <input
+                type="text"
+                inputmode="decimal"
+                :value="cmToDisplay(bar.length_cm)"
+                class="w-full h-8 rounded-md border border-transparent bg-white/3 pl-13 pr-7 text-sm tabular-nums text-right text-foreground placeholder:text-muted-foreground/25 hover:bg-white/5 focus:outline-none focus:border-accent/60 focus:bg-white/5 transition-colors"
+                @change="saveInlineField(bar, 'length_cm', parseToCm(Number($event.target.value)))"
+              />
+              <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground/40 pointer-events-none">{{ unit }}</span>
+            </div>
+            <!-- Höhe -->
+            <div class="relative mt-1.5 w-32">
+              <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-medium text-muted-foreground/40 uppercase tracking-wider pointer-events-none">Höhe</span>
+              <input
+                type="text"
+                inputmode="decimal"
+                :value="bar.height_cm != null ? cmToDisplay(bar.height_cm) : ''"
+                placeholder="—"
+                class="w-full h-8 rounded-md border border-transparent bg-white/3 pl-13 pr-7 text-sm tabular-nums text-right text-foreground placeholder:text-muted-foreground/25 hover:bg-white/5 focus:outline-none focus:border-accent/60 focus:bg-white/5 transition-colors"
+                @change="saveInlineField(bar, 'height_cm', $event.target.value === '' ? null : parseToCm(Number($event.target.value)))"
+              />
+              <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground/40 pointer-events-none">{{ unit }}</span>
             </div>
           </div>
+        </div>
 
-          <!-- Stangen-Visualisierung -->
-          <div class="flex-1 min-w-0 relative" style="height: 72px;">
+        <!-- Mittlere Spalte: Stangen-Visualisierung + Anmerkung (gleiche Breite) -->
+        <div class="flex-1 min-w-0">
+          <div class="relative" style="height: 60px;">
             <!-- Skala-Labels oben -->
-            <div v-if="!bar.hide_scale" class="absolute left-0 right-0 h-4" style="top: 24px;">
+            <div v-if="!bar.hide_scale" class="absolute left-0 right-0 h-4" style="top: 12px;">
               <span
                 v-for="tick in getScaleTicks(bar)"
                 :key="tick.pos"
                 class="absolute text-[9px] -translate-x-1/2 tabular-nums leading-none"
-                :class="tick.center ? 'text-foreground font-semibold' : 'text-muted-foreground'"
+                :class="tick.center ? 'text-muted-foreground/70 font-semibold' : 'text-muted-foreground/35'"
                 :style="{ left: tick.pct + '%' }"
               >{{ tick.label }}</span>
             </div>
@@ -45,7 +68,7 @@
             <!-- Stangen-Linie + Marker -->
             <div
               class="absolute left-0 right-0 cursor-crosshair"
-              style="top: 21px; height: 48px;"
+              style="top: 9px; height: 48px;"
               :data-bar-id="bar.id"
               @click.self="onBarLineClick($event, bar)"
               @mouseenter="hoverBarId = bar.id"
@@ -53,7 +76,7 @@
               @mousemove="hoverBarId = bar.id; hoverPct = $event.offsetX / $event.currentTarget.offsetWidth * 100"
             >
               <!-- Stangen-Track -->
-              <div class="absolute left-0 right-0 rounded-full bg-white/25 border border-white/40 pointer-events-none" style="top: 21px; height: 6px;" />
+              <div class="absolute left-0 right-0 rounded-full bg-white/15 border border-white/20 pointer-events-none" style="top: 21px; height: 6px;" />
               <!-- Statischer Hinweis bei leerer Stange -->
               <div
                 v-if="bar.fixtures.length === 0 && hoverBarId !== bar.id"
@@ -81,7 +104,7 @@
                   height: tick.center ? '16px' : '10px',
                   marginTop: tick.center ? '-8px' : '-5px',
                   width: tick.center ? '2px' : '1px',
-                  background: tick.center ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.4)',
+                  background: tick.center ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.18)',
                 }"
               />
               <!-- Kanal-Marker -->
@@ -108,54 +131,34 @@
               </div>
             </div>
           </div>
-
-          <!-- Aktionen (nur bei Hover) -->
-          <div class="flex items-center gap-0.5 shrink-0 opacity-0 group-hover/row:opacity-100 transition-opacity">
-            <!-- Als Vorlage speichern -->
-            <Button
-              v-if="props.saveToTemplateFn"
-              variant="ghost" size="icon" class="size-7 text-muted-foreground/60"
-              :title="savingBarId === bar.id ? '…' : 'Als Vorlage speichern'"
-              @click.stop="openSaveDialog(bar)"
-            >
-              <Loader2 v-if="savingBarId === bar.id" class="size-3.5 animate-spin" />
-              <BookmarkPlus v-else class="size-3.5" />
-            </Button>
-            <Button variant="ghost" size="icon" class="size-7 text-muted-foreground/60" @click="openEditBarDialog(bar)">
-              <Pencil class="size-3.5" />
-            </Button>
-            <Button variant="ghost" size="icon" class="size-7 text-muted-foreground/60" @click="confirmDeleteBar(bar)">
-              <Trash2 class="size-3.5" />
-            </Button>
-          </div>
+          <!-- Anmerkung (so breit wie die Stange) -->
+          <input
+            type="text"
+            :value="bar.notes ?? ''"
+            placeholder="Anmerkung …"
+            class="w-full h-8 mt-5 rounded-md border border-transparent bg-white/3 px-2.5 text-sm text-foreground placeholder:text-muted-foreground/25 hover:bg-white/5 focus:outline-none focus:border-accent/60 focus:bg-white/5 transition-colors"
+            @change="saveInlineField(bar, 'notes', $event.target.value)"
+          />
         </div>
 
-        <!-- Höhe + Anmerkungen -->
-        <div class="flex items-end gap-3 mt-5 ml-46">
-          <div class="flex flex-col gap-1">
-            <span class="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider px-0.5">Höhe</span>
-            <div class="relative w-28">
-              <input
-                type="text"
-                inputmode="decimal"
-                :value="bar.height_cm != null ? cmToDisplay(bar.height_cm) : ''"
-                placeholder="—"
-                class="w-full h-8 rounded-md border border-border/60 bg-white/4 px-2.5 pr-7 text-sm tabular-nums text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-accent transition-colors"
-                @change="saveInlineField(bar, 'height_cm', $event.target.value === '' ? null : parseToCm(Number($event.target.value)))"
-              />
-              <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground/50 pointer-events-none">{{ unit }}</span>
-            </div>
-          </div>
-          <div class="flex flex-col gap-1 flex-1">
-            <span class="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider px-0.5">Anmerkung</span>
-            <input
-              type="text"
-              :value="bar.notes ?? ''"
-              placeholder="—"
-              class="h-8 rounded-md border border-border/60 bg-white/4 px-2.5 text-sm text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-accent transition-colors"
-              @change="saveInlineField(bar, 'notes', $event.target.value)"
-            />
-          </div>
+        <!-- Rechte Spalte: Aktionen (gestapelt, nur bei Hover) -->
+        <div class="flex flex-col gap-0.5 shrink-0 opacity-0 group-hover/row:opacity-100 transition-opacity">
+          <!-- Als Vorlage speichern -->
+          <Button
+            v-if="props.saveToTemplateFn"
+            variant="ghost" size="icon" class="size-7 text-muted-foreground/60"
+            :title="savingBarId === bar.id ? '…' : 'Als Vorlage speichern'"
+            @click.stop="openSaveDialog(bar)"
+          >
+            <Loader2 v-if="savingBarId === bar.id" class="size-3.5 animate-spin" />
+            <BookmarkPlus v-else class="size-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" class="size-7 text-muted-foreground/60" @click="openEditBarDialog(bar)">
+            <Pencil class="size-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" class="size-7 text-muted-foreground/60" @click="confirmDeleteBar(bar)">
+            <Trash2 class="size-3.5" />
+          </Button>
         </div>
       </div>
     </div>

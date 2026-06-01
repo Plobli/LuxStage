@@ -72,7 +72,7 @@
 
     <!-- Neue Show: Dialog -->
     <Dialog :open="drawerOpen" @update:open="drawerOpen = $event">
-      <DialogContent class="sm:max-w-lg" style="min-height: 560px">
+      <DialogContent class="sm:max-w-lg min-h-140">
         <DialogHeader>
           <DialogTitle>{{ t('show.new') }}</DialogTitle>
         </DialogHeader>

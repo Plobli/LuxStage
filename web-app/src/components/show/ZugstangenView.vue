@@ -11,7 +11,7 @@
         v-for="bar in bars"
         :key="bar.id"
         draggable="true"
-        class="group/row flex items-center gap-6 px-5 py-4 mx-3 my-2 rounded-xl border transition-colors"
+        class="group/row relative flex items-center gap-6 px-5 py-4 mx-3 my-2 rounded-xl border transition-colors"
         :class="dragOverId === bar.id ? 'bg-white/8 border-primary/50' : draggedId === bar.id ? 'opacity-40 border-border/40 bg-white/4' : 'bg-white/4 border-border/40 hover:bg-white/6'"
         @dragstart="onBarDragStart(bar.id)"
         @dragover="onBarDragOver($event, bar.id)"
@@ -19,10 +19,9 @@
         @dragend="onBarDragEnd"
       >
         <!-- Linke Spalte: Name oben, Länge + Höhe unten (bündig zur Anmerkung) -->
-        <div class="w-44 shrink-0 self-stretch flex items-start gap-2">
-          <svg class="size-4 mt-1 text-muted-foreground/0 group-hover/row:text-muted-foreground/40 shrink-0 cursor-grab transition-colors" viewBox="0 0 16 16" fill="currentColor"><circle cx="5.5" cy="4" r="1.2"/><circle cx="10.5" cy="4" r="1.2"/><circle cx="5.5" cy="8" r="1.2"/><circle cx="10.5" cy="8" r="1.2"/><circle cx="5.5" cy="12" r="1.2"/><circle cx="10.5" cy="12" r="1.2"/></svg>
-          <div class="min-w-0 flex-1 self-stretch flex flex-col justify-end">
-            <div class="text-lg font-semibold text-foreground tracking-tight truncate leading-tight mb-3">{{ bar.name }}</div>
+        <div class="w-44 shrink-0 self-stretch flex flex-col justify-end">
+          <div class="text-lg font-semibold text-foreground tracking-tight truncate leading-tight mb-3">{{ bar.name }}</div>
+          <div class="min-w-0">
             <!-- Länge -->
             <div class="relative w-32">
               <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-medium text-muted-foreground/40 uppercase tracking-wider pointer-events-none">Länge</span>

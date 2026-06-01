@@ -37,11 +37,12 @@ export function writeBar(slug, data) {
       ).run(scale, id)
     }
   } else {
-    const count = dbContainer.db.prepare('SELECT COUNT(*) as n FROM bars WHERE show_id = ?').get(show.id).n
+    const maxOrder = dbContainer.db.prepare('SELECT MAX(sort_order) as m FROM bars WHERE show_id = ?').get(show.id).m
+    const nextOrder = maxOrder == null ? 0 : maxOrder + 1
     dbContainer.db.prepare(`
       INSERT INTO bars (id, show_id, name, zug_nr, length_cm, height_cm, notes, sort_order, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(id, show.id, data.name ?? '', data.zug_nr ?? '', data.length_cm ?? 600, data.height_cm ?? null, data.notes ?? '', data.sort_order ?? count, now())
+    `).run(id, show.id, data.name ?? '', data.zug_nr ?? '', data.length_cm ?? 600, data.height_cm ?? null, data.notes ?? '', data.sort_order ?? nextOrder, now())
   }
   return id
 }

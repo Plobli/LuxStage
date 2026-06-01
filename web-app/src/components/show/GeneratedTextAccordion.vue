@@ -9,7 +9,7 @@
 
     <template v-if="gassenturmEntries.length">
       <div class="flex flex-col gap-1.5">
-        <p class="text-base font-bold text-foreground mt-2 mb-1">Bühne</p>
+        <p class="text-base font-bold text-foreground mt-2 mb-1">Beleuchtungsgestelle</p>
         <div
           v-for="entry in gassenturmEntries"
           :key="entry.name"

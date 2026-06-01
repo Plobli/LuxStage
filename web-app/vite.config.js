@@ -36,6 +36,8 @@ export default defineConfig({
         manualChunks: {
           'vendor-vue': ['vue', 'vue-router'],
           'vendor-ui': ['reka-ui'],
+          'vendor-utils': ['@vueuse/core'],
+          'vendor-icons': ['lucide-vue-next'],
         },
       },
     },

@@ -1388,7 +1388,12 @@ async function captureSnapshot() {
     img.onerror = () => { URL.revokeObjectURL(url); resolve() }
     img.src = url
   })
-  return canvas.toDataURL('image/jpeg', 0.92)
+  return await new Promise(res => canvas.toBlob(blob => {
+    if (!blob) return res(null)
+    const reader = new FileReader()
+    reader.onload = () => res(reader.result)
+    reader.readAsDataURL(blob)
+  }, 'image/jpeg', 0.92))
 }
 function undo() {
   if (historyIndex.value <= 0) return

@@ -17,7 +17,7 @@
 </template>
 
 <script setup>
-import { nextTick, onMounted, ref, watch, onBeforeUnmount } from 'vue'
+import { nextTick, onMounted, ref, onBeforeUnmount } from 'vue'
 import { Textarea } from '@/components/ui/textarea'
 
 defineOptions({ inheritAttrs: false })
@@ -39,48 +39,48 @@ function getNativeTextarea() {
 function autoResize() {
   const el = getNativeTextarea()
   if (!el) return
-  el.style.height = '1px'
-  el.style.height = `${Math.max(40, el.scrollHeight)}px`
+  // Beide Reads vor dem Write — kein Reflow-Thrashing
+  const minHeight = 40
+  el.style.height = '0'
+  const next = Math.max(minHeight, el.scrollHeight)
+  el.style.height = `${next}px`
 }
 
 function handleInput(val) {
   emit('update:modelValue', val)
   emit('input', val)
-  nextTick(autoResize)
+  autoResize()
 }
 
 function handleFocus(event) {
   isFocused.value = true
   emit('focus', event)
-  nextTick(autoResize)
+  autoResize()
 }
 
 function handleBlur(event) {
   isFocused.value = false
   emit('blur', event)
-  nextTick(autoResize)
 }
 
-let intersectionObserver = null
+let resizeObserver = null
+let lastWidth = 0
 
-watch(() => props.modelValue, () => nextTick(autoResize))
 onMounted(() => {
   const el = getNativeTextarea()
   if (!el) return
 
-  intersectionObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        nextTick(autoResize)
-      }
-    })
-  }, { threshold: 0.1 })
+  // ResizeObserver nur bei Breiten-Änderung, nicht bei Höhen-Änderung (die wir selbst setzen)
+  resizeObserver = new ResizeObserver(entries => {
+    const w = entries[0]?.contentRect.width ?? 0
+    if (w !== lastWidth) { lastWidth = w; autoResize() }
+  })
+  resizeObserver.observe(el)
 
-  intersectionObserver.observe(el)
   nextTick(autoResize)
 })
 
 onBeforeUnmount(() => {
-  intersectionObserver?.disconnect()
+  resizeObserver?.disconnect()
 })
 </script>

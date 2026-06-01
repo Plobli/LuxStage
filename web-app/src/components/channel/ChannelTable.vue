@@ -237,7 +237,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useContainerWidth } from '@/composables/useContainerWidth'
 import { Check } from 'lucide-vue-next'
 import Sortable from 'sortablejs'
@@ -298,6 +298,29 @@ function ensureStableChannelKey(ch) {
 const addingPosition = ref(null)
 const addForm = ref({})
 
+// ── Chunked rendering ──────────────────────────────────────────────────────
+const INITIAL_BATCH = 20
+const BATCH_SIZE = 30
+const renderedCount = ref(INITIAL_BATCH)
+
+function scheduleRemainingBatches(total) {
+  if (renderedCount.value >= total) return
+  requestAnimationFrame(() => {
+    renderedCount.value = Math.min(renderedCount.value + BATCH_SIZE, total)
+    scheduleRemainingBatches(total)
+  })
+}
+
+onMounted(() => {
+  const total = props.groupedChannels.reduce((n, g) => n + g.channels.length, 0)
+  scheduleRemainingBatches(total)
+})
+
+watch(() => props.groupedChannels, (groups) => {
+  const total = groups.reduce((n, g) => n + g.channels.length, 0)
+  if (renderedCount.value < total) scheduleRemainingBatches(total)
+}, { deep: false })
+
 // ── Flat list for virtual scrolling ───────────────────────────────────────
 const virtualItems = computed(() => {
   const items = []
@@ -309,10 +332,15 @@ const virtualItems = computed(() => {
     }
     return items
   }
+  let channelsSeen = 0
+  const limit = renderedCount.value
   for (const group of props.groupedChannels) {
     items.push({ id: `header-${group.position}`, type: 'header', group })
     for (const ch of group.channels) {
-      items.push({ id: ensureStableChannelKey(ch), type: 'channel', ch, group })
+      if (channelsSeen < limit) {
+        items.push({ id: ensureStableChannelKey(ch), type: 'channel', ch, group })
+      }
+      channelsSeen++
     }
     if (addingPosition.value === group.position) {
       items.push({ id: `add-form-${group.position}`, type: 'add-form', group })

@@ -143,6 +143,7 @@
 
         <!-- Photos View -->
         <div
+          v-if="tabMounted('photos')"
           v-show="mobileTab === 'photos'"
           class="relative flex flex-col flex-1 min-h-0 overflow-hidden"
         >
@@ -170,6 +171,7 @@
 
         <!-- Floorplan View -->
         <div
+          v-if="tabMounted('floorplan')"
           v-show="mobileTab === 'floorplan'"
           class="flex flex-col flex-1 min-h-0 overflow-hidden"
         >
@@ -194,6 +196,7 @@
 
         <!-- Aufbauplan View -->
         <div
+          v-if="tabMounted('gassenturm')"
           v-show="mobileTab === 'gassenturm'"
           class="flex flex-col flex-1 min-h-0 overflow-hidden"
         >
@@ -483,8 +486,8 @@ import { useShowBars } from '../composables/useShowBars.js'
 import { useMeasureUnit } from '../composables/useMeasureUnit'
 
 import ShowHeader from '../components/show/ShowHeader.vue'
-import ShowActionBar from '../components/show/ShowActionBar.vue'
-import ShowSidebar from '../components/show/ShowSidebar.vue'
+const ShowActionBar = defineAsyncComponent(() => import('../components/show/ShowActionBar.vue'))
+const ShowSidebar = defineAsyncComponent(() => import('../components/show/ShowSidebar.vue'))
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -495,13 +498,13 @@ import { saveShowSectionDefs } from '../api/sections.ts'
 import { uuid } from '../utils/uuid.js'
 import { downloadChannelsCsv } from '../api/channels.js'
 import { generateHangereiEntries, generateGassenturmEntries } from '../utils/generateHangerei'
-import PhotoGallery from '../components/show/PhotoGallery.vue'
+const PhotoGallery = defineAsyncComponent(() => import('../components/show/PhotoGallery.vue'))
 const HistorySlideOver = defineAsyncComponent(() => import('../components/show/HistorySlideOver.vue'))
 import { isOnline, api } from '../api/client.js'
 import { fetchTemplateBars } from '../api/templateBars.js'
 import { fetchTemplateTowers } from '../api/templateTowers.js'
 
-import ChannelTable from '../components/channel/ChannelTable.vue'
+const ChannelTable = defineAsyncComponent(() => import('../components/channel/ChannelTable.vue'))
 const SectionEditor = defineAsyncComponent(() => import('../components/show/SectionEditor.vue'))
 const EosMergePreviewDialog = defineAsyncComponent(() => import('../components/EosMergePreviewDialog.vue'))
 const FloorplanEditor = defineAsyncComponent(() => import('../components/FloorplanEditor.vue'))
@@ -536,6 +539,10 @@ const isTimedOut = Date.now() - Number(localStorage.getItem(TAB_TIME_KEY) || 0) 
 
 const mobileTab = ref(isTimedOut ? 'channels' : (sessionStorage.getItem(TAB_KEY) || 'channels'))
 if (!localStorage.getItem(TAB_TIME_KEY)) localStorage.setItem(TAB_TIME_KEY, String(Date.now()))
+
+const visitedTabs = ref(new Set([mobileTab.value]))
+watch(mobileTab, tab => visitedTabs.value.add(tab))
+function tabMounted(tab) { return visitedTabs.value.has(tab) }
 watch(mobileTab, (tab) => {
   sessionStorage.setItem(TAB_KEY, tab)
   localStorage.setItem(TAB_TIME_KEY, String(Date.now()))
@@ -905,7 +912,6 @@ onMounted(async () => {
     const [showData] = await Promise.all([
       fetchShow(props.id),
       loadChannels(),
-      loadPhotos(),
       loadSections()
     ])
 
@@ -930,6 +936,7 @@ onMounted(async () => {
   createSnapshot(props.id).catch(() => {})
   snapshotInterval = setInterval(() => createSnapshot(props.id).catch(() => {}), 10 * 60 * 1000)
 
+  loadPhotos().catch(() => {})
   loadFloorplan().catch(() => {})
   loadTowers().catch(() => {})
   loadBars().catch(() => {})

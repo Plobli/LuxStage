@@ -62,7 +62,7 @@ function contrastColor(hex) {
 // templateSections: [{ id, title, order, type }]
 // photoEntries: [{ path, caption }]  — Fotos mit optionaler Beschreibung
 // floorplan: { imagePath, canvasData } — optionaler Grundriss
-export async function generatePDF(show, channels, sectionsMap, templateSections, photoEntries, res, floorplan = null) {
+export async function generatePDF(show, channels, sectionsMap, templateSections, photoEntries, res, floorplan = null, unit = 'm') {
   const fm = { name: show.name, datum: show.datum, venue: show.untertitel }
   const grouped = groupByPosition(channels)
 
@@ -266,7 +266,7 @@ export async function generatePDF(show, channels, sectionsMap, templateSections,
   // ── Grundriss ─────────────────────────────────────────────────────────────
   if (floorplan?.snapshotPath) {
     let snapshotBuffer = null
-    try { snapshotBuffer = fs.readFileSync(floorplan.snapshotPath) } catch {}
+    try { snapshotBuffer = fs.readFileSync(floorplan.snapshotPath) } catch (e) { snapshotBuffer = null }
     if (snapshotBuffer && snapshotBuffer.length > 100) {
       doc.addPage()
       addFooter()
@@ -279,39 +279,36 @@ export async function generatePDF(show, channels, sectionsMap, templateSections,
 
       try {
         const ov = floorplan.snapshotOverflow ?? 0
-        if (ov > 0) {
-          // Snapshot enthält ov CSS-px Rand auf allen Seiten (bei SCALE=3 → ov*3 Bildpixel).
-          // Bilddimensionen aus JPEG-Header lesen um den Skalierungsfaktor exakt zu berechnen.
-          const { w: imgPx, h: imgHPx } = readJpegSize(snapshotBuffer)
+        if (ov > 0 && snapshotBuffer.length > 0) {
+          const { w: imgPx, h: imgHPx } = readImageSize(snapshotBuffer)
           if (imgPx > 0) {
             const SCALE = 3
-            const ovPx = ov * SCALE // Rand in Bildpixeln
-            const contentPx = imgPx - ovPx * 2   // Inhaltsbreite in Bildpixeln
+            const ovPx = ov * SCALE
+            const contentPx = imgPx - ovPx * 2
             const contentHPx = imgHPx - ovPx * 2
-            // Skalierung: Inhalt soll in usableW × imgMaxH passen
-            const scale = Math.min(usableW / contentPx, imgMaxH / contentHPx)
-            const drawW = imgPx * scale       // Gesamtbreite des Bildes in pt
-            const drawH = imgHPx * scale      // Gesamthöhe in pt
-            const drawX = PAGE_MARGIN - ovPx * scale  // negativer Offset links
-            const drawY = imgY - ovPx * scale          // negativer Offset oben
-            doc.save()
-            doc.rect(PAGE_MARGIN, imgY, usableW, imgMaxH).clip()
-            doc.image(snapshotBuffer, drawX, drawY, { width: drawW, height: drawH })
-            doc.restore()
+            if (contentPx > 0 && contentHPx > 0) {
+              const scale = Math.min(usableW / contentPx, imgMaxH / contentHPx)
+              const drawW = imgPx * scale
+              const drawH = imgHPx * scale
+              const drawX = PAGE_MARGIN - ovPx * scale
+              const drawY = imgY - ovPx * scale
+              doc.save()
+              doc.rect(PAGE_MARGIN, imgY, usableW, imgMaxH).clip()
+              doc.translate(drawX, drawY)
+              doc.image(floorplan.snapshotPath, 0, 0, { width: drawW, height: drawH })
+              doc.restore()
+            } else {
+              doc.image(floorplan.snapshotPath, PAGE_MARGIN, imgY, { fit: [usableW, imgMaxH], align: 'center', valign: 'top' })
+            }
           } else {
-            doc.image(snapshotBuffer, PAGE_MARGIN, imgY, { fit: [usableW, imgMaxH], align: 'center', valign: 'top' })
+            doc.image(floorplan.snapshotPath, PAGE_MARGIN, imgY, { fit: [usableW, imgMaxH], align: 'center', valign: 'top' })
           }
         } else {
-          doc.image(snapshotBuffer, PAGE_MARGIN, imgY, {
-            fit: [usableW, imgMaxH],
-            align: 'center',
-            valign: 'top',
-          })
+          doc.image(floorplan.snapshotPath, PAGE_MARGIN, imgY, { fit: [usableW, imgMaxH], align: 'center', valign: 'top' })
         }
-        doc.y = PAGE_MARGIN
-      } catch {
+      } catch (err) {
         doc.font(FONT_NORMAL).fontSize(9).fillColor('#888888')
-          .text('Grundriss konnte nicht geladen werden.', PAGE_MARGIN, imgY)
+          .text(`Grundriss-Fehler: ${err?.message ?? err}`, PAGE_MARGIN, imgY, { width: usableW })
       }
     }
   }
@@ -344,7 +341,7 @@ export async function generatePDF(show, channels, sectionsMap, templateSections,
       if (ty + mm(20) > printableBottom) { doc.addPage(); addFooter(); ty = PAGE_MARGIN }
       doc.font(FONT_BOLD).fontSize(13).fillColor('black').text('Zugstangen', PAGE_MARGIN, ty, { lineBreak: false })
       ty += mm(9)
-      drawBarRows(doc, bars, channels, PAGE_MARGIN, usableW, ty, printableBottom, addFooter)
+      drawBarRows(doc, bars, channels, PAGE_MARGIN, usableW, ty, printableBottom, addFooter, unit)
     }
   }
 
@@ -870,59 +867,140 @@ function renderHangereiBars(doc, bars, channels, margin, usableW, startY, bottom
   return ty
 }
 
+function cmToDisplayUnit(cm, unit) {
+  if (unit === 'mm') return `${Math.round(cm * 10)} mm`
+  if (unit === 'cm') return `${Math.round(cm)} cm`
+  return `${Math.round(cm / 100 * 100) / 100} m`
+}
+
+function posLabel(cm, unit) {
+  const abs = Math.abs(cm)
+  let val
+  if (unit === 'mm') val = Math.round(abs * 10)
+  else if (unit === 'cm') val = Math.round(abs)
+  else val = Math.round(abs / 100 * 100) / 100
+  if (cm === 0) return '0'
+  return cm > 0 ? `+${val}` : `-${val}`
+}
+
 // Zugstangen als visuelle Zeilen mit Kanal-Kreisen
-function drawBarRows(doc, bars, channels, margin, usableW, startY, bottomLimit, addFooter) {
-  const BAR_H = mm(26)
-  const CIRCLE_R = mm(3.5)
-  const GAP = mm(3)
+function drawBarRows(doc, bars, channels, margin, usableW, startY, bottomLimit, addFooter, unit = 'm') {
+  const CIRCLE_R = mm(3.2)
+  const LEFT_COL = mm(48)   // Breite linke Infospalte
+  const GAP = mm(4)
 
   let ty = startY
   for (const bar of bars) {
+    const fixtures = bar.fixtures ?? []
+    const barLenCm = bar.length_cm || 600
+
+    // Höhe dynamisch: Basis + ggf. Gerät-Zeilen + ggf. Anmerkung
+    const hasNotes = !!(bar.notes && bar.notes.trim())
+    // Für jedes Fixture eine Gerätename-Zeile unterhalb des Kreises (nur wenn Device vorhanden)
+    const BAR_H = mm(hasNotes ? 46 : 42)
+
     if (ty + BAR_H > bottomLimit) { doc.addPage(); addFooter(); ty = PAGE_MARGIN }
 
     // Hintergrund
-    doc.roundedRect(margin, ty, usableW, BAR_H, 3).fillAndStroke('#f8f8f8', '#dddddd')
+    doc.roundedRect(margin, ty, usableW, BAR_H, 4).fillAndStroke('#f5f5f5', '#cccccc')
     doc.fillColor('black')
 
-    // Name links
-    doc.font(FONT_BOLD).fontSize(9).fillColor('#111111')
-      .text(bar.name ?? '', margin + mm(3), ty + mm(2), { width: mm(40), lineBreak: false, ellipsis: true })
+    // ── Linke Spalte ──────────────────────────────────────────────────────────
+    // Name
+    doc.font(FONT_BOLD).fontSize(11).fillColor('#111111')
+      .text(bar.name ?? '', margin + mm(4), ty + mm(4), { width: LEFT_COL - mm(6), lineBreak: false, ellipsis: true })
 
-    // Meta: Länge + Zug
-    const meta = [bar.length_cm ? `${bar.length_cm} cm` : null, bar.zug_nr ? `Zug ${bar.zug_nr}` : null].filter(Boolean).join(' · ')
-    doc.font(FONT_NORMAL).fontSize(7).fillColor('#888888')
-      .text(meta, margin + mm(3), ty + mm(7), { width: mm(40), lineBreak: false })
+    // Meta: Länge · Höhe · Zugname
+    const metaParts = [
+      bar.length_cm ? `Länge ${cmToDisplayUnit(bar.length_cm, unit)}` : null,
+      bar.height_cm != null ? `Höhe ${cmToDisplayUnit(bar.height_cm, unit)}` : null,
+      bar.zug_nr ? `Zug ${bar.zug_nr}` : null,
+    ].filter(Boolean)
+    if (metaParts.length) {
+      doc.font(FONT_NORMAL).fontSize(7.5).fillColor('#888888')
+        .text(metaParts.join(' · '), margin + mm(4), ty + mm(11), { width: LEFT_COL - mm(6), lineBreak: false })
+    }
 
-    // Stangen-Linie — etwas oberhalb der Mitte für Positionstext darunter
-    const lineLeft = margin + mm(47)
-    const lineRight = margin + usableW - mm(3)
-    const lineY = ty + mm(13)
-    doc.moveTo(lineLeft, lineY).lineTo(lineRight, lineY).lineWidth(2).stroke('#10b981').lineWidth(1)
+    // Anzahl Scheinwerfer
+    if (fixtures.length > 0) {
+      doc.font(FONT_NORMAL).fontSize(7).fillColor('#aaaaaa')
+        .text(`${fixtures.length} Scheinwerfer`, margin + mm(4), ty + mm(16.5), { width: LEFT_COL - mm(6), lineBreak: false })
+    }
+
+    // ── Stangenlinie ──────────────────────────────────────────────────────────
+    const lineLeft = margin + LEFT_COL
+    const lineRight = margin + usableW - mm(4)
+    const lineY = ty + mm(21)   // Mittelpunkt der Kreise
+    const linePx = lineRight - lineLeft
+
+    // Track-Hintergrund
+    doc.roundedRect(lineLeft, lineY - mm(0.8), linePx, mm(1.6), mm(0.8)).fill('#cccccc')
+
+    // Grüne Linie
+    doc.moveTo(lineLeft, lineY).lineTo(lineRight, lineY).lineWidth(2.5).stroke('#10b981').lineWidth(1)
 
     // Endmarkierungen
-    doc.moveTo(lineLeft, lineY - mm(2)).lineTo(lineLeft, lineY + mm(2)).lineWidth(1).stroke('#10b981')
-    doc.moveTo(lineRight, lineY - mm(2)).lineTo(lineRight, lineY + mm(2)).lineWidth(1).stroke('#10b981')
+    doc.moveTo(lineLeft, lineY - mm(3)).lineTo(lineLeft, lineY + mm(3)).lineWidth(1.5).stroke('#10b981')
+    doc.moveTo(lineRight, lineY - mm(3)).lineTo(lineRight, lineY + mm(3)).lineWidth(1.5).stroke('#10b981')
 
-    // Fixture-Circles mit Positions-Label darunter
-    const fixtures = bar.fixtures ?? []
-    const barLenCm = bar.length_cm || 600
-    const linePx = lineRight - lineLeft
+    // ── Skala-Ticks ───────────────────────────────────────────────────────────
+    if (!bar.hide_scale) {
+      const half = barLenCm / 2
+      const tickStep = barLenCm <= 600 ? 50 : barLenCm <= 1200 ? 100 : 200
+      for (let cm = -half; cm <= half + 0.01; cm += tickStep) {
+        const snapped = Math.round(cm)
+        const pct = (snapped + half) / barLenCm
+        const tx = lineLeft + pct * linePx
+        const isCenter = snapped === 0
+        const tickH = isCenter ? mm(4) : mm(2.5)
+        doc.moveTo(tx, lineY - tickH / 2).lineTo(tx, lineY + tickH / 2)
+          .lineWidth(isCenter ? 1.5 : 0.75).stroke(isCenter ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.2)')
+        // Label oberhalb
+        const label = posLabel(snapped, unit)
+        doc.font(FONT_NORMAL).fontSize(5.5).fillColor(isCenter ? '#444444' : '#aaaaaa')
+          .text(label, tx - mm(6), lineY - tickH / 2 - mm(4.5), { width: mm(12), align: 'center', lineBreak: false })
+      }
+    }
+
+    // ── Fixture-Circles ───────────────────────────────────────────────────────
     for (const fx of fixtures) {
       const posFrac = (fx.position + barLenCm / 2) / barLenCm
       const cx = lineLeft + posFrac * linePx
       const ch = channels.find(c => c.id === fx.channel_id)
       const nr = ch?.channel ?? '?'
+      const device = ch?.device ?? ''
 
-      // Kreis
+      // Kreis mit Schatten-Effekt (leichter Rand)
+      doc.circle(cx, lineY, CIRCLE_R + 0.5).fill('rgba(220,55,64,0.18)')
       doc.circle(cx, lineY, CIRCLE_R).fill('#dc3740')
-      const textH = doc.font(FONT_BOLD).fontSize(6.5).currentLineHeight()
-      doc.fillColor('white').text(String(nr), cx - CIRCLE_R, lineY - textH / 2, { width: CIRCLE_R * 2, align: 'center', lineBreak: false })
+
+      // Kanalnummer zentriert im Kreis
+      doc.font(FONT_BOLD).fontSize(7.5).fillColor('white')
+      const textH = doc.currentLineHeight()
+      doc.text(String(nr), cx - CIRCLE_R, lineY - textH / 2, { width: CIRCLE_R * 2, align: 'center', lineBreak: false })
       doc.fillColor('black')
 
-      // Positionswert darunter (cm von Mitte, positiv = RS, negativ = LKS)
-      const posLabel = fx.position === 0 ? '0' : (fx.position > 0 ? `+${fx.position}` : String(fx.position))
-      doc.font(FONT_NORMAL).fontSize(5.5).fillColor('#666666')
-        .text(posLabel, cx - mm(5), lineY + CIRCLE_R + mm(1), { width: mm(10), align: 'center', lineBreak: false })
+      // Positionslabel unterhalb Kreis
+      doc.font(FONT_NORMAL).fontSize(6).fillColor('#555555')
+        .text(posLabel(fx.position, unit), cx - mm(7), lineY + CIRCLE_R + mm(1.5), { width: mm(14), align: 'center', lineBreak: false })
+
+      // Gerätename unter Positionslabel
+      if (device) {
+        doc.font(FONT_NORMAL).fontSize(5.5).fillColor('#999999')
+          .text(device, cx - mm(10), lineY + CIRCLE_R + mm(5.5), { width: mm(20), align: 'center', lineBreak: false, ellipsis: true })
+      }
+
+      // Anmerkungs-Marker (kleiner Punkt oben rechts am Kreis, wie gelber Ring in WebApp)
+      if (fx.notes) {
+        doc.circle(cx + CIRCLE_R * 0.7, lineY - CIRCLE_R * 0.7, mm(1.2)).fill('#f59e0b')
+      }
+    }
+
+    // ── Anmerkung zur Zugstange ───────────────────────────────────────────────
+    if (hasNotes) {
+      const notesY = ty + BAR_H - mm(9)
+      doc.font(FONT_NORMAL).fontSize(7).fillColor('#000000')
+        .text(bar.notes, lineLeft, notesY + mm(1.5), { width: linePx, lineBreak: false, ellipsis: true })
     }
 
     ty += BAR_H + GAP
@@ -946,18 +1024,23 @@ function fmt(dateStr) {
   catch { return dateStr }
 }
 
-// Liest Breite/Höhe aus einem JPEG-Buffer (SOF-Marker), ohne externe Bibliothek.
-function readJpegSize(buf) {
+// Liest Breite/Höhe aus einem JPEG- oder PNG-Buffer.
+function readImageSize(buf) {
   try {
+    // PNG: Signatur 0x89 PNG, Dimensionen in IHDR-Chunk ab Byte 16
+    if (buf[0] === 0x89 && buf[1] === 0x50) {
+      const w = buf.readUInt32BE(16)
+      const h = buf.readUInt32BE(20)
+      return { w, h }
+    }
+    // JPEG: SOF-Marker suchen
     let i = 2
     while (i < buf.length - 9) {
       if (buf[i] !== 0xff) return { w: 0, h: 0 }
       const marker = buf[i + 1]
       const len = buf.readUInt16BE(i + 2)
       if (marker >= 0xc0 && marker <= 0xc3) {
-        const h = buf.readUInt16BE(i + 5)
-        const w = buf.readUInt16BE(i + 7)
-        return { w, h }
+        return { w: buf.readUInt16BE(i + 7), h: buf.readUInt16BE(i + 5) }
       }
       i += 2 + len
     }

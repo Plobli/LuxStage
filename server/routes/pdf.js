@@ -3,6 +3,7 @@ import * as photos from '../photos.js'
 import * as floorplan from '../floorplan.js'
 import { notFound } from '../helpers.js'
 import { generatePDF } from '../pdf.js'
+import { getDisplayUnit } from './display.js'
 
 const SHOW_PDF = /^\/api\/shows\/([^/]+)\/pdf$/
 
@@ -14,6 +15,7 @@ export async function pdfRoutes(req, res, pathname) {
     const slug = m[1]
     const show = db.readShow(slug)
     if (!show) return notFound(res)
+    const unit = getDisplayUnit()
     const channels = db.readChannels(slug)
     const sectionsMap = db.readShowSections(slug)
     const templateSections = db.readShowSectionDefs(slug)
@@ -30,7 +32,7 @@ export async function pdfRoutes(req, res, pathname) {
       snapshotOverflow: floorplan.getFloorplanSnapshotOverflow(show.id),
       towers,
       bars,
-    })
+    }, unit)
     return
   }
 

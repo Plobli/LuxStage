@@ -1,11 +1,22 @@
 import { ref, computed } from 'vue'
+import { BASE, getToken } from '../api/client'
 
 export type MeasureUnit = 'm' | 'cm' | 'mm'
 
 const STORAGE_KEY = 'measureUnit'
 const unit = ref<MeasureUnit>((localStorage.getItem(STORAGE_KEY) as MeasureUnit) || 'm')
 
+// Beim Start vom Server laden
 if (typeof window !== 'undefined') {
+  fetch(BASE() + '/api/settings/display', {
+    headers: { 'Authorization': 'Bearer ' + (getToken() ?? '') },
+  }).then(r => r.ok ? r.json() : null).then(data => {
+    if (data?.measure_unit && ['m', 'cm', 'mm'].includes(data.measure_unit)) {
+      unit.value = data.measure_unit as MeasureUnit
+      localStorage.setItem(STORAGE_KEY, data.measure_unit)
+    }
+  }).catch(() => {})
+
   window.addEventListener('storage', (e: StorageEvent) => {
     if (e.key === STORAGE_KEY && e.newValue && ['m', 'cm', 'mm'].includes(e.newValue)) {
       unit.value = e.newValue as MeasureUnit
@@ -16,6 +27,11 @@ if (typeof window !== 'undefined') {
 function setUnit(u: MeasureUnit) {
   unit.value = u
   localStorage.setItem(STORAGE_KEY, u)
+  fetch(BASE() + '/api/settings/display', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (getToken() ?? '') },
+    body: JSON.stringify({ measure_unit: u }),
+  }).catch(() => {})
 }
 
 /** cm → Anzeige-Wert (gerundet) */

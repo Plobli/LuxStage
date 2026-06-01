@@ -31,9 +31,9 @@ export async function showRoutes(req, res, pathname, params) {
 
   if (method === 'POST' && SHOW_LIST.test(pathname)) {
     const body = await readJsonBody(req, res); if (body === null) return
-    const { id, name, datum, template, untertitel, spielzeit, channels } = body
+    const { id, name, datum, template, untertitel, spielzeit, channels, use_bars, use_towers } = body
     if (!id || !/^[a-z0-9_-]+$/i.test(id)) return json(res, 400, { error: 'Ungültige ID' })
-    db.createShow(id, { name, datum, template, untertitel, spielzeit })
+    db.createShow(id, { name, datum, template, untertitel, spielzeit, use_bars: use_bars !== false, use_towers: use_towers !== false })
     if (Array.isArray(channels) && channels.length) db.writeChannels(id, channels)
     return json(res, 201, { id })
   }
@@ -43,10 +43,12 @@ export async function showRoutes(req, res, pathname, params) {
     if (method === 'PUT') {
       const user = req.user
       const body = await readJsonBody(req, res); if (body === null) return
-      const { setupMarkdown, eosActiveChannels, ...rest } = body
+      const { setupMarkdown, eosActiveChannels, use_bars, use_towers, ...rest } = body
       const fields = { ...rest }
       if (setupMarkdown !== undefined) fields.setup_markdown = setupMarkdown
       if (eosActiveChannels !== undefined) fields.eos_active_channels = JSON.stringify(eosActiveChannels)
+      if (use_bars !== undefined) fields.use_bars = use_bars ? 1 : 0
+      if (use_towers !== undefined) fields.use_towers = use_towers ? 1 : 0
       fields.last_edited_by = user.username
       fields.last_edited_at = Date.now()
       db.writeShow(slug, fields)
@@ -161,6 +163,8 @@ export async function showRoutes(req, res, pathname, params) {
         template: show.template,
         untertitel: show.untertitel,
         spielzeit: show.spielzeit,
+        use_bars: show.use_bars !== 0,
+        use_towers: show.use_towers !== 0,
         setupMarkdown: show.setup_markdown ?? '',
         eosActiveChannels: show.eos_active_channels ? JSON.parse(show.eos_active_channels) : null,
         channels,

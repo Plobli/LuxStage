@@ -21,6 +21,7 @@
       </div>
 
       <NavItem
+        v-if="showTowers"
         :active="activeTab === 'gassenturm' && activeSubTab === 'gassenturm'"
         @click="emit('navigate', { tab: 'gassenturm', subTab: 'gassenturm' })"
       >
@@ -28,6 +29,7 @@
       </NavItem>
 
       <NavItem
+        v-if="showBars"
         :active="activeTab === 'gassenturm' && activeSubTab === 'zugstangen'"
         @click="emit('navigate', { tab: 'gassenturm', subTab: 'zugstangen' })"
       >
@@ -97,6 +99,8 @@ const props = defineProps({
   activeTab: { type: String, default: 'gassenturm' },
   activeSubTab: { type: String, default: null },
   sectionDefs: { type: Array, default: () => [] },
+  showBars: { type: Boolean, default: true },
+  showTowers: { type: Boolean, default: true },
   labels: {
     type: Object,
     default: () => ({

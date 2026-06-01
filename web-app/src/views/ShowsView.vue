@@ -107,6 +107,17 @@
               </SelectContent>
             </Select>
           </div>
+          <div class="flex flex-col gap-2 pt-1">
+            <Label>Aufbau-Bereiche</Label>
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+              <Checkbox v-model="form.use_towers" />
+              <span class="text-sm">Beleuchtungsgestelle</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+              <Checkbox v-model="form.use_bars" />
+              <span class="text-sm">Zugstangen</span>
+            </label>
+          </div>
         </DialogBody>
         <DialogFooter>
           <Button variant="outline" type="button" @click="drawerOpen = false">
@@ -138,6 +149,7 @@ import { saveChannels } from '../api/channels.js'
 import { templateDisplayName } from '../utils/templateName.js'
 
 import { useConfirm } from '../composables/useConfirm.js'
+import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -170,7 +182,7 @@ function setSort(key) {
 }
 const creating = ref(false)
 const drawerOpen = ref(false)
-const form = ref({ name: '', datum: new Date().toISOString().slice(0, 10), template: '__none__', untertitel: '', spielzeit: '' })
+const form = ref({ name: '', datum: new Date().toISOString().slice(0, 10), template: '__none__', untertitel: '', spielzeit: '', use_bars: true, use_towers: true })
 
 function formatDatum(d) {
   if (!d) return ''
@@ -227,7 +239,7 @@ async function handleCreate() {
   try {
     const tplCreate = form.value.template === '__none__' ? '' : form.value.template
     const content = `---\nid: ${id}\nname: ${form.value.name || id}\ndatum: ${form.value.datum || new Date().toISOString().slice(0, 10)}\n${tplCreate ? `template: ${tplCreate}\n` : ''}---\n\n`
-    await createShow({ id, name: form.value.name || id, datum: form.value.datum || new Date().toISOString().slice(0, 10), content, template: tplCreate || undefined, untertitel: form.value.untertitel || undefined, spielzeit: form.value.spielzeit || undefined })
+    await createShow({ id, name: form.value.name || id, datum: form.value.datum || new Date().toISOString().slice(0, 10), content, template: tplCreate || undefined, untertitel: form.value.untertitel || undefined, spielzeit: form.value.spielzeit || undefined, use_bars: form.value.use_bars, use_towers: form.value.use_towers })
     invalidate('shows')
     const newShow = { id, name: form.value.name || id, datum: form.value.datum || new Date().toISOString().slice(0, 10), template: tplCreate }
     shows.value.push(newShow)
@@ -249,7 +261,7 @@ async function handleCreate() {
 }
 
 function openCreate() {
-  form.value = { name: '', datum: new Date().toISOString().slice(0, 10), template: '__none__', untertitel: '', spielzeit: '' }
+  form.value = { name: '', datum: new Date().toISOString().slice(0, 10), template: '__none__', untertitel: '', spielzeit: '', use_bars: true, use_towers: true }
   drawerOpen.value = true
 }
 

@@ -196,6 +196,12 @@ if (!showCols.includes('last_edited_by')) {
 if (!showCols.includes('last_edited_at')) {
   dbContainer.db.exec('ALTER TABLE shows ADD COLUMN last_edited_at INTEGER')
 }
+if (!showCols.includes('use_bars')) {
+  dbContainer.db.exec('ALTER TABLE shows ADD COLUMN use_bars INTEGER NOT NULL DEFAULT 1')
+}
+if (!showCols.includes('use_towers')) {
+  dbContainer.db.exec('ALTER TABLE shows ADD COLUMN use_towers INTEGER NOT NULL DEFAULT 1')
+}
 // section_kv_rows: Zeilen für kv-table Sections
 const kvRowsTableExists = dbContainer.db.prepare(
   "SELECT name FROM sqlite_master WHERE type='table' AND name='section_kv_rows'"

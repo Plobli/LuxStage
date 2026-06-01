@@ -17,7 +17,7 @@
               <Input size="lg" id="smtp-port" v-model="form.port" type="number" placeholder="587" />
             </div>
             <div class="flex items-end gap-2 pb-0.5">
-              <input id="smtp-secure" v-model="form.secure" type="checkbox" class="h-4 w-4 rounded border-border" />
+              <Checkbox v-model="form.secure" />
               <Label for="smtp-secure">{{ t('settings.smtp.secure') }}</Label>
             </div>
           </div>
@@ -55,6 +55,7 @@ import { ref, onMounted, computed } from 'vue'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useLocale } from '../../composables/useLocale.js'
 import { getSmtpConfig, saveSmtpConfig, testSmtpConfig } from '../../api/client.js'

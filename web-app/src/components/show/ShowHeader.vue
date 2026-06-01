@@ -106,6 +106,17 @@
           <Label for="meta-spielzeit">Spielzeit</Label>
           <Input id="meta-spielzeit" v-model="editMeta.spielzeit" type="text" size="lg" placeholder="z.B. 25/26" />
         </div>
+        <div class="flex flex-col gap-2 pt-1">
+          <Label>Aufbau-Bereiche</Label>
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <Checkbox v-model="editMeta.use_towers" />
+            <span class="text-sm">Beleuchtungsgestelle</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <Checkbox v-model="editMeta.use_bars" />
+            <span class="text-sm">Zugstangen</span>
+          </label>
+        </div>
       </DialogBody>
       <DialogFooter>
         <Button variant="outline" @click="metaDialogOpen = false">Abbrechen</Button>
@@ -123,6 +134,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
+import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuTrigger, DropdownMenuSeparator,
@@ -158,13 +170,15 @@ const editingName = ref(false)
 const editName = ref('')
 const nameInput = ref(null)
 const metaDialogOpen = ref(false)
-const editMeta = ref({ datum: '', untertitel: '', spielzeit: '' })
+const editMeta = ref({ datum: '', untertitel: '', spielzeit: '', use_bars: true, use_towers: true })
 
 function openMetaDialog() {
   editMeta.value = {
     datum: props.showMeta.datum ?? '',
     untertitel: props.showMeta.untertitel ?? '',
     spielzeit: props.showMeta.spielzeit ?? '',
+    use_bars: props.showMeta.use_bars !== false,
+    use_towers: props.showMeta.use_towers !== false,
   }
   metaDialogOpen.value = true
 }

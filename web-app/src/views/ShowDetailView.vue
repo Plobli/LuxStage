@@ -39,6 +39,8 @@
       :activeTab="mobileTab"
       :activeSubTab="aufbauTab"
       :sectionDefs="sectionDefs"
+      :showBars="meta.use_bars !== false"
+      :showTowers="meta.use_towers !== false"
       :labels="{
         channels: t('tab.channels'),
         groupGeneral: t('nav.general'),
@@ -253,7 +255,7 @@
             </div>
           </template>
 
-          <div v-show="aufbauTab === 'gassenturm'" class="flex-1 min-h-0 overflow-hidden">
+          <div v-if="meta.use_towers !== false && aufbauTab === 'gassenturm'" class="flex-1 min-h-0 overflow-hidden">
             <GassenturmView
               :towers="towers"
               :channels="channels"
@@ -271,7 +273,7 @@
             />
           </div>
 
-          <div v-show="aufbauTab === 'zugstangen'" class="flex-1 min-h-0 overflow-hidden">
+          <div v-if="meta.use_bars !== false && aufbauTab === 'zugstangen'" class="flex-1 min-h-0 overflow-hidden">
             <ZugstangenView
               :bars="bars"
               :channels="channels"
@@ -415,11 +417,9 @@
                 class="flex items-center gap-3 py-2.5 cursor-pointer hover:bg-muted/30 transition-colors px-1 rounded"
                 :class="fromTemplateSelectedIds.has(item.id) ? '' : 'opacity-50'"
               >
-                <input
-                  type="checkbox"
-                  :checked="fromTemplateSelectedIds.has(item.id)"
-                  class="rounded border-border accent-accent shrink-0"
-                  @change="fromTemplateToggleId(item.id)"
+                <Checkbox
+                  :model-value="fromTemplateSelectedIds.has(item.id)"
+                  @update:model-value="fromTemplateToggleId(item.id)"
                 />
                 <span class="flex-1 min-w-0">
                   <span class="text-sm font-medium text-foreground">{{ item.name }}</span>
@@ -437,11 +437,9 @@
 
             <!-- Mit Kanalzuordnung -->
             <div class="flex items-start gap-3 rounded-lg border border-border p-3 mt-1">
-              <input
-                id="withChannelsCb"
-                type="checkbox"
+              <Checkbox
                 v-model="fromTemplateWithChannels"
-                class="mt-0.5 rounded border-border accent-accent shrink-0"
+                class="mt-0.5"
               />
               <label for="withChannelsCb" class="flex flex-col gap-0.5 cursor-pointer">
                 <span class="text-sm font-medium text-foreground">Mit Kanalzuordnung</span>
@@ -489,6 +487,7 @@ import ShowHeader from '../components/show/ShowHeader.vue'
 const ShowActionBar = defineAsyncComponent(() => import('../components/show/ShowActionBar.vue'))
 const ShowSidebar = defineAsyncComponent(() => import('../components/show/ShowSidebar.vue'))
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
+import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -567,8 +566,8 @@ const {
 } = useShowSections(props.id, meta)
 
 const aufbauFixedTabs = computed(() => [
-  { key: 'gassenturm', label: t('tab.buehne') },
-  { key: 'zugstangen', label: t('tab.obermaschinerie') },
+  ...(meta.value.use_towers !== false ? [{ key: 'gassenturm', label: t('tab.buehne') }] : []),
+  ...(meta.value.use_bars !== false ? [{ key: 'zugstangen', label: t('tab.obermaschinerie') }] : []),
 ])
 const aufbauSubTabs = computed(() => {
   const sectionTabs = [...sectionDefs.value]
@@ -756,6 +755,10 @@ function onSidebarNavigate({ tab, subTab }) {
   if (subTab !== undefined) aufbauTab.value = subTab
 }
 
+const aufbauNavVisible = computed(() =>
+  meta.value.use_towers !== false || meta.value.use_bars !== false || sectionDefs.value.length > 0
+)
+
 const bottomNavItems = computed(() => [
   {
     key: 'channels',
@@ -764,13 +767,13 @@ const bottomNavItems = computed(() => [
     active: mobileTab.value === 'channels',
     action: () => { mobileTab.value = 'channels' },
   },
-  {
+  ...(aufbauNavVisible.value ? [{
     key: 'gassenturm',
     label: t('tab.gassenturm'),
     icon: Construction,
     active: mobileTab.value === 'gassenturm',
     action: () => { mobileTab.value = 'gassenturm' },
-  },
+  }] : []),
   {
     key: 'photos',
     label: t('tab.photos'),
@@ -921,7 +924,7 @@ onMounted(async () => {
       loadSections()
     ])
 
-    meta.value = { name: showData.name, datum: showData.datum, template: showData.template, untertitel: showData.untertitel, spielzeit: showData.spielzeit }
+    meta.value = { name: showData.name, datum: showData.datum, template: showData.template, untertitel: showData.untertitel, spielzeit: showData.spielzeit, use_bars: showData.use_bars !== false, use_towers: showData.use_towers !== false }
     setupMarkdown.value = showData.setupMarkdown ?? ''
     eosActiveChannels.value = showData.eosActiveChannels ?? null
 

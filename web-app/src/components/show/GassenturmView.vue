@@ -279,7 +279,7 @@
         <div class="space-y-1">
           <!-- Struktur — immer aktiv -->
           <div class="flex items-start gap-3 py-2 opacity-60">
-            <input type="checkbox" checked disabled class="mt-0.5 rounded accent-accent shrink-0" />
+            <Checkbox :model-value="true" disabled class="mt-0.5" />
             <div>
               <p class="text-sm font-medium text-foreground">Grundstruktur</p>
               <p class="text-xs text-muted-foreground">Bezeichnung · Seite · Anzahl Slots</p>
@@ -288,21 +288,21 @@
           <div class="h-px bg-border/50 mx-1" />
           <!-- Kanalbelegung je Slot -->
           <label class="flex items-start gap-3 py-2 cursor-pointer hover:bg-muted/30 rounded px-1 transition-colors">
-            <input type="checkbox" v-model="saveFields.channel" class="mt-0.5 rounded accent-accent shrink-0" />
+            <Checkbox v-model="saveFields.channel" class="mt-0.5" />
             <div>
               <p class="text-sm font-medium text-foreground">Kanalnummer</p>
               <p class="text-xs text-muted-foreground">Welche Kanalnr. in welchem Slot sitzt</p>
             </div>
           </label>
           <label class="flex items-start gap-3 py-2 cursor-pointer hover:bg-muted/30 rounded px-1 transition-colors">
-            <input type="checkbox" v-model="saveFields.device" class="mt-0.5 rounded accent-accent shrink-0" />
+            <Checkbox v-model="saveFields.device" class="mt-0.5" />
             <div>
               <p class="text-sm font-medium text-foreground">Gerät</p>
               <p class="text-xs text-muted-foreground">Gerätebezeichnung je Slot</p>
             </div>
           </label>
           <label class="flex items-start gap-3 py-2 cursor-pointer hover:bg-muted/30 rounded px-1 transition-colors">
-            <input type="checkbox" v-model="saveFields.color" class="mt-0.5 rounded accent-accent shrink-0" />
+            <Checkbox v-model="saveFields.color" class="mt-0.5" />
             <div>
               <p class="text-sm font-medium text-foreground">Farbe</p>
               <p class="text-xs text-muted-foreground">Farbfilter je Slot</p>
@@ -330,6 +330,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
+import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 
 const props = defineProps({
   towers: { type: Array, required: true },

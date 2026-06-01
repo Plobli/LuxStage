@@ -21,12 +21,12 @@
         <!-- Obere Zeile: Name + Visualisierung + Aktionen -->
         <div class="flex items-center gap-6">
           <!-- Drag Handle + Name + Länge -->
-          <div class="w-40 shrink-0 flex items-start gap-2">
-            <svg class="size-4 text-muted-foreground/60 mt-0.5 shrink-0 cursor-grab" viewBox="0 0 16 16" fill="currentColor"><circle cx="5.5" cy="4" r="1.2"/><circle cx="10.5" cy="4" r="1.2"/><circle cx="5.5" cy="8" r="1.2"/><circle cx="10.5" cy="8" r="1.2"/><circle cx="5.5" cy="12" r="1.2"/><circle cx="10.5" cy="12" r="1.2"/></svg>
-          <div class="min-w-0">
-            <div class="text-sm font-semibold text-foreground tracking-tight truncate">{{ bar.name }}</div>
-            <div class="text-xs text-muted-foreground/80 mt-0.5 tabular-nums">{{ formatLength(bar.length_cm) }}</div>
-          </div>
+          <div class="w-40 shrink-0 flex items-center gap-2">
+            <svg class="size-4 text-muted-foreground/40 shrink-0 cursor-grab" viewBox="0 0 16 16" fill="currentColor"><circle cx="5.5" cy="4" r="1.2"/><circle cx="10.5" cy="4" r="1.2"/><circle cx="5.5" cy="8" r="1.2"/><circle cx="10.5" cy="8" r="1.2"/><circle cx="5.5" cy="12" r="1.2"/><circle cx="10.5" cy="12" r="1.2"/></svg>
+            <div class="min-w-0">
+              <div class="text-lg font-semibold text-foreground tracking-tight truncate leading-tight">{{ bar.name }}</div>
+              <div class="inline-flex items-center mt-1.5 px-1.5 py-0.5 rounded bg-white/8 text-[10px] font-medium text-muted-foreground/70 tabular-nums tracking-wide">{{ formatLength(bar.length_cm) }}</div>
+            </div>
           </div>
 
           <!-- Stangen-Visualisierung -->
@@ -45,12 +45,31 @@
             <!-- Stangen-Linie + Marker -->
             <div
               class="absolute left-0 right-0 cursor-crosshair"
-              style="top: 42px; height: 6px;"
+              style="top: 21px; height: 48px;"
               :data-bar-id="bar.id"
               @click.self="onBarLineClick($event, bar)"
+              @mouseenter="hoverBarId = bar.id"
+              @mouseleave="hoverBarId = null; hoverPct = null"
+              @mousemove="hoverBarId = bar.id; hoverPct = $event.offsetX / $event.currentTarget.offsetWidth * 100"
             >
               <!-- Stangen-Track -->
-              <div class="absolute inset-0 rounded-full bg-white/25 border border-white/40 pointer-events-none" />
+              <div class="absolute left-0 right-0 rounded-full bg-white/25 border border-white/40 pointer-events-none" style="top: 21px; height: 6px;" />
+              <!-- Statischer Hinweis bei leerer Stange -->
+              <div
+                v-if="bar.fixtures.length === 0 && hoverBarId !== bar.id"
+                class="absolute left-1/2 -translate-x-1/2 pointer-events-none select-none whitespace-nowrap text-xs text-muted-foreground/60"
+                style="top: 34px;"
+              >Klicken zum Hinzufügen</div>
+              <!-- Ghost-Marker bei Hover -->
+              <div
+                v-if="hoverBarId === bar.id && hoverPct !== null && !hoverOnFixture"
+                class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-none z-10"
+                :style="{ left: hoverPct + '%' }"
+              >
+                <div class="size-10 rounded-full border-2 border-accent/40 bg-accent/10 flex items-center justify-center">
+                  <span class="text-xs font-bold text-white/40 tabular-nums">+</span>
+                </div>
+              </div>
               <!-- Tick-Striche -->
               <div
                 v-if="!bar.hide_scale"
@@ -71,6 +90,8 @@
                 :key="fx.channel_id"
                 class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 group/fx z-10"
                 :style="{ left: posPercent(fx.position, bar.length_cm) + '%' }"
+                @mouseenter="hoverOnFixture = true"
+                @mouseleave="hoverOnFixture = false"
                 @mousedown.prevent.stop="startDrag($event, fx, bar)"
               >
                 <button
@@ -89,7 +110,7 @@
           </div>
 
           <!-- Aktionen (nur bei Hover) -->
-          <div class="flex items-center gap-0.5 shrink-0">
+          <div class="flex items-center gap-0.5 shrink-0 opacity-0 group-hover/row:opacity-100 transition-opacity">
             <!-- Als Vorlage speichern -->
             <Button
               v-if="props.saveToTemplateFn"
@@ -110,25 +131,31 @@
         </div>
 
         <!-- Höhe + Anmerkungen -->
-        <div class="flex items-center gap-4 mt-2 ml-46">
-          <div class="relative w-32">
+        <div class="flex items-end gap-3 mt-5 ml-46">
+          <div class="flex flex-col gap-1">
+            <span class="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider px-0.5">Höhe</span>
+            <div class="relative w-28">
+              <input
+                type="text"
+                inputmode="decimal"
+                :value="bar.height_cm != null ? cmToDisplay(bar.height_cm) : ''"
+                placeholder="—"
+                class="w-full h-8 rounded-md border border-border/60 bg-white/4 px-2.5 pr-7 text-sm tabular-nums text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-accent transition-colors"
+                @change="saveInlineField(bar, 'height_cm', $event.target.value === '' ? null : parseToCm(Number($event.target.value)))"
+              />
+              <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground/50 pointer-events-none">{{ unit }}</span>
+            </div>
+          </div>
+          <div class="flex flex-col gap-1 flex-1">
+            <span class="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider px-0.5">Anmerkung</span>
             <input
               type="text"
-              inputmode="decimal"
-              :value="bar.height_cm != null ? cmToDisplay(bar.height_cm) : ''"
-              placeholder="Höhe"
-              class="w-full h-9 rounded-md border border-border bg-transparent px-3 pr-7 text-sm tabular-nums text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-accent"
-              @change="saveInlineField(bar, 'height_cm', $event.target.value === '' ? null : parseToCm(Number($event.target.value)))"
+              :value="bar.notes ?? ''"
+              placeholder="—"
+              class="h-8 rounded-md border border-border/60 bg-white/4 px-2.5 text-sm text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-accent transition-colors"
+              @change="saveInlineField(bar, 'notes', $event.target.value)"
             />
-            <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/80 pointer-events-none">{{ unit }}</span>
           </div>
-          <input
-            type="text"
-            :value="bar.notes ?? ''"
-            placeholder="Anmerkung…"
-            class="flex-1 h-9 rounded-md border border-border bg-transparent px-3 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-accent"
-            @change="saveInlineField(bar, 'notes', $event.target.value)"
-          />
         </div>
       </div>
     </div>
@@ -568,6 +595,12 @@ async function confirmAddFixture() {
   pickerChannel.value = null
   emit('assigned')
 }
+
+// Hover-Tooltip
+const hoverBarId = ref(null)
+const hoverPct = ref(null)
+const hoverOnFixture = ref(false)
+
 
 // Drag
 let dragging = null

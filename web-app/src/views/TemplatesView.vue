@@ -68,6 +68,9 @@
             <TabsTrigger value="bars" class="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground rounded-none px-4 py-2 border-b-2 border-transparent">
               {{ t('tab.bars') }}
             </TabsTrigger>
+            <TabsTrigger value="towers" class="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground rounded-none px-4 py-2 border-b-2 border-transparent">
+              {{ t('tab.towers') }}
+            </TabsTrigger>
           </TabsList>
           </div>
 
@@ -159,11 +162,6 @@
 
           <!-- Zugstangen -->
           <TabsContent value="bars" class="mt-0 outline-none space-y-3">
-            <div class="flex justify-end">
-              <Button variant="outline" size="sm" :disabled="applyingToShows === 'bars'" @click="handleApplyToAllShows('bars')">
-                {{ applyingToShows === 'bars' ? '…' : t('template.apply_to_shows') }}
-              </Button>
-            </div>
             <div class="text-sm text-muted-foreground">
               {{ t('zugstange.hint') }}
             </div>
@@ -172,27 +170,122 @@
             </div>
             <div
               v-for="(bar, idx) in templateBars" :key="bar.id"
-              draggable="true"
-              class="flex items-center gap-3 rounded-md border bg-card px-4 py-2.5 cursor-grab transition-colors"
+              class="rounded-md border bg-card transition-colors"
               :class="barDragOverId === bar.id ? 'border-primary bg-primary/5' : barDraggedId === bar.id ? 'opacity-40 border-border' : 'border-border'"
-              @dragstart="onBarDragStart(bar.id)"
-              @dragover="onBarDragOver($event, bar.id)"
-              @drop="onBarDrop(bar.id)"
-              @dragend="onBarDragEnd"
             >
-              <svg class="size-4 text-muted-foreground shrink-0 cursor-grab" viewBox="0 0 16 16" fill="currentColor"><circle cx="5.5" cy="4" r="1.2"/><circle cx="10.5" cy="4" r="1.2"/><circle cx="5.5" cy="8" r="1.2"/><circle cx="10.5" cy="8" r="1.2"/><circle cx="5.5" cy="12" r="1.2"/><circle cx="10.5" cy="12" r="1.2"/></svg>
-              <span class="text-sm font-medium text-foreground flex-1 truncate">{{ bar.name }}</span>
-              <span v-if="bar.zug_nr" class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0">{{ bar.zug_nr }}</span>
-              <span class="text-xs text-muted-foreground shrink-0">{{ formatLength(bar.length_cm) }}</span>
-              <Button variant="ghost" size="icon" class="size-6 text-muted-foreground shrink-0" @click="openEditTemplateBar(bar)">
-                <Pencil class="size-3" />
-              </Button>
-              <Button variant="ghost" size="icon" class="size-6 text-muted-foreground shrink-0" @click="removeTemplateBar(bar.id, idx)">
-                <X class="size-3" />
-              </Button>
+              <!-- Bar-Header Zeile -->
+              <div
+                draggable="true"
+                class="flex items-center gap-3 px-4 py-2.5 cursor-grab"
+                @dragstart="onBarDragStart(bar.id)"
+                @dragover="onBarDragOver($event, bar.id)"
+                @drop="onBarDrop(bar.id)"
+                @dragend="onBarDragEnd"
+              >
+                <svg class="size-4 text-muted-foreground shrink-0 cursor-grab" viewBox="0 0 16 16" fill="currentColor"><circle cx="5.5" cy="4" r="1.2"/><circle cx="10.5" cy="4" r="1.2"/><circle cx="5.5" cy="8" r="1.2"/><circle cx="10.5" cy="8" r="1.2"/><circle cx="5.5" cy="12" r="1.2"/><circle cx="10.5" cy="12" r="1.2"/></svg>
+                <span class="text-sm font-medium text-foreground flex-1 truncate">{{ bar.name }}</span>
+                <span v-if="bar.zug_nr" class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0">{{ bar.zug_nr }}</span>
+                <span class="text-xs text-muted-foreground shrink-0">{{ formatLength(bar.length_cm) }}</span>
+                <Button variant="ghost" size="icon" class="size-6 text-muted-foreground shrink-0" @click.stop="toggleBarFixtures(bar.id)">
+                  <ChevronDown class="size-3 transition-transform" :class="expandedBarId === bar.id ? 'rotate-180' : ''" />
+                </Button>
+                <Button variant="ghost" size="icon" class="size-6 text-muted-foreground shrink-0" @click.stop="openEditTemplateBar(bar)">
+                  <Pencil class="size-3" />
+                </Button>
+                <Button variant="ghost" size="icon" class="size-6 text-muted-foreground shrink-0" @click.stop="removeTemplateBar(bar.id, idx)">
+                  <X class="size-3" />
+                </Button>
+              </div>
+
+              <!-- Fixture-Panel (aufklappbar) -->
+              <div v-if="expandedBarId === bar.id" class="border-t border-border px-4 py-3 space-y-2">
+                <p class="text-xs text-muted-foreground">{{ t('template.bar.fixture.hint') }}</p>
+                <div v-for="fx in (barFixtures[bar.id] ?? [])" :key="fx.id" class="flex items-center gap-2">
+                  <span class="text-xs font-mono text-muted-foreground w-16 shrink-0 tabular-nums">{{ cmToDisplay(fx.position) }} {{ unit }}</span>
+                  <span class="text-xs text-foreground flex-1 truncate">
+                    <span v-if="fx.channel" class="font-semibold mr-1">{{ fx.channel }}</span>
+                    <span v-if="fx.device">{{ fx.device }}</span>
+                    <span v-if="fx.color" class="ml-1 text-muted-foreground">· {{ fx.color }}</span>
+                  </span>
+                  <span v-if="fx.notes" class="text-xs text-muted-foreground truncate max-w-24">{{ fx.notes }}</span>
+                  <Button variant="ghost" size="icon" class="size-5 text-muted-foreground shrink-0" @click="openEditBarFixture(bar, fx)">
+                    <Pencil class="size-2.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" class="size-5 text-muted-foreground shrink-0" @click="removeBarFixture(bar, fx.id)">
+                    <X class="size-2.5" />
+                  </Button>
+                </div>
+                <Button variant="outline" size="sm" class="border-dashed text-xs" @click="openNewBarFixture(bar)">
+                  <Plus class="size-2.5 mr-1" /> {{ t('template.bar.fixture.add') }}
+                </Button>
+              </div>
             </div>
             <Button variant="outline" size="sm" class="w-full border-dashed" @click="openNewTemplateBar">
               <Plus class="size-3 mr-1.5" /> {{ t('zugstange.add') }}
+            </Button>
+          </TabsContent>
+
+          <!-- Gassentürme -->
+          <TabsContent value="towers" class="mt-0 outline-none space-y-3">
+            <div class="flex justify-end">
+              <Button variant="outline" size="sm" :disabled="applyingToShows === 'towers'" @click="handleApplyToAllShows('towers')">
+                {{ applyingToShows === 'towers' ? '…' : t('template.apply_to_shows.towers') }}
+              </Button>
+            </div>
+            <div class="text-sm text-muted-foreground">{{ t('template.tower.hint') }}</div>
+            <div v-if="templateTowers.length === 0" class="text-sm text-muted-foreground border border-dashed border-border rounded-lg px-4 py-6 text-center">
+              {{ t('template.tower.empty') }}
+            </div>
+            <div
+              v-for="(tower, idx) in templateTowers" :key="tower.id"
+              class="rounded-md border bg-card transition-colors"
+              :class="towerDragOverId === tower.id ? 'border-primary bg-primary/5' : towerDraggedId === tower.id ? 'opacity-40 border-border' : 'border-border'"
+            >
+              <!-- Tower-Header -->
+              <div
+                draggable="true"
+                class="flex items-center gap-3 px-4 py-2.5 cursor-grab"
+                @dragstart="onTowerDragStart(tower.id)"
+                @dragover="onTowerDragOver($event, tower.id)"
+                @drop="onTowerDrop(tower.id)"
+                @dragend="onTowerDragEnd"
+              >
+                <svg class="size-4 text-muted-foreground shrink-0 cursor-grab" viewBox="0 0 16 16" fill="currentColor"><circle cx="5.5" cy="4" r="1.2"/><circle cx="10.5" cy="4" r="1.2"/><circle cx="5.5" cy="8" r="1.2"/><circle cx="10.5" cy="8" r="1.2"/><circle cx="5.5" cy="12" r="1.2"/><circle cx="10.5" cy="12" r="1.2"/></svg>
+                <span class="text-sm font-medium text-foreground flex-1 truncate">{{ tower.name }}</span>
+                <span v-if="tower.side" class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0">{{ tower.side }}</span>
+                <span class="text-xs text-muted-foreground shrink-0">{{ tower.slot_count }} Slots</span>
+                <Button variant="ghost" size="icon" class="size-6 text-muted-foreground shrink-0" @click.stop="toggleTowerSlots(tower.id)">
+                  <ChevronDown class="size-3 transition-transform" :class="expandedTowerId === tower.id ? 'rotate-180' : ''" />
+                </Button>
+                <Button variant="ghost" size="icon" class="size-6 text-muted-foreground shrink-0" @click.stop="openEditTemplateTower(tower)">
+                  <Pencil class="size-3" />
+                </Button>
+                <Button variant="ghost" size="icon" class="size-6 text-muted-foreground shrink-0" @click.stop="removeTemplateTower(tower.id, idx)">
+                  <X class="size-3" />
+                </Button>
+              </div>
+
+              <!-- Slot-Panel (aufklappbar) -->
+              <div v-if="expandedTowerId === tower.id" class="border-t border-border divide-y divide-border/60">
+                <div v-for="slot in sortedSlots(tower)" :key="slot.slot_index" class="flex items-center gap-3 px-4 py-2">
+                  <span class="w-6 text-xs font-mono text-muted-foreground text-right shrink-0">{{ slot.slot_index }}</span>
+                  <span class="text-xs text-foreground flex-1">
+                    <span v-if="slot.channel" class="font-semibold mr-1">{{ slot.channel }}</span>
+                    <span v-if="slot.device">{{ slot.device }}</span>
+                    <span v-if="slot.color" class="ml-1 text-muted-foreground">· {{ slot.color }}</span>
+                    <span v-if="!slot.channel && !slot.device" class="text-muted-foreground/60">—</span>
+                  </span>
+                  <Button variant="ghost" size="icon" class="size-5 text-muted-foreground shrink-0" @click="openEditTowerSlot(tower, slot)">
+                    <Pencil class="size-2.5" />
+                  </Button>
+                  <Button v-if="slot.channel || slot.device" variant="ghost" size="icon" class="size-5 text-muted-foreground shrink-0" @click="clearTowerSlot(tower, slot.slot_index)">
+                    <X class="size-2.5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" class="w-full border-dashed" @click="openNewTemplateTower">
+              <Plus class="size-3 mr-1.5" /> {{ t('template.tower.add') }}
             </Button>
           </TabsContent>
 
@@ -322,6 +415,98 @@
       </DialogContent>
     </Dialog>
 
+    <!-- Template-Tower Dialog -->
+    <Dialog :open="ttowerDialogOpen" @update:open="ttowerDialogOpen = $event">
+      <DialogContent class="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{{ editingTtower ? t('template.tower.edit') : t('template.tower.new') }}</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <div>
+            <Label>{{ t('gassenturm.field.name') }}</Label>
+            <Input size="lg" v-model="ttowerForm.name" placeholder="z. B. Gassenturm 1" autofocus />
+          </div>
+          <div class="grid grid-cols-1 gap-3">
+            <div>
+              <Label>{{ t('gassenturm.field.side') }}</Label>
+              <Input size="lg" v-model="ttowerForm.side" placeholder="L / R" />
+            </div>
+          </div>
+          <div>
+            <Label>{{ t('gassenturm.field.slot_count') }}</Label>
+            <Input size="lg" v-model.number="ttowerForm.slot_count" type="number" min="1" max="20" />
+          </div>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="ghost" @click="ttowerDialogOpen = false">{{ t('action.cancel') }}</Button>
+          <Button @click="saveTtowerForm">{{ editingTtower ? t('action.save') : t('template.tower.action.create') }}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Tower-Slot-Edit-Dialog -->
+    <Dialog :open="towerSlotDialogOpen" @update:open="towerSlotDialogOpen = $event">
+      <DialogContent class="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Slot {{ editingTowerSlot?.slot_index }}</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <div>
+            <Label>{{ t('template.tower.slot.channel_label') }}</Label>
+            <Input size="lg" v-model="towerSlotForm.channel" placeholder="z. B. 101" />
+          </div>
+          <div>
+            <Label>{{ t('template.tower.slot.device_label') }}</Label>
+            <Input size="lg" v-model="towerSlotForm.device" placeholder="z. B. Robe Pointe" />
+          </div>
+          <div>
+            <Label>{{ t('template.tower.slot.color_label') }}</Label>
+            <Input size="lg" v-model="towerSlotForm.color" placeholder="z. B. R80" />
+          </div>
+          <p class="text-xs text-muted-foreground">{{ t('template.tower.slot.hint') }}</p>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="ghost" @click="towerSlotDialogOpen = false">{{ t('action.cancel') }}</Button>
+          <Button @click="saveTowerSlot">{{ t('action.save') }}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Bar-Fixture Dialog -->
+    <Dialog :open="barFixtureDialogOpen" @update:open="barFixtureDialogOpen = $event">
+      <DialogContent class="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{{ editingBarFixture ? t('template.bar.fixtures') : t('template.bar.fixture.add') }}</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <div>
+            <Label>{{ t('template.bar.fixture.position') }}</Label>
+            <Input size="lg" :modelValue="cmToDisplay(barFixtureForm.position)" type="number" :step="inputStep" @update:modelValue="barFixtureForm.position = parseToCm(Number($event))" />
+          </div>
+          <div>
+            <Label>{{ t('template.bar.fixture.channel') }}</Label>
+            <Input size="lg" v-model="barFixtureForm.channel" placeholder="z. B. 101" />
+          </div>
+          <div>
+            <Label>{{ t('template.bar.fixture.device') }}</Label>
+            <Input size="lg" v-model="barFixtureForm.device" placeholder="z. B. Robe Pointe" />
+          </div>
+          <div>
+            <Label>{{ t('template.bar.fixture.color') }}</Label>
+            <Input size="lg" v-model="barFixtureForm.color" placeholder="z. B. R80" />
+          </div>
+          <div>
+            <Label>{{ t('template.bar.fixture.notes') }}</Label>
+            <Input size="lg" v-model="barFixtureForm.notes" placeholder="" />
+          </div>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="ghost" @click="barFixtureDialogOpen = false">{{ t('action.cancel') }}</Button>
+          <Button @click="saveBarFixture">{{ t('action.save') }}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
     <!-- Upload-Dialog -->
     <Dialog :open="uploadOpen" @update:open="val => { if (!val) closeUpload() }">
       <DialogContent class="sm:max-w-3xl">
@@ -397,7 +582,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
-import { ArrowLeft, Upload, Pencil, Plus, X } from 'lucide-vue-next'
+import { ArrowLeft, Upload, Pencil, Plus, X, ChevronDown } from 'lucide-vue-next'
 import { useLocale } from '../composables/useLocale.js'
 import { useMeasureUnit } from '../composables/useMeasureUnit'
 import { useConfirm } from '../composables/useConfirm.js'
@@ -409,8 +594,9 @@ import ChannelTable from '../components/channel/ChannelTable.vue'
 import { fetchTemplateFloorplan, saveTemplateFloorplan, uploadTemplateFloorplanImage, deleteTemplateFloorplanImage } from '../api/floorplan.js'
 import FloorplanEditor from '../components/FloorplanEditor.vue'
 import { fetchTemplateBars, createTemplateBar, updateTemplateBar, deleteTemplateBar, reorderTemplateBars } from '../api/templateBars.js'
-import { useDragReorder } from '../composables/useDragReorder'
+import { fetchTemplateTowers, createTemplateTower, updateTemplateTower, deleteTemplateTower, reorderTemplateTowers, updateTemplateTowerSlot } from '../api/templateTowers.js'
 import { api } from '../api/client.js'
+import { useDragReorder } from '../composables/useDragReorder'
 
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -480,6 +666,30 @@ const tbarFormDisplay = computed({
 
 const emptySet = new Set()
 const applyingToShows = ref('')
+
+// Template-Towers
+const templateTowers = ref([])
+const { draggedId: towerDraggedId, dragOverId: towerDragOverId, onDragStart: onTowerDragStart, onDragOver: onTowerDragOver, onDrop: onTowerDrop, onDragEnd: onTowerDragEnd } = useDragReorder(
+  templateTowers,
+  (ordered) => reorderTemplateTowers(editingName.value, ordered.map(t => t.id)).catch(() => {})
+)
+const ttowerDialogOpen = ref(false)
+const editingTtower = ref(null)
+const ttowerForm = ref({ name: '', side: '', stage_area: '', slot_count: 4 })
+const expandedTowerId = ref(null)
+
+const towerSlotDialogOpen = ref(false)
+const editingTowerSlot = ref(null)
+const editingTowerSlotTower = ref(null)
+const towerSlotForm = ref({ channel: '', device: '', color: '' })
+
+// Bar-Fixtures
+const barFixtures = ref({})
+const expandedBarId = ref(null)
+const barFixtureDialogOpen = ref(false)
+const editingBarFixture = ref(null)
+const editingBarFixtureBar = ref(null)
+const barFixtureForm = ref({ position: 0, channel: '', device: '', color: '', notes: '' })
 
 const groupedChannels = computed(() => {
   const sorted = [...detailChannels.value].sort((a, b) => Number(a.channel) - Number(b.channel))
@@ -594,14 +804,19 @@ async function openDetail(name) {
   activeTab.value = 'channels'
   const tpl = templates.value.find(t => t.name === name)
   editingOscHost.value = tpl?.oscHost ?? ''
-  const [channels, sections, bars] = await Promise.all([
+  const [channels, sections, bars, towers] = await Promise.all([
     fetchTemplateChannels(name),
     fetchTemplateSections(name),
     fetchTemplateBars(name),
+    fetchTemplateTowers(name),
   ])
   detailChannels.value = channels
   templateSections.value = Array.isArray(sections) ? sections : (sections?.sections ?? [])
   templateBars.value = bars
+  templateTowers.value = towers
+  barFixtures.value = {}
+  expandedBarId.value = null
+  expandedTowerId.value = null
   detailLoading.value = false
 }
 
@@ -629,6 +844,145 @@ async function saveTbarForm() {
 async function removeTemplateBar(barId, idx) {
   await deleteTemplateBar(editingName.value, barId)
   templateBars.value.splice(idx, 1)
+  delete barFixtures.value[barId]
+}
+
+// ── Bar-Fixture-Funktionen ────────────────────────────────────────────────────
+
+async function toggleBarFixtures(barId) {
+  if (expandedBarId.value === barId) {
+    expandedBarId.value = null
+    return
+  }
+  expandedBarId.value = barId
+  if (!barFixtures.value[barId]) {
+    const fixtures = await api.get(`/api/templates/${encodeURIComponent(editingName.value)}/bars/${barId}/fixtures`)
+    barFixtures.value[barId] = fixtures
+  }
+}
+
+function openNewBarFixture(bar) {
+  editingBarFixture.value = null
+  editingBarFixtureBar.value = bar
+  barFixtureForm.value = { position: 0, channel: '', device: '', color: '', notes: '' }
+  barFixtureDialogOpen.value = true
+}
+
+function openEditBarFixture(bar, fx) {
+  editingBarFixture.value = fx
+  editingBarFixtureBar.value = bar
+  barFixtureForm.value = { position: fx.position, channel: fx.channel ?? '', device: fx.device ?? '', color: fx.color ?? '', notes: fx.notes ?? '' }
+  barFixtureDialogOpen.value = true
+}
+
+async function saveBarFixture() {
+  const bar = editingBarFixtureBar.value
+  if (!bar) return
+  const data = {
+    position: barFixtureForm.value.position,
+    channel: barFixtureForm.value.channel || null,
+    device: barFixtureForm.value.device || null,
+    color: barFixtureForm.value.color || null,
+    notes: barFixtureForm.value.notes || '',
+  }
+  if (editingBarFixture.value) {
+    await api.put(`/api/templates/${encodeURIComponent(editingName.value)}/bars/${bar.id}/fixtures/${editingBarFixture.value.id}`, data)
+    Object.assign(editingBarFixture.value, data)
+  } else {
+    const { id } = await api.post(`/api/templates/${encodeURIComponent(editingName.value)}/bars/${bar.id}/fixtures`, data)
+    if (!barFixtures.value[bar.id]) barFixtures.value[bar.id] = []
+    barFixtures.value[bar.id].push({ id, bar_id: bar.id, ...data })
+    barFixtures.value[bar.id].sort((a, b) => a.position - b.position)
+  }
+  barFixtureDialogOpen.value = false
+}
+
+async function removeBarFixture(bar, fixtureId) {
+  await api.delete(`/api/templates/${encodeURIComponent(editingName.value)}/bars/${bar.id}/fixtures/${fixtureId}`)
+  if (barFixtures.value[bar.id]) {
+    barFixtures.value[bar.id] = barFixtures.value[bar.id].filter(fx => fx.id !== fixtureId)
+  }
+}
+
+// ── Template-Tower-Funktionen ─────────────────────────────────────────────────
+
+function sortedSlots(tower) {
+  return [...(tower.slots ?? [])].sort((a, b) => a.slot_index - b.slot_index)
+}
+
+function toggleTowerSlots(towerId) {
+  expandedTowerId.value = expandedTowerId.value === towerId ? null : towerId
+}
+
+function openNewTemplateTower() {
+  editingTtower.value = null
+  ttowerForm.value = { name: '', side: '', stage_area: '', slot_count: 4 }
+  ttowerDialogOpen.value = true
+}
+
+function openEditTemplateTower(tower) {
+  editingTtower.value = tower
+  ttowerForm.value = { name: tower.name, side: tower.side, stage_area: tower.stage_area, slot_count: tower.slot_count }
+  ttowerDialogOpen.value = true
+}
+
+async function saveTtowerForm() {
+  if (!ttowerForm.value.name) return
+  if (editingTtower.value) {
+    await updateTemplateTower(editingName.value, editingTtower.value.id, ttowerForm.value)
+    Object.assign(editingTtower.value, ttowerForm.value)
+    // Slots anpassen
+    const tower = editingTtower.value
+    const existing = tower.slots ?? []
+    const newCount = ttowerForm.value.slot_count
+    if (newCount > existing.length) {
+      for (let i = existing.length + 1; i <= newCount; i++) {
+        tower.slots.push({ id: '', tower_id: tower.id, slot_index: i, channel: null, device: null, color: null })
+      }
+    } else if (newCount < existing.length) {
+      tower.slots = tower.slots.filter(s => s.slot_index <= newCount)
+    }
+  } else {
+    const { id } = await createTemplateTower(editingName.value, ttowerForm.value)
+    const slots = []
+    for (let i = 1; i <= ttowerForm.value.slot_count; i++) {
+      slots.push({ id: '', tower_id: id, slot_index: i, channel: null, device: null, color: null })
+    }
+    templateTowers.value.push({ id, template_id: '', sort_order: templateTowers.value.length, slots, ...ttowerForm.value })
+  }
+  ttowerDialogOpen.value = false
+}
+
+async function removeTemplateTower(towerId, idx) {
+  await deleteTemplateTower(editingName.value, towerId)
+  templateTowers.value.splice(idx, 1)
+}
+
+function openEditTowerSlot(tower, slot) {
+  editingTowerSlotTower.value = tower
+  editingTowerSlot.value = slot
+  towerSlotForm.value = { channel: slot.channel ?? '', device: slot.device ?? '', color: slot.color ?? '' }
+  towerSlotDialogOpen.value = true
+}
+
+async function saveTowerSlot() {
+  const tower = editingTowerSlotTower.value
+  const slot = editingTowerSlot.value
+  if (!tower || !slot) return
+  const data = {
+    channel: towerSlotForm.value.channel || null,
+    device: towerSlotForm.value.device || null,
+    color: towerSlotForm.value.color || null,
+  }
+  await updateTemplateTowerSlot(editingName.value, tower.id, slot.slot_index, data)
+  Object.assign(slot, data)
+  towerSlotDialogOpen.value = false
+}
+
+async function clearTowerSlot(tower, slotIndex) {
+  await updateTemplateTowerSlot(editingName.value, tower.id, slotIndex, { channel: null, device: null, color: null })
+  const slot = (tower.slots ?? []).find(s => s.slot_index === slotIndex)
+  if (slot) { slot.channel = null; slot.device = null; slot.color = null }
 }
 
 async function persistOscHost() {

@@ -32,7 +32,7 @@
           <!-- Stangen-Visualisierung -->
           <div class="flex-1 min-w-0 relative" style="height: 72px;">
             <!-- Skala-Labels oben -->
-            <div class="absolute left-0 right-0 h-4" style="top: 24px;">
+            <div v-if="!bar.hide_scale" class="absolute left-0 right-0 h-4" style="top: 24px;">
               <span
                 v-for="tick in getScaleTicks(bar)"
                 :key="tick.pos"
@@ -53,6 +53,7 @@
               <div class="absolute inset-0 rounded-full bg-white/25 border border-white/40 pointer-events-none" />
               <!-- Tick-Striche -->
               <div
+                v-if="!bar.hide_scale"
                 v-for="tick in getScaleTicks(bar)"
                 :key="'t'+tick.pos"
                 class="absolute top-1/2 -translate-x-px pointer-events-none"
@@ -89,6 +90,16 @@
 
           <!-- Aktionen (nur bei Hover) -->
           <div class="flex items-center gap-0.5 shrink-0">
+            <!-- Als Vorlage speichern -->
+            <Button
+              v-if="props.saveToTemplateFn"
+              variant="ghost" size="icon" class="size-7 text-muted-foreground/60"
+              :title="savingBarId === bar.id ? '…' : 'Als Vorlage speichern'"
+              @click.stop="openSaveDialog(bar)"
+            >
+              <Loader2 v-if="savingBarId === bar.id" class="size-3.5 animate-spin" />
+              <BookmarkPlus v-else class="size-3.5" />
+            </Button>
             <Button variant="ghost" size="icon" class="size-7 text-muted-foreground/60" @click="openEditBarDialog(bar)">
               <Pencil class="size-3.5" />
             </Button>
@@ -140,11 +151,20 @@
           <Input size="lg" v-model="barForm.name" placeholder="z. B. Maschinenzug 1" autofocus />
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-xs text-muted-foreground">{{ t('zugstange.field.length') }} ({{ unit }})</label>
-          <Input size="lg" v-model.number="barFormDisplay.length" type="number" :min="lengthMin" :max="lengthMax" :step="inputStep" />
+          <label class="text-xs text-muted-foreground">{{ t('zugstange.field.length_unit', { unit }) }}</label>
+          <Input size="lg" :modelValue="barFormDisplay.length" type="number" :min="lengthMin" :max="lengthMax" :step="inputStep" @update:modelValue="barForm.length_cm = parseToCm(Number($event))" />
         </div>
+        <button type="button" class="flex items-center justify-between w-full rounded-lg border border-border px-4 py-3 text-left transition-colors hover:bg-muted/40" @click="barForm.hide_scale = !barForm.hide_scale">
+          <span class="text-sm text-foreground">{{ t('zugstange.scale.hide') }}</span>
+          <div class="relative shrink-0 w-9 h-5 rounded-full transition-colors" :class="barForm.hide_scale ? 'bg-accent' : 'bg-muted'">
+            <div class="absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow transition-transform" :class="barForm.hide_scale ? 'translate-x-4' : 'translate-x-0'" />
+          </div>
+        </button>
       </DialogBody>
       <DialogFooter>
+        <Button v-if="!editingBar && props.fromTemplateFn" variant="ghost" class="mr-auto text-xs text-muted-foreground" @click="barDialogOpen = false; props.fromTemplateFn()">
+          Aus Vorlage einfügen…
+        </Button>
         <Button variant="ghost" @click="barDialogOpen = false">{{ t('action.cancel') }}</Button>
         <Button @click="saveBarForm">{{ editingBar ? t('action.save') : t('zugstange.action.create') }}</Button>
       </DialogFooter>
@@ -208,18 +228,105 @@
       </DialogFooter>
     </DialogContent>
   </Dialog>
+
+  <!-- Als Vorlage speichern Dialog -->
+  <Dialog :open="saveDialogOpen" @update:open="saveDialogOpen = $event">
+    <DialogContent class="sm:max-w-sm">
+      <DialogHeader>
+        <DialogTitle>In Vorlage speichern</DialogTitle>
+      </DialogHeader>
+      <DialogBody>
+        <!-- Ziel + Item-Info -->
+        <div class="rounded-lg bg-muted/40 px-3 py-2 space-y-0.5">
+          <div class="flex items-baseline gap-2">
+            <span class="text-xs text-muted-foreground shrink-0">Vorlage</span>
+            <span class="text-sm font-medium text-foreground truncate">{{ props.templateName }}</span>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span class="text-xs text-muted-foreground shrink-0">Länge</span>
+            <span class="text-xs text-muted-foreground">{{ formatLength(saveDialogBar?.length_cm) }}</span>
+          </div>
+        </div>
+        <div>
+          <Label class="text-xs text-muted-foreground">Name in der Vorlage</Label>
+          <Input size="lg" v-model="saveName" autofocus />
+        </div>
+        <!-- Überschreiben-Warnung -->
+        <div v-if="saveNameConflict" class="rounded-lg border border-destructive/50 bg-destructive/5 px-3.5 py-3 space-y-2">
+          <p class="text-sm font-medium text-foreground">„{{ saveName }}" existiert bereits in der Vorlage.</p>
+          <p class="text-xs text-muted-foreground">Der bestehende Eintrag wird überschrieben. Trotzdem fortfahren?</p>
+          <div class="flex gap-2 pt-1">
+            <Button size="sm" variant="ghost" @click="saveNameConflict = false">Abbrechen</Button>
+            <Button size="sm" variant="destructive" @click="saveConfirmOverwrite = true; confirmSaveDialog()">Überschreiben</Button>
+          </div>
+        </div>
+        <!-- Was wird gespeichert -->
+        <div class="space-y-1">
+          <!-- Struktur — immer aktiv -->
+          <div class="flex items-start gap-3 py-2 opacity-60">
+            <input type="checkbox" checked disabled class="mt-0.5 rounded accent-accent shrink-0" />
+            <div>
+              <p class="text-sm font-medium text-foreground">Grundstruktur</p>
+              <p class="text-xs text-muted-foreground">Name · Zugnummer · Länge</p>
+            </div>
+          </div>
+          <!-- Scheinwerfer-Trennlinie -->
+          <div v-if="saveDialogBar?.fixtures?.length" class="pt-1">
+            <p class="text-xs font-semibold text-muted-foreground px-1 pb-1">
+              {{ saveDialogBar.fixtures.length }} Scheinwerfer
+            </p>
+            <div class="h-px bg-border/50 mx-1 mb-1" />
+            <label class="flex items-start gap-3 py-2 cursor-pointer hover:bg-muted/30 rounded px-1 transition-colors">
+              <input type="checkbox" v-model="saveFields.position" class="mt-0.5 rounded accent-accent shrink-0" />
+              <div>
+                <p class="text-sm font-medium text-foreground">Position</p>
+                <p class="text-xs text-muted-foreground">Wo auf der Stange (cm von Mitte)</p>
+              </div>
+            </label>
+            <label class="flex items-start gap-3 py-2 cursor-pointer hover:bg-muted/30 rounded px-1 transition-colors">
+              <input type="checkbox" v-model="saveFields.channel" class="mt-0.5 rounded accent-accent shrink-0" />
+              <div>
+                <p class="text-sm font-medium text-foreground">Kanalnummer</p>
+                <p class="text-xs text-muted-foreground">Zugeordnete Kanalnr. je Scheinwerfer</p>
+              </div>
+            </label>
+            <label class="flex items-start gap-3 py-2 cursor-pointer hover:bg-muted/30 rounded px-1 transition-colors">
+              <input type="checkbox" v-model="saveFields.device" class="mt-0.5 rounded accent-accent shrink-0" />
+              <div>
+                <p class="text-sm font-medium text-foreground">Gerät</p>
+                <p class="text-xs text-muted-foreground">Gerätebezeichnung je Scheinwerfer</p>
+              </div>
+            </label>
+            <label class="flex items-start gap-3 py-2 cursor-pointer hover:bg-muted/30 rounded px-1 transition-colors">
+              <input type="checkbox" v-model="saveFields.notes" class="mt-0.5 rounded accent-accent shrink-0" />
+              <div>
+                <p class="text-sm font-medium text-foreground">Anmerkungen</p>
+                <p class="text-xs text-muted-foreground">Freitext-Notiz je Scheinwerfer</p>
+              </div>
+            </label>
+          </div>
+          <p v-else class="text-xs text-muted-foreground px-1 pt-1">Keine Scheinwerfer auf dieser Stange.</p>
+        </div>
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="ghost" @click="saveDialogOpen = false">{{ t('action.cancel') }}</Button>
+        <Button :disabled="!!savingBarId || !saveName.trim()" @click="confirmSaveDialog">Speichern</Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>
 
 <script setup>
-import { ref, computed, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { useLocale } from '@/composables/useLocale.js'
 import { useMeasureUnit } from '@/composables/useMeasureUnit'
 const { t } = useLocale()
 
 const { unit, formatLength, cmToDisplay, parseToCm, inputStep, lengthMin, lengthMax } = useMeasureUnit()
-import { Plus, Pencil, Trash2 } from 'lucide-vue-next'
+import { Plus, Pencil, Trash2, BookmarkPlus, Loader2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
 
 const props = defineProps({
@@ -233,9 +340,60 @@ const props = defineProps({
   updateFixtureNotesFn: { type: Function, required: true },
   unassignFixtureFn: { type: Function, required: true },
   reorderBarsFn: { type: Function, default: null },
+  saveToTemplateFn: { type: Function, default: null },
+  templateName: { type: String, default: null },
+  fetchTemplateNamesFn: { type: Function, default: null },
+  fromTemplateFn: { type: Function, default: null },
 })
 
 const emit = defineEmits(['assigned', 'navigate-to-channel', 'reordered'])
+
+// Als Vorlage speichern
+const saveDialogOpen = ref(false)
+const savingBarId = ref(null)
+const saveDialogBar = ref(null)
+const saveFields = ref({ position: true, channel: true, device: true, color: true, notes: false })
+const saveName = ref('')
+const existingTemplateNames = ref(new Set())
+const saveNameConflict = ref(false)
+const saveConfirmOverwrite = ref(false)
+
+async function openSaveDialog(bar) {
+  saveDialogBar.value = bar
+  saveFields.value = { position: true, channel: true, device: true, color: true, notes: false }
+  saveName.value = bar.name
+  saveNameConflict.value = false
+  saveConfirmOverwrite.value = false
+  saveDialogOpen.value = true
+  if (props.fetchTemplateNamesFn) {
+    const names = await props.fetchTemplateNamesFn()
+    existingTemplateNames.value = new Set(names)
+  }
+}
+
+watch(saveName, () => {
+  saveNameConflict.value = false
+  saveConfirmOverwrite.value = false
+})
+
+async function confirmSaveDialog() {
+  const bar = saveDialogBar.value
+  if (!bar || !saveName.value.trim()) return
+  const name = saveName.value.trim()
+  if (!saveConfirmOverwrite.value && existingTemplateNames.value.has(name)) {
+    saveNameConflict.value = true
+    return
+  }
+  savingBarId.value = bar.id
+  try {
+    await props.saveToTemplateFn(bar, { ...saveFields.value }, name)
+    saveDialogOpen.value = false
+    saveNameConflict.value = false
+    saveConfirmOverwrite.value = false
+  } finally {
+    savingBarId.value = null
+  }
+}
 
 // Drag & Drop — arbeitet auf einer lokalen Kopie, Prop-Array bleibt readonly
 const localBars = computed(() => props.bars)
@@ -297,7 +455,7 @@ function goToChannel(channelId) {
 // Bar Dialog
 const barDialogOpen = ref(false)
 const editingBar = ref(null)
-const barForm = ref({ name: '', zug_nr: '', length_cm: 1100 })
+const barForm = ref({ name: '', zug_nr: '', length_cm: 1100, hide_scale: false })
 // Anzeige-Wert für length-Input (in gewählter Einheit)
 const barFormDisplay = computed({
   get: () => ({ length: cmToDisplay(barForm.value.length_cm) }),
@@ -311,13 +469,14 @@ function openNewBarDialog() {
 }
 function openEditBarDialog(bar) {
   editingBar.value = bar
-  barForm.value = { name: bar.name, zug_nr: bar.zug_nr, length_cm: bar.length_cm }
+  barForm.value = { name: bar.name, zug_nr: bar.zug_nr, length_cm: bar.length_cm, hide_scale: bar.hide_scale ?? false }
   barDialogOpen.value = true
 }
 async function saveBarForm() {
   if (!barForm.value.name) return
   if (editingBar.value) {
     await props.saveBarFn(editingBar.value.id, { ...barForm.value, height_cm: editingBar.value.height_cm ?? null, notes: editingBar.value.notes ?? '' })
+    editingBar.value.hide_scale = barForm.value.hide_scale
   } else {
     await props.addBarFn({ ...barForm.value })
   }
@@ -332,9 +491,11 @@ function confirmRemoveFixture(fx, bar) {
 }
 
 async function saveInlineField(bar, field, value) {
-  await props.saveBarFn(bar.id, { name: bar.name, zug_nr: bar.zug_nr, length_cm: bar.length_cm, height_cm: bar.height_cm, notes: bar.notes, [field]: value })
+  await props.saveBarFn(bar.id, { name: bar.name, zug_nr: bar.zug_nr, length_cm: bar.length_cm, height_cm: bar.height_cm, notes: bar.notes, hide_scale: bar.hide_scale ?? false, [field]: value })
   bar[field] = value
 }
+
+
 
 function confirmDeleteBar(bar) {
   if (confirm(t('zugstange.delete.confirm', { name: bar.name }))) {

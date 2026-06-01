@@ -359,6 +359,13 @@ if (!barsTableExists) {
     dbContainer.db.exec("ALTER TABLE bars ADD COLUMN notes TEXT NOT NULL DEFAULT ''")
 }
 
+// Migration: hide_scale auf bars
+{
+  const cols = dbContainer.db.prepare("PRAGMA table_info(bars)").all().map(c => c.name)
+  if (!cols.includes('hide_scale'))
+    dbContainer.db.exec("ALTER TABLE bars ADD COLUMN hide_scale INTEGER NOT NULL DEFAULT 0")
+}
+
 // Migration: notes auf bar_fixtures
 {
   const cols = dbContainer.db.prepare("PRAGMA table_info(bar_fixtures)").all().map(c => c.name)
@@ -405,6 +412,56 @@ if (!templateBarsTableExists) {
       INSERT INTO settings (key, value) VALUES ('migration_section_rename_2026', '1');
     `)
   }
+}
+
+// template_towers: Gassenturm-Definitionen pro Bühnen-Template
+const templateTowersTableExists = dbContainer.db.prepare(
+  "SELECT name FROM sqlite_master WHERE type='table' AND name='template_towers'"
+).get()
+if (!templateTowersTableExists) {
+  dbContainer.db.exec(`
+    CREATE TABLE template_towers (
+      id          TEXT PRIMARY KEY,
+      template_id TEXT NOT NULL REFERENCES templates(id) ON DELETE CASCADE,
+      name        TEXT NOT NULL DEFAULT '',
+      side        TEXT NOT NULL DEFAULT '',
+      stage_area  TEXT NOT NULL DEFAULT '',
+      slot_count  INTEGER NOT NULL DEFAULT 4,
+      sort_order  INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE INDEX idx_template_towers_tpl ON template_towers(template_id);
+
+    CREATE TABLE template_tower_slots (
+      id         TEXT PRIMARY KEY,
+      tower_id   TEXT NOT NULL REFERENCES template_towers(id) ON DELETE CASCADE,
+      slot_index INTEGER NOT NULL,
+      channel    TEXT,
+      device     TEXT,
+      color      TEXT,
+      UNIQUE(tower_id, slot_index)
+    );
+    CREATE INDEX idx_template_tower_slots_tower ON template_tower_slots(tower_id);
+  `)
+}
+
+// template_bar_fixtures: Scheinwerfer-Positionen auf Template-Bars
+const templateBarFixturesTableExists = dbContainer.db.prepare(
+  "SELECT name FROM sqlite_master WHERE type='table' AND name='template_bar_fixtures'"
+).get()
+if (!templateBarFixturesTableExists) {
+  dbContainer.db.exec(`
+    CREATE TABLE template_bar_fixtures (
+      id         TEXT PRIMARY KEY,
+      bar_id     TEXT NOT NULL REFERENCES template_bars(id) ON DELETE CASCADE,
+      position   REAL NOT NULL DEFAULT 0,
+      channel    TEXT,
+      device     TEXT,
+      color      TEXT,
+      notes      TEXT NOT NULL DEFAULT '',
+      UNIQUE(bar_id, position)
+    );
+    CREATE INDEX idx_template_bar_fixtures_bar ON template_bar_fixtures(bar_id);
+  `)
 }
 
 export function resetDb() {

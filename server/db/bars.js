@@ -22,12 +22,20 @@ export function writeBar(slug, data) {
   const show = readShow(slug)
   if (!show) throw new Error(`Show not found: ${slug}`)
   const id = data.id || randomUUID()
-  const existing = dbContainer.db.prepare('SELECT id FROM bars WHERE id = ?').get(id)
+  const existing = dbContainer.db.prepare('SELECT id, length_cm FROM bars WHERE id = ?').get(id)
   if (existing) {
     const currentSortOrder = dbContainer.db.prepare('SELECT sort_order FROM bars WHERE id = ?').get(id)?.sort_order ?? 0
+    const newLength = data.length_cm ?? 600
     dbContainer.db.prepare(`
-      UPDATE bars SET name=?, zug_nr=?, length_cm=?, height_cm=?, notes=?, sort_order=? WHERE id=?
-    `).run(data.name ?? '', data.zug_nr ?? '', data.length_cm ?? 600, data.height_cm ?? null, data.notes ?? '', data.sort_order ?? currentSortOrder, id)
+      UPDATE bars SET name=?, zug_nr=?, length_cm=?, height_cm=?, notes=?, sort_order=?, hide_scale=? WHERE id=?
+    `).run(data.name ?? '', data.zug_nr ?? '', newLength, data.height_cm ?? null, data.notes ?? '', data.sort_order ?? currentSortOrder, data.hide_scale ? 1 : 0, id)
+    const oldLength = existing.length_cm
+    if (oldLength && newLength && oldLength !== newLength) {
+      const scale = newLength / oldLength
+      dbContainer.db.prepare(
+        'UPDATE bar_fixtures SET position = ROUND(position * ?, 1) WHERE bar_id = ?'
+      ).run(scale, id)
+    }
   } else {
     const count = dbContainer.db.prepare('SELECT COUNT(*) as n FROM bars WHERE show_id = ?').get(show.id).n
     dbContainer.db.prepare(`

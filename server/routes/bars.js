@@ -52,24 +52,24 @@ export async function barRoutes(req, res, pathname) {
     const slug = m[1]; const barId = m[2]
     if (method === 'POST') {
       const body = await readJsonBody(req, res); if (body === null) return
-      const { channelId, position, notes } = body
+      const { channelId, position, notes, fixtureId } = body
       if (!channelId) return json(res, 400, { error: 'channelId erforderlich' })
-      db.writeBarFixture(barId, channelId, position ?? 0, notes ?? '')
+      const id = db.writeBarFixture(barId, channelId, position ?? 0, notes ?? '', fixtureId ?? null)
       broadcast(slug, 'bars-updated', {})
-      return json(res, 200, { ok: true })
+      return json(res, 200, { ok: true, id })
     }
   }
 
   if (m = SHOW_BAR_FIX_ONE.exec(pathname)) {
-    const slug = m[1]; const barId = m[2]; const channelId = m[3]
+    const slug = m[1]; const barId = m[2]; const fixtureId = m[3]
     if (method === 'PATCH') {
       const body = await readJsonBody(req, res); if (body === null) return
-      db.updateBarFixtureNotes(barId, channelId, body.notes ?? '')
+      db.updateBarFixtureNotes(fixtureId, body.notes ?? '')
       broadcast(slug, 'bars-updated', {})
       return json(res, 200, { ok: true })
     }
     if (method === 'DELETE') {
-      db.removeBarFixture(barId, channelId)
+      db.removeBarFixture(fixtureId)
       broadcast(slug, 'bars-updated', {})
       return json(res, 200, { ok: true })
     }

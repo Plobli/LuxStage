@@ -61,30 +61,38 @@ export function reorderBars(slug, orderedIds) {
   tx()
 }
 
-export function writeBarFixture(barId, channelId, position, notes) {
-  const id = randomUUID()
-  dbContainer.db.prepare(`
-    INSERT INTO bar_fixtures (id, bar_id, channel_id, position, notes)
-    VALUES (?, ?, ?, ?, ?)
-    ON CONFLICT(bar_id, channel_id) DO UPDATE SET position = excluded.position, notes = excluded.notes
-  `).run(id, barId, channelId, position ?? 0, notes ?? '')
+export function writeBarFixture(barId, channelId, position, notes, fixtureId) {
+  const id = fixtureId || randomUUID()
+  const existing = fixtureId ? dbContainer.db.prepare('SELECT id FROM bar_fixtures WHERE id = ?').get(id) : null
+  if (existing) {
+    dbContainer.db.prepare(
+      'UPDATE bar_fixtures SET position = ?, notes = ? WHERE id = ?'
+    ).run(position ?? 0, notes ?? '', id)
+  } else {
+    dbContainer.db.prepare(`
+      INSERT INTO bar_fixtures (id, bar_id, channel_id, position, notes)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(id, barId, channelId, position ?? 0, notes ?? '')
+  }
 
   const bar = dbContainer.db.prepare('SELECT * FROM bars WHERE id = ?').get(barId)
   if (bar) {
     const mountRef = JSON.stringify({ type: 'bar', barId, barName: bar.name, zugNr: bar.zug_nr, position: position ?? 0 })
     dbContainer.db.prepare('UPDATE channels SET mount_ref = ? WHERE id = ?').run(mountRef, channelId)
   }
+  return id
 }
 
-export function updateBarFixtureNotes(barId, channelId, notes) {
+export function updateBarFixtureNotes(fixtureId, notes) {
   dbContainer.db.prepare(
-    'UPDATE bar_fixtures SET notes = ? WHERE bar_id = ? AND channel_id = ?'
-  ).run(notes ?? '', barId, channelId)
+    'UPDATE bar_fixtures SET notes = ? WHERE id = ?'
+  ).run(notes ?? '', fixtureId)
 }
 
-export function removeBarFixture(barId, channelId) {
-  dbContainer.db.prepare(
-    'DELETE FROM bar_fixtures WHERE bar_id = ? AND channel_id = ?'
-  ).run(barId, channelId)
-  dbContainer.db.prepare('UPDATE channels SET mount_ref = NULL WHERE id = ?').run(channelId)
+export function removeBarFixture(fixtureId) {
+  const fx = dbContainer.db.prepare('SELECT channel_id FROM bar_fixtures WHERE id = ?').get(fixtureId)
+  dbContainer.db.prepare('DELETE FROM bar_fixtures WHERE id = ?').run(fixtureId)
+  if (fx?.channel_id) {
+    dbContainer.db.prepare('UPDATE channels SET mount_ref = NULL WHERE id = ?').run(fx.channel_id)
+  }
 }

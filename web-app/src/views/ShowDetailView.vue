@@ -631,11 +631,17 @@ const gassenturmGenerated = computed(() => generateGassenturmEntries(towers.valu
 
 const aufbauSectionId = computed(() => sectionDefs.value.find(s => s.title === 'Aufbau')?.id ?? null)
 
+function debounce(fn, ms) {
+  let timer = null
+  return (...args) => { if (timer) clearTimeout(timer); timer = setTimeout(() => { timer = null; fn(...args) }, ms) }
+}
+const loadBarsDebounced = debounce(loadBars, 120)
+
 const { presence, initPresence, cleanupPresence } = useShowPresence(props.id, {
   onChannels: handleChannelsSse,
   onSections: handleSectionsSse,
   onTowers: () => loadTowers(),
-  onBars: () => loadBars(),
+  onBars: () => loadBarsDebounced(),
 })
 
 // ── Health Stats ───────────────────────────────────────────────────────────

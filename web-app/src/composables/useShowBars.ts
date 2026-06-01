@@ -49,24 +49,26 @@ export function useShowBars(showId: string, channels?: Ref<Channel[]>) {
     bars.value = bars.value.filter(b => b.id !== barId)
   }
 
-  async function updateFixtureNotes(barId: string, channelId: string, notes: string) {
-    await patchBarFixtureNotes(showId, barId, channelId, notes)
+  async function updateFixtureNotes(barId: string, fixtureId: string, notes: string) {
+    await patchBarFixtureNotes(showId, barId, fixtureId, notes)
     const bar = bars.value.find(b => b.id === barId)
     if (!bar) return
-    const fx = bar.fixtures.find(f => f.channel_id === channelId)
+    const fx = bar.fixtures.find(f => f.id === fixtureId)
     if (fx) fx.notes = notes
   }
 
-  async function assignFixture(barId: string, channelId: string, position: number) {
-    await addBarFixture(showId, barId, channelId, position)
+  async function assignFixture(barId: string, channelId: string, position: number, fixtureId?: string) {
+    const result = await addBarFixture(showId, barId, channelId, position, undefined, fixtureId)
     const bar = bars.value.find(b => b.id === barId)
     if (!bar) return
 
-    const existing = bar.fixtures.find(f => f.channel_id === channelId)
-    if (existing) {
-      existing.position = position
+    if (fixtureId) {
+      const existing = bar.fixtures.find(f => f.id === fixtureId)
+      if (existing) {
+        existing.position = position
+      }
     } else {
-      bar.fixtures.push({ id: '', bar_id: barId, channel_id: channelId, position, notes: '' })
+      bar.fixtures.push({ id: result.id, bar_id: barId, channel_id: channelId, position, notes: '' })
       bar.fixtures.sort((a, b) => a.position - b.position)
     }
 
@@ -84,13 +86,14 @@ export function useShowBars(showId: string, channels?: Ref<Channel[]>) {
     }
   }
 
-  async function unassignFixture(barId: string, channelId: string) {
-    await removeBarFixture(showId, barId, channelId)
+  async function unassignFixture(barId: string, fixtureId: string) {
     const bar = bars.value.find(b => b.id === barId)
-    if (bar) bar.fixtures = bar.fixtures.filter(f => f.channel_id !== channelId)
+    const fx = bar?.fixtures.find(f => f.id === fixtureId)
+    await removeBarFixture(showId, barId, fixtureId)
+    if (bar) bar.fixtures = bar.fixtures.filter(f => f.id !== fixtureId)
 
-    if (channels?.value) {
-      const ch = channels.value.find(c => c.id === channelId)
+    if (channels?.value && fx?.channel_id) {
+      const ch = channels.value.find(c => c.id === fx.channel_id)
       if (ch) ch.mount_ref = null
     }
   }

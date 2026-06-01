@@ -203,7 +203,7 @@ export function applyTemplateToShow(templateName, showSlug, scope, withChannels,
           const fixtures = dbContainer.db.prepare('SELECT * FROM template_bar_fixtures WHERE bar_id = ?').all(tb.id)
           for (const fx of fixtures) {
             dbContainer.db.prepare(`
-              INSERT OR IGNORE INTO bar_fixtures (id, bar_id, channel_id, position, notes)
+              INSERT INTO bar_fixtures (id, bar_id, channel_id, position, notes)
               SELECT ?, ?, c.id, ?, ?
               FROM channels c
               WHERE c.show_id = ? AND c.channel = ?

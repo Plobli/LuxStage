@@ -109,7 +109,7 @@
               <!-- Kanal-Marker -->
               <div
                 v-for="fx in bar.fixtures"
-                :key="fx.channel_id"
+                :key="fx.id"
                 class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 group/fx z-10"
                 :style="{ left: posPercent(fx.position, bar.length_cm) + '%' }"
                 @mouseenter="hoverOnFixture = true"
@@ -200,11 +200,27 @@
     </DialogContent>
   </Dialog>
 
+  <!-- Fixture Remove Confirm Dialog -->
+  <Dialog :open="removeConfirmOpen" @update:open="removeConfirmOpen = $event">
+    <DialogContent class="sm:max-w-sm">
+      <DialogHeader>
+        <DialogTitle>Scheinwerfer entfernen</DialogTitle>
+      </DialogHeader>
+      <DialogBody>
+        <p class="text-sm text-muted-foreground">{{ removeConfirmText }}</p>
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="ghost" @click="removeConfirmOpen = false">{{ t('action.cancel') }}</Button>
+        <Button variant="destructive" @click="doRemoveFixture">Entfernen</Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
+
   <!-- Fixture Edit Dialog -->
   <Dialog :open="fixtureEditOpen" @update:open="fixtureEditOpen = $event">
     <DialogContent class="sm:max-w-sm">
       <DialogHeader>
-        <DialogTitle>Kanal {{ channelNr(fixtureEditFx?.channel_id) }} — {{ fixtureEditBar?.name }}</DialogTitle>
+        <DialogTitle>Kanal {{ channelNr(fixtureEditFx?.channel_id) }}{{ channelDevice(fixtureEditFx?.channel_id) ? ' · ' + channelDevice(fixtureEditFx?.channel_id) : '' }} — {{ fixtureEditBar?.name }}</DialogTitle>
       </DialogHeader>
       <DialogBody>
         <div class="flex flex-col gap-1.5">
@@ -227,8 +243,8 @@
         <DialogTitle>{{ t('zugstange.fixture.add') }}</DialogTitle>
       </DialogHeader>
       <DialogBody>
-        <Input size="lg" v-model="fixtureSearch" placeholder="Kanal suchen…" autofocus @keydown.enter="selectFirstAndConfirm" />
-        <div class="max-h-64 overflow-y-auto flex flex-col">
+        <Input v-if="!pickerChannel" size="lg" v-model="fixtureSearch" placeholder="Kanal suchen…" autofocus @keydown.enter="selectFirstAndConfirm" />
+        <div v-if="!pickerChannel" class="max-h-64 overflow-y-auto flex flex-col">
           <button
             v-for="ch in filteredChannelsForPicker"
             :key="ch.channel"
@@ -246,9 +262,23 @@
             <svg v-if="pickerChannel?.id === ch.id" class="size-4 shrink-0 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
           </button>
         </div>
-        <div v-if="pickerChannel" class="flex flex-col gap-1.5 border-t border-border pt-3">
-          <label class="text-xs text-muted-foreground">{{ t('zugstange.fixture.position') }} ({{ unit }})</label>
-          <Input size="lg" :modelValue="cmToDisplay(pickerPosition)" type="number" :min="cmToDisplay(-(pickerBar?.length_cm || 600)/2)" :max="cmToDisplay((pickerBar?.length_cm || 600)/2)" :step="inputStep" @update:modelValue="pickerPosition = parseToCm(Number($event))" />
+        <div v-if="pickerChannel" class="flex flex-col gap-3">
+          <div class="flex items-center gap-4 px-4 py-3 rounded-lg bg-accent/10 border border-accent/30">
+            <span class="text-2xl font-bold tabular-nums w-10 shrink-0 text-accent">{{ pickerChannel.channel }}</span>
+            <div class="flex flex-col min-w-0 flex-1">
+              <span class="text-sm font-semibold text-foreground truncate">{{ pickerChannel.device }}</span>
+              <span v-if="pickerChannel.address || pickerChannel.color" class="text-xs text-muted-foreground mt-0.5">
+                <span v-if="pickerChannel.address">DMX {{ pickerChannel.address }}</span><span v-if="pickerChannel.address && pickerChannel.color"> · </span><span v-if="pickerChannel.color">{{ pickerChannel.color }}</span>
+              </span>
+            </div>
+            <button class="text-muted-foreground/50 hover:text-foreground transition-colors" @click="pickerChannel = null">
+              <svg viewBox="0 0 10 10" width="12" height="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="2" y1="2" x2="8" y2="8"/><line x1="8" y1="2" x2="2" y2="8"/></svg>
+            </button>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs text-muted-foreground">{{ t('zugstange.fixture.position') }} ({{ unit }})</label>
+            <Input size="lg" autofocus :modelValue="cmToDisplay(pickerPosition)" type="number" :min="cmToDisplay(-(pickerBar?.length_cm || 600)/2)" :max="cmToDisplay((pickerBar?.length_cm || 600)/2)" :step="inputStep" @update:modelValue="pickerPosition = parseToCm(Number($event))" @keydown.enter="confirmAddFixture" />
+          </div>
         </div>
       </DialogBody>
       <DialogFooter>
@@ -451,6 +481,7 @@ const channelById = computed(() => {
 })
 function channelForId(id) { return channelById.value.get(id) ?? null }
 function channelNr(id) { return channelForId(id)?.channel ?? '?' }
+function channelDevice(id) { return channelForId(id)?.device ?? '' }
 
 function posPercent(pos, lengthCm) {
   const len = lengthCm || 600
@@ -511,12 +542,24 @@ async function saveBarForm() {
   }
   barDialogOpen.value = false
 }
+const removeConfirmOpen = ref(false)
+const removeConfirmText = ref('')
+const removePending = ref(null)
+
 function confirmRemoveFixture(fx, bar) {
   const nr = channelNr(fx.channel_id)
-  const fixture = nr !== '?' ? `Kanal ${nr}` : fx.channel_id
-  if (confirm(t('zugstange.fixture.remove.confirm', { fixture, bar: bar.name }))) {
-    props.unassignFixtureFn(bar.id, fx.channel_id)
-  }
+  const dev = channelDevice(fx.channel_id)
+  const fixture = nr !== '?' ? `Kanal ${nr}${dev ? ' · ' + dev : ''}` : fx.id
+  removeConfirmText.value = t('zugstange.fixture.remove.confirm', { fixture, bar: bar.name })
+  removePending.value = { barId: bar.id, fixtureId: fx.id }
+  removeConfirmOpen.value = true
+}
+
+function doRemoveFixture() {
+  if (!removePending.value) return
+  props.unassignFixtureFn(removePending.value.barId, removePending.value.fixtureId)
+  removeConfirmOpen.value = false
+  removePending.value = null
 }
 
 async function saveInlineField(bar, field, value) {
@@ -539,6 +582,7 @@ const fixtureEditBar = ref(null)
 const fixtureEditNotes = ref('')
 
 function openFixtureEditDialog(fx, bar) {
+  if (didDrag) { didDrag = false; return }
   fixtureEditFx.value = fx
   fixtureEditBar.value = bar
   fixtureEditNotes.value = fx.notes ?? ''
@@ -547,7 +591,7 @@ function openFixtureEditDialog(fx, bar) {
 
 async function saveFixtureEdit() {
   if (!fixtureEditFx.value || !fixtureEditBar.value) return
-  await props.updateFixtureNotesFn(fixtureEditBar.value.id, fixtureEditFx.value.channel_id, fixtureEditNotes.value)
+  await props.updateFixtureNotesFn(fixtureEditBar.value.id, fixtureEditFx.value.id, fixtureEditNotes.value)
   fixtureEditFx.value.notes = fixtureEditNotes.value
   fixtureEditOpen.value = false
 }
@@ -559,11 +603,9 @@ const pickerChannel = ref(null)
 const pickerPosition = ref(0)
 const pickerBar = ref(null)
 
-const alreadyOnPickerBar = computed(() => new Set((pickerBar.value?.fixtures ?? []).map(f => f.channel_id)))
 const filteredChannelsForPicker = computed(() => {
   const q = fixtureSearch.value.trim().toLowerCase()
   return props.channels.filter(ch => {
-    if (alreadyOnPickerBar.value.has(ch.id)) return false
     if (!q) return true
     return (ch.channel ?? '').toLowerCase().includes(q) || (ch.device ?? '').toLowerCase().includes(q)
   }).slice(0, 50)
@@ -592,7 +634,14 @@ function selectFirstAndConfirm() {
 
 async function confirmAddFixture() {
   if (!pickerChannel.value || !pickerBar.value) return
-  await props.assignFixtureFn(pickerBar.value.id, pickerChannel.value.id, pickerPosition.value)
+  const qty = Math.max(1, pickerChannel.value.quantity ?? 1)
+  const spacing = qty > 1 ? 30 : 0
+  const startPos = pickerPosition.value - ((qty - 1) * spacing) / 2
+  for (let i = 0; i < qty; i++) {
+    const pos = Math.round((startPos + i * spacing) / 10) * 10
+    const half = (pickerBar.value.length_cm ?? 600) / 2
+    await props.assignFixtureFn(pickerBar.value.id, pickerChannel.value.id, Math.max(-half, Math.min(half, pos)))
+  }
   fixturePickerOpen.value = false
   pickerChannel.value = null
   emit('assigned')
@@ -607,12 +656,13 @@ const hoverOnFixture = ref(false)
 // Drag
 let dragging = null
 let dragBarLineEl = null
+let didDrag = false
 
 function startDrag(e, fx, bar) {
-  // Stangen-Element ermitteln
   const barEl = e.currentTarget.closest('[data-bar-id]')
   dragBarLineEl = barEl
   dragging = { fx, bar, startX: e.clientX, startPos: fx.position }
+  didDrag = false
   window.addEventListener('mousemove', onDragMove)
   window.addEventListener('mouseup', onDragEnd)
 }
@@ -622,6 +672,7 @@ function onDragMove(e) {
   const len = dragging.bar.length_cm
   const rect = dragBarLineEl.getBoundingClientRect()
   const dx = e.clientX - dragging.startX
+  if (Math.abs(dx) > 3) didDrag = true
   const cmPerPx = len / rect.width
   const raw = dragging.startPos + dx * cmPerPx
   const snapped = Math.round(raw / 10) * 10
@@ -636,7 +687,7 @@ async function onDragEnd() {
   const { fx, bar } = dragging
   dragging = null
   dragBarLineEl = null
-  await props.assignFixtureFn(bar.id, fx.channel_id, fx.position)
+  await props.assignFixtureFn(bar.id, fx.channel_id, fx.position, fx.id)
 }
 
 onBeforeUnmount(() => {

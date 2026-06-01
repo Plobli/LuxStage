@@ -36,16 +36,16 @@ export async function deleteBar(showId: string, barId: string): Promise<void> {
   return api.delete(`/api/shows/${showId}/bars/${barId}`)
 }
 
-export async function addBarFixture(showId: string, barId: string, channelId: string, position: number, notes?: string): Promise<void> {
-  return api.post(`/api/shows/${showId}/bars/${barId}/fixtures`, { channelId, position, notes: notes ?? '' })
+export async function addBarFixture(showId: string, barId: string, channelId: string, position: number, notes?: string, fixtureId?: string): Promise<{ id: string }> {
+  return api.post(`/api/shows/${showId}/bars/${barId}/fixtures`, { channelId, position, notes: notes ?? '', fixtureId: fixtureId ?? null })
 }
 
-export async function patchBarFixtureNotes(showId: string, barId: string, channelId: string, notes: string): Promise<void> {
-  return api.patch(`/api/shows/${showId}/bars/${barId}/fixtures/${channelId}`, { notes })
+export async function patchBarFixtureNotes(showId: string, barId: string, fixtureId: string, notes: string): Promise<void> {
+  return api.patch(`/api/shows/${showId}/bars/${barId}/fixtures/${fixtureId}`, { notes })
 }
 
-export async function removeBarFixture(showId: string, barId: string, channelId: string): Promise<void> {
-  return api.delete(`/api/shows/${showId}/bars/${barId}/fixtures/${channelId}`)
+export async function removeBarFixture(showId: string, barId: string, fixtureId: string): Promise<void> {
+  return api.delete(`/api/shows/${showId}/bars/${barId}/fixtures/${fixtureId}`)
 }
 
 export async function reorderBars(showId: string, order: string[]): Promise<void> {

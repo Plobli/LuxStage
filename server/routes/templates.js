@@ -5,16 +5,22 @@ import * as photosLib from '../photos.js'
 import { requireAdmin } from '../auth.js'
 import { readJsonBody, readBodyBuffer, json, notFound } from '../helpers.js'
 
-const TPL_LIST        = /^\/api\/templates$/
-const TPL_CHANNELS    = /^\/api\/templates\/([^/]+)\/channels$/
-const TPL_SECTIONS    = /^\/api\/templates\/([^/]+)\/sections$/
-const TPL_BARS        = /^\/api\/templates\/([^/]+)\/bars$/
-const TPL_BARS_REORDER = /^\/api\/templates\/([^/]+)\/bars\/reorder$/
-const TPL_BAR         = /^\/api\/templates\/([^/]+)\/bars\/([^/]+)$/
-const TPL_FP          = /^\/api\/templates\/([^/]+)\/floorplan$/
-const TPL_FP_IMAGE    = /^\/api\/templates\/([^/]+)\/floorplan\/image$/
-const TPL_APPLY       = /^\/api\/templates\/([^/]+)\/apply-to-shows$/
-const TPL_ID          = /^\/api\/templates\/(.+)$/
+const TPL_LIST             = /^\/api\/templates$/
+const TPL_CHANNELS         = /^\/api\/templates\/([^/]+)\/channels$/
+const TPL_SECTIONS         = /^\/api\/templates\/([^/]+)\/sections$/
+const TPL_BARS             = /^\/api\/templates\/([^/]+)\/bars$/
+const TPL_BARS_REORDER     = /^\/api\/templates\/([^/]+)\/bars\/reorder$/
+const TPL_BAR              = /^\/api\/templates\/([^/]+)\/bars\/([^/]+)$/
+const TPL_BAR_FIXTURES     = /^\/api\/templates\/([^/]+)\/bars\/([^/]+)\/fixtures$/
+const TPL_BAR_FIXTURE      = /^\/api\/templates\/([^/]+)\/bars\/([^/]+)\/fixtures\/([^/]+)$/
+const TPL_TOWERS           = /^\/api\/templates\/([^/]+)\/towers$/
+const TPL_TOWERS_REORDER   = /^\/api\/templates\/([^/]+)\/towers\/reorder$/
+const TPL_TOWER            = /^\/api\/templates\/([^/]+)\/towers\/([^/]+)$/
+const TPL_TOWER_SLOT       = /^\/api\/templates\/([^/]+)\/towers\/([^/]+)\/slots\/([^/]+)$/
+const TPL_FP               = /^\/api\/templates\/([^/]+)\/floorplan$/
+const TPL_FP_IMAGE         = /^\/api\/templates\/([^/]+)\/floorplan\/image$/
+const TPL_APPLY            = /^\/api\/templates\/([^/]+)\/apply-to-shows$/
+const TPL_ID               = /^\/api\/templates\/(.+)$/
 
 function mimeFromFilename(filename) {
   const ext = (filename || '').split('.').pop().toLowerCase()
@@ -83,12 +89,102 @@ export async function templateRoutes(req, res, pathname) {
     }
   }
 
+  // ── Tower-Slot ─────────────────────────────────────────────────────────────
+  if (m = TPL_TOWER_SLOT.exec(pathname)) {
+    const templateName = decodeURIComponent(m[1])
+    const towerId = m[2]
+    const slotIndex = parseInt(m[3], 10)
+    if (method === 'PATCH') {
+      const user = requireAdmin(req, res); if (!user) return
+      const body = await readJsonBody(req, res); if (body === null) return
+      if (body.channel === null && body.device === null && body.color === null) {
+        db.clearTemplateTowerSlot(towerId, slotIndex)
+      } else {
+        db.writeTemplateTowerSlot(towerId, slotIndex, body)
+      }
+      return json(res, 200, { ok: true })
+    }
+  }
+
+  // ── Tower ──────────────────────────────────────────────────────────────────
+  if (m = TPL_TOWERS_REORDER.exec(pathname)) {
+    const templateName = decodeURIComponent(m[1])
+    const tpl = db.getTemplateByName(templateName)
+    if (!tpl) return notFound(res)
+    if (method === 'PUT') {
+      const body = await readJsonBody(req, res); if (body === null) return
+      db.reorderTemplateTowers(tpl.id, body.order ?? [])
+      return json(res, 200, { ok: true })
+    }
+  }
+
+  if (m = TPL_TOWER.exec(pathname)) {
+    const templateName = decodeURIComponent(m[1])
+    const towerId = m[2]
+    if (method === 'PUT') {
+      const user = requireAdmin(req, res); if (!user) return
+      const body = await readJsonBody(req, res); if (body === null) return
+      db.writeTemplateTower(templateName, { ...body, id: towerId })
+      db.ensureTemplateTowerSlots(towerId, body.slot_count ?? 4)
+      return json(res, 200, { ok: true })
+    }
+    if (method === 'DELETE') {
+      const user = requireAdmin(req, res); if (!user) return
+      db.deleteTemplateTower(towerId)
+      return json(res, 200, { ok: true })
+    }
+  }
+
+  if (m = TPL_TOWERS.exec(pathname)) {
+    const templateName = decodeURIComponent(m[1])
+    if (method === 'GET') {
+      return json(res, 200, db.readTemplateTowers(templateName))
+    }
+    if (method === 'POST') {
+      const user = requireAdmin(req, res); if (!user) return
+      const body = await readJsonBody(req, res); if (body === null) return
+      const towerId = db.writeTemplateTower(templateName, body)
+      db.ensureTemplateTowerSlots(towerId, body.slot_count ?? 4)
+      return json(res, 201, { id: towerId })
+    }
+  }
+
+  // ── Bar-Fixtures ───────────────────────────────────────────────────────────
+  if (m = TPL_BAR_FIXTURE.exec(pathname)) {
+    const fixtureId = m[3]
+    if (method === 'PUT') {
+      const user = requireAdmin(req, res); if (!user) return
+      const body = await readJsonBody(req, res); if (body === null) return
+      db.writeTemplateBarFixture(m[2], { ...body, id: fixtureId })
+      return json(res, 200, { ok: true })
+    }
+    if (method === 'DELETE') {
+      const user = requireAdmin(req, res); if (!user) return
+      db.deleteTemplateBarFixture(fixtureId)
+      return json(res, 200, { ok: true })
+    }
+  }
+
+  if (m = TPL_BAR_FIXTURES.exec(pathname)) {
+    const barId = m[2]
+    if (method === 'GET') {
+      return json(res, 200, db.readTemplateBarFixtures(barId))
+    }
+    if (method === 'POST') {
+      const user = requireAdmin(req, res); if (!user) return
+      const body = await readJsonBody(req, res); if (body === null) return
+      const fixtureId = db.writeTemplateBarFixture(barId, body)
+      return json(res, 201, { id: fixtureId })
+    }
+  }
+
   if (m = TPL_APPLY.exec(pathname)) {
     const templateName = decodeURIComponent(m[1])
     if (method === 'POST') {
       const user = requireAdmin(req, res); if (!user) return
       const body = await readJsonBody(req, res); if (body === null) return
-      const scope = body.scope === 'sections' ? 'sections' : 'bars'
+      const validScopes = ['bars', 'towers', 'sections']
+      const scope = validScopes.includes(body.scope) ? body.scope : 'bars'
       try {
         const stats = db.applyTemplateToAllShows(templateName, scope)
         return json(res, 200, { ok: true, ...stats })

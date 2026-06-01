@@ -260,6 +260,10 @@
               :deleteTowerFn="removeTower"
               :assignSlotFn="assignSlot"
               :pushSnapshotFn="pushSnapshot"
+              :saveToTemplateFn="meta.template ? saveTowerToTemplate : null"
+              :templateName="meta.template"
+              :fetchTemplateNamesFn="meta.template ? fetchTowerTemplateNames : null"
+              :fromTemplateFn="meta.template ? () => openFromTemplateDialog('towers') : null"
               @assigned="activeChannelForAssign = null"
             />
           </div>
@@ -276,6 +280,10 @@
               :updateFixtureNotesFn="updateFixtureNotes"
               :unassignFixtureFn="unassignFixture"
               :reorderBarsFn="reorderBars"
+              :saveToTemplateFn="meta.template ? saveBarToTemplate : null"
+              :templateName="meta.template"
+              :fetchTemplateNamesFn="meta.template ? fetchBarTemplateNames : null"
+              :fromTemplateFn="meta.template ? () => openFromTemplateDialog('bars') : null"
               @assigned="activeChannelForAssign = null"
             />
           </div>
@@ -378,6 +386,80 @@
       @cancel="resolveEosMergePreview(false)"
     />
 
+    <!-- Vorlage einfügen Dialog -->
+    <Dialog :open="fromTemplateDialogOpen" @update:open="fromTemplateDialogOpen = $event">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{{ fromTemplateScope === 'bars' ? 'Zugstangen aus Vorlage' : 'Gassentürme aus Vorlage' }}</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <div v-if="fromTemplateItemsLoading" class="text-sm text-muted-foreground">…</div>
+          <template v-else>
+            <!-- Auswahl-Kopfzeile -->
+            <div class="flex items-center justify-between pb-1 border-b border-border">
+              <span class="text-xs text-muted-foreground">{{ fromTemplateSelectedIds.size }} / {{ fromTemplateItems.length }} ausgewählt</span>
+              <div class="flex gap-2">
+                <button class="text-xs text-accent hover:underline" @click="fromTemplateSelectAll">Alle</button>
+                <button class="text-xs text-muted-foreground hover:underline" @click="fromTemplateSelectNone">Keine</button>
+              </div>
+            </div>
+
+            <!-- Item-Liste -->
+            <div class="max-h-64 overflow-y-auto flex flex-col divide-y divide-border/50">
+              <label
+                v-for="item in fromTemplateItems"
+                :key="item.id"
+                class="flex items-center gap-3 py-2.5 cursor-pointer hover:bg-muted/30 transition-colors px-1 rounded"
+                :class="fromTemplateSelectedIds.has(item.id) ? '' : 'opacity-50'"
+              >
+                <input
+                  type="checkbox"
+                  :checked="fromTemplateSelectedIds.has(item.id)"
+                  class="rounded border-border accent-accent shrink-0"
+                  @change="fromTemplateToggleId(item.id)"
+                />
+                <span class="flex-1 min-w-0">
+                  <span class="text-sm font-medium text-foreground">{{ item.name }}</span>
+                  <span v-if="fromTemplateScope === 'bars'" class="text-xs text-muted-foreground ml-2">
+                    <span v-if="item.zug_nr">Zug {{ item.zug_nr }} · </span>{{ formatLength(item.length_cm) }}
+                    <span v-if="item._fixtureCount" class="ml-1">· {{ item._fixtureCount }} Scheinwerfer</span>
+                  </span>
+                  <span v-else class="text-xs text-muted-foreground ml-2">
+                    <span v-if="item.side">{{ item.side }} · </span>
+                    {{ item.slot_count }} Slots
+                  </span>
+                </span>
+              </label>
+            </div>
+
+            <!-- Mit Kanalzuordnung -->
+            <div class="flex items-start gap-3 rounded-lg border border-border p-3 mt-1">
+              <input
+                id="withChannelsCb"
+                type="checkbox"
+                v-model="fromTemplateWithChannels"
+                class="mt-0.5 rounded border-border accent-accent shrink-0"
+              />
+              <label for="withChannelsCb" class="flex flex-col gap-0.5 cursor-pointer">
+                <span class="text-sm font-medium text-foreground">Mit Kanalzuordnung</span>
+                <span class="text-xs text-muted-foreground">
+                  {{ fromTemplateScope === 'bars'
+                    ? 'Scheinwerfer werden nach Kanalnummer den passenden Show-Kanälen zugeordnet.'
+                    : 'Slot-Belegungen werden nach Kanalnummer den passenden Show-Kanälen zugeordnet.' }}
+                </span>
+              </label>
+            </div>
+          </template>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="ghost" @click="fromTemplateDialogOpen = false">Abbrechen</Button>
+          <Button :disabled="fromTemplateLoading || fromTemplateSelectedIds.size === 0" @click="confirmFromTemplate">
+            {{ fromTemplateLoading ? '…' : `${fromTemplateSelectedIds.size} einfügen` }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
   </div>
 </template>
 
@@ -407,7 +489,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogB
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { fetchShow, updateMeta, restoreHistory, createSnapshot } from '../api/shows.js'
+import { fetchShow, updateMeta, restoreHistory, createSnapshot, applyTemplateToShow, saveShowItemsToTemplate } from '../api/shows.js'
 import { invalidate } from '../api/cache.js'
 import { saveShowSectionDefs } from '../api/sections.ts'
 import { uuid } from '../utils/uuid.js'
@@ -415,8 +497,9 @@ import { downloadChannelsCsv } from '../api/channels.js'
 import { generateHangereiEntries, generateGassenturmEntries } from '../utils/generateHangerei'
 import PhotoGallery from '../components/show/PhotoGallery.vue'
 const HistorySlideOver = defineAsyncComponent(() => import('../components/show/HistorySlideOver.vue'))
-import { isOnline } from '../api/client.js'
-import { api } from '../api/client.js'
+import { isOnline, api } from '../api/client.js'
+import { fetchTemplateBars } from '../api/templateBars.js'
+import { fetchTemplateTowers } from '../api/templateTowers.js'
 
 import ChannelTable from '../components/channel/ChannelTable.vue'
 const SectionEditor = defineAsyncComponent(() => import('../components/show/SectionEditor.vue'))
@@ -534,7 +617,7 @@ const {
 const { loadTowers, addTower, saveTower, removeTower, assignSlot } = useShowTowers(props.id, channels, towers)
 const { bars, loadBars, addBar, saveBar, removeBar, assignFixture, updateFixtureNotes, unassignFixture, reorderBars } = useShowBars(props.id, channels)
 
-const { unit, cmToDisplay } = useMeasureUnit()
+const { unit, cmToDisplay, formatLength } = useMeasureUnit()
 const channelByIdForHangerei = computed(() => new Map(channels.value.map(c => [c.id, c])))
 const hangerei = computed(() => generateHangereiEntries(bars.value, channelByIdForHangerei.value, unit.value, cmToDisplay, locale.value))
 const gassenturmGenerated = computed(() => generateGassenturmEntries(towers.value, channelByIdForHangerei.value, locale.value))
@@ -702,6 +785,99 @@ function onPlaceInFloorplan(ch) {
 const newSectionDialog = ref(false)
 const newSectionName = ref('')
 const newSectionType = ref('markdown')
+
+// Vorlage einfügen
+const fromTemplateDialogOpen = ref(false)
+const fromTemplateScope = ref('bars')
+const fromTemplateWithChannels = ref(false)
+const fromTemplateLoading = ref(false)
+const fromTemplateItemsLoading = ref(false)
+const fromTemplateItems = ref([])
+const fromTemplateSelectedIds = ref(new Set())
+
+function fromTemplateToggleId(id) {
+  const s = new Set(fromTemplateSelectedIds.value)
+  if (s.has(id)) s.delete(id)
+  else s.add(id)
+  fromTemplateSelectedIds.value = s
+}
+
+function fromTemplateSelectAll() {
+  fromTemplateSelectedIds.value = new Set(fromTemplateItems.value.map(i => i.id))
+}
+
+function fromTemplateSelectNone() {
+  fromTemplateSelectedIds.value = new Set()
+}
+
+async function openFromTemplateDialog(scope) {
+  if (!meta.value.template) return
+  fromTemplateScope.value = scope
+  fromTemplateWithChannels.value = false
+  fromTemplateItems.value = []
+  fromTemplateSelectedIds.value = new Set()
+  fromTemplateDialogOpen.value = true
+  fromTemplateItemsLoading.value = true
+  try {
+    if (scope === 'bars') {
+      const items = await fetchTemplateBars(meta.value.template)
+      // Fixture-Anzahl je Bar nachladen
+      const withCounts = await Promise.all(items.map(async b => {
+        try {
+          const fxList = await api.get(`/api/templates/${encodeURIComponent(meta.value.template)}/bars/${b.id}/fixtures`)
+          return { ...b, _fixtureCount: fxList.length }
+        } catch { return { ...b, _fixtureCount: 0 } }
+      }))
+      fromTemplateItems.value = withCounts
+    } else {
+      fromTemplateItems.value = await fetchTemplateTowers(meta.value.template)
+    }
+    fromTemplateSelectedIds.value = new Set(fromTemplateItems.value.map(i => i.id))
+  } finally {
+    fromTemplateItemsLoading.value = false
+  }
+}
+
+async function saveTowerToTemplate(tower, fields, overrideName) {
+  if (!meta.value.template) return
+  await saveShowItemsToTemplate(props.id, meta.value.template, 'towers', [tower.id], fields, overrideName)
+}
+
+async function saveBarToTemplate(bar, fields, overrideName) {
+  if (!meta.value.template) return
+  await saveShowItemsToTemplate(props.id, meta.value.template, 'bars', [bar.id], fields, overrideName)
+}
+
+async function fetchTowerTemplateNames() {
+  if (!meta.value.template) return []
+  const items = await fetchTemplateTowers(meta.value.template)
+  return items.map(t => t.name)
+}
+
+async function fetchBarTemplateNames() {
+  if (!meta.value.template) return []
+  const items = await fetchTemplateBars(meta.value.template)
+  return items.map(b => b.name)
+}
+
+async function confirmFromTemplate() {
+  if (!meta.value.template) return
+  fromTemplateLoading.value = true
+  try {
+    await applyTemplateToShow(
+      props.id,
+      meta.value.template,
+      fromTemplateScope.value,
+      fromTemplateWithChannels.value,
+      [...fromTemplateSelectedIds.value]
+    )
+    if (fromTemplateScope.value === 'bars') await loadBars()
+    else await loadTowers()
+    fromTemplateDialogOpen.value = false
+  } finally {
+    fromTemplateLoading.value = false
+  }
+}
 
 function addSectionFromSubtab() {
   newSectionName.value = ''

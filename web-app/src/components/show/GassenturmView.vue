@@ -19,11 +19,20 @@
               <span v-if="tower.side" class="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-accent/15 text-accent">{{ tower.side }}</span>
             </div>
             <div class="flex items-center gap-2 mt-0.5">
-              <span v-if="tower.stage_area" class="text-xs text-muted-foreground truncate">{{ tower.stage_area }}</span>
               <span class="text-xs text-muted-foreground/80 shrink-0">{{ tower.slot_count }} Slots</span>
             </div>
           </div>
           <div class="flex items-center gap-0.5 shrink-0 ml-2 -mt-1">
+            <!-- Als Vorlage speichern -->
+            <Button
+              v-if="props.saveToTemplateFn"
+              variant="ghost" size="icon" class="size-7 text-muted-foreground/50"
+              :title="savingTowerId === tower.id ? '…' : 'Als Vorlage speichern'"
+              @click.stop="openSaveDialog(tower)"
+            >
+              <Loader2 v-if="savingTowerId === tower.id" class="size-3.5 animate-spin" />
+              <BookmarkPlus v-else class="size-3.5" />
+            </Button>
             <Button variant="ghost" size="icon" class="size-7 text-muted-foreground/50" @click="openEditTowerDialog(tower)">
               <Pencil class="size-3.5" />
             </Button>
@@ -151,15 +160,9 @@
           <label class="text-xs text-muted-foreground">{{ t('gassenturm.field.name') }}</label>
           <Input size="lg" v-model="towerForm.name" placeholder="z. B. Gassenturm 1" autofocus />
         </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div class="flex flex-col gap-1.5">
-            <label class="text-xs text-muted-foreground">{{ t('gassenturm.field.stage_area') }}</label>
-            <Input size="lg" v-model="towerForm.stage_area" placeholder="z. B. Vorbühne Links" />
-          </div>
-          <div class="flex flex-col gap-1.5">
-            <label class="text-xs text-muted-foreground">{{ t('gassenturm.field.side') }}</label>
-            <Input size="lg" v-model="towerForm.side" placeholder="L / R" class="w-full" />
-          </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs text-muted-foreground">{{ t('gassenturm.field.side') }}</label>
+          <Input size="lg" v-model="towerForm.side" placeholder="L / R" class="w-full" />
         </div>
         <div class="flex flex-col gap-1.5">
           <label class="text-xs text-muted-foreground">{{ t('gassenturm.field.slot_count') }}</label>
@@ -182,6 +185,9 @@
         </div>
       </DialogBody>
       <DialogFooter>
+        <Button v-if="!editingTower && props.fromTemplateFn && !slotReduceConfirm" variant="ghost" class="mr-auto text-xs text-muted-foreground" @click="towerDialogOpen = false; props.fromTemplateFn()">
+          Aus Vorlage einfügen…
+        </Button>
         <Button variant="ghost" @click="towerDialogOpen = false">{{ t('action.cancel') }}</Button>
         <template v-if="slotReduceConfirm">
           <Button variant="ghost" @click="slotReduceConfirm = null">{{ t('action.back') }}</Button>
@@ -239,17 +245,86 @@
       </DialogFooter>
     </DialogContent>
   </Dialog>
+
+  <!-- Als Vorlage speichern Dialog -->
+  <Dialog :open="saveDialogOpen" @update:open="saveDialogOpen = $event">
+    <DialogContent class="sm:max-w-sm">
+      <DialogHeader>
+        <DialogTitle>In Vorlage speichern</DialogTitle>
+      </DialogHeader>
+      <DialogBody>
+        <!-- Ziel + Name -->
+        <div class="rounded-lg bg-muted/40 px-3 py-2 flex items-baseline gap-2">
+          <span class="text-xs text-muted-foreground shrink-0">Vorlage</span>
+          <span class="text-sm font-medium text-foreground truncate">{{ props.templateName }}</span>
+        </div>
+        <div>
+          <Label class="text-xs text-muted-foreground">Name in der Vorlage</Label>
+          <Input size="lg" v-model="saveName" autofocus />
+        </div>
+        <!-- Überschreiben-Warnung -->
+        <div v-if="saveNameConflict" class="rounded-lg border border-destructive/50 bg-destructive/5 px-3.5 py-3 space-y-2">
+          <p class="text-sm font-medium text-foreground">„{{ saveName }}" existiert bereits in der Vorlage.</p>
+          <p class="text-xs text-muted-foreground">Der bestehende Eintrag wird überschrieben. Trotzdem fortfahren?</p>
+          <div class="flex gap-2 pt-1">
+            <Button size="sm" variant="ghost" @click="saveNameConflict = false">Abbrechen</Button>
+            <Button size="sm" variant="destructive" @click="saveConfirmOverwrite = true; confirmSaveDialog()">Überschreiben</Button>
+          </div>
+        </div>
+        <!-- Was wird gespeichert -->
+        <div class="space-y-1">
+          <!-- Struktur — immer aktiv -->
+          <div class="flex items-start gap-3 py-2 opacity-60">
+            <input type="checkbox" checked disabled class="mt-0.5 rounded accent-accent shrink-0" />
+            <div>
+              <p class="text-sm font-medium text-foreground">Grundstruktur</p>
+              <p class="text-xs text-muted-foreground">Bezeichnung · Seite · Anzahl Slots</p>
+            </div>
+          </div>
+          <div class="h-px bg-border/50 mx-1" />
+          <!-- Kanalbelegung je Slot -->
+          <label class="flex items-start gap-3 py-2 cursor-pointer hover:bg-muted/30 rounded px-1 transition-colors">
+            <input type="checkbox" v-model="saveFields.channel" class="mt-0.5 rounded accent-accent shrink-0" />
+            <div>
+              <p class="text-sm font-medium text-foreground">Kanalnummer</p>
+              <p class="text-xs text-muted-foreground">Welche Kanalnr. in welchem Slot sitzt</p>
+            </div>
+          </label>
+          <label class="flex items-start gap-3 py-2 cursor-pointer hover:bg-muted/30 rounded px-1 transition-colors">
+            <input type="checkbox" v-model="saveFields.device" class="mt-0.5 rounded accent-accent shrink-0" />
+            <div>
+              <p class="text-sm font-medium text-foreground">Gerät</p>
+              <p class="text-xs text-muted-foreground">Gerätebezeichnung je Slot</p>
+            </div>
+          </label>
+          <label class="flex items-start gap-3 py-2 cursor-pointer hover:bg-muted/30 rounded px-1 transition-colors">
+            <input type="checkbox" v-model="saveFields.color" class="mt-0.5 rounded accent-accent shrink-0" />
+            <div>
+              <p class="text-sm font-medium text-foreground">Farbe</p>
+              <p class="text-xs text-muted-foreground">Farbfilter je Slot</p>
+            </div>
+          </label>
+        </div>
+        <p v-if="savingTowerId" class="text-xs text-muted-foreground text-center">…</p>
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="ghost" @click="saveDialogOpen = false">{{ t('action.cancel') }}</Button>
+        <Button :disabled="!!savingTowerId || !saveName.trim()" @click="confirmSaveDialog">Speichern</Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>
 
 <script setup>
 import { ref, computed, watch, onBeforeUnmount, nextTick } from 'vue'
 import { useLocale } from '@/composables/useLocale.js'
 const { t } = useLocale()
-import { Plus, Pencil, Trash2, X, ChevronsUpDown, GripVertical } from 'lucide-vue-next'
+import { Plus, Pencil, Trash2, X, ChevronsUpDown, GripVertical, BookmarkPlus, Loader2 } from 'lucide-vue-next'
 import Sortable from 'sortablejs'
 import { filterBadgeStyle } from '@/utils/filterColors.js'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
 
 const props = defineProps({
@@ -262,6 +337,10 @@ const props = defineProps({
   deleteTowerFn: { type: Function, required: true },
   assignSlotFn: { type: Function, required: true },
   pushSnapshotFn: { type: Function, required: true },
+  saveToTemplateFn: { type: Function, default: null },
+  templateName: { type: String, default: null },
+  fetchTemplateNamesFn: { type: Function, default: null },
+  fromTemplateFn: { type: Function, default: null },
 })
 
 const emit = defineEmits(['assigned'])
@@ -300,6 +379,53 @@ function slotsFor(tower) {
 
 // Notiz
 const editingNoteId = ref(null)
+
+// Als Vorlage speichern
+const saveDialogOpen = ref(false)
+const savingTowerId = ref(null)
+const saveDialogTower = ref(null)
+const saveFields = ref({ channel: true, device: true, color: true })
+const saveName = ref('')
+const existingTemplateNames = ref(new Set())
+const saveNameConflict = ref(false)
+const saveConfirmOverwrite = ref(false)
+
+async function openSaveDialog(tower) {
+  saveDialogTower.value = tower
+  saveFields.value = { channel: true, device: true, color: true }
+  saveName.value = tower.name
+  saveNameConflict.value = false
+  saveConfirmOverwrite.value = false
+  saveDialogOpen.value = true
+  if (props.fetchTemplateNamesFn) {
+    const names = await props.fetchTemplateNamesFn()
+    existingTemplateNames.value = new Set(names)
+  }
+}
+
+watch(saveName, () => {
+  saveNameConflict.value = false
+  saveConfirmOverwrite.value = false
+})
+
+async function confirmSaveDialog() {
+  const tower = saveDialogTower.value
+  if (!tower || !saveName.value.trim()) return
+  const name = saveName.value.trim()
+  if (!saveConfirmOverwrite.value && existingTemplateNames.value.has(name)) {
+    saveNameConflict.value = true
+    return
+  }
+  savingTowerId.value = tower.id
+  try {
+    await props.saveToTemplateFn(tower, { ...saveFields.value }, name)
+    saveDialogOpen.value = false
+    saveNameConflict.value = false
+    saveConfirmOverwrite.value = false
+  } finally {
+    savingTowerId.value = null
+  }
+}
 
 async function saveNotes(tower, value) {
   await props.saveTowerFn(tower.id, { notes: value })

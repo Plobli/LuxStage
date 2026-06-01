@@ -499,7 +499,7 @@
         <DialogBody class="flex-1 overflow-y-auto">
           <div class="flex flex-col gap-1">
             <Button v-for="tower in props.towers" :key="tower.id" variant="ghost" :disabled="towerAlreadyPlaced(tower.id)" @click="placeTowerNode(tower)" class="w-full justify-start h-auto py-2" :class="towerAlreadyPlaced(tower.id) && 'opacity-40'">
-              <div class="text-left"><div class="font-semibold">{{ tower.name }}</div><div class="text-xs text-muted-foreground">{{ tower.stage_area }}{{ tower.side ? ' · ' + tower.side : '' }}</div></div>
+              <div class="text-left"><div class="font-semibold">{{ tower.name }}</div><div class="text-xs text-muted-foreground">{{ tower.side || '' }}</div></div>
             </Button>
             <div v-if="!props.towers.length" class="text-sm text-muted-foreground py-4 text-center">{{ t('floorplan.tower.empty') }}</div>
           </div>
@@ -690,7 +690,7 @@ function showTooltip(el, e) {
   if (el.type === 'tower') {
     const t = towerForEl(el)
     title = t?.name || el.towerName || 'Turm'
-    sub = t ? `${filledSlotsLabel(el)}${t.stage_area ? ' · ' + t.stage_area : ''}${t.side ? ' · ' + t.side : ''}` : ''
+    sub = t ? `${filledSlotsLabel(el)}${t.side ? ' · ' + t.side : ''}` : ''
     channels = (t?.slots ?? []).filter(s => s.channel_id).map(s => props.channels.find(c => c.id === s.channel_id)?.channel ?? '?')
   } else if (el.type === 'bar') {
     const b = barForEl(el)

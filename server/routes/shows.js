@@ -3,15 +3,17 @@ import { requireAdmin } from '../auth.js'
 import { readJsonBody, json, notFound } from '../helpers.js'
 import { subscribe, broadcast, getPresence } from '../sse.js'
 
-const SHOW_LIST     = /^\/api\/shows$/
-const SHOW_ARCHIVED = /^\/api\/shows\/archived$/
-const SHOW_ID       = /^\/api\/shows\/([^/]+)$/
-const SHOW_META     = /^\/api\/shows\/([^/]+)\/meta$/
-const SHOW_RESTORE  = /^\/api\/shows\/([^/]+)\/restore$/
-const SHOW_PERM     = /^\/api\/shows\/([^/]+)\/permanent$/
-const SHOW_LOCK     = /^\/api\/shows\/([^/]+)\/lock$/
-const SHOW_EVENTS   = /^\/api\/shows\/([^/]+)\/events$/
-const SHOW_PRESENCE = /^\/api\/shows\/([^/]+)\/presence$/
+const SHOW_LIST          = /^\/api\/shows$/
+const SHOW_ARCHIVED      = /^\/api\/shows\/archived$/
+const SHOW_ID            = /^\/api\/shows\/([^/]+)$/
+const SHOW_META          = /^\/api\/shows\/([^/]+)\/meta$/
+const SHOW_RESTORE       = /^\/api\/shows\/([^/]+)\/restore$/
+const SHOW_PERM          = /^\/api\/shows\/([^/]+)\/permanent$/
+const SHOW_LOCK          = /^\/api\/shows\/([^/]+)\/lock$/
+const SHOW_EVENTS        = /^\/api\/shows\/([^/]+)\/events$/
+const SHOW_PRESENCE      = /^\/api\/shows\/([^/]+)\/presence$/
+const SHOW_FROM_TEMPLATE = /^\/api\/shows\/([^/]+)\/from-template$/
+const SHOW_TO_TEMPLATE   = /^\/api\/shows\/([^/]+)\/to-template$/
 
 export async function showRoutes(req, res, pathname, params) {
   const { method } = req
@@ -49,6 +51,47 @@ export async function showRoutes(req, res, pathname, params) {
       fields.last_edited_at = Date.now()
       db.writeShow(slug, fields)
       return json(res, 200, { ok: true })
+    }
+  }
+
+  if (m = SHOW_FROM_TEMPLATE.exec(pathname)) {
+    const slug = m[1]
+    if (method === 'POST') {
+      const body = await readJsonBody(req, res); if (body === null) return
+      const validScopes = ['bars', 'towers']
+      const scope = validScopes.includes(body.scope) ? body.scope : 'bars'
+      const withChannels = body.withChannels === true
+      const selectedIds = Array.isArray(body.selectedIds) ? body.selectedIds : null
+      try {
+        db.applyTemplateToShow(body.templateName, slug, scope, withChannels, selectedIds)
+        broadcast(slug, scope === 'bars' ? 'bars' : 'towers', {})
+        return json(res, 200, { ok: true })
+      } catch (e) {
+        return json(res, 404, { error: e.message })
+      }
+    }
+  }
+
+  if (m = SHOW_TO_TEMPLATE.exec(pathname)) {
+    const slug = m[1]
+    if (method === 'POST') {
+      const user = requireAdmin(req, res); if (!user) return
+      const body = await readJsonBody(req, res); if (body === null) return
+      const validScopes = ['bars', 'towers']
+      const scope = validScopes.includes(body.scope) ? body.scope : 'bars'
+      const selectedIds = Array.isArray(body.selectedIds) ? body.selectedIds : []
+      const fields = body.fields && typeof body.fields === 'object' ? body.fields : {}
+      const overrideName = typeof body.overrideName === 'string' ? body.overrideName.trim() : null
+      const show = db.readShow(slug)
+      if (!show) return notFound(res)
+      const templateName = body.templateName ?? show.template
+      if (!templateName) return json(res, 400, { error: 'Kein Template zugeordnet' })
+      try {
+        db.saveShowItemsToTemplate(templateName, slug, scope, selectedIds, fields, overrideName)
+        return json(res, 200, { ok: true })
+      } catch (e) {
+        return json(res, 404, { error: e.message })
+      }
     }
   }
 

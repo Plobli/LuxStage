@@ -9,6 +9,35 @@ export const deleteShowPermanent = (id: string): Promise<any> => api.delete(`/ap
 export const fetchArchivedShows  = (): Promise<any[]> => api.get('/api/shows/archived')
 export const restoreShow         = (id: string): Promise<any> => api.post(`/api/shows/${id}/restore`, {})
 
+export interface SaveToTemplateFields {
+  channel?: boolean
+  device?: boolean
+  color?: boolean
+  notes?: boolean
+  position?: boolean
+}
+
+export function saveShowItemsToTemplate(
+  showId: string,
+  templateName: string,
+  scope: 'bars' | 'towers',
+  selectedIds: string[],
+  fields: SaveToTemplateFields,
+  overrideName?: string
+): Promise<any> {
+  return api.post(`/api/shows/${showId}/to-template`, { templateName, scope, selectedIds, fields, overrideName })
+}
+
+export function applyTemplateToShow(
+  showId: string,
+  templateName: string,
+  scope: 'bars' | 'towers',
+  withChannels: boolean,
+  selectedIds: string[]
+): Promise<any> {
+  return api.post(`/api/shows/${showId}/from-template`, { templateName, scope, withChannels, selectedIds })
+}
+
 export function fetchHistory(showId: string): Promise<any[]> {
   return api.get(`/api/shows/${showId}/history`)
 }

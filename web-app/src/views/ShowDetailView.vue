@@ -393,7 +393,7 @@
     <Dialog :open="fromTemplateDialogOpen" @update:open="fromTemplateDialogOpen = $event">
       <DialogContent class="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{{ fromTemplateScope === 'bars' ? 'Zugstangen aus Vorlage' : 'Gassentürme aus Vorlage' }}</DialogTitle>
+          <DialogTitle>{{ fromTemplateScope === 'bars' ? 'Zugstangen aus Vorlage' : 'Beleuchtungsgestelle aus Vorlage' }}</DialogTitle>
         </DialogHeader>
         <DialogBody>
           <div v-if="fromTemplateItemsLoading" class="text-sm text-muted-foreground">…</div>

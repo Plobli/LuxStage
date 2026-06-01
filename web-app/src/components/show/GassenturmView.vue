@@ -1,11 +1,15 @@
 <template>
   <div class="relative flex flex-col h-full overflow-hidden">
-<div class="flex-1 overflow-y-auto p-4 pb-14 md:pb-0">
-    <div v-if="towers.length === 0" class="flex items-center justify-center h-48 text-sm text-muted-foreground">
-      {{ t('gassenturm.empty') }}
+<div class="flex-1 overflow-y-auto pb-14 md:pb-0">
+    <div v-if="towers.length === 0" class="flex flex-col items-center justify-center gap-3 h-64 text-center px-8">
+      <Layers class="size-8 text-muted-foreground/40" />
+      <div class="max-w-150">
+        <p class="text-base font-medium text-foreground/70">{{ t('gassenturm.empty') }}</p>
+        <p class="text-sm text-muted-foreground mt-1">{{ t('gassenturm.empty.desc') }}</p>
+      </div>
     </div>
 
-    <div class="flex flex-wrap gap-3">
+    <div class="flex flex-wrap gap-3 p-4">
       <div
         v-for="tower in towers"
         :key="tower.id"
@@ -141,7 +145,7 @@
 
   </div>
 
-  <!-- Neuer Gassenturm -->
+  <!-- Neues Beleuchtungsgestell -->
   <Button variant="accent" @click="openNewTowerDialog" class="absolute bottom-20 right-6 md:bottom-6 h-11 px-5 rounded-full shadow-lg flex items-center gap-2">
     <Plus class="size-4" /> {{ t('gassenturm.new') }}
   </Button>
@@ -158,7 +162,7 @@
       <DialogBody>
         <div class="flex flex-col gap-1.5">
           <label class="text-xs text-muted-foreground">{{ t('gassenturm.field.name') }}</label>
-          <Input size="lg" v-model="towerForm.name" placeholder="z. B. Gassenturm 1" autofocus />
+          <Input size="lg" v-model="towerForm.name" placeholder="z. B. Beleuchtungsgestell 1" autofocus />
         </div>
         <div class="flex flex-col gap-1.5">
           <label class="text-xs text-muted-foreground">{{ t('gassenturm.field.side') }}</label>
@@ -319,7 +323,7 @@
 import { ref, computed, watch, onBeforeUnmount, nextTick } from 'vue'
 import { useLocale } from '@/composables/useLocale.js'
 const { t } = useLocale()
-import { Plus, Pencil, Trash2, X, ChevronsUpDown, GripVertical, BookmarkPlus, Loader2 } from 'lucide-vue-next'
+import { Plus, Pencil, Trash2, X, ChevronsUpDown, GripVertical, BookmarkPlus, Loader2, Layers } from 'lucide-vue-next'
 import Sortable from 'sortablejs'
 import { filterBadgeStyle } from '@/utils/filterColors.js'
 import { Button } from '@/components/ui/button'

@@ -281,7 +281,7 @@ const mountRefLabel = computed(() => {
     const ref = typeof raw === 'string' ? JSON.parse(raw) : raw
     if (ref?.type === 'tower') {
       const parts = [ref.towerName, ref.slotIndex != null ? `Slot ${ref.slotIndex}` : null].filter(Boolean)
-      return parts.join(' · ') || 'Gassenturm'
+      return parts.join(' · ') || 'Beleuchtungsgestell'
     }
     if (ref?.type === 'bar') return ref.barName ?? 'Zugstange'
     if (ref?.type === 'stage_object') return ref.objectName ?? 'Kulisse'

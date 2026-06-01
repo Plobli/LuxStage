@@ -58,8 +58,8 @@
       <SidebarBtn :active="activeTool === 'channel' || activeTool === 'channel-pending'" :expanded="sidebarExpanded" title="Kanal platzieren (C)" @click="activeTool = 'channel'">
         <CircleDot class="w-4 h-4 shrink-0" /><span v-if="sidebarExpanded" class="truncate">Kanal</span>
       </SidebarBtn>
-      <SidebarBtn :active="activeTool === 'tower'" :expanded="sidebarExpanded" title="Gassenturm platzieren" @click="openTowerPlacer">
-        <Layers class="w-4 h-4 shrink-0" /><span v-if="sidebarExpanded" class="truncate">Gassenturm</span>
+      <SidebarBtn :active="activeTool === 'tower'" :expanded="sidebarExpanded" title="Beleuchtungsgestell platzieren" @click="openTowerPlacer">
+        <Layers class="w-4 h-4 shrink-0" /><span v-if="sidebarExpanded" class="truncate">Beleuchtungsgestell</span>
       </SidebarBtn>
       <SidebarBtn :active="activeTool === 'bar'" :expanded="sidebarExpanded" title="Zugstange platzieren" @click="openBarPlacer">
         <AlignJustify class="w-4 h-4 shrink-0" /><span v-if="sidebarExpanded" class="truncate">Zugstange</span>
@@ -423,7 +423,7 @@
                 {{ props.channels.find(c => c.id === slot.channel_id)?.channel ?? '?' }}
               </span>
             </div>
-            <Button size="sm" variant="outline" class="h-7 px-2 text-xs" @click="emit('open-tower', selectedElement.towerId)">→ Gassenturm</Button>
+            <Button size="sm" variant="outline" class="h-7 px-2 text-xs" @click="emit('open-tower', selectedElement.towerId)">→ Beleuchtungsgestell</Button>
           </template>
 
           <!-- Bar -->
@@ -752,7 +752,7 @@ function channelNrById(channelId) {
 }
 function pillW(_channel) { return 62 }
 function noteTextWidth(text) { return Math.max(40, (text?.length ?? 0) * 6.2 + 20) }
-function typeLabel(type) { return { line: 'Linie', rect: 'Rechteck', ellipse: 'Ellipse', text: 'Text', channel: 'Kanal', tower: 'Gassenturm', bar: 'Zugstange' }[type] || type }
+function typeLabel(type) { return { line: 'Linie', rect: 'Rechteck', ellipse: 'Ellipse', text: 'Text', channel: 'Kanal', tower: 'Beleuchtungsgestell', bar: 'Zugstange' }[type] || type }
 
 function getArrowPoints(channel, rot) {
   const rad = (rot || 0) * Math.PI / 180

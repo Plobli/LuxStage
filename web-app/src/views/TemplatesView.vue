@@ -225,7 +225,7 @@
             </Button>
           </TabsContent>
 
-          <!-- Gassentürme -->
+          <!-- Beleuchtungsgestelle -->
           <TabsContent value="towers" class="mt-0 outline-none space-y-3">
             <div class="flex justify-end">
               <Button variant="outline" size="sm" :disabled="applyingToShows === 'towers'" @click="handleApplyToAllShows('towers')">
@@ -424,7 +424,7 @@
         <DialogBody>
           <div>
             <Label>{{ t('gassenturm.field.name') }}</Label>
-            <Input size="lg" v-model="ttowerForm.name" placeholder="z. B. Gassenturm 1" autofocus />
+            <Input size="lg" v-model="ttowerForm.name" placeholder="z. B. Beleuchtungsgestell 1" autofocus />
           </div>
           <div class="grid grid-cols-1 gap-3">
             <div>

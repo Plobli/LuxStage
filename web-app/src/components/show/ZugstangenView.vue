@@ -2,8 +2,12 @@
   <div class="relative flex flex-col h-full overflow-hidden">
     <!-- Zugstangen-Liste -->
     <div class="flex-1 overflow-y-auto pb-14 md:pb-0">
-      <div v-if="bars.length === 0" class="flex items-center justify-center h-32 text-sm text-muted-foreground">
-        {{ t('zugstange.empty') }}
+      <div v-if="bars.length === 0" class="flex flex-col items-center justify-center gap-3 h-64 text-center px-8">
+        <AlignJustify class="size-8 text-muted-foreground/40" />
+        <div class="max-w-150">
+          <p class="text-base font-medium text-foreground/70">{{ t('zugstange.empty') }}</p>
+          <p class="text-sm text-muted-foreground mt-1">{{ t('zugstange.empty.desc') }}</p>
+        </div>
       </div>
 
       <!-- Eine Zeile pro Zugstange -->
@@ -382,7 +386,7 @@ import { useMeasureUnit } from '@/composables/useMeasureUnit'
 const { t } = useLocale()
 
 const { unit, formatLength, cmToDisplay, parseToCm, inputStep, lengthMin, lengthMax } = useMeasureUnit()
-import { Plus, Pencil, Trash2, BookmarkPlus, Loader2 } from 'lucide-vue-next'
+import { Plus, Pencil, Trash2, BookmarkPlus, Loader2, AlignJustify } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'

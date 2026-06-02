@@ -14,7 +14,7 @@
       </div>
     </div>
 
-    <div class="bg-card">
+    <div ref="sortableEl" class="bg-card">
       <template v-for="item of virtualItems" :key="item.id">
         <template v-if="item.type === 'header'">
           <!-- Header row (group position) -->
@@ -289,6 +289,7 @@ const props = defineProps({
 })
 
 const rootEl = ref(null)
+const sortableEl = ref(null)
 const isMobile = useContainerWidth(rootEl)
 
 const emit = defineEmits([
@@ -331,14 +332,13 @@ function startAddCategory() {
   newCategoryName.value = ''
 }
 
+const emptyPositions = ref([])
+
 function saveCategory() {
   const name = newCategoryName.value.trim()
   if (name) {
-    emit('pushSnapshot')
-    const newCh = { channel: '', address: '', device: '', position: name, color: '', notes: '' }
-    ensureStableChannelKey(newCh)
-    props.channels.push(newCh)
-    emit('change')
+    const alreadyExists = props.groupedChannels.some(g => g.position === name) || emptyPositions.value.includes(name)
+    if (!alreadyExists) emptyPositions.value.push(name)
   }
   addingCategory.value = false
 }
@@ -359,6 +359,7 @@ function scheduleRemainingBatches(total) {
 onMounted(() => {
   const total = props.groupedChannels.reduce((n, g) => n + g.channels.length, 0)
   scheduleRemainingBatches(total)
+  nextTick(initSortable)
 })
 
 watch(() => props.groupedChannels, (groups) => {
@@ -379,7 +380,13 @@ const virtualItems = computed(() => {
   }
   let channelsSeen = 0
   const limit = renderedCount.value
-  for (const group of props.groupedChannels) {
+  const allGroups = [
+    ...props.groupedChannels,
+    ...emptyPositions.value
+      .filter(p => !props.groupedChannels.some(g => g.position === p))
+      .map(p => ({ position: p, channels: [] })),
+  ]
+  for (const group of allGroups) {
     items.push({ id: `header-${group.position}`, type: 'header', group })
     for (const ch of group.channels) {
       if (channelsSeen < limit) {
@@ -387,7 +394,7 @@ const virtualItems = computed(() => {
       }
       channelsSeen++
     }
-    const isLast = group === props.groupedChannels[props.groupedChannels.length - 1]
+    const isLast = group === allGroups[allGroups.length - 1]
     if (addingPosition.value === group.position) {
       items.push({ id: `add-form-${group.position}`, type: 'add-form', group })
     } else {
@@ -449,6 +456,8 @@ function saveAdd() {
   const idx = props.channels.findIndex(c => parseInt(c.channel) > newNr)
   if (idx === -1) props.channels.push(newCh)
   else props.channels.splice(idx, 0, newCh)
+  const pos = addForm.value.position
+  emptyPositions.value = emptyPositions.value.filter(p => p !== pos)
   addingPosition.value = null
   emit('change')
 }
@@ -470,7 +479,7 @@ let sortableInstance = null
 function initSortable() {
   sortableInstance?.destroy()
   sortableInstance = null
-  const el = document.querySelector('.channel-list')
+  const el = sortableEl.value
   if (!el) return
 
   sortableInstance = Sortable.create(el, {

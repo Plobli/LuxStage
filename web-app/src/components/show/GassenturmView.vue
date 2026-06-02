@@ -24,6 +24,7 @@
             </div>
             <div class="flex items-center gap-2 mt-0.5">
               <span class="text-xs text-muted-foreground/80 shrink-0">{{ tower.slot_count }} Slots</span>
+              <HelpIcon text="Ein Slot ist ein Platz am Gestell. Weise jedem Slot einen Kanal zu – so siehst du auf einen Blick, welcher Scheinwerfer wo eingebaut ist." side="right" />
             </div>
           </div>
           <div class="flex items-center gap-0.5 shrink-0 ml-2 -mt-1">
@@ -165,11 +166,17 @@
           <Input size="lg" v-model="towerForm.name" placeholder="z. B. Beleuchtungsgestell 1" autofocus />
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-xs text-muted-foreground">{{ t('gassenturm.field.side') }}</label>
+          <label class="flex items-center gap-1.5 text-xs text-muted-foreground">
+            {{ t('gassenturm.field.side') }}
+            <HelpIcon text="z. B. L oder R für links/rechts auf der Bühne." side="right" />
+          </label>
           <Input size="lg" v-model="towerForm.side" placeholder="L / R" class="w-full" />
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-xs text-muted-foreground">{{ t('gassenturm.field.slot_count') }}</label>
+          <label class="flex items-center gap-1.5 text-xs text-muted-foreground">
+            {{ t('gassenturm.field.slot_count') }}
+            <HelpIcon text="Wie viele Gestellplätze hat dieses Beleuchtungsgestell?" side="right" />
+          </label>
           <Input size="lg" v-model.number="towerForm.slot_count" type="number" min="1" max="20" />
         </div>
 
@@ -277,6 +284,10 @@
         </div>
         <!-- Was wird gespeichert -->
         <div class="space-y-1">
+          <div class="flex items-center gap-1.5 px-1 pb-1">
+            <span class="text-xs text-muted-foreground">Was wird gespeichert?</span>
+            <HelpIcon text="Wähle, welche Daten aus diesem Gestell in der Vorlage gespeichert werden sollen. Die Grundstruktur wird immer übernommen." side="right" />
+          </div>
           <!-- Struktur — immer aktiv -->
           <div class="flex items-start gap-3 py-2 opacity-60">
             <Checkbox :model-value="true" disabled class="mt-0.5" />
@@ -324,6 +335,7 @@ import { ref, computed, watch, onBeforeUnmount, nextTick } from 'vue'
 import { useLocale } from '@/composables/useLocale.js'
 const { t } = useLocale()
 import { Plus, Pencil, Trash2, X, ChevronsUpDown, GripVertical, BookmarkPlus, Loader2, Layers } from 'lucide-vue-next'
+import HelpIcon from '@/components/ui/HelpIcon.vue'
 import Sortable from 'sortablejs'
 import { filterBadgeStyle } from '@/utils/filterColors.js'
 import { Button } from '@/components/ui/button'

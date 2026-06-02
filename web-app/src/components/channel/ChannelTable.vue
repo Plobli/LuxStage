@@ -2,13 +2,14 @@
   <div ref="rootEl" class="h-full overflow-x-auto overflow-y-auto bg-card channel-list" style="scrollbar-width: thin;">
     <div class="min-w-230">
     <div class="sticky top-0 z-20 border-b border-border/90 bg-muted shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_8px_rgba(0,0,0,0.10)]">
-      <div v-if="!isMobile" class="grid min-h-8 grid-cols-[2rem_10rem_7rem_6rem_minmax(14rem,22%)_minmax(16rem,1fr)_2.5rem] items-center px-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/90">
+      <div v-if="!isMobile" class="grid min-h-8 grid-cols-[2rem_10rem_7rem_6rem_minmax(14rem,22%)_1fr_7rem_2.5rem] items-center text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/90">
         <div></div>
-        <div>{{ labels.channel }}</div>
-        <div class="px-0">{{ labels.color }}</div>
-        <div class="px-0 text-center">{{ labels.quantity }}</div>
-        <div class="px-0">{{ labels.device }}</div>
-        <div class="px-1.5">{{ labels.notes }}</div>
+        <div class="flex items-center gap-1">{{ labels.channel }}<HelpIcon v-if="labels.channelHelp" :text="labels.channelHelp" /></div>
+        <div class="px-3 flex items-center gap-1">{{ labels.color }}<HelpIcon v-if="labels.colorHelp" :text="labels.colorHelp" /></div>
+        <div class="px-3 flex items-center gap-1">{{ labels.quantity }}<HelpIcon v-if="labels.quantityHelp" :text="labels.quantityHelp" /></div>
+        <div class="px-3 flex items-center gap-1">{{ labels.device }}<HelpIcon v-if="labels.deviceHelp" :text="labels.deviceHelp" /></div>
+        <div class="px-3 flex items-center gap-1">{{ labels.notes }}<HelpIcon v-if="labels.notesHelp" :text="labels.notesHelp" /></div>
+        <div class="px-3 flex items-center gap-1">{{ labels.assign }}<HelpIcon v-if="labels.assignHelp" :text="labels.assignHelp" /></div>
         <div></div>
       </div>
     </div>
@@ -102,15 +103,35 @@
         <template v-else-if="item.type === 'add-btn'">
           <!-- Add button row -->
           <div
-            class="border-t border-border/60 bg-card px-3 py-1.5"
+            class="border-t border-border/60 bg-card px-3 py-1.5 flex items-center justify-between"
             data-no-drag
           >
             <Button
               variant="ghost"
               size="sm"
-              class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+              class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground"
               @click="startAdd(item.group.position)"
             >+ {{ labels.add }}</Button>
+            <template v-if="item.isLast">
+              <div v-if="addingCategory" class="flex items-center gap-2">
+                <Input
+                  autofocus
+                  v-model="newCategoryName"
+                  :placeholder="labels.categoryNamePlaceholder"
+                  @keydown.enter="saveCategory"
+                  @keydown.escape="addingCategory = false"
+                  @blur="saveCategory"
+                  class="h-7 w-48 rounded-sm border-0 border-b border-primary/30 bg-transparent px-1 text-[11px] font-semibold text-foreground shadow-none focus-visible:ring-0"
+                />
+              </div>
+              <Button
+                v-else
+                variant="ghost"
+                size="sm"
+                class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground"
+                @click="startAddCategory"
+              >+ {{ labels.addCategory }}</Button>
+            </template>
           </div>
         </template>
 
@@ -224,7 +245,7 @@
               <Button
                 variant="ghost"
                 size="sm"
-                class="h-8 rounded-sm border border-border/50 px-3 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                class="h-8 rounded-sm border border-border/50 px-3 text-muted-foreground"
                 @click="startAdd('')"
               >+ {{ labels.add }}</Button>
             </div>
@@ -240,6 +261,7 @@
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useContainerWidth } from '@/composables/useContainerWidth'
 import { Check } from 'lucide-vue-next'
+import HelpIcon from '@/components/ui/HelpIcon.vue'
 import Sortable from 'sortablejs'
 import ChannelRow from './ChannelRow.vue'
 import ColorAutocomplete from '../ColorAutocomplete.vue'
@@ -260,6 +282,8 @@ const props = defineProps({
       channel: 'Kanal', color: 'Farbe', device: 'Gerät', quantity: 'Anz.', notes: 'Notizen',
       editPosition: 'Bearbeiten', noCategory: '–', add: 'Kanal hinzufügen',
       delete: 'Löschen', empty: 'Keine Kanäle', channelNr: 'Nr', addressExample: 'z.B. 1',
+      channelHelp: '', colorHelp: '', quantityHelp: '', deviceHelp: '', notesHelp: '', assign: '', assignHelp: '',
+      addCategory: '+ Kategorie', categoryNamePlaceholder: 'Kategoriename …',
     }),
   },
 })
@@ -297,6 +321,27 @@ function ensureStableChannelKey(ch) {
 // ── Add form ───────────────────────────────────────────────────────────────
 const addingPosition = ref(null)
 const addForm = ref({})
+
+// ── Add category ───────────────────────────────────────────────────────────
+const addingCategory = ref(false)
+const newCategoryName = ref('')
+
+function startAddCategory() {
+  addingCategory.value = true
+  newCategoryName.value = ''
+}
+
+function saveCategory() {
+  const name = newCategoryName.value.trim()
+  if (name) {
+    emit('pushSnapshot')
+    const newCh = { channel: '', address: '', device: '', position: name, color: '', notes: '' }
+    ensureStableChannelKey(newCh)
+    props.channels.push(newCh)
+    emit('change')
+  }
+  addingCategory.value = false
+}
 
 // ── Chunked rendering ──────────────────────────────────────────────────────
 const INITIAL_BATCH = 20
@@ -342,10 +387,11 @@ const virtualItems = computed(() => {
       }
       channelsSeen++
     }
+    const isLast = group === props.groupedChannels[props.groupedChannels.length - 1]
     if (addingPosition.value === group.position) {
       items.push({ id: `add-form-${group.position}`, type: 'add-form', group })
     } else {
-      items.push({ id: `add-btn-${group.position}`, type: 'add-btn', group })
+      items.push({ id: `add-btn-${group.position}`, type: 'add-btn', group, isLast })
     }
   }
   return items
@@ -372,13 +418,13 @@ const editingPositionValue = ref('')
 
 function startEditPosition(position) {
   editingPosition.value = position
-  editingPositionValue.value = position
+  editingPositionValue.value = position ?? ''
 }
 
 function savePosition() {
   const oldPos = editingPosition.value
   const newPos = editingPositionValue.value.trim()
-  if (newPos && newPos !== oldPos) {
+  if (newPos !== oldPos) {
     emit('pushSnapshot')
     for (const ch of props.channels) {
       if (ch.position === oldPos) ch.position = newPos

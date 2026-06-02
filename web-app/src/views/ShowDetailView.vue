@@ -128,6 +128,15 @@
                 empty: t('channel.list.empty'),
                 channelNr: t('show.channel.nr'),
                 addressExample: t('show.channel.address.example'),
+                channelHelp: t('channel.help.status'),
+                colorHelp: t('channel.help.color'),
+                quantityHelp: t('channel.help.quantity'),
+                deviceHelp: t('channel.help.device'),
+                notesHelp: t('channel.help.notes'),
+                assign: t('channel.row.assign'),
+                assignHelp: t('channel.help.assign'),
+                addCategory: t('channel.category.add'),
+                categoryNamePlaceholder: t('channel.category.name.placeholder'),
               }"
               @change="scheduleChannelsSave()"
               @recordFocus="recordFocus()"

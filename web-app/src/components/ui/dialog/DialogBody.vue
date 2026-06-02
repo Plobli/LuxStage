@@ -22,7 +22,7 @@ const props = defineProps({
 .dialog-body > label + * {
   display: flex;
   flex-direction: column;
-  gap: 0.625rem; /* 10px */
+  gap: 1.625rem; /* 10px */
 }
 
 /* Label-Stil */

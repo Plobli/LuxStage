@@ -280,7 +280,7 @@
             </button>
           </div>
           <div class="flex flex-col gap-1.5">
-            <label class="text-xs text-muted-foreground">{{ t('zugstange.fixture.position') }} ({{ unit }})</label>
+            <label class="text-xs text-muted-foreground">{{ t('zugstange.fixture.position') }} {{ unitLabel }}</label>
             <Input size="lg" autofocus :modelValue="cmToDisplay(pickerPosition)" type="number" :min="cmToDisplay(-(pickerBar?.length_cm || 600)/2)" :max="cmToDisplay((pickerBar?.length_cm || 600)/2)" :step="inputStep" @update:modelValue="pickerPosition = parseToCm(Number($event))" @keydown.enter="confirmAddFixture" />
           </div>
         </div>
@@ -385,7 +385,7 @@ import { useLocale } from '@/composables/useLocale.js'
 import { useMeasureUnit } from '@/composables/useMeasureUnit'
 const { t } = useLocale()
 
-const { unit, formatLength, cmToDisplay, parseToCm, inputStep, lengthMin, lengthMax } = useMeasureUnit()
+const { unit, unitLabel, formatLength, cmToDisplay, parseToCm, inputStep, lengthMin, lengthMax } = useMeasureUnit()
 import { Plus, Pencil, Trash2, BookmarkPlus, Loader2, AlignJustify } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'

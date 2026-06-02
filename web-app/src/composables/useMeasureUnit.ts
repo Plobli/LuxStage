@@ -89,9 +89,17 @@ const heightMax = computed(() => {
 /** Standard-Eingabewert für neue Zugstange (1100 cm) in aktueller Einheit */
 const defaultLength = computed(() => cmToDisplay(1100))
 
+/** Langform der Einheit für Labels */
+const unitLabel = computed(() => {
+  if (unit.value === 'm') return 'in Metern'
+  if (unit.value === 'mm') return 'in Millimetern'
+  return 'in Zentimetern'
+})
+
 export function useMeasureUnit() {
   return {
     unit: computed(() => unit.value),
+    unitLabel,
     setUnit,
     formatLength,
     formatHeight,

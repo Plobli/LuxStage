@@ -2,7 +2,7 @@
   <div ref="rootEl" class="h-full overflow-x-auto overflow-y-auto bg-card channel-list" style="scrollbar-width: thin;">
     <div class="min-w-230">
     <div class="sticky top-0 z-20 border-b border-border/90 bg-muted shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_8px_rgba(0,0,0,0.10)]">
-      <div v-if="!isMobile" class="grid min-h-8 grid-cols-[2rem_10rem_7rem_6rem_minmax(14rem,22%)_1fr_7rem_2.5rem] items-center text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/90">
+      <div v-if="!isMobile" class="grid min-h-8 grid-cols-[2rem_10rem_7rem_6rem_minmax(14rem,22%)_1fr_7rem_2.5rem] items-center border-b border-border/60 text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/90">
         <div></div>
         <div class="flex items-center gap-1">{{ labels.channel }}<HelpIcon v-if="labels.channelHelp" :text="labels.channelHelp" /></div>
         <div class="px-3 flex items-center gap-1">{{ labels.color }}<HelpIcon v-if="labels.colorHelp" :text="labels.colorHelp" /></div>
@@ -19,57 +19,55 @@
         <template v-if="item.type === 'header'">
           <!-- Header row (group position) -->
           <div
-            class="border-0 bg-muted"
+            class="bg-white/8"
             data-no-drag
             :data-pos="item.group.position"
           >
-          <div v-if="isMobile" class="flex items-center justify-end gap-3 px-3 py-1">
-            <div class="flex min-w-0 items-center gap-2">
-              <template v-if="editingPosition === item.group.position">
-                <Input
-                  v-model="editingPositionValue"
-                  autofocus
-                  @blur="savePosition"
-                  @keydown.enter="savePosition"
-                  @keydown.escape="editingPosition = null"
-                  class="h-6 flex-1 rounded-none border-0 border-b border-primary/30 bg-transparent px-0 text-[11px] font-semibold text-foreground shadow-none focus-visible:ring-0"
-                />
-              </template>
-              <template v-else>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  class="h-auto min-w-0 p-0 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/85 hover:bg-transparent hover:text-foreground"
-                  :title="labels.editPosition"
-                  @click="startEditPosition(item.group.position)"
-                >{{ item.group.position || labels.noCategory }}</Button>
-                <span class="shrink-0 text-[11px] text-muted-foreground/70">({{ item.group.channels.length }})</span>
-              </template>
-            </div>
+          <div v-if="isMobile" class="flex items-center gap-3 px-3 py-1">
+            <template v-if="editingPosition === item.group.position">
+              <Input
+                v-model="editingPositionValue"
+                autofocus
+                @blur="savePosition"
+                @keydown.enter="savePosition"
+                @keydown.escape="editingPosition = null"
+                class="mx-auto h-6 w-48 rounded-none border-0 border-b border-primary/30 bg-transparent px-0 text-center text-[13px] font-medium text-foreground shadow-none focus-visible:ring-0"
+              />
+            </template>
+            <template v-else>
+              <div class="h-px flex-1 bg-foreground/15"></div>
+              <Button
+                variant="ghost"
+                size="sm"
+                class="h-auto shrink-0 rounded-sm px-2 text-center text-[13px] font-medium normal-case tracking-normal text-foreground hover:bg-accent hover:text-accent-foreground"
+                :title="labels.editPosition"
+                @click="startEditPosition(item.group.position)"
+              >{{ item.group.position || labels.noCategory }}</Button>
+              <div class="h-px flex-1 bg-foreground/15"></div>
+            </template>
           </div>
-          <div v-else class="flex items-center justify-end gap-3 px-4 py-1">
-            <div class="flex min-w-0 items-center gap-2">
-              <template v-if="editingPosition === item.group.position">
-                <Input
-                  v-model="editingPositionValue"
-                  autofocus
-                  @blur="savePosition"
-                  @keydown.enter="savePosition"
-                  @keydown.escape="editingPosition = null"
-                  class="h-6 w-80 rounded-none border-0 border-b border-primary/30 bg-transparent px-0 text-[11px] font-semibold text-foreground shadow-none focus-visible:ring-0"
-                />
-              </template>
-              <template v-else>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  class="h-auto p-0 text-right text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/85 hover:bg-transparent hover:text-foreground"
-                  :title="labels.editPosition"
-                  @click="startEditPosition(item.group.position)"
-                >{{ item.group.position || labels.noCategory }}</Button>
-                <span class="text-[11px] text-muted-foreground/70">{{ item.group.channels.length }}</span>
-              </template>
-            </div>
+          <div v-else class="flex items-center gap-3 px-4 py-1">
+            <template v-if="editingPosition === item.group.position">
+              <Input
+                v-model="editingPositionValue"
+                autofocus
+                @blur="savePosition"
+                @keydown.enter="savePosition"
+                @keydown.escape="editingPosition = null"
+                class="mx-auto h-6 w-48 rounded-none border-0 border-b border-primary/30 bg-transparent px-0 text-center text-[13px] font-medium text-foreground shadow-none focus-visible:ring-0"
+              />
+            </template>
+            <template v-else>
+              <div class="h-px flex-1 bg-foreground/15"></div>
+              <Button
+                variant="ghost"
+                size="sm"
+                class="h-auto shrink-0 rounded-sm px-2 text-center text-[13px] font-medium normal-case tracking-normal text-foreground hover:bg-accent hover:text-accent-foreground"
+                :title="labels.editPosition"
+                @click="startEditPosition(item.group.position)"
+              >{{ item.group.position || labels.noCategory }}</Button>
+              <div class="h-px flex-1 bg-foreground/15"></div>
+            </template>
           </div>
         </div>
         </template>
@@ -109,7 +107,7 @@
             <Button
               variant="ghost"
               size="sm"
-              class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground"
+              class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground hover:text-accent-foreground"
               @click="startAdd(item.group.position)"
             >+ {{ labels.add }}</Button>
             <template v-if="item.isLast">
@@ -128,7 +126,7 @@
                 v-else
                 variant="ghost"
                 size="sm"
-                class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground"
+                class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground hover:text-accent-foreground"
                 @click="startAddCategory"
               >+ {{ labels.addCategory }}</Button>
             </template>
@@ -245,7 +243,7 @@
               <Button
                 variant="ghost"
                 size="sm"
-                class="h-8 rounded-sm border border-border/50 px-3 text-muted-foreground"
+                class="h-8 rounded-sm border border-border/50 px-3 text-muted-foreground hover:text-accent-foreground"
                 @click="startAdd('')"
               >+ {{ labels.add }}</Button>
             </div>

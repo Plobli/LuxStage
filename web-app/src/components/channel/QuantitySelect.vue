@@ -29,7 +29,7 @@
         tabindex="-1"
         :aria-label="open ? 'Liste schließen' : 'Vorschläge anzeigen'"
         @mousedown.prevent="toggleDropdown"
-        class="absolute right-0 top-0 h-full w-4 flex items-center justify-center text-xs text-muted-foreground/60 hover:text-muted-foreground/90 focus:outline-none"
+        class="absolute right-0 top-0 h-full w-8 flex items-center justify-center leading-none pb-1 text-3xl text-muted-foreground/60 hover:text-muted-foreground/90 focus:outline-none"
       >▾</button>
     </div>
 

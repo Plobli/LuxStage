@@ -29,7 +29,7 @@
               @click.stop="emit('toggleStatus', ch)"
               :title="ch.channel ? 'Status' : ''"
               :class="[dupChannelNrs.has(ch.channel) ? 'ring-1 ring-yellow-400/60' : '', channelStatusClass]"
-              class="h-full min-h-14 w-full self-stretch cursor-pointer rounded-none border-0 bg-transparent px-1 py-0 text-center font-mono text-xl font-semibold shadow-none transition-colors placeholder:text-muted-foreground/60 focus-visible:ring-0"
+              class="h-full min-h-14 w-full self-stretch cursor-text rounded-none border-0 bg-transparent px-1 py-0 text-center font-mono text-xl font-semibold shadow-none transition-colors placeholder:text-muted-foreground/60 focus-visible:ring-0"
             />
             <span class="flex w-3 select-none items-center justify-center self-stretch font-mono text-sm text-muted-foreground/50">/</span>
             <Input
@@ -104,7 +104,7 @@
               <Button
                 variant="ghost"
                 size="sm"
-                class="no-print h-7 rounded-sm px-2 text-[11px] text-muted-foreground opacity-0 transition-all group-hover/row:opacity-100"
+                class="no-print h-7 rounded-sm px-2 text-[11px] text-muted-foreground hover:text-accent-foreground opacity-0 transition-all group-hover/row:opacity-100 data-[state=open]:opacity-100"
               >
                 <MapPin class="size-3 mr-1" />{{ t('channel.row.assign') }}
               </Button>
@@ -128,7 +128,7 @@
           <Button
             variant="ghost"
             size="icon"
-            class="no-print size-7 rounded-sm text-muted-foreground opacity-0 transition-all group-hover/row:opacity-100"
+            class="no-print size-7 rounded-sm text-muted-foreground hover:text-accent-foreground opacity-0 transition-all group-hover/row:opacity-100"
             @click="deleteDialogOpen = true"
             :title="deleteTitle"
           >

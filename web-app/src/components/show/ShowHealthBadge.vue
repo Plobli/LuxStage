@@ -24,7 +24,7 @@
         <template v-else>
           <DropdownMenuItem
             v-if="noDevice > 0"
-            :class="['cursor-pointer flex items-center justify-between gap-2 text-xs', activeFilter === 'noDevice' ? 'bg-yellow-500/10' : '']"
+            :class="['cursor-pointer flex items-center justify-between gap-2 text-xs focus:bg-accent focus:[&>span]:!text-accent-foreground', activeFilter === 'noDevice' ? 'bg-yellow-500/10' : '']"
             @click="emit('filterNoDevice')"
           >
             <span :class="activeFilter === 'noDevice' ? 'text-yellow-400' : 'text-muted-foreground'">{{ labels.noDevice }}</span>
@@ -32,7 +32,7 @@
           </DropdownMenuItem>
           <DropdownMenuItem
             v-if="noPosition > 0"
-            :class="['cursor-pointer flex items-center justify-between gap-2 text-xs', activeFilter === 'noPosition' ? 'bg-yellow-500/10' : '']"
+            :class="['cursor-pointer flex items-center justify-between gap-2 text-xs focus:bg-accent focus:[&>span]:!text-accent-foreground', activeFilter === 'noPosition' ? 'bg-yellow-500/10' : '']"
             @click="emit('filterNoPosition')"
           >
             <span :class="activeFilter === 'noPosition' ? 'text-yellow-400' : 'text-muted-foreground'">{{ labels.noPosition }}</span>
@@ -40,7 +40,7 @@
           </DropdownMenuItem>
           <DropdownMenuItem
             v-if="noAddress > 0"
-            :class="['cursor-pointer flex items-center justify-between gap-2 text-xs', activeFilter === 'noAddress' ? 'bg-yellow-500/10' : '']"
+            :class="['cursor-pointer flex items-center justify-between gap-2 text-xs focus:bg-accent focus:[&>span]:!text-accent-foreground', activeFilter === 'noAddress' ? 'bg-yellow-500/10' : '']"
             @click="emit('filterNoAddress')"
           >
             <span :class="activeFilter === 'noAddress' ? 'text-yellow-400' : 'text-muted-foreground'">{{ labels.noAddress }}</span>

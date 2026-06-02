@@ -34,6 +34,18 @@
           </div>
         </div>
 
+        <!-- Leer-Zustand kv-table -->
+        <div
+          v-if="singleSectionId && sortedRows(sec).length === 0"
+          class="flex flex-col items-center justify-center gap-3 py-16 text-center px-8"
+        >
+          <Table2 class="size-8 text-muted-foreground/40" />
+          <div>
+            <p class="text-base font-medium text-foreground/70">{{ t('section.fields.empty') }}</p>
+            <p class="text-sm text-muted-foreground mt-1">{{ t('section.fields.empty.desc') }}</p>
+          </div>
+        </div>
+
         <!-- Zeilen -->
         <table class="w-full table-fixed border-collapse bg-card" :data-kv-sortable="sec.id">
           <colgroup>
@@ -98,11 +110,24 @@
       </div>
 
       <div v-else>
+        <!-- Leer-Zustand markdown -->
+        <div
+          v-if="singleSectionId && !(sectionContents.get(sec.id) ?? '').trim() && !isActiveEdit(sec.id)"
+          class="flex flex-col items-center justify-center gap-3 py-16 text-center px-8 cursor-text"
+          @click="activateEdit(sec.id)"
+        >
+          <FileText class="size-8 text-muted-foreground/40" />
+          <div>
+            <p class="text-base font-medium text-foreground/70">{{ t('section.markdown.empty') }}</p>
+            <p class="text-sm text-muted-foreground mt-1">{{ t('section.markdown.empty.desc') }}</p>
+          </div>
+        </div>
         <MarkdownEditor
+          v-show="!singleSectionId || (sectionContents.get(sec.id) ?? '').trim() || isActiveEdit(sec.id)"
           :modelValue="sectionContents.get(sec.id) ?? ''"
           @update:modelValue="onSectionChange(sec.id, $event)"
           @focus="emit('recordFocus')"
-          @blur="emit('commitFocus')"
+          @blur="emit('commitFocus'); deactivateEditIfEmpty(sec.id)"
           class="rounded-none border-0 border-t border-border/60"
         />
       </div>
@@ -126,7 +151,7 @@
 
 <script setup>
 import { ref, computed, watch, nextTick, onBeforeUnmount, defineAsyncComponent } from 'vue'
-import { GripVertical, X } from 'lucide-vue-next'
+import { GripVertical, X, FileText, Table2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import Sortable from 'sortablejs'
@@ -169,6 +194,11 @@ const { confirm } = useConfirm()
 const { t } = useLocale()
 
 const sortableSectionsEl = ref(null)
+const activeEditSectionsSet = new Set()
+const activeEditTick = ref(0)
+function activateEdit(id) { activeEditSectionsSet.add(id); activeEditTick.value++ }
+function deactivateEditIfEmpty(id) { if (!(props.sectionContents.get(id) ?? '').trim()) { activeEditSectionsSet.delete(id); activeEditTick.value++ } }
+function isActiveEdit(id) { activeEditTick.value; return activeEditSectionsSet.has(id) }
 
 // ── Migration: fields → kv-table ──────────────────────────────────────────
 // Konvertiert 'fields'-Sections zu 'kv-table'.

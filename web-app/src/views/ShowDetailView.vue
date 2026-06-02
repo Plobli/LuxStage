@@ -31,9 +31,10 @@
     />
 
     <!-- ── Unterer Bereich: Sidebar + Content ─────────────────────────────── -->
-    <div class="flex flex-1 min-h-0 overflow-hidden">
+    <div class="flex flex-1 min-h-0 overflow-hidden relative">
 
     <!-- ── Sidebar (Desktop) ──────────────────────────────────────────────── -->
+    <div class="hidden md:block w-14 shrink-0" />
     <ShowSidebar
       class="hidden md:flex"
       :activeTab="mobileTab"

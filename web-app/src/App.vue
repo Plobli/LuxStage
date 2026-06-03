@@ -67,8 +67,10 @@
         </div>
       </Transition>
 
-      <!-- Desktop Sidebar (statisch, schmal – nur Icons) -->
-      <div class="hidden md:fixed md:inset-y-0 md:left-0 md:z-50 md:block md:w-20 md:overflow-y-auto md:pb-4 border-r border-border bg-surface-high">
+      <!-- Desktop Sidebar -->
+      <div
+        class="hidden md:fixed md:inset-y-0 md:left-0 md:z-50 md:block md:w-20 md:overflow-y-auto md:pb-4 border-r border-border bg-surface-high"
+      >
         <div class="flex h-16 shrink-0 items-center justify-center">
           <img src="/favicon.png" alt="LuxStage" class="h-9 w-9 rounded-xl" />
         </div>
@@ -83,13 +85,48 @@
               >
                 <div
                   class="flex items-center justify-center rounded-lg p-2 transition-colors"
-                  :class="isActiveRoute(item) ? 'bg-accent/85 text-accent-foreground' : 'group-hover:bg-white/5'"
+                  :class="isActiveRoute(item) ? 'bg-accent/85 text-accent-foreground' : 'group-hover:bg-accent/85 group-hover:text-accent-foreground'"
                 >
                   <component :is="item.icon" class="size-5 shrink-0" aria-hidden="true" />
                 </div>
                 <span v-if="item.badge?.value" class="absolute top-1 right-1 size-2 rounded-full bg-accent" />
-                <span v-if="!item.hideLabel" class="text-[10px] leading-none">{{ item.name }}</span>
+                <span class="text-[10px] leading-none">{{ item.name }}</span>
               </RouterLink>
+
+              <!-- Show-Sub-Nav unterhalb von Shows -->
+              <Transition name="subnav">
+              <div v-if="item.to === '/' && isShowDetail && navItems.length" class="mt-1 w-full border-t border-border/40 pt-1 flex flex-col items-center gap-0.5">
+                  <template v-for="sub in navItems" :key="sub.key ?? sub.type + sub.label">
+                    <div v-if="sub.type === 'group'" class="w-14 px-1 pt-2 pb-0.5">
+                      <div class="text-[8px] font-medium text-muted-foreground/50 uppercase tracking-widest text-center truncate">{{ sub.label }}</div>
+                    </div>
+                    <button
+                      v-else-if="sub.type === 'addSection'"
+                      class="group relative flex flex-col items-center gap-1 rounded-md px-2 py-1.5 w-14 text-muted-foreground/50 hover:text-foreground"
+                      :title="sub.label"
+                      @click="showNavAddSection()"
+                    >
+                      <div class="flex items-center justify-center rounded-lg p-1.5 transition-colors group-hover:bg-accent/85 group-hover:text-accent-foreground">
+                        <Plus class="size-3.5 shrink-0" />
+                      </div>
+                    </button>
+                    <button
+                      v-else
+                      class="group relative flex flex-col items-center gap-1 rounded-md px-2 py-1.5 w-14"
+                      :class="sub.active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'"
+                      :title="sub.label"
+                      @click="showNavNavigate(sub)"
+                    >
+                      <div
+                        class="flex items-center justify-center rounded-lg p-1.5 transition-colors"
+                        :class="sub.active ? 'bg-accent/85 text-accent-foreground' : 'group-hover:bg-accent/85 group-hover:text-accent-foreground'"
+                      >
+                        <component :is="sub.icon" class="size-3.5 shrink-0" />
+                      </div>
+                    </button>
+                  </template>
+                </div>
+              </Transition>
             </li>
           </ul>
         </nav>
@@ -102,7 +139,7 @@
           >
             <div
               class="flex items-center justify-center rounded-lg p-2 transition-colors"
-              :class="route.path.startsWith('/settings') ? 'bg-accent/85' : 'group-hover:bg-white/5'"
+              :class="route.path.startsWith('/settings') ? 'bg-accent/85' : 'group-hover:bg-accent/85 group-hover:text-accent-foreground'"
             >
               <Settings class="size-5 shrink-0" aria-hidden="true" />
             </div>
@@ -113,10 +150,9 @@
             :title="t('nav.logout')"
             class="group flex flex-col items-center gap-1 rounded-md px-2 py-2 w-16 text-muted-foreground hover:text-foreground"
           >
-            <div class="flex items-center justify-center rounded-lg p-2 transition-colors group-hover:bg-white/5">
+            <div class="flex items-center justify-center rounded-lg p-2 transition-colors group-hover:bg-accent/85 group-hover:text-accent-foreground">
               <LogOut class="size-5 shrink-0" aria-hidden="true" />
             </div>
-            <span class="sr-only">{{ t('nav.logout') }}</span>
           </button>
         </div>
       </div>
@@ -158,7 +194,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
 import { RouterView, RouterLink, useRoute, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -179,8 +215,12 @@ import { jwtDecode } from './api/jwtDecode.js'
 import { updateAvailable } from './composables/useUpdateCheck.js'
 import ConfirmDialog from './components/ConfirmDialog.vue'
 import { useConfirmDialog, resolveConfirm } from './composables/useConfirm.js'
+import { useShowNav } from './composables/useShowNav.js'
+import { Plus } from 'lucide-vue-next'
 
 const confirmState = useConfirmDialog()
+const { navItems, navigate: showNavNavigate, addSection: showNavAddSection } = useShowNav()
+const isShowDetail = computed(() => route.path.startsWith('/shows/') && route.path !== '/shows')
 useTokenRefresh()
 
 const { t } = useLocale()
@@ -267,4 +307,17 @@ async function handleLogout() {
 .slide-leave-to {
   transform: translateX(-100%);
 }
+
+.subnav-enter-active,
+.subnav-leave-active {
+  transition: opacity 0.25s ease, max-height 0.3s ease;
+  max-height: 600px;
+  overflow: hidden;
+}
+.subnav-enter-from,
+.subnav-leave-to {
+  opacity: 0;
+  max-height: 0;
+}
+
 </style>

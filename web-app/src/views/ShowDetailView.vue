@@ -30,32 +30,9 @@
       @csvFileSelected="onCsvImportSelected($event)"
     />
 
-    <!-- ── Unterer Bereich: Sidebar + Content ─────────────────────────────── -->
-    <div class="flex flex-1 min-h-0 overflow-hidden relative">
+    <!-- ── Unterer Bereich: Content ──────────────────────────────────────── -->
+    <div class="flex flex-1 min-h-0 overflow-hidden">
 
-    <!-- ── Sidebar (Desktop) ──────────────────────────────────────────────── -->
-    <div class="hidden md:block w-14 shrink-0" />
-    <ShowSidebar
-      class="hidden md:flex"
-      :activeTab="mobileTab"
-      :activeSubTab="aufbauTab"
-      :sectionDefs="sectionDefs"
-      :showBars="meta.use_bars !== false"
-      :showTowers="meta.use_towers !== false"
-      :labels="{
-        channels: t('tab.channels'),
-        groupGeneral: t('nav.general'),
-        groupAufbau: t('tab.gassenturm'),
-        buehne: t('tab.buehne'),
-        obermaschinerie: t('tab.obermaschinerie'),
-        groupMedia: 'Medien',
-        photos: t('tab.photos'),
-        floorplan: t('tab.floorplan'),
-        addSection: t('sections.add'),
-      }"
-      @navigate="onSidebarNavigate($event)"
-      @addSection="addSectionFromSubtab"
-    />
 
     <!-- ── Content ────────────────────────────────────────────────────────── -->
     <div
@@ -475,7 +452,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount, defineAsyncComponent } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount, onUnmounted, defineAsyncComponent } from 'vue'
 import { Loader2, Radio, Layers, Images, Map as MapIcon, Construction, Plus } from 'lucide-vue-next'
 import { useDebounceFn } from '@vueuse/core'
 import { useLocale } from '../composables/useLocale.js'
@@ -495,7 +472,15 @@ import { useMeasureUnit } from '../composables/useMeasureUnit'
 
 import ShowHeader from '../components/show/ShowHeader.vue'
 const ShowActionBar = defineAsyncComponent(() => import('../components/show/ShowActionBar.vue'))
-const ShowSidebar = defineAsyncComponent(() => import('../components/show/ShowSidebar.vue'))
+import { useShowNav } from '../composables/useShowNav.js'
+import {
+  List as NavListIcon,
+  Layers as NavTowerIcon,
+  AlignJustify as NavBarsIcon,
+  LayoutGrid as NavSectionIcon,
+  Image as NavPhotosIcon,
+  Map as NavFloorplanIcon,
+} from 'lucide-vue-next'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
 import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 import { Label } from '@/components/ui/label'
@@ -523,6 +508,7 @@ const GeneratedTextAccordion = defineAsyncComponent(() => import('../components/
 
 const props = defineProps({ id: { type: String, required: true } })
 const { t, locale } = useLocale()
+const { setNav, clearNav, navigate: navNavigate } = useShowNav()
 const { confirm } = useConfirm()
 const { onKeydown } = useKeyboardNav()
 
@@ -764,6 +750,82 @@ function onSidebarNavigate({ tab, subTab }) {
   mobileTab.value = tab
   if (subTab !== undefined) aufbauTab.value = subTab
 }
+
+// ── Haupt-Sidebar Nav-Items ────────────────────────────────────────────────
+const sidebarNavItems = computed(() => {
+  const activeTab = mobileTab.value
+  const activeSubTab = aufbauTab.value
+  const items = []
+
+  items.push({
+    key: 'channels',
+    label: t('tab.channels'),
+    icon: NavListIcon,
+    active: activeTab === 'channels',
+    navigate: () => onSidebarNavigate({ tab: 'channels' }),
+  })
+
+  items.push({ type: 'group', label: t('tab.gassenturm') })
+
+  if (meta.value.use_towers !== false) {
+    items.push({
+      key: 'gassenturm',
+      label: t('tab.buehne'),
+      icon: NavTowerIcon,
+      active: activeTab === 'gassenturm' && activeSubTab === 'gassenturm',
+      navigate: () => onSidebarNavigate({ tab: 'gassenturm', subTab: 'gassenturm' }),
+    })
+  }
+  if (meta.value.use_bars !== false) {
+    items.push({
+      key: 'zugstangen',
+      label: t('tab.obermaschinerie'),
+      icon: NavBarsIcon,
+      active: activeTab === 'gassenturm' && activeSubTab === 'zugstangen',
+      navigate: () => onSidebarNavigate({ tab: 'gassenturm', subTab: 'zugstangen' }),
+    })
+  }
+  for (const s of [...sectionDefs.value].sort((a, b) => a.order - b.order)) {
+    items.push({
+      key: `section:${s.id}`,
+      label: s.title || '(kein Titel)',
+      icon: NavSectionIcon,
+      active: activeTab === 'gassenturm' && activeSubTab === `section:${s.id}`,
+      navigate: () => onSidebarNavigate({ tab: 'gassenturm', subTab: `section:${s.id}` }),
+    })
+  }
+  items.push({ type: 'addSection', label: t('sections.add') })
+
+  items.push({ type: 'group', label: 'Medien' })
+
+  items.push({
+    key: 'photos',
+    label: t('tab.photos'),
+    icon: NavPhotosIcon,
+    active: activeTab === 'photos',
+    navigate: () => onSidebarNavigate({ tab: 'photos' }),
+  })
+  items.push({
+    key: 'floorplan',
+    label: t('tab.floorplan'),
+    icon: NavFloorplanIcon,
+    active: activeTab === 'floorplan',
+    navigate: () => onSidebarNavigate({ tab: 'floorplan' }),
+  })
+
+  return items
+})
+
+watch(sidebarNavItems, (items) => {
+  setNav({
+    items,
+    activeKey: mobileTab.value,
+    navigate: (item) => item.navigate?.(),
+    addSection: addSectionFromSubtab,
+  })
+}, { immediate: true })
+
+onUnmounted(() => clearNav())
 
 const aufbauNavVisible = computed(() =>
   meta.value.use_towers !== false || meta.value.use_bars !== false || sectionDefs.value.length > 0

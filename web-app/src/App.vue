@@ -69,7 +69,7 @@
 
       <!-- Desktop Sidebar -->
       <div
-        class="hidden md:fixed md:inset-y-0 md:left-0 md:z-50 md:flex md:flex-col md:overflow-y-auto md:pb-4 border-r border-border bg-surface-high transition-[width] duration-300 ease-in-out"
+        class="hidden md:fixed md:inset-y-0 md:left-0 md:z-50 md:flex md:flex-col md:overflow-y-auto md:pb-4 overflow-x-hidden border-r border-border bg-surface-high transition-[width] duration-300 ease-in-out"
         :class="sidebarExpanded ? 'md:w-64' : 'md:w-20'"
         @mouseenter="sidebarExpanded = true"
         @mouseleave="sidebarExpanded = false"
@@ -82,43 +82,49 @@
 
         <!-- Hauptnavigation -->
         <nav class="mt-2 flex-1">
-          <ul role="list" class="flex flex-col gap-1 px-2">
-            <li v-for="item in navigation" :key="item.name">
+          <ul role="list" class="flex flex-col gap-1 px-2" :class="sidebarExpanded ? 'items-stretch' : 'items-start'">
+            <li v-for="item in navigation" :key="item.name" :class="sidebarExpanded ? 'w-full' : ''">
               <RouterLink
                 :to="item.to"
                 :title="sidebarExpanded ? undefined : item.name"
-                class="group relative flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors overflow-hidden"
-                :class="isActiveRoute(item) ? 'bg-accent/85 text-accent-foreground' : 'text-muted-foreground hover:bg-accent/85 hover:text-accent-foreground'"
+                class="group relative flex items-center gap-3 rounded-lg px-3 py-2.5 w-full transition-colors"
+                :class="isActiveRoute(item) ? 'text-accent-foreground' : 'text-muted-foreground hover:text-accent-foreground'"
               >
-                <component :is="item.icon" class="size-5 shrink-0" aria-hidden="true" />
+                <div class="shrink-0 rounded-lg p-1.5 transition-colors" :class="isActiveRoute(item) ? 'bg-accent/85' : 'group-hover:bg-accent/85'">
+                  <component :is="item.icon" class="size-5" aria-hidden="true" />
+                </div>
                 <span v-if="item.badge?.value" class="absolute top-1 right-1 size-2 rounded-full bg-accent" />
                 <span class="text-sm font-medium whitespace-nowrap transition-[opacity,max-width] duration-300 ease-in-out overflow-hidden" :class="sidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'">{{ item.name }}</span>
               </RouterLink>
 
               <!-- Show-Sub-Nav unterhalb von Shows -->
               <Transition name="subnav">
-                <div v-if="item.to === '/' && isShowDetail && navItems.length" class="mt-1 ml-4 border-l border-border/30 pl-2 flex flex-col gap-0.5">
+                <div v-if="item.to === '/' && isShowDetail && navItems.length" class="mt-1 ml-2 border-l border-border/30 pl-1 flex flex-col gap-0.5" :class="sidebarExpanded ? 'items-stretch' : 'items-start'">
                   <template v-for="sub in navItems" :key="sub.key ?? sub.type + sub.label">
                     <div v-if="sub.type === 'group'" class="px-2 pt-4 pb-1 overflow-hidden">
                       <div class="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest whitespace-nowrap transition-[opacity] duration-300" :class="sidebarExpanded ? 'opacity-100' : 'opacity-0'">{{ sub.label }}</div>
                     </div>
                     <button
                       v-else-if="sub.type === 'addSection'"
-                      class="group relative flex items-center gap-3 rounded-md px-3 py-2 w-full text-muted-foreground hover:bg-accent/85 hover:text-accent-foreground transition-colors overflow-hidden"
+                      class="group relative flex items-center gap-3 rounded-md px-3 py-2 w-full text-muted-foreground hover:text-accent-foreground transition-colors"
                       :title="sidebarExpanded ? undefined : sub.label"
                       @click="showNavAddSection()"
                     >
-                      <Plus class="size-4 shrink-0" />
+                      <div class="shrink-0 rounded-md p-1 transition-colors group-hover:bg-accent/85">
+                        <Plus class="size-4" />
+                      </div>
                       <span class="text-sm whitespace-nowrap transition-[opacity,max-width] duration-300 ease-in-out overflow-hidden" :class="sidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'">{{ sub.label }}</span>
                     </button>
                     <button
                       v-else
-                      class="group relative flex items-center gap-3 rounded-md px-3 py-2 w-full transition-colors overflow-hidden"
-                      :class="sub.active ? 'bg-accent/85 text-accent-foreground' : 'text-muted-foreground hover:bg-accent/85 hover:text-accent-foreground'"
+                      class="group relative flex items-center gap-3 rounded-md px-3 py-2 w-full transition-colors"
+                      :class="sub.active ? 'text-accent-foreground' : 'text-muted-foreground hover:text-accent-foreground'"
                       :title="sidebarExpanded ? undefined : sub.label"
                       @click="showNavNavigate(sub)"
                     >
-                      <component :is="sub.icon" class="size-4 shrink-0" />
+                      <div class="shrink-0 rounded-md p-1 transition-colors" :class="sub.active ? 'bg-accent/85' : 'group-hover:bg-accent/85'">
+                        <component :is="sub.icon" class="size-4" />
+                      </div>
                       <span class="text-sm whitespace-nowrap transition-[opacity,max-width] duration-300 ease-in-out overflow-hidden" :class="sidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'">{{ sub.label }}</span>
                     </button>
                   </template>
@@ -129,23 +135,27 @@
         </nav>
 
         <!-- Settings + Logout -->
-        <div class="flex flex-col gap-0.5 px-2">
+        <div class="flex flex-col gap-0.5 px-2" :class="sidebarExpanded ? 'items-stretch' : 'items-start'">
           <RouterLink
             to="/settings"
             :title="sidebarExpanded ? undefined : t('nav.settings')"
-            class="group relative flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors overflow-hidden"
-            :class="route.path.startsWith('/settings') ? 'bg-accent/85 text-accent-foreground' : 'text-muted-foreground hover:bg-accent/85 hover:text-accent-foreground'"
+            class="group relative flex items-center gap-3 rounded-lg px-3 py-2.5 w-full transition-colors overflow-hidden"
+            :class="route.path.startsWith('/settings') ? 'text-accent-foreground' : 'text-muted-foreground hover:text-accent-foreground'"
           >
-            <Settings class="size-5 shrink-0" aria-hidden="true" />
+            <div class="shrink-0 rounded-lg p-1.5 transition-colors" :class="route.path.startsWith('/settings') ? 'bg-accent/85' : 'group-hover:bg-accent/85'">
+              <Settings class="size-5" aria-hidden="true" />
+            </div>
             <span v-if="updateAvailable" class="absolute top-1 right-1 size-2 rounded-full bg-accent" />
             <span class="text-sm font-medium whitespace-nowrap transition-[opacity,max-width] duration-300 ease-in-out overflow-hidden" :class="sidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'">{{ t('nav.settings') }}</span>
           </RouterLink>
           <button
             @click="handleLogout"
             :title="sidebarExpanded ? undefined : t('nav.logout')"
-            class="group flex items-center gap-3 rounded-lg px-3 py-2.5 w-full text-muted-foreground hover:bg-accent/85 hover:text-accent-foreground transition-colors overflow-hidden"
+            class="group flex items-center gap-3 rounded-lg px-3 py-2.5 w-full text-muted-foreground hover:text-accent-foreground transition-colors overflow-hidden"
           >
-            <LogOut class="size-5 shrink-0" aria-hidden="true" />
+            <div class="shrink-0 rounded-lg p-1.5 transition-colors group-hover:bg-accent/85">
+              <LogOut class="size-5" aria-hidden="true" />
+            </div>
             <span class="text-sm font-medium whitespace-nowrap transition-[opacity,max-width] duration-300 ease-in-out overflow-hidden" :class="sidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'">{{ t('nav.logout') }}</span>
           </button>
         </div>
@@ -302,6 +312,7 @@ async function handleLogout() {
 .slide-leave-to {
   transform: translateX(-100%);
 }
+
 
 .subnav-enter-active,
 .subnav-leave-active {

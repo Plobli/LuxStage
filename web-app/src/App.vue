@@ -88,9 +88,9 @@
                 :to="item.to"
                 :title="sidebarExpanded ? undefined : item.name"
                 class="group relative flex items-center gap-3 rounded-lg px-3 py-2.5 w-full transition-colors"
-                :class="isActiveRoute(item) ? 'text-accent-foreground' : 'text-muted-foreground hover:text-accent-foreground'"
+                :class="[isActiveRoute(item) ? 'text-accent-foreground' : 'text-muted-foreground hover:text-accent-foreground', sidebarExpanded && isActiveRoute(item) ? 'bg-accent/85' : '', sidebarExpanded && !isActiveRoute(item) ? 'hover:bg-accent/85' : '']"
               >
-                <div class="shrink-0 rounded-lg p-1.5 transition-colors" :class="isActiveRoute(item) ? 'bg-accent/85' : 'group-hover:bg-accent/85'">
+                <div class="shrink-0 rounded-lg p-1.5 transition-colors" :class="!sidebarExpanded ? (isActiveRoute(item) ? 'bg-accent/85' : 'group-hover:bg-accent/85') : ''">
                   <component :is="item.icon" class="size-5" aria-hidden="true" />
                 </div>
                 <span v-if="item.badge?.value" class="absolute top-1 right-1 size-2 rounded-full bg-accent" />
@@ -107,10 +107,11 @@
                     <button
                       v-else-if="sub.type === 'addSection'"
                       class="group relative flex items-center gap-3 rounded-md px-3 py-2 w-full text-muted-foreground hover:text-accent-foreground transition-colors"
+                      :class="sidebarExpanded ? 'hover:bg-accent/85' : ''"
                       :title="sidebarExpanded ? undefined : sub.label"
                       @click="showNavAddSection()"
                     >
-                      <div class="shrink-0 rounded-md p-1 transition-colors group-hover:bg-accent/85">
+                      <div class="shrink-0 rounded-md p-1 transition-colors" :class="!sidebarExpanded ? 'group-hover:bg-accent/85' : ''">
                         <Plus class="size-4" />
                       </div>
                       <span class="text-sm whitespace-nowrap transition-[opacity,max-width] duration-300 ease-in-out overflow-hidden" :class="sidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'">{{ sub.label }}</span>
@@ -118,11 +119,11 @@
                     <button
                       v-else
                       class="group relative flex items-center gap-3 rounded-md px-3 py-2 w-full transition-colors"
-                      :class="sub.active ? 'text-accent-foreground' : 'text-muted-foreground hover:text-accent-foreground'"
+                      :class="[sub.active ? 'text-accent-foreground' : 'text-muted-foreground hover:text-accent-foreground', sidebarExpanded ? (sub.active ? 'bg-accent/85' : 'hover:bg-accent/85') : '']"
                       :title="sidebarExpanded ? undefined : sub.label"
                       @click="showNavNavigate(sub)"
                     >
-                      <div class="shrink-0 rounded-md p-1 transition-colors" :class="sub.active ? 'bg-accent/85' : 'group-hover:bg-accent/85'">
+                      <div class="shrink-0 rounded-md p-1 transition-colors" :class="!sidebarExpanded ? (sub.active ? 'bg-accent/85' : 'group-hover:bg-accent/85') : ''">
                         <component :is="sub.icon" class="size-4" />
                       </div>
                       <span class="text-sm whitespace-nowrap transition-[opacity,max-width] duration-300 ease-in-out overflow-hidden" :class="sidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'">{{ sub.label }}</span>
@@ -140,9 +141,9 @@
             to="/settings"
             :title="sidebarExpanded ? undefined : t('nav.settings')"
             class="group relative flex items-center gap-3 rounded-lg px-3 py-2.5 w-full transition-colors overflow-hidden"
-            :class="route.path.startsWith('/settings') ? 'text-accent-foreground' : 'text-muted-foreground hover:text-accent-foreground'"
+            :class="[route.path.startsWith('/settings') ? 'text-accent-foreground' : 'text-muted-foreground hover:text-accent-foreground', sidebarExpanded ? (route.path.startsWith('/settings') ? 'bg-accent/85' : 'hover:bg-accent/85') : '']"
           >
-            <div class="shrink-0 rounded-lg p-1.5 transition-colors" :class="route.path.startsWith('/settings') ? 'bg-accent/85' : 'group-hover:bg-accent/85'">
+            <div class="shrink-0 rounded-lg p-1.5 transition-colors" :class="!sidebarExpanded ? (route.path.startsWith('/settings') ? 'bg-accent/85' : 'group-hover:bg-accent/85') : ''">
               <Settings class="size-5" aria-hidden="true" />
             </div>
             <span v-if="updateAvailable" class="absolute top-1 right-1 size-2 rounded-full bg-accent" />
@@ -152,8 +153,9 @@
             @click="handleLogout"
             :title="sidebarExpanded ? undefined : t('nav.logout')"
             class="group flex items-center gap-3 rounded-lg px-3 py-2.5 w-full text-muted-foreground hover:text-accent-foreground transition-colors overflow-hidden"
+            :class="sidebarExpanded ? 'hover:bg-accent/85' : ''"
           >
-            <div class="shrink-0 rounded-lg p-1.5 transition-colors group-hover:bg-accent/85">
+            <div class="shrink-0 rounded-lg p-1.5 transition-colors" :class="!sidebarExpanded ? 'group-hover:bg-accent/85' : ''">
               <LogOut class="size-5" aria-hidden="true" />
             </div>
             <span class="text-sm font-medium whitespace-nowrap transition-[opacity,max-width] duration-300 ease-in-out overflow-hidden" :class="sidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'">{{ t('nav.logout') }}</span>

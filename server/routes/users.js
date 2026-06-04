@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import * as db from '../db.js'
-import { requireAdmin } from '../auth.js'
+import { requireAdmin, requireAuth } from '../auth.js'
 import { readJsonBody, json } from '../helpers.js'
 import { sendWelcomeEmail } from '../email.js'
 
@@ -8,6 +8,18 @@ const USER_ID = /^\/api\/users\/([^/]+)$/
 
 export async function userRoutes(req, res, pathname) {
   const { method } = req
+
+  if (method === 'GET' && pathname === '/api/me/preferences') {
+    const user = requireAuth(req, res); if (!user) return
+    return json(res, 200, db.getUserPreferences(user.username))
+  }
+
+  if (method === 'PATCH' && pathname === '/api/me/preferences') {
+    const user = requireAuth(req, res); if (!user) return
+    const body = await readJsonBody(req, res); if (body === null) return
+    db.setUserPreferences(user.username, body)
+    return json(res, 200, { ok: true })
+  }
 
   if (method === 'GET' && pathname === '/api/users') {
     const admin = requireAdmin(req, res); if (!admin) return

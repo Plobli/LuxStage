@@ -115,6 +115,7 @@ export async function router(req, res) {
 
       // Reihenfolge: spezifische Prefixe zuerst
       if (pathname.startsWith('/api/auth/'))         { const r = await authRoutes(req, res, pathname);          if (nil(r)) notFound(res); return }
+      if (pathname.startsWith('/api/me/'))            { const r = await userRoutes(req, res, pathname);          if (nil(r)) notFound(res); return }
       if (pathname.startsWith('/api/users'))          { const r = await userRoutes(req, res, pathname);          if (nil(r)) notFound(res); return }
       if (pathname.startsWith('/api/smtp'))           { const r = await smtpRoutes(req, res, pathname);          if (nil(r)) notFound(res); return }
       if (pathname.startsWith('/api/settings/'))      { const r = await displayRoutes(req, res, pathname);       if (nil(r)) notFound(res); return }

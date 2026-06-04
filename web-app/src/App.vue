@@ -274,12 +274,18 @@ onUnmounted(() => {
   clearInterval(pingInterval)
 })
 
-onMounted(() => {
+onMounted(async () => {
   void pingServer()
   pingInterval = setInterval(pingServer, 30_000) // 30 s statt 10 s – weniger Last bei vielen gleichzeitigen Clients
 
   void checkForUpdate()
   updateCheckInterval = setInterval(checkForUpdate, 60 * 60 * 1000)
+
+  try {
+    const prefs = await api.get('/api/me/preferences')
+    sidebarPinned.value = prefs.sidebarPinned
+    sidebarExpanded.value = prefs.sidebarPinned
+  } catch { /* ignorieren */ }
 })
 const route = useRoute()
 const router = useRouter()
@@ -290,6 +296,7 @@ const sidebarExpanded = ref(false)
 function togglePin() {
   sidebarPinned.value = !sidebarPinned.value
   sidebarExpanded.value = sidebarPinned.value
+  api.patch('/api/me/preferences', { sidebarPinned: sidebarPinned.value }).catch(() => {})
 }
 
 function onSidebarEnter() { if (!sidebarPinned.value) sidebarExpanded.value = true }

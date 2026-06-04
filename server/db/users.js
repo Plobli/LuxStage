@@ -36,3 +36,13 @@ export async function createUser(username, password, role, email = '') {
 export function deleteUser(username) {
   dbContainer.db.prepare('DELETE FROM users WHERE username = ?').run(username)
 }
+
+export function getUserPreferences(username) {
+  const row = dbContainer.db.prepare('SELECT sidebar_pinned FROM users WHERE username = ?').get(username)
+  return { sidebarPinned: row?.sidebar_pinned === 1 }
+}
+
+export function setUserPreferences(username, { sidebarPinned }) {
+  dbContainer.db.prepare('UPDATE users SET sidebar_pinned = ? WHERE username = ?')
+    .run(sidebarPinned ? 1 : 0, username)
+}

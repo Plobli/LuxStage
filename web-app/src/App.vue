@@ -110,9 +110,7 @@
               <Transition name="subnav">
                 <div v-if="item.to === '/' && isShowDetail && navItems.length" class="mt-1 ml-2 border-l border-border/30 pl-1 flex flex-col gap-0.5 items-stretch">
                   <template v-for="sub in navItems" :key="sub.key ?? sub.type + sub.label">
-                    <div v-if="sub.type === 'group'" class="px-2 pt-4 pb-1 overflow-hidden">
-                      <div class="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest whitespace-nowrap transition-[opacity] duration-300" :class="sidebarExpanded ? 'opacity-100' : 'opacity-0'">{{ sub.label }}</div>
-                    </div>
+                    <div v-if="sub.type === 'group'" />
                     <button
                       v-else-if="sub.type === 'addSection'"
                       class="group relative flex items-center gap-3 rounded-lg px-3 py-1.5 w-full text-muted-foreground hover:text-accent-foreground transition-colors"

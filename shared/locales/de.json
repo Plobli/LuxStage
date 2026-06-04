@@ -170,7 +170,7 @@
   "history.channel_count": "{n} Kanäle",
   "history.back": "← Zurück",
   "sections.btn": "Abschnitte",
-  "sections.add": "+ Abschnitt",
+  "sections.add": "Abschnitt",
   "sections.title.placeholder": "Titel",
   "sections.type.markdown": "Textfeld",
   "sections.type.fields": "Felder",

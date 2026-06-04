@@ -167,7 +167,7 @@
   "history.channel_count": "{n} channels",
   "history.back": "← Back",
   "sections.btn": "Sections",
-  "sections.add": "+ Section",
+  "sections.add": "Section",
   "sections.title.placeholder": "Title",
   "sections.type.markdown": "Text field",
   "sections.type.fields": "Fields",

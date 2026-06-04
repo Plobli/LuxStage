@@ -474,13 +474,15 @@ import ShowHeader from '../components/show/ShowHeader.vue'
 const ShowActionBar = defineAsyncComponent(() => import('../components/show/ShowActionBar.vue'))
 import { useShowNav } from '../composables/useShowNav.js'
 import {
-  List as NavListIcon,
-  Layers as NavTowerIcon,
-  AlignJustify as NavBarsIcon,
-  LayoutGrid as NavSectionIcon,
   Image as NavPhotosIcon,
   Map as NavFloorplanIcon,
+  TriangleAlert as IconHinweise,
 } from 'lucide-vue-next'
+import IconKanaele from '@/components/icons/IconKanaele.vue'
+import IconBeleuchtungsgestelle from '@/components/icons/IconBeleuchtungsgestelle.vue'
+import IconObermaschinerie from '@/components/icons/IconObermaschinerie.vue'
+import IconAufbau from '@/components/icons/IconAufbau.vue'
+import IconRaum from '@/components/icons/IconRaum.vue'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
 import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 import { Label } from '@/components/ui/label'
@@ -760,7 +762,8 @@ const sidebarNavItems = computed(() => {
   items.push({
     key: 'channels',
     label: t('tab.channels'),
-    icon: NavListIcon,
+    icon: IconKanaele,
+    iconClass: 'size-6',
     active: activeTab === 'channels',
     navigate: () => onSidebarNavigate({ tab: 'channels' }),
   })
@@ -769,7 +772,8 @@ const sidebarNavItems = computed(() => {
     items.push({
       key: 'gassenturm',
       label: t('tab.buehne'),
-      icon: NavTowerIcon,
+      icon: IconBeleuchtungsgestelle,
+      iconClass: 'size-6',
       active: activeTab === 'gassenturm' && activeSubTab === 'gassenturm',
       navigate: () => onSidebarNavigate({ tab: 'gassenturm', subTab: 'gassenturm' }),
     })
@@ -778,7 +782,8 @@ const sidebarNavItems = computed(() => {
     items.push({
       key: 'zugstangen',
       label: t('tab.obermaschinerie'),
-      icon: NavBarsIcon,
+      icon: IconObermaschinerie,
+      iconClass: 'size-6',
       active: activeTab === 'gassenturm' && activeSubTab === 'zugstangen',
       navigate: () => onSidebarNavigate({ tab: 'gassenturm', subTab: 'zugstangen' }),
     })
@@ -787,7 +792,8 @@ const sidebarNavItems = computed(() => {
     items.push({
       key: `section:${s.id}`,
       label: s.title || '(kein Titel)',
-      icon: NavSectionIcon,
+      icon: s.title === 'Hinweise' ? IconHinweise : s.title === 'Raum' ? IconRaum : IconAufbau,
+      iconClass: s.title === 'Hinweise' ? 'size-5' : 'size-6',
       active: activeTab === 'gassenturm' && activeSubTab === `section:${s.id}`,
       navigate: () => onSidebarNavigate({ tab: 'gassenturm', subTab: `section:${s.id}` }),
     })

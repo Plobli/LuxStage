@@ -110,18 +110,19 @@
               <Transition name="subnav">
                 <div v-if="item.to === '/' && isShowDetail && navItems.length" class="mt-1 ml-2 border-l border-border/30 pl-1 flex flex-col gap-0.5 items-stretch">
                   <template v-for="sub in navItems" :key="sub.key ?? sub.type + sub.label">
-                    <div v-if="sub.type === 'group'" />
+                    <div v-if="sub.type === 'group'" class="px-2 pt-4 pb-1 overflow-hidden">
+                      <div class="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest whitespace-nowrap transition-[opacity] duration-300" :class="sidebarExpanded ? 'opacity-100' : 'opacity-0'">{{ sub.label }}</div>
+                    </div>
                     <button
                       v-else-if="sub.type === 'addSection'"
-                      class="group relative flex items-center gap-3 rounded-lg px-3 py-1.5 w-full text-muted-foreground hover:text-accent-foreground transition-colors"
-                      :class="sidebarExpanded ? 'nav-hover' : ''"
+                      class="group relative flex items-center gap-2 rounded-lg px-3 py-1 w-full text-muted-foreground/60 hover:text-muted-foreground transition-colors"
                       :title="sidebarExpanded ? undefined : sub.label"
                       @click="showNavAddSection()"
                     >
-                      <div class="shrink-0 rounded-md p-1.5 transition-colors" :class="!sidebarExpanded ? 'group-hover:bg-accent/85' : ''">
-                        <Plus class="size-5" />
+                      <div class="shrink-0 size-9 flex items-center justify-center">
+                        <Plus class="size-4" />
                       </div>
-                      <span class="text-sm whitespace-nowrap transition-[opacity,max-width] duration-300 ease-in-out overflow-hidden" :class="sidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'">{{ sub.label }}</span>
+                      <span class="text-xs whitespace-nowrap transition-[opacity,max-width] duration-300 ease-in-out overflow-hidden" :class="sidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'">{{ sub.label }}</span>
                     </button>
                     <button
                       v-else
@@ -130,8 +131,8 @@
                       :title="sidebarExpanded ? undefined : sub.label"
                       @click="showNavNavigate(sub)"
                     >
-                      <div class="shrink-0 rounded-md p-1.5 transition-colors" :class="!sidebarExpanded ? (sub.active ? 'bg-accent/85' : 'group-hover:bg-accent/85') : ''">
-                        <component :is="sub.icon" class="size-5" />
+                      <div class="shrink-0 rounded-md p-1.5 transition-colors size-9 flex items-center justify-center" :class="!sidebarExpanded ? (sub.active ? 'bg-accent/85' : 'group-hover:bg-accent/85') : ''">
+                        <component :is="sub.icon" :class="sub.iconClass ?? 'size-5'" />
                       </div>
                       <span class="text-sm whitespace-nowrap transition-[opacity,max-width] duration-300 ease-in-out overflow-hidden" :class="sidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'">{{ sub.label }}</span>
                     </button>

@@ -1,0 +1,12 @@
+<template>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="-24 -24 48 48" fill="none">
+    <g stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <circle cx="-12" cy="-13" r="2.6" fill="currentColor"/>
+      <line x1="-5" y1="-13" x2="16" y2="-13"/>
+      <circle cx="-12" cy="0" r="2.6" fill="currentColor"/>
+      <line x1="-5" y1="0" x2="16" y2="0"/>
+      <circle cx="-12" cy="13" r="2.6" fill="currentColor"/>
+      <line x1="-5" y1="13" x2="16" y2="13"/>
+    </g>
+  </svg>
+</template>

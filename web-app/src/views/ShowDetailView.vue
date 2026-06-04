@@ -765,8 +765,6 @@ const sidebarNavItems = computed(() => {
     navigate: () => onSidebarNavigate({ tab: 'channels' }),
   })
 
-  items.push({ type: 'group', label: t('tab.gassenturm') })
-
   if (meta.value.use_towers !== false) {
     items.push({
       key: 'gassenturm',

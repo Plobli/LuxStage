@@ -68,25 +68,11 @@
       </Transition>
 
       <!-- Desktop Sidebar -->
-      <div
-        class="hidden md:fixed md:inset-y-0 md:left-0 md:z-50 md:flex md:flex-col md:overflow-y-auto md:pb-4 overflow-x-hidden border-r border-border bg-surface-high transition-[width] duration-300 ease-in-out"
-        :class="sidebarExpanded ? 'md:w-64' : 'md:w-20'"
-        @mouseenter="onSidebarEnter"
-        @mouseleave="onSidebarLeave"
-      >
+      <div class="hidden md:fixed md:inset-y-0 md:left-0 md:z-50 md:flex md:flex-col md:w-64 md:overflow-y-auto md:pb-4 overflow-x-hidden border-r border-border bg-surface-high">
         <!-- Logo -->
-        <div class="flex h-16 shrink-0 items-center px-3 gap-3 overflow-hidden">
+        <div class="flex h-16 shrink-0 items-center px-3 gap-3">
           <img src="/favicon.png" alt="LuxStage" class="h-9 w-9 rounded-xl shrink-0" />
-          <span class="text-sm font-bold text-foreground whitespace-nowrap transition-[opacity,max-width] duration-300 ease-in-out overflow-hidden flex-1" :class="sidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'">LuxStage</span>
-          <button
-            v-if="sidebarExpanded"
-            @click="togglePin"
-            :title="sidebarPinned ? 'Sidebar lösen' : 'Sidebar feststellen'"
-            class="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent/85 hover:text-accent-foreground"
-          >
-            <PinOff v-if="sidebarPinned" class="size-4" />
-            <Pin v-else class="size-4" />
-          </button>
+          <span class="text-sm font-bold text-foreground">LuxStage</span>
         </div>
 
         <!-- Hauptnavigation -->
@@ -95,50 +81,45 @@
             <li v-for="item in navigation" :key="item.name" class="w-full">
               <RouterLink
                 :to="item.to"
-                :title="sidebarExpanded ? undefined : item.name"
                 class="group relative flex items-center gap-3 rounded-lg px-3 py-1.5 w-full transition-colors"
-                :class="[isActiveRoute(item) ? 'text-accent-foreground' : 'text-muted-foreground', sidebarExpanded && isActiveRoute(item) ? 'bg-accent/85' : '', sidebarExpanded && !isActiveRoute(item) ? 'nav-hover' : '']"
+                :class="[isActiveRoute(item) ? 'text-accent-foreground bg-accent/85' : 'text-muted-foreground nav-hover']"
               >
-                <div class="shrink-0 rounded-md p-1.5 transition-colors" :class="!sidebarExpanded ? (isActiveRoute(item) ? 'bg-accent/85' : 'group-hover:bg-accent/85') : ''">
+                <div class="shrink-0 rounded-md p-1.5">
                   <component :is="item.icon" class="size-5" aria-hidden="true" />
                 </div>
                 <span v-if="item.badge?.value" class="absolute top-1 right-1 size-2 rounded-full bg-accent" />
-                <span class="text-sm font-medium whitespace-nowrap transition-[opacity,max-width] duration-300 ease-in-out overflow-hidden" :class="sidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'">{{ item.name }}</span>
+                <span class="text-sm font-medium">{{ item.name }}</span>
               </RouterLink>
 
               <!-- Show-Sub-Nav unterhalb von Shows -->
-              <Transition name="subnav">
-                <div v-if="item.to === '/' && isShowDetail && navItems.length" class="mt-1 ml-2 border-l border-border/30 pl-1 flex flex-col gap-0.5 items-stretch">
-                  <template v-for="sub in navItems" :key="sub.key ?? sub.type + sub.label">
-                    <div v-if="sub.type === 'group'" class="px-2 pt-4 pb-1 overflow-hidden">
-                      <div class="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest whitespace-nowrap transition-[opacity] duration-300" :class="sidebarExpanded ? 'opacity-100' : 'opacity-0'">{{ sub.label }}</div>
+              <div v-if="item.to === '/' && isShowDetail && navItems.length" class="mt-1 ml-2 border-l border-border/30 pl-1 flex flex-col gap-0.5 items-stretch">
+                <template v-for="sub in navItems" :key="sub.key ?? sub.type + sub.label">
+                  <div v-if="sub.type === 'group'" class="px-2 pt-4 pb-1">
+                    <div class="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest">{{ sub.label }}</div>
+                  </div>
+                  <button
+                    v-else-if="sub.type === 'addSection'"
+                    class="group relative flex items-center gap-2 rounded-lg px-3 py-1 w-full text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+                    @click="showNavAddSection()"
+                  >
+                    <div class="shrink-0 size-9 flex items-center justify-center">
+                      <Plus class="size-4" />
                     </div>
-                    <button
-                      v-else-if="sub.type === 'addSection'"
-                      class="group relative flex items-center gap-2 rounded-lg px-3 py-1 w-full text-muted-foreground/60 hover:text-muted-foreground transition-colors"
-                      :title="sidebarExpanded ? undefined : sub.label"
-                      @click="showNavAddSection()"
-                    >
-                      <div class="shrink-0 size-9 flex items-center justify-center">
-                        <Plus class="size-4" />
-                      </div>
-                      <span class="text-xs whitespace-nowrap transition-[opacity,max-width] duration-300 ease-in-out overflow-hidden" :class="sidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'">{{ sub.label }}</span>
-                    </button>
-                    <button
-                      v-else
-                      class="group relative flex items-center gap-3 rounded-lg px-3 py-1.5 w-full transition-colors"
-                      :class="[sub.active ? 'text-accent-foreground' : 'text-muted-foreground', sidebarExpanded ? (sub.active ? 'bg-accent/85' : 'nav-hover') : '']"
-                      :title="sidebarExpanded ? undefined : sub.label"
-                      @click="showNavNavigate(sub)"
-                    >
-                      <div class="shrink-0 rounded-md p-1.5 transition-colors size-9 flex items-center justify-center" :class="!sidebarExpanded ? (sub.active ? 'bg-accent/85' : 'group-hover:bg-accent/85') : ''">
-                        <component :is="sub.icon" :class="sub.iconClass ?? 'size-5'" />
-                      </div>
-                      <span class="text-sm whitespace-nowrap transition-[opacity,max-width] duration-300 ease-in-out overflow-hidden" :class="sidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'">{{ sub.label }}</span>
-                    </button>
-                  </template>
-                </div>
-              </Transition>
+                    <span class="text-xs">{{ sub.label }}</span>
+                  </button>
+                  <button
+                    v-else
+                    class="group relative flex items-center gap-3 rounded-lg px-3 py-1.5 w-full transition-colors"
+                    :class="[sub.active ? 'text-accent-foreground bg-accent/85' : 'text-muted-foreground nav-hover']"
+                    @click="showNavNavigate(sub)"
+                  >
+                    <div class="shrink-0 rounded-md p-1.5 size-9 flex items-center justify-center">
+                      <component :is="sub.icon" :class="sub.iconClass ?? 'size-5'" />
+                    </div>
+                    <span class="text-sm">{{ sub.label }}</span>
+                  </button>
+                </template>
+              </div>
             </li>
           </ul>
         </nav>
@@ -147,26 +128,23 @@
         <div class="flex flex-col gap-1 px-2">
           <RouterLink
             to="/settings"
-            :title="sidebarExpanded ? undefined : t('nav.settings')"
             class="group relative flex items-center gap-3 rounded-lg px-3 py-1.5 w-full transition-colors overflow-hidden"
-            :class="[route.path.startsWith('/settings') ? 'text-accent-foreground' : 'text-muted-foreground', sidebarExpanded ? (route.path.startsWith('/settings') ? 'bg-accent/85' : 'nav-hover') : '']"
+            :class="[route.path.startsWith('/settings') ? 'text-accent-foreground bg-accent/85' : 'text-muted-foreground nav-hover']"
           >
-            <div class="shrink-0 rounded-md p-1.5 transition-colors" :class="!sidebarExpanded ? (route.path.startsWith('/settings') ? 'bg-accent/85' : 'group-hover:bg-accent/85') : ''">
+            <div class="shrink-0 rounded-md p-1.5">
               <Settings class="size-5" aria-hidden="true" />
             </div>
             <span v-if="updateAvailable" class="absolute top-1 right-1 size-2 rounded-full bg-accent" />
-            <span class="text-sm font-medium whitespace-nowrap transition-[opacity,max-width] duration-300 ease-in-out overflow-hidden" :class="sidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'">{{ t('nav.settings') }}</span>
+            <span class="text-sm font-medium">{{ t('nav.settings') }}</span>
           </RouterLink>
           <button
             @click="handleLogout"
-            :title="sidebarExpanded ? undefined : t('nav.logout')"
-            class="group flex items-center gap-3 rounded-lg px-3 py-1.5 w-full text-muted-foreground hover:text-accent-foreground transition-colors overflow-hidden"
-            :class="sidebarExpanded ? 'nav-hover' : ''"
+            class="group flex items-center gap-3 rounded-lg px-3 py-1.5 w-full text-muted-foreground nav-hover transition-colors overflow-hidden"
           >
-            <div class="shrink-0 rounded-md p-1.5 transition-colors" :class="!sidebarExpanded ? 'group-hover:bg-accent/85' : ''">
+            <div class="shrink-0 rounded-md p-1.5">
               <LogOut class="size-5" aria-hidden="true" />
             </div>
-            <span class="text-sm font-medium whitespace-nowrap transition-[opacity,max-width] duration-300 ease-in-out overflow-hidden" :class="sidebarExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'">{{ t('nav.logout') }}</span>
+            <span class="text-sm font-medium">{{ t('nav.logout') }}</span>
           </button>
         </div>
       </div>
@@ -184,14 +162,13 @@
       </div>
 
       <!-- Main Content -->
-      <main class="bg-background h-dvh overflow-y-auto transition-[padding] duration-300 ease-in-out" :class="sidebarPinned ? 'md:pl-64' : 'md:pl-24'">
+      <main class="bg-background h-dvh overflow-y-auto md:pl-64">
         <!-- Offline-Banner -->
         <Alert v-if="!isOnline" variant="destructive" class="sticky top-0 z-50 rounded-none border-x-0 border-t-0 py-2">
           <AlertTriangle class="size-4" />
           <AlertDescription>{{ t('offline.banner') }}</AlertDescription>
         </Alert>
         <RouterView />
-
       </main>
     </div>
     <!-- Global Confirm Dialog -->
@@ -221,18 +198,16 @@ import {
   Files,
   Settings,
   AlertTriangle,
-  Pin,
-  PinOff,
+  Plus,
 } from 'lucide-vue-next'
 import { useLocale } from './composables/useLocale.js'
-import { logout, api, isOnline, BASE } from './api/client.js'
+import { logout, api, isOnline } from './api/client.js'
 import { useTokenRefresh } from './composables/useTokenRefresh.js'
 import { jwtDecode } from './api/jwtDecode.js'
 import { updateAvailable } from './composables/useUpdateCheck.js'
 import ConfirmDialog from './components/ConfirmDialog.vue'
 import { useConfirmDialog, resolveConfirm } from './composables/useConfirm.js'
 import { useShowNav } from './composables/useShowNav.js'
-import { Plus } from 'lucide-vue-next'
 
 const confirmState = useConfirmDialog()
 const { navItems, navigate: showNavNavigate, addSection: showNavAddSection } = useShowNav()
@@ -275,31 +250,15 @@ onUnmounted(() => {
 
 onMounted(async () => {
   void pingServer()
-  pingInterval = setInterval(pingServer, 30_000) // 30 s statt 10 s – weniger Last bei vielen gleichzeitigen Clients
+  pingInterval = setInterval(pingServer, 30_000)
 
   void checkForUpdate()
   updateCheckInterval = setInterval(checkForUpdate, 60 * 60 * 1000)
-
-  try {
-    const prefs = await api.get('/api/me/preferences')
-    sidebarPinned.value = prefs.sidebarPinned
-    sidebarExpanded.value = prefs.sidebarPinned
-  } catch { /* ignorieren */ }
 })
+
 const route = useRoute()
 const router = useRouter()
 const sidebarOpen = ref(false)
-const sidebarPinned = ref(false)
-const sidebarExpanded = ref(false)
-
-function togglePin() {
-  sidebarPinned.value = !sidebarPinned.value
-  sidebarExpanded.value = sidebarPinned.value
-  api.patch('/api/me/preferences', { sidebarPinned: sidebarPinned.value }).catch(() => {})
-}
-
-function onSidebarEnter() { if (!sidebarPinned.value) sidebarExpanded.value = true }
-function onSidebarLeave() { if (!sidebarPinned.value) sidebarExpanded.value = false }
 
 watch(route, () => { sidebarOpen.value = false })
 
@@ -341,22 +300,8 @@ async function handleLogout() {
   transform: translateX(-100%);
 }
 
-
 .nav-hover:hover {
   background-color: hsl(var(--accent) / 0.85);
   color: hsl(var(--accent-foreground));
 }
-
-.subnav-enter-active,
-.subnav-leave-active {
-  transition: opacity 0.25s ease, max-height 0.3s ease;
-  max-height: 600px;
-  overflow: hidden;
-}
-.subnav-enter-from,
-.subnav-leave-to {
-  opacity: 0;
-  max-height: 0;
-}
-
 </style>

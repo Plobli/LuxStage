@@ -101,7 +101,7 @@ export async function generatePDF(show, channels, sectionsMap, templateSections,
     doc.y = PAGE_MARGIN
     doc.font(FONT_NORMAL).fontSize(7).fillColor('#888888')
       .text(`${fm.name || ''} — ${fmt(fm.datum)}`, PAGE_MARGIN, fy, { width: curUsableW / 2, lineBreak: false })
-    doc.text(`Seite ${pageNum}  |  ${printedAt}`, PAGE_MARGIN + curUsableW / 2, fy, {
+    doc.text(`Seite ${pageNum}`, PAGE_MARGIN + curUsableW / 2, fy, {
       width: curUsableW / 2, align: 'right', lineBreak: false
     })
     doc.fillColor('black')
@@ -122,7 +122,9 @@ export async function generatePDF(show, channels, sectionsMap, templateSections,
       const content = sectionContents.get(sec.id) ?? ''
       const hasContent = sec.type === 'kv-table'
         ? (sec.rows ?? []).some(r => r.value?.trim())
-        : parseSetupSection(content).length > 0
+        : sec.type === 'fields'
+          ? (sec.fields ?? []).some(f => { const m = content.match(new RegExp(`^${f.key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}:\\s*(.+)$`, 'm')); return m?.[1]?.trim() })
+          : parseSetupSection(content).length > 0
       if (!hasContent) continue
       doc.font(FONT_BOLD).fontSize(11).text(sec.title, PAGE_MARGIN, doc.y)
       doc.moveDown(0.4)
@@ -146,7 +148,36 @@ export async function generatePDF(show, channels, sectionsMap, templateSections,
     }
   }
 
-  // ── Pro Gruppe: Überschrift + Tabelle ────────────────────────────────────
+  // ── Beleuchtergestelle, Zugstangen & Hängerei ────────────────────────────
+  const towers = floorplan?.towers ?? []
+  const bars = floorplan?.bars ?? []
+
+  if (towers.length > 0 || bars.length > 0) {
+    let ty = doc.y
+
+    if (bars.length > 0) {
+      doc.font(FONT_BOLD).fontSize(13).fillColor('black').text('Obermaschinerie', PAGE_MARGIN, ty, { lineBreak: false })
+      ty += mm(9)
+      ty = renderHangereiBars(doc, bars, channels, PAGE_MARGIN, usableW, ty, printableBottom, addFooter)
+      ty += mm(5)
+      ty = drawBarRows(doc, bars, channels, PAGE_MARGIN, usableW, ty, printableBottom, addFooter, unit)
+      ty += mm(8)
+    }
+
+    if (towers.length > 0) {
+      if (ty + mm(30) > printableBottom) { doc.addPage(); addFooter(); ty = PAGE_MARGIN }
+      doc.font(FONT_BOLD).fontSize(13).fillColor('black').text('Beleuchtungsgestelle', PAGE_MARGIN, ty, { lineBreak: false })
+      ty += mm(9)
+      ty = renderGassenturmText(doc, towers, channels, PAGE_MARGIN, usableW, ty, printableBottom, addFooter)
+      ty += mm(5)
+      drawTowerCards(doc, towers, channels, PAGE_MARGIN, usableW, ty, printableBottom, addFooter)
+    }
+  }
+
+  // ── Kanalliste (immer neue Seite) ─────────────────────────────────────────
+  doc.addPage()
+  addFooter()
+
   const headerCols = [
     { text: 'Ch',      w: COL.channel },
     { text: 'Filter',  w: COL.color,   color: undefined }, // color key present → Filter-Spalte, aber isHeader überschreibt
@@ -155,7 +186,7 @@ export async function generatePDF(show, channels, sectionsMap, templateSections,
     { text: 'Notizen', w: COL.notes },
   ]
 
-  let y = doc.y
+  let y = PAGE_MARGIN
   for (const [position, rows] of grouped) {
     const filteredRows = rows.filter(r => r.notes?.trim())
     if (!filteredRows.length) continue
@@ -204,6 +235,65 @@ export async function generatePDF(show, channels, sectionsMap, templateSections,
       await new Promise(resolve => setImmediate(resolve))
     }
     y += mm(3)
+  }
+
+  // ── Grundriss ─────────────────────────────────────────────────────────────
+  // Nur anzeigen wenn echte Canvas-Objekte vorhanden (nicht nur Hintergrundbild)
+  const hasCanvasObjects = (() => {
+    if (!floorplan?.canvasData) return false
+    try {
+      const parsed = typeof floorplan.canvasData === 'string' ? JSON.parse(floorplan.canvasData) : floorplan.canvasData
+      return Array.isArray(parsed?.objects) && parsed.objects.length > 0
+    } catch { return false }
+  })()
+
+  if (floorplan?.snapshotPath && hasCanvasObjects) {
+    let snapshotBuffer = null
+    try { snapshotBuffer = fs.readFileSync(floorplan.snapshotPath) } catch (e) { snapshotBuffer = null }
+    if (snapshotBuffer && snapshotBuffer.length > 100) {
+      doc.addPage()
+      addFooter()
+
+      doc.font(FONT_BOLD).fontSize(13).fillColor('black')
+        .text('Grundriss', PAGE_MARGIN, PAGE_MARGIN, { lineBreak: false })
+
+      const imgY = PAGE_MARGIN + mm(12)
+      const imgMaxH = pageH - imgY - PAGE_MARGIN - mm(8)
+
+      try {
+        const ov = floorplan.snapshotOverflow ?? 0
+        if (ov > 0 && snapshotBuffer.length > 0) {
+          const { w: imgPx, h: imgHPx } = readImageSize(snapshotBuffer)
+          if (imgPx > 0) {
+            const SCALE = 3
+            const ovPx = ov * SCALE
+            const contentPx = imgPx - ovPx * 2
+            const contentHPx = imgHPx - ovPx * 2
+            if (contentPx > 0 && contentHPx > 0) {
+              const scale = Math.min(usableW / contentPx, imgMaxH / contentHPx)
+              const drawW = imgPx * scale
+              const drawH = imgHPx * scale
+              const drawX = PAGE_MARGIN - ovPx * scale
+              const drawY = imgY - ovPx * scale
+              doc.save()
+              doc.rect(PAGE_MARGIN, imgY, usableW, imgMaxH).clip()
+              doc.translate(drawX, drawY)
+              doc.image(floorplan.snapshotPath, 0, 0, { width: drawW, height: drawH })
+              doc.restore()
+            } else {
+              doc.image(floorplan.snapshotPath, PAGE_MARGIN, imgY, { fit: [usableW, imgMaxH], align: 'center', valign: 'top' })
+            }
+          } else {
+            doc.image(floorplan.snapshotPath, PAGE_MARGIN, imgY, { fit: [usableW, imgMaxH], align: 'center', valign: 'top' })
+          }
+        } else {
+          doc.image(floorplan.snapshotPath, PAGE_MARGIN, imgY, { fit: [usableW, imgMaxH], align: 'center', valign: 'top' })
+        }
+      } catch (err) {
+        doc.font(FONT_NORMAL).fontSize(9).fillColor('#888888')
+          .text(`Grundriss-Fehler: ${err?.message ?? err}`, PAGE_MARGIN, imgY, { width: usableW })
+      }
+    }
   }
 
   // ── Foto-Abschnitt ────────────────────────────────────────────────────────
@@ -260,88 +350,6 @@ export async function generatePDF(show, channels, sectionsMap, templateSections,
       col++
       if (col >= COLS) { col = 0; row++ }
       photoOnPage++
-    }
-  }
-
-  // ── Grundriss ─────────────────────────────────────────────────────────────
-  if (floorplan?.snapshotPath) {
-    let snapshotBuffer = null
-    try { snapshotBuffer = fs.readFileSync(floorplan.snapshotPath) } catch (e) { snapshotBuffer = null }
-    if (snapshotBuffer && snapshotBuffer.length > 100) {
-      doc.addPage()
-      addFooter()
-
-      doc.font(FONT_BOLD).fontSize(13).fillColor('black')
-        .text('Grundriss', PAGE_MARGIN, PAGE_MARGIN, { lineBreak: false })
-
-      const imgY = PAGE_MARGIN + mm(12)
-      const imgMaxH = pageH - imgY - PAGE_MARGIN - mm(8)
-
-      try {
-        const ov = floorplan.snapshotOverflow ?? 0
-        if (ov > 0 && snapshotBuffer.length > 0) {
-          const { w: imgPx, h: imgHPx } = readImageSize(snapshotBuffer)
-          if (imgPx > 0) {
-            const SCALE = 3
-            const ovPx = ov * SCALE
-            const contentPx = imgPx - ovPx * 2
-            const contentHPx = imgHPx - ovPx * 2
-            if (contentPx > 0 && contentHPx > 0) {
-              const scale = Math.min(usableW / contentPx, imgMaxH / contentHPx)
-              const drawW = imgPx * scale
-              const drawH = imgHPx * scale
-              const drawX = PAGE_MARGIN - ovPx * scale
-              const drawY = imgY - ovPx * scale
-              doc.save()
-              doc.rect(PAGE_MARGIN, imgY, usableW, imgMaxH).clip()
-              doc.translate(drawX, drawY)
-              doc.image(floorplan.snapshotPath, 0, 0, { width: drawW, height: drawH })
-              doc.restore()
-            } else {
-              doc.image(floorplan.snapshotPath, PAGE_MARGIN, imgY, { fit: [usableW, imgMaxH], align: 'center', valign: 'top' })
-            }
-          } else {
-            doc.image(floorplan.snapshotPath, PAGE_MARGIN, imgY, { fit: [usableW, imgMaxH], align: 'center', valign: 'top' })
-          }
-        } else {
-          doc.image(floorplan.snapshotPath, PAGE_MARGIN, imgY, { fit: [usableW, imgMaxH], align: 'center', valign: 'top' })
-        }
-      } catch (err) {
-        doc.font(FONT_NORMAL).fontSize(9).fillColor('#888888')
-          .text(`Grundriss-Fehler: ${err?.message ?? err}`, PAGE_MARGIN, imgY, { width: usableW })
-      }
-    }
-  }
-
-  // ── Gassentürme & Zugstangen ──────────────────────────────────────────────
-  const towers = floorplan?.towers ?? []
-  const bars = floorplan?.bars ?? []
-
-  if (towers.length > 0 || bars.length > 0) {
-    doc.addPage()
-    addFooter()
-    let ty = PAGE_MARGIN
-
-    if (towers.length > 0) {
-      doc.font(FONT_BOLD).fontSize(13).fillColor('black').text('Gassentürme', PAGE_MARGIN, ty, { lineBreak: false })
-      ty += mm(9)
-      ty = renderGassenturmText(doc, towers, channels, PAGE_MARGIN, usableW, ty, printableBottom, addFooter)
-      ty += mm(5)
-      ty = drawTowerCards(doc, towers, channels, PAGE_MARGIN, usableW, ty, printableBottom, addFooter)
-      ty += mm(8)
-    }
-
-    if (bars.length > 0) {
-      if (ty + mm(30) > printableBottom) { doc.addPage(); addFooter(); ty = PAGE_MARGIN }
-      doc.font(FONT_BOLD).fontSize(13).fillColor('black').text('Hängerei', PAGE_MARGIN, ty, { lineBreak: false })
-      ty += mm(9)
-      ty = renderHangereiBars(doc, bars, channels, PAGE_MARGIN, usableW, ty, printableBottom, addFooter)
-      ty += mm(8)
-
-      if (ty + mm(20) > printableBottom) { doc.addPage(); addFooter(); ty = PAGE_MARGIN }
-      doc.font(FONT_BOLD).fontSize(13).fillColor('black').text('Zugstangen', PAGE_MARGIN, ty, { lineBreak: false })
-      ty += mm(9)
-      drawBarRows(doc, bars, channels, PAGE_MARGIN, usableW, ty, printableBottom, addFooter, unit)
     }
   }
 
@@ -837,16 +845,17 @@ function renderHangereiBars(doc, bars, channels, margin, usableW, startY, bottom
     const parts = fixSorted.map(fx => {
       const ch = channels.find(c => c.id === fx.channel_id)
       const tokens = [`V.${ch?.channel ?? '?'}`, ch?.device, ch?.address ? `#${ch.address}` : undefined, fmtColor(ch?.color), fx.notes || undefined]
-      // Position in m
-      const cm = fx.position
-      let posStr
-      if (cm === 0) posStr = 'Mitte'
-      else {
-        const val = Math.abs(cm) / 100
-        const valStr = Number.isInteger(val) ? val : parseFloat(val.toFixed(2))
-        posStr = `${valStr}m ${cm < 0 ? 'Links' : 'Rechts'}`
+      if (!bar.hide_scale) {
+        const cm = fx.position
+        let posStr
+        if (cm === 0) posStr = 'Mitte'
+        else {
+          const val = Math.abs(cm) / 100
+          const valStr = Number.isInteger(val) ? val : parseFloat(val.toFixed(2))
+          posStr = `${valStr}m ${cm < 0 ? 'Links' : 'Rechts'}`
+        }
+        tokens.push(posStr)
       }
-      tokens.push(posStr)
       return tokens.filter(Boolean).join(' ')
     })
     let line = `${bar.name}: ${parts.join(' • ')}`
@@ -980,14 +989,17 @@ function drawBarRows(doc, bars, channels, margin, usableW, startY, bottomLimit, 
       doc.text(String(nr), cx - CIRCLE_R, lineY - textH / 2, { width: CIRCLE_R * 2, align: 'center', lineBreak: false })
       doc.fillColor('black')
 
-      // Positionslabel unterhalb Kreis
-      doc.font(FONT_NORMAL).fontSize(6).fillColor('#555555')
-        .text(posLabel(fx.position, unit), cx - mm(7), lineY + CIRCLE_R + mm(1.5), { width: mm(14), align: 'center', lineBreak: false })
+      // Positionslabel unterhalb Kreis (nur wenn Skala nicht ausgeblendet)
+      const deviceY = bar.hide_scale ? lineY + CIRCLE_R + mm(1.5) : lineY + CIRCLE_R + mm(5.5)
+      if (!bar.hide_scale) {
+        doc.font(FONT_NORMAL).fontSize(6).fillColor('#555555')
+          .text(posLabel(fx.position, unit), cx - mm(7), lineY + CIRCLE_R + mm(1.5), { width: mm(14), align: 'center', lineBreak: false })
+      }
 
       // Gerätename unter Positionslabel
       if (device) {
         doc.font(FONT_NORMAL).fontSize(5.5).fillColor('#999999')
-          .text(device, cx - mm(10), lineY + CIRCLE_R + mm(5.5), { width: mm(20), align: 'center', lineBreak: false, ellipsis: true })
+          .text(device, cx - mm(10), deviceY, { width: mm(20), align: 'center', lineBreak: false, ellipsis: true })
       }
 
       // Anmerkungs-Marker (kleiner Punkt oben rechts am Kreis, wie gelber Ring in WebApp)

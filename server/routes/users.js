@@ -21,6 +21,19 @@ export async function userRoutes(req, res, pathname) {
     return json(res, 200, { ok: true })
   }
 
+  if (method === 'GET' && pathname === '/api/me/griddeck') {
+    const user = requireAuth(req, res); if (!user) return
+    const config = db.getGridDeckConfig(user.username)
+    return json(res, 200, config ?? {})
+  }
+
+  if (method === 'PUT' && pathname === '/api/me/griddeck') {
+    const user = requireAuth(req, res); if (!user) return
+    const body = await readJsonBody(req, res); if (body === null) return
+    db.setGridDeckConfig(user.username, body)
+    return json(res, 200, { ok: true })
+  }
+
   if (method === 'GET' && pathname === '/api/users') {
     const admin = requireAdmin(req, res); if (!admin) return
     return json(res, 200, db.listUsers())

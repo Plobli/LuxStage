@@ -46,3 +46,14 @@ export function setUserPreferences(username, { sidebarPinned }) {
   dbContainer.db.prepare('UPDATE users SET sidebar_pinned = ? WHERE username = ?')
     .run(sidebarPinned ? 1 : 0, username)
 }
+
+export function getGridDeckConfig(username) {
+  const row = dbContainer.db.prepare('SELECT griddeck_config FROM users WHERE username = ?').get(username)
+  if (!row?.griddeck_config) return null
+  try { return JSON.parse(row.griddeck_config) } catch { return null }
+}
+
+export function setGridDeckConfig(username, config) {
+  const json = JSON.stringify(config)
+  dbContainer.db.prepare('UPDATE users SET griddeck_config = ? WHERE username = ?').run(json, username)
+}

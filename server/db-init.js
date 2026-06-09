@@ -193,6 +193,9 @@ const userCols = dbContainer.db.pragma('table_info(users)').map(c => c.name)
 if (!userCols.includes('sidebar_pinned')) {
   dbContainer.db.exec('ALTER TABLE users ADD COLUMN sidebar_pinned INTEGER NOT NULL DEFAULT 0')
 }
+if (!userCols.includes('griddeck_config')) {
+  dbContainer.db.exec('ALTER TABLE users ADD COLUMN griddeck_config TEXT')
+}
 
 // last_edited_by/at: nachträglich hinzugefügt, fehlt in älteren DBs
 const showCols = dbContainer.db.pragma('table_info(shows)').map(c => c.name)

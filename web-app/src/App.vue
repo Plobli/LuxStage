@@ -22,10 +22,10 @@
                   </Button>
                 </div>
                 <div class="flex grow flex-col gap-y-5 overflow-y-auto bg-background px-6 pb-2 border-r border-border">
-                  <div class="flex h-16 shrink-0 items-center">
+                  <RouterLink to="/" class="flex h-16 shrink-0 items-center transition-opacity hover:opacity-80">
                     <img src="/favicon.png" alt="LuxStage" class="h-8 w-8 rounded-lg" />
                     <span class="ml-3 text-lg font-bold text-foreground">LuxStage</span>
-                  </div>
+                  </RouterLink>
                   <nav class="flex flex-1 flex-col">
                     <ul role="list" class="flex flex-1 flex-col gap-y-7">
                       <li>
@@ -70,25 +70,26 @@
       <!-- Desktop Sidebar -->
       <div class="hidden md:fixed md:inset-y-0 md:left-0 md:z-50 md:flex md:flex-col md:w-64 md:overflow-y-auto md:pb-4 overflow-x-hidden border-r border-border bg-surface-high">
         <!-- Logo -->
-        <div class="flex h-16 shrink-0 items-center px-3 gap-3">
+        <RouterLink to="/" class="flex h-16 shrink-0 items-center px-3 gap-3 transition-opacity hover:opacity-80">
           <img src="/favicon.png" alt="LuxStage" class="h-9 w-9 rounded-xl shrink-0" />
           <span class="text-sm font-bold text-foreground">LuxStage</span>
-        </div>
+        </RouterLink>
 
         <!-- Hauptnavigation -->
         <nav class="mt-2 flex-1">
           <ul role="list" class="flex flex-col gap-1 px-2">
-            <li v-for="item in navigation" :key="item.name" class="w-full">
+            <li v-for="item in navigation.slice(0, 1)" :key="item.name" class="w-full">
               <RouterLink
                 :to="item.to"
-                class="group relative flex items-center gap-3 rounded-lg px-3 py-1.5 w-full transition-colors"
-                :class="[isActiveRoute(item) ? 'text-accent-foreground bg-accent/85' : 'text-muted-foreground nav-hover']"
+                class="group relative flex items-center gap-3 rounded-lg px-3 h-9 w-full transition-colors"
+                :class="[isActiveRoute(item) ? 'text-foreground bg-muted' : 'text-muted-foreground nav-hover']"
               >
-                <div class="shrink-0 rounded-md p-1.5">
-                  <component :is="item.icon" class="size-5" aria-hidden="true" />
+                <span v-if="isActiveRoute(item)" class="absolute left-0 top-1.25 bottom-1.25 w-0.75 rounded-full bg-accent" />
+                <div class="shrink-0 rounded-md p-1">
+                  <component :is="item.icon" class="size-4" aria-hidden="true" />
                 </div>
                 <span v-if="item.badge?.value" class="absolute top-1 right-1 size-2 rounded-full bg-accent" />
-                <span class="text-sm font-medium">{{ item.name }}</span>
+                <span class="text-sm" :class="isActiveRoute(item) ? 'font-semibold' : 'font-medium'">{{ item.name }}</span>
               </RouterLink>
 
               <!-- Show-Sub-Nav unterhalb von Shows -->
@@ -99,24 +100,20 @@
                   </div>
                   <button
                     v-else-if="sub.type === 'addSection'"
-                    class="group relative flex items-center gap-2 rounded-lg px-3 py-1 w-full text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+                    class="group relative flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border h-9 w-full text-muted-foreground/70 hover:text-foreground hover:bg-muted/40 transition-colors"
                     @click="showNavAddSection()"
                   >
-                    <div class="shrink-0 size-9 flex items-center justify-center">
-                      <Plus class="size-4" />
-                    </div>
-                    <span class="text-xs">{{ sub.label }}</span>
+                    <span class="text-sm leading-none">+</span>
+                    <span class="text-sm">{{ sub.label }}</span>
                   </button>
                   <button
                     v-else
-                    class="group relative flex items-center gap-3 rounded-lg px-3 py-1.5 w-full transition-colors"
-                    :class="[sub.active ? 'text-accent-foreground bg-accent/85' : 'text-muted-foreground nav-hover']"
+                    class="group relative flex items-center gap-3 rounded-lg px-3 h-9 w-full transition-colors"
+                    :class="[sub.active ? 'text-foreground bg-muted' : 'text-muted-foreground nav-hover']"
                     @click="showNavNavigate(sub)"
                   >
-                    <div class="shrink-0 rounded-md p-1.5 size-9 flex items-center justify-center">
-                      <component :is="sub.icon" :class="sub.iconClass ?? 'size-5'" />
-                    </div>
-                    <span class="text-sm">{{ sub.label }}</span>
+                    <span v-if="sub.active" class="absolute left-0 top-1.25 bottom-1.25 w-0.75 rounded-full bg-accent" />
+                    <span class="text-sm" :class="sub.active ? 'font-semibold' : ''">{{ sub.label }}</span>
                   </button>
                 </template>
               </div>
@@ -124,25 +121,42 @@
           </ul>
         </nav>
 
-        <!-- Settings + Logout -->
+        <!-- Archiv, Templates, Settings, Logout -->
         <div class="flex flex-col gap-1 px-2">
           <RouterLink
-            to="/settings"
-            class="group relative flex items-center gap-3 rounded-lg px-3 py-1.5 w-full transition-colors overflow-hidden"
-            :class="[route.path.startsWith('/settings') ? 'text-accent-foreground bg-accent/85' : 'text-muted-foreground nav-hover']"
+            v-for="item in navigation.slice(1)"
+            :key="item.name"
+            :to="item.to"
+            class="group relative flex items-center gap-3 rounded-lg px-3 h-9 w-full transition-colors"
+            :class="[isActiveRoute(item) ? 'text-foreground bg-muted' : 'text-muted-foreground nav-hover']"
           >
-            <div class="shrink-0 rounded-md p-1.5">
-              <Settings class="size-5" aria-hidden="true" />
+            <span v-if="isActiveRoute(item)" class="absolute left-0 top-1.25 bottom-1.25 w-0.75 rounded-full bg-accent" />
+            <div class="shrink-0 rounded-md p-1">
+              <component :is="item.icon" class="size-4" aria-hidden="true" />
+            </div>
+            <span class="text-sm" :class="isActiveRoute(item) ? 'font-semibold' : 'font-medium'">{{ item.name }}</span>
+          </RouterLink>
+
+          <div class="my-1 border-t border-border" />
+
+          <RouterLink
+            to="/settings"
+            class="group relative flex items-center gap-3 rounded-lg px-3 h-9 w-full transition-colors overflow-hidden"
+            :class="[route.path.startsWith('/settings') ? 'text-foreground bg-muted' : 'text-muted-foreground nav-hover']"
+          >
+            <span v-if="route.path.startsWith('/settings')" class="absolute left-0 top-1.25 bottom-1.25 w-0.75 rounded-full bg-accent" />
+            <div class="shrink-0 rounded-md p-1">
+              <Settings class="size-4" aria-hidden="true" />
             </div>
             <span v-if="updateAvailable" class="absolute top-1 right-1 size-2 rounded-full bg-accent" />
-            <span class="text-sm font-medium">{{ t('nav.settings') }}</span>
+            <span class="text-sm" :class="route.path.startsWith('/settings') ? 'font-semibold' : 'font-medium'">{{ t('nav.settings') }}</span>
           </RouterLink>
           <button
             @click="handleLogout"
-            class="group flex items-center gap-3 rounded-lg px-3 py-1.5 w-full text-muted-foreground nav-hover transition-colors overflow-hidden"
+            class="group flex items-center gap-3 rounded-lg px-3 h-9 w-full text-muted-foreground nav-hover transition-colors overflow-hidden"
           >
-            <div class="shrink-0 rounded-md p-1.5">
-              <LogOut class="size-5" aria-hidden="true" />
+            <div class="shrink-0 rounded-md p-1">
+              <LogOut class="size-4" aria-hidden="true" />
             </div>
             <span class="text-sm font-medium">{{ t('nav.logout') }}</span>
           </button>
@@ -155,10 +169,10 @@
           <span class="sr-only">Sidebar öffnen</span>
           <Menu class="size-6" aria-hidden="true" />
         </Button>
-        <div class="flex items-center gap-2 flex-1">
+        <RouterLink to="/" class="flex items-center gap-2 flex-1 transition-opacity hover:opacity-80">
           <img src="/favicon.png" alt="LuxStage" class="h-7 w-7 rounded-lg" />
           <span class="text-sm/6 font-semibold text-foreground">LuxStage</span>
-        </div>
+        </RouterLink>
       </div>
 
       <!-- Main Content -->
@@ -198,7 +212,6 @@ import {
   Files,
   Settings,
   AlertTriangle,
-  Plus,
 } from 'lucide-vue-next'
 import { useLocale } from './composables/useLocale.js'
 import { logout, api, isOnline } from './api/client.js'
@@ -301,7 +314,7 @@ async function handleLogout() {
 }
 
 .nav-hover:hover {
-  background-color: hsl(var(--accent) / 0.85);
-  color: hsl(var(--accent-foreground));
+  background-color: hsl(var(--muted) / 0.6);
+  color: hsl(var(--foreground));
 }
 </style>

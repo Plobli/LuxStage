@@ -142,15 +142,30 @@
           <RouterLink
             to="/settings"
             class="group relative flex items-center gap-3 rounded-lg px-3 h-9 w-full transition-colors overflow-hidden"
-            :class="[route.path.startsWith('/settings') ? 'text-foreground bg-muted' : 'text-muted-foreground nav-hover']"
+            :class="[isSettingsDetail ? 'text-foreground bg-muted' : 'text-muted-foreground nav-hover']"
           >
-            <span v-if="route.path.startsWith('/settings')" class="absolute left-0 top-1.25 bottom-1.25 w-0.75 rounded-full bg-accent" />
+            <span v-if="isSettingsDetail" class="absolute left-0 top-1.25 bottom-1.25 w-0.75 rounded-full bg-accent" />
             <div class="shrink-0 rounded-md p-1">
               <Settings class="size-4" aria-hidden="true" />
             </div>
             <span v-if="updateAvailable" class="absolute top-1 right-1 size-2 rounded-full bg-accent" />
-            <span class="text-sm" :class="route.path.startsWith('/settings') ? 'font-semibold' : 'font-medium'">{{ t('nav.settings') }}</span>
+            <span class="text-sm" :class="isSettingsDetail ? 'font-semibold' : 'font-medium'">{{ t('nav.settings') }}</span>
           </RouterLink>
+
+          <!-- Settings-Sub-Nav unterhalb von Einstellungen -->
+          <div v-if="isSettingsDetail" class="ml-2 border-l border-border/30 pl-1 flex flex-col gap-0.5 items-stretch">
+            <RouterLink
+              v-for="item in settingsNavItems"
+              :key="item.to"
+              :to="item.to"
+              class="group relative flex items-center gap-3 rounded-lg px-3 h-9 w-full transition-colors"
+              :class="[isSettingsItemActive(item.to) ? 'text-foreground bg-muted' : 'text-muted-foreground nav-hover']"
+            >
+              <span v-if="isSettingsItemActive(item.to)" class="absolute left-0 top-1.25 bottom-1.25 w-0.75 rounded-full bg-accent" />
+              <span class="text-sm" :class="isSettingsItemActive(item.to) ? 'font-semibold' : ''">{{ item.label }}</span>
+            </RouterLink>
+          </div>
+
           <button
             @click="handleLogout"
             class="group flex items-center gap-3 rounded-lg px-3 h-9 w-full text-muted-foreground nav-hover transition-colors overflow-hidden"
@@ -287,6 +302,29 @@ const navigation = [
   { name: t('nav.archive'), to: '/archive', routeName: 'archive', icon: Archive },
   { name: t('nav.templates'), to: '/templates', routeName: 'templates', icon: Files },
 ]
+
+const isSettingsDetail = computed(() => route.path.startsWith('/settings'))
+
+const isAdmin = computed(() => {
+  try {
+    const token = localStorage.getItem('luxstage_token')
+    return token ? jwtDecode(token)?.role === 'admin' : false
+  } catch { return false }
+})
+
+const settingsNavItems = computed(() => [
+  { to: '/settings/account', label: t('settings.account') },
+  { to: '/settings/display', label: t('settings.display') },
+  { to: '/settings/backup', label: t('settings.backup') },
+  ...(isAdmin.value ? [{ to: '/settings/server', label: t('settings.server') }] : []),
+  ...(isAdmin.value ? [{ to: '/settings/users', label: 'Benutzerverwaltung' }] : []),
+  ...(isAdmin.value ? [{ to: '/settings/smtp', label: t('settings.smtp') }] : []),
+  ...(isAdmin.value ? [{ to: '/settings/update', label: t('settings.update') }] : []),
+])
+
+function isSettingsItemActive(path) {
+  return route.path === path || route.path.startsWith(path + '/')
+}
 
 async function handleLogout() {
   await logout()

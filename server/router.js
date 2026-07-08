@@ -6,6 +6,7 @@ import { parseUrl, notFound, json } from './helpers.js'
 import { authenticate } from './auth.js'
 import { runWithDb } from './db-context.js'
 import { openTenantDb, tenantExists } from './tenants.js'
+import { resolveTenantId } from './tenant-resolve.js'
 import { authRoutes } from './routes/auth.js'
 import { userRoutes } from './routes/users.js'
 import { showRoutes } from './routes/shows.js'
@@ -115,23 +116,16 @@ export async function router(req, res) {
 
   try {
     if (pathname.startsWith('/api/')) {
-      // Öffentliche Endpunkte: Login und Health brauchen keine Auth
-      const publicEndpoints = new Set(['/api/auth/login', '/api/health'])
-      if (!publicEndpoints.has(pathname)) {
-        const user = authenticate(req)
-        if (!user) return json(res, 401, { error: 'Nicht angemeldet' })
-        req.user = user
-      }
-
-      // Multi-Tenancy: trägt der Token einen gültigen Mandanten, läuft der
-      // gesamte API-Dispatch mit dessen DB. Ohne tenantId greift der globale
-      // Fallback in getDb() (Single-Tenant/Übergangsverhalten).
-      const tenantId = req.user?.tenantId
+      // Mandant aus dem Host ableiten (team-a.luxstage.app -> "team-a").
+      // Steht damit VOR der Auth fest — der Login sucht im richtigen Kontext.
+      const tenantId = resolveTenantId(req)
       if (tenantId) {
-        if (!tenantExists(tenantId)) return json(res, 401, { error: 'Unbekannter Mandant' })
-        return runWithDb(openTenantDb(tenantId), () => dispatchApi(req, res, pathname, params))
+        if (!tenantExists(tenantId)) return json(res, 404, { error: 'Unbekannter Mandant' })
+        return runWithDb(openTenantDb(tenantId), () => handleApi(req, res, pathname, params))
       }
-      return dispatchApi(req, res, pathname, params)
+      // Kein Mandant: öffentlicher Kontext (Registrierung, Health) bzw.
+      // Single-Tenant-Fallback über die globale DB.
+      return handleApi(req, res, pathname, params)
     }
 
     if (req.method === 'GET') return serveStatic(req, res, pathname)
@@ -141,6 +135,23 @@ export async function router(req, res) {
     console.error(err)
     if (!res.headersSent) json(res, 500, { error: 'Interner Fehler' })
   }
+}
+
+// Öffentliche API-Endpunkte ohne Auth (im jeweiligen DB-Kontext ausgeführt).
+const PUBLIC_ENDPOINTS = new Set([
+  '/api/auth/login',
+  '/api/health',
+  '/api/register',
+  '/api/register/confirm',
+])
+
+async function handleApi(req, res, pathname, params) {
+  if (!PUBLIC_ENDPOINTS.has(pathname)) {
+    const user = authenticate(req)
+    if (!user) return json(res, 401, { error: 'Nicht angemeldet' })
+    req.user = user
+  }
+  return dispatchApi(req, res, pathname, params)
 }
 
 async function dispatchApi(req, res, pathname, params) {

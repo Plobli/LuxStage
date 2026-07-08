@@ -14,6 +14,9 @@ export const config = {
   dataPath: process.env.DATA_PATH || path.join(__dirname, '..', 'data'),
   jwtSecret,
   appUrl: process.env.APP_URL || 'http://localhost:5173',
+  // SaaS: Basis-Domain, unter der Mandanten als Subdomain laufen (z. B. luxstage.app
+  // für team-a.luxstage.app). Leer = Single-Tenant/Self-Hosted (keine Subdomain-Auflösung).
+  baseDomain: process.env.BASE_DOMAIN || '',
   // Rollen: admin (alles), techniker (shows lesen/schreiben, keine templates/backup/update)
   lockTimeout: 10 * 60 * 1000, // 10 Minuten in ms
   photoMaxWidth: 1500,

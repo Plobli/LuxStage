@@ -104,6 +104,13 @@ export async function router(req, res) {
     return notFound(res)
   }
 
+  if (pathname.startsWith('/api/')) {
+    const start = Date.now()
+    res.on('finish', () => {
+      console.log(`${req.method} ${pathname} ${res.statusCode} ${Date.now() - start}ms`)
+    })
+  }
+
   try {
     if (pathname.startsWith('/api/')) {
       // Öffentliche Endpunkte: nur Login braucht keine Auth
@@ -124,7 +131,7 @@ export async function router(req, res) {
       if (pathname.startsWith('/api/templates'))      { const r = await templateRoutes(req, res, pathname);      if (nil(r)) notFound(res); return }
       if (pathname.startsWith('/api/shows/')) {
         // Sub-Ressourcen vor dem Show-Handler (spezifischer zuerst)
-        if (/\/channels(\/|$)/.test(pathname))        { const r = await channelRoutes(req, res, pathname);           if (!nil(r)) return }
+        if (/\/channels(\/|$)|\/checks(\/|$)/.test(pathname)) { const r = await channelRoutes(req, res, pathname);   if (!nil(r)) return }
         if (/\/photos(\/|$)|\/photo-/.test(pathname)) { const r = await photoRoutes(req, res, pathname, params);     if (!nil(r)) return }
         if (/\/sections(\/|$)|\/section-defs/.test(pathname)) { const r = await sectionRoutes(req, res, pathname);  if (!nil(r)) return }
         if (/\/floorplan(\/|$)/.test(pathname))       { const r = await floorplanRoutes(req, res, pathname);        if (!nil(r)) return }

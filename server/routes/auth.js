@@ -38,7 +38,12 @@ export async function authRoutes(req, res, pathname) {
     const body = await readJsonBody(req, res); if (body === null) return
     const { username, password } = body
     const loginResult = await login(username, password)
-    if (!loginResult) { recordFailedLogin(ip); return json(res, 401, { error: 'Ungültige Anmeldedaten' }) }
+    if (!loginResult) {
+      recordFailedLogin(ip)
+      console.log(`[auth] fehlgeschlagener Login: user=${username} ip=${ip}`)
+      return json(res, 401, { error: 'Ungültige Anmeldedaten' })
+    }
+    console.log(`[auth] Login erfolgreich: user=${username} ip=${ip}`)
     return json(res, 200, loginResult)
   }
 

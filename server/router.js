@@ -115,8 +115,9 @@ export async function router(req, res) {
 
   try {
     if (pathname.startsWith('/api/')) {
-      // Öffentliche Endpunkte: nur Login braucht keine Auth
-      if (pathname !== '/api/auth/login') {
+      // Öffentliche Endpunkte: Login und Health brauchen keine Auth
+      const publicEndpoints = new Set(['/api/auth/login', '/api/health'])
+      if (!publicEndpoints.has(pathname)) {
         const user = authenticate(req)
         if (!user) return json(res, 401, { error: 'Nicht angemeldet' })
         req.user = user

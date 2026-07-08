@@ -4,6 +4,8 @@ import zlib from 'node:zlib'
 import { fileURLToPath } from 'node:url'
 import { parseUrl, notFound, json } from './helpers.js'
 import { authenticate } from './auth.js'
+import { runWithDb } from './db-context.js'
+import { openTenantDb, tenantExists } from './tenants.js'
 import { authRoutes } from './routes/auth.js'
 import { userRoutes } from './routes/users.js'
 import { showRoutes } from './routes/shows.js'
@@ -120,6 +122,27 @@ export async function router(req, res) {
         req.user = user
       }
 
+      // Multi-Tenancy: trägt der Token einen gültigen Mandanten, läuft der
+      // gesamte API-Dispatch mit dessen DB. Ohne tenantId greift der globale
+      // Fallback in getDb() (Single-Tenant/Übergangsverhalten).
+      const tenantId = req.user?.tenantId
+      if (tenantId) {
+        if (!tenantExists(tenantId)) return json(res, 401, { error: 'Unbekannter Mandant' })
+        return runWithDb(openTenantDb(tenantId), () => dispatchApi(req, res, pathname, params))
+      }
+      return dispatchApi(req, res, pathname, params)
+    }
+
+    if (req.method === 'GET') return serveStatic(req, res, pathname)
+
+    return notFound(res)
+  } catch (err) {
+    console.error(err)
+    if (!res.headersSent) json(res, 500, { error: 'Interner Fehler' })
+  }
+}
+
+async function dispatchApi(req, res, pathname, params) {
       // Reihenfolge: spezifische Prefixe zuerst
       if (pathname.startsWith('/api/auth/'))         { const r = await authRoutes(req, res, pathname);          if (nil(r)) notFound(res); return }
       if (pathname.startsWith('/api/me/'))            { const r = await userRoutes(req, res, pathname);          if (nil(r)) notFound(res); return }
@@ -145,13 +168,4 @@ export async function router(req, res) {
         const r = await showRoutes(req, res, pathname, params); if (nil(r)) notFound(res); return
       }
       { const r = await systemRoutes(req, res, pathname); if (nil(r)) notFound(res); return }
-    }
-
-    if (req.method === 'GET') return serveStatic(req, res, pathname)
-
-    return notFound(res)
-  } catch (err) {
-    console.error(err)
-    if (!res.headersSent) json(res, 500, { error: 'Interner Fehler' })
-  }
 }

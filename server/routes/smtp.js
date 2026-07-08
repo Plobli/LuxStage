@@ -1,10 +1,10 @@
 import { requireAdmin } from '../auth.js'
 import { readJsonBody, json } from '../helpers.js'
-import { dbContainer } from '../db-init.js'
+import { getDb } from '../db-context.js'
 import { sendTestEmail } from '../email.js'
 
 function getSmtpConfig() {
-  const rows = dbContainer.db.prepare("SELECT key, value FROM settings WHERE key LIKE 'smtp.%'").all()
+  const rows = getDb().prepare("SELECT key, value FROM settings WHERE key LIKE 'smtp.%'").all()
   const cfg = { host: '', port: '587', secure: false, user: '', pass: '', from: '' }
   for (const { key, value } of rows) {
     const k = key.replace('smtp.', '')
@@ -14,7 +14,7 @@ function getSmtpConfig() {
 }
 
 function saveSmtpConfig(cfg) {
-  const set = dbContainer.db.prepare("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+  const set = getDb().prepare("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
   const fields = ['host', 'port', 'secure', 'user', 'pass', 'from']
   for (const field of fields) {
     set.run(`smtp.${field}`, String(cfg[field] ?? ''))

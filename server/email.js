@@ -1,10 +1,10 @@
 import nodemailer from 'nodemailer'
 import { config } from './config.js'
-import { dbContainer } from './db-init.js'
+import { getDb } from './db-context.js'
 
 function getSmtpCfg() {
   try {
-    const rows = dbContainer.db.prepare("SELECT key, value FROM settings WHERE key LIKE 'smtp.%'").all()
+    const rows = getDb().prepare("SELECT key, value FROM settings WHERE key LIKE 'smtp.%'").all()
     if (!rows.length) return config.smtp
     const cfg = { host: '', port: 587, secure: false, user: '', pass: '', from: config.smtp.from }
     for (const { key, value } of rows) {

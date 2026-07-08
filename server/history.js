@@ -1,6 +1,6 @@
 // LuxStage/server/history.js
 import { createHash, randomUUID } from 'node:crypto'
-import { dbContainer } from './db-init.js'
+import { getDb } from './db-context.js'
 import * as db from './db.js'
 
 const INTERVAL_MS = 10 * 60 * 1000  // 10 Minuten
@@ -19,7 +19,7 @@ function computeHash(channels, sections) {
 }
 
 function initHashes() {
-  const shows = dbContainer.db.prepare('SELECT id, slug FROM shows WHERE archived = 0').all()
+  const shows = getDb().prepare('SELECT id, slug FROM shows WHERE archived = 0').all()
   for (const show of shows) {
     const channels = db.readChannels(show.slug)
     const sections = db.readShowSections(show.slug)
@@ -28,10 +28,10 @@ function initHashes() {
 }
 
 function takeSnapshots() {
-  const shows = dbContainer.db.prepare('SELECT id, slug FROM shows WHERE archived = 0').all()
+  const shows = getDb().prepare('SELECT id, slug FROM shows WHERE archived = 0').all()
   for (const show of shows) {
     let newHash = null
-    const tx = dbContainer.db.transaction(() => {
+    const tx = getDb().transaction(() => {
       const channels = db.readChannels(show.slug)
       const sections = db.readShowSections(show.slug)
       const currentHash = computeHash(channels, sections)
@@ -39,12 +39,12 @@ function takeSnapshots() {
 
       const id = randomUUID()
       const sectionsObj = Object.fromEntries(sections)
-      dbContainer.db.prepare(`
+      getDb().prepare(`
         INSERT INTO history (id, show_id, created_at, channels, sections)
         VALUES (?, ?, ?, ?, ?)
       `).run(id, show.id, Date.now(), JSON.stringify(channels), JSON.stringify(sectionsObj))
 
-      dbContainer.db.prepare(`
+      getDb().prepare(`
         DELETE FROM history WHERE show_id = ? AND id NOT IN (
           SELECT id FROM history WHERE show_id = ? ORDER BY created_at DESC LIMIT ?
         )
@@ -66,21 +66,21 @@ export function startHistoryJob() {
 /** Erzeugt sofort einen Snapshot für eine Show — unabhängig vom Hash-Vergleich.
  *  Wird beim Öffnen einer Show aufgerufen, um einen Ausgangspunkt zu sichern. */
 export function takeSnapshotNow(slug) {
-  const show = dbContainer.db.prepare('SELECT id, slug FROM shows WHERE slug = ? AND archived = 0').get(slug)
+  const show = getDb().prepare('SELECT id, slug FROM shows WHERE slug = ? AND archived = 0').get(slug)
   if (!show) return false
 
   let newHash = null
-  const tx = dbContainer.db.transaction(() => {
+  const tx = getDb().transaction(() => {
     const channels = db.readChannels(slug)
     const sections = db.readShowSections(slug)
     const currentHash = computeHash(channels, sections)
 
     // Keinen doppelten Snapshot erstellen wenn sich seit dem letzten nichts geändert hat
-    const lastEntry = dbContainer.db.prepare(
+    const lastEntry = getDb().prepare(
       'SELECT id FROM history WHERE show_id = ? ORDER BY created_at DESC LIMIT 1'
     ).get(show.id)
     if (lastEntry) {
-      const lastFull = dbContainer.db.prepare('SELECT channels, sections FROM history WHERE id = ?').get(lastEntry.id)
+      const lastFull = getDb().prepare('SELECT channels, sections FROM history WHERE id = ?').get(lastEntry.id)
       const lastChannels = JSON.parse(lastFull.channels)
       const lastSections = new Map(Object.entries(JSON.parse(lastFull.sections)))
       if (computeHash(lastChannels, lastSections) === currentHash) return  // early return, no snapshot needed
@@ -88,12 +88,12 @@ export function takeSnapshotNow(slug) {
 
     const id = randomUUID()
     const sectionsObj = Object.fromEntries(sections)
-    dbContainer.db.prepare(`
+    getDb().prepare(`
       INSERT INTO history (id, show_id, created_at, channels, sections)
       VALUES (?, ?, ?, ?, ?)
     `).run(id, show.id, Date.now(), JSON.stringify(channels), JSON.stringify(sectionsObj))
 
-    dbContainer.db.prepare(`
+    getDb().prepare(`
       DELETE FROM history WHERE show_id = ? AND id NOT IN (
         SELECT id FROM history WHERE show_id = ? ORDER BY created_at DESC LIMIT ?
       )
@@ -108,27 +108,27 @@ export function takeSnapshotNow(slug) {
 
 // History-Abfragen für API
 export function listHistory(slug) {
-  const show = dbContainer.db.prepare('SELECT id FROM shows WHERE slug = ?').get(slug)
+  const show = getDb().prepare('SELECT id FROM shows WHERE slug = ?').get(slug)
   if (!show) return []
-  return dbContainer.db.prepare('SELECT id, created_at FROM history WHERE show_id = ? ORDER BY created_at DESC').all(show.id)
+  return getDb().prepare('SELECT id, created_at FROM history WHERE show_id = ? ORDER BY created_at DESC').all(show.id)
 }
 
 export function getHistoryEntry(slug, historyId) {
-  const show = dbContainer.db.prepare('SELECT id FROM shows WHERE slug = ?').get(slug)
+  const show = getDb().prepare('SELECT id FROM shows WHERE slug = ?').get(slug)
   if (!show) return null
-  return dbContainer.db.prepare('SELECT * FROM history WHERE id = ? AND show_id = ?').get(historyId, show.id) ?? null
+  return getDb().prepare('SELECT * FROM history WHERE id = ? AND show_id = ?').get(historyId, show.id) ?? null
 }
 
 export function restoreHistoryEntry(slug, historyId) {
-  const show = dbContainer.db.prepare('SELECT id FROM shows WHERE slug = ?').get(slug)
+  const show = getDb().prepare('SELECT id FROM shows WHERE slug = ?').get(slug)
   if (!show) return false
-  const entry = dbContainer.db.prepare('SELECT * FROM history WHERE id = ? AND show_id = ?').get(historyId, show.id)
+  const entry = getDb().prepare('SELECT * FROM history WHERE id = ? AND show_id = ?').get(historyId, show.id)
   if (!entry) return false
 
   const channels = JSON.parse(entry.channels)
   const sections = new Map(Object.entries(JSON.parse(entry.sections)))
 
-  const tx = dbContainer.db.transaction(() => {
+  const tx = getDb().transaction(() => {
     db.writeChannels(slug, channels)
     db.writeShowSections(slug, sections)
   })

@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
-import { dbContainer } from './db-init.js'
+import { getDb } from './db-context.js'
 import { config } from './config.js'
 import { randomBytes, timingSafeEqual } from 'node:crypto'
 
@@ -53,13 +53,13 @@ export function signToken(username, role) {
 }
 
 export async function login(username, password) {
-  const row = dbContainer.db.prepare('SELECT * FROM users WHERE username = ?').get(username)
+  const row = getDb().prepare('SELECT * FROM users WHERE username = ?').get(username)
   if (!row) return null
   const ok = await verifyPassword(password, row.password)
   if (!ok) return null
   if (!row.password.startsWith('$2')) {
     const hash = await hashPassword(password)
-    dbContainer.db.prepare('UPDATE users SET password = ? WHERE username = ?').run(hash, row.username)
+    getDb().prepare('UPDATE users SET password = ? WHERE username = ?').run(hash, row.username)
   }
   return {
     token: signToken(row.username, row.role),

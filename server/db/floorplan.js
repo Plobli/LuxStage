@@ -1,10 +1,10 @@
-import { dbContainer } from '../db-init.js'
+import { getDb } from '../db-context.js'
 import { randomUUID } from 'node:crypto'
 
 function now() { return Date.now() }
 
 export function getTemplateFloorplan(templateId) {
-  return dbContainer.db.prepare(
+  return getDb().prepare(
     'SELECT * FROM template_floorplans WHERE template_id = ?'
   ).get(templateId) ?? null
 }
@@ -12,11 +12,11 @@ export function getTemplateFloorplan(templateId) {
 export function upsertTemplateFloorplan(templateId, imagePath) {
   const existing = getTemplateFloorplan(templateId)
   if (existing) {
-    dbContainer.db.prepare(
+    getDb().prepare(
       'UPDATE template_floorplans SET image_path = ? WHERE template_id = ?'
     ).run(imagePath, templateId)
   } else {
-    dbContainer.db.prepare(
+    getDb().prepare(
       'INSERT INTO template_floorplans (id, template_id, image_path, created_at) VALUES (?, ?, ?, ?)'
     ).run(randomUUID(), templateId, imagePath, now())
   }
@@ -25,18 +25,18 @@ export function upsertTemplateFloorplan(templateId, imagePath) {
 export function upsertTemplateFloorplanData(templateId, canvasData) {
   const existing = getTemplateFloorplan(templateId)
   if (existing) {
-    dbContainer.db.prepare(
+    getDb().prepare(
       'UPDATE template_floorplans SET canvas_data = ? WHERE template_id = ?'
     ).run(canvasData, templateId)
   } else {
-    dbContainer.db.prepare(
+    getDb().prepare(
       'INSERT INTO template_floorplans (id, template_id, canvas_data, created_at) VALUES (?, ?, ?, ?)'
     ).run(randomUUID(), templateId, canvasData, now())
   }
 }
 
 export function getShowFloorplan(showId) {
-  return dbContainer.db.prepare(
+  return getDb().prepare(
     'SELECT * FROM show_floorplan_layers WHERE show_id = ?'
   ).get(showId) ?? null
 }
@@ -44,11 +44,11 @@ export function getShowFloorplan(showId) {
 export function upsertShowFloorplanImage(showId, imagePath) {
   const existing = getShowFloorplan(showId)
   if (existing) {
-    dbContainer.db.prepare(
+    getDb().prepare(
       'UPDATE show_floorplan_layers SET image_path = ?, updated_at = ? WHERE show_id = ?'
     ).run(imagePath, now(), showId)
   } else {
-    dbContainer.db.prepare(
+    getDb().prepare(
       'INSERT INTO show_floorplan_layers (id, show_id, image_path, updated_at) VALUES (?, ?, ?, ?)'
     ).run(randomUUID(), showId, imagePath, now())
   }
@@ -57,11 +57,11 @@ export function upsertShowFloorplanImage(showId, imagePath) {
 export function upsertShowFloorplanData(showId, canvasData) {
   const existing = getShowFloorplan(showId)
   if (existing) {
-    dbContainer.db.prepare(
+    getDb().prepare(
       'UPDATE show_floorplan_layers SET canvas_data = ?, updated_at = ? WHERE show_id = ?'
     ).run(canvasData, now(), showId)
   } else {
-    dbContainer.db.prepare(
+    getDb().prepare(
       'INSERT INTO show_floorplan_layers (id, show_id, canvas_data, updated_at) VALUES (?, ?, ?, ?)'
     ).run(randomUUID(), showId, canvasData, now())
   }

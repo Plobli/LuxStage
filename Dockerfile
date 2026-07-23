@@ -23,6 +23,12 @@ COPY server/package.json ./server/
 RUN npm ci --omit=dev --silent
 
 COPY server/ ./server/
+# Self-Hosted-Image: SaaS-Module entfernen (nur im SaaS-Image enthalten).
+# Der Kern lädt sie bedingt (saas.js) — ohne BASE_DOMAIN werden sie nie referenziert.
+RUN rm -f server/tenants.js server/registry.js server/operator.js \
+          server/tenant-resolve.js server/tenant-backup.js \
+          server/routes/operator.js server/routes/register.js \
+          server/operator-panel.html
 COPY shared/ ./shared/
 COPY entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh

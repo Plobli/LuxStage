@@ -1,9 +1,21 @@
 // LuxStage/server/history.js
 import { createHash, randomUUID } from 'node:crypto'
 import { getDb, runWithDb } from './db-context.js'
-import { openTenantDb } from './tenants.js'
-import { listTenantIds, purgeExpiredPending } from './registry.js'
+import { saasEnabled } from './saas.js'
 import * as db from './db.js'
+
+// SaaS-Helfer (Mandanten-Iteration, Purge) nur im SaaS-Modus dynamisch laden.
+let saasMod = null
+async function loadSaasHelpers() {
+  if (!saasEnabled || saasMod) return saasMod
+  const [tenants, registry] = await Promise.all([import('./tenants.js'), import('./registry.js')])
+  saasMod = {
+    openTenantDb: tenants.openTenantDb,
+    listTenantIds: registry.listTenantIds,
+    purgeExpiredPending: registry.purgeExpiredPending,
+  }
+  return saasMod
+}
 
 const INTERVAL_MS = 10 * 60 * 1000  // 10 Minuten
 const PURGE_INTERVAL_MS = 60 * 60 * 1000  // 1 Stunde
@@ -60,30 +72,34 @@ function takeSnapshots() {
   }
 }
 
-// Führt fn für jeden Mandanten im jeweiligen DB-Kontext aus. Gibt es keine
-// Mandanten (Self-Hosted/Single-Tenant), läuft fn einmal im globalen Fallback.
+// Führt fn für jeden Mandanten im jeweiligen DB-Kontext aus. Im Self-Hosted-Modus
+// (keine SaaS-Module) läuft fn einmal gegen die globale DB.
 function forEachTenant(fn) {
-  const ids = listTenantIds()
+  if (!saasMod) { fn(); return } // Self-Hosted: globale DB
+  const ids = saasMod.listTenantIds()
   if (ids.length === 0) { fn(); return }
   for (const id of ids) {
     try {
-      runWithDb(openTenantDb(id), fn, id)
+      runWithDb(saasMod.openTenantDb(id), fn, id)
     } catch (err) {
       console.error(`[history] Mandant ${id} übersprungen:`, err.message)
     }
   }
 }
 
-export function startHistoryJob() {
+export async function startHistoryJob() {
+  await loadSaasHelpers()
   forEachTenant(initHashes)
   // Automatische Snapshots laufen weiter als Fallback (z.B. für Änderungen via API ohne Browser)
   setInterval(() => forEachTenant(takeSnapshots), INTERVAL_MS)
 
-  // Abgelaufene Registrierungen periodisch aufräumen (Doppel-Opt-In-TTL).
-  setInterval(() => {
-    const removed = purgeExpiredPending()
-    if (removed) console.log(`[register] ${removed} abgelaufene Registrierung(en) entfernt`)
-  }, PURGE_INTERVAL_MS)
+  // Abgelaufene Registrierungen periodisch aufräumen — nur SaaS (Doppel-Opt-In-TTL).
+  if (saasMod) {
+    setInterval(() => {
+      const removed = saasMod.purgeExpiredPending()
+      if (removed) console.log(`[register] ${removed} abgelaufene Registrierung(en) entfernt`)
+    }, PURGE_INTERVAL_MS)
+  }
 }
 
 /** Erzeugt sofort einen Snapshot für eine Show — unabhängig vom Hash-Vergleich.

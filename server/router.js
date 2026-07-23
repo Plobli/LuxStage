@@ -4,13 +4,9 @@ import zlib from 'node:zlib'
 import { fileURLToPath } from 'node:url'
 import { parseUrl, notFound, json } from './helpers.js'
 import { authenticate } from './auth.js'
-import { runWithDb, getTenantId } from './db-context.js'
-import { openTenantDb, tenantExists } from './tenants.js'
-import { resolveTenantId, isOperatorHost } from './tenant-resolve.js'
-import { isSuspended } from './registry.js'
-import { operatorRoutes } from './routes/operator.js'
+import { getTenantId } from './db-context.js'
+import { saasEnabled, getSaas } from './saas.js'
 import { authRoutes } from './routes/auth.js'
-import { registerRoutes } from './routes/register.js'
 import { userRoutes } from './routes/users.js'
 import { showRoutes } from './routes/shows.js'
 import { channelRoutes } from './routes/channels.js'
@@ -130,37 +126,40 @@ export async function router(req, res) {
 
   try {
     if (pathname.startsWith('/api/')) {
-      // Caddy On-Demand-TLS ask-Endpoint: host-unabhängig, ohne DB-Kontext,
-      // muss vor jeder Host-/Mandanten-Auflösung bedient werden.
-      if (pathname === '/api/tls-check') return systemRoutes(req, res, pathname)
+      // SaaS-Routing nur im SaaS-Modus (BASE_DOMAIN gesetzt). Im Self-Hosted-Modus
+      // sind die SaaS-Module nicht geladen — dieser Block wird komplett übersprungen.
+      if (saasEnabled) {
+        const saas = getSaas()
 
-      // Betreiber-Panel auf admin.<baseDomain>: eigener Kontext (globale/Registry-DB),
-      // getrennt von allen Mandanten. Nur Operator-Routen erlaubt.
-      if (isOperatorHost(req)) {
-        if (pathname === '/api/health') return systemRoutes(req, res, pathname)
-        if (pathname.startsWith('/api/operator/')) {
-          const r = await operatorRoutes(req, res, pathname)
-          if (r === null) return notFound(res)
-          return
+        // Caddy On-Demand-TLS ask-Endpoint: host-unabhängig, ohne DB-Kontext.
+        if (pathname === '/api/tls-check') return systemRoutes(req, res, pathname)
+
+        // Betreiber-Panel auf admin.<baseDomain>: eigener Kontext, nur Operator-Routen.
+        if (saas.isOperatorHost(req)) {
+          if (pathname === '/api/health') return systemRoutes(req, res, pathname)
+          if (pathname.startsWith('/api/operator/')) {
+            const r = await saas.operatorRoutes(req, res, pathname)
+            if (r === null) return notFound(res)
+            return
+          }
+          return notFound(res)
         }
-        return notFound(res)
+
+        // Mandant aus dem Host ableiten (team-a.luxstage.app -> "team-a").
+        const tenantId = saas.resolveTenantId(req)
+        if (tenantId) {
+          if (!saas.tenantExists(tenantId)) return json(res, 404, { error: 'Unbekannter Mandant' })
+          if (saas.isSuspended(tenantId)) return json(res, 403, { error: 'Dieser Zugang wurde gesperrt' })
+          return saas.runWithDb(saas.openTenantDb(tenantId), () => handleApi(req, res, pathname, params), tenantId)
+        }
       }
 
-      // Mandant aus dem Host ableiten (team-a.luxstage.app -> "team-a").
-      // Steht damit VOR der Auth fest — der Login sucht im richtigen Kontext.
-      const tenantId = resolveTenantId(req)
-      if (tenantId) {
-        if (!tenantExists(tenantId)) return json(res, 404, { error: 'Unbekannter Mandant' })
-        if (isSuspended(tenantId)) return json(res, 403, { error: 'Dieser Zugang wurde gesperrt' })
-        return runWithDb(openTenantDb(tenantId), () => handleApi(req, res, pathname, params), tenantId)
-      }
-      // Kein Mandant: öffentlicher Kontext (Registrierung, Health) bzw.
-      // Single-Tenant-Fallback über die globale DB.
+      // Kein Mandant (oder Self-Hosted): öffentlicher/globaler Kontext.
       return handleApi(req, res, pathname, params)
     }
 
     // Betreiber-Panel: eigenständige HTML-Oberfläche auf admin.<baseDomain>.
-    if (req.method === 'GET' && isOperatorHost(req)) return serveOperatorPanel(res)
+    if (saasEnabled && req.method === 'GET' && getSaas().isOperatorHost(req)) return serveOperatorPanel(res)
 
     if (req.method === 'GET') return serveStatic(req, res, pathname)
 
@@ -198,7 +197,7 @@ async function handleApi(req, res, pathname, params) {
 
 async function dispatchApi(req, res, pathname, params) {
       // Reihenfolge: spezifische Prefixe zuerst
-      if (pathname.startsWith('/api/register'))       { const r = await registerRoutes(req, res, pathname);      if (nil(r)) notFound(res); return }
+      if (saasEnabled && pathname.startsWith('/api/register')) { const r = await getSaas().registerRoutes(req, res, pathname); if (nil(r)) notFound(res); return }
       if (pathname.startsWith('/api/auth/'))         { const r = await authRoutes(req, res, pathname);          if (nil(r)) notFound(res); return }
       if (pathname.startsWith('/api/me/'))            { const r = await userRoutes(req, res, pathname);          if (nil(r)) notFound(res); return }
       if (pathname.startsWith('/api/users'))          { const r = await userRoutes(req, res, pathname);          if (nil(r)) notFound(res); return }

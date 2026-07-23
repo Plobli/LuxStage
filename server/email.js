@@ -3,6 +3,11 @@ import { config } from './config.js'
 import { getDb } from './db-context.js'
 
 function getSmtpCfg() {
+  // SaaS-Modus (BASE_DOMAIN gesetzt): immer die zentrale ENV-Config des Betreibers.
+  // Mandanten können SMTP nicht übersteuern — alle Mails gehen zentral raus.
+  if (config.baseDomain) return config.smtp
+
+  // Self-Hosted: pro-Instanz-Config aus der DB, sonst ENV-Fallback.
   try {
     const rows = getDb().prepare("SELECT key, value FROM settings WHERE key LIKE 'smtp.%'").all()
     if (!rows.length) return config.smtp

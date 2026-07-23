@@ -53,6 +53,11 @@ export function recordTenant(tenantId, email) {
   ).run(tenantId, email.toLowerCase(), now())
 }
 
+// Alle bestätigten Mandanten — für mandantenübergreifende Jobs (z. B. History).
+export function listTenantIds() {
+  return getRegistry().prepare('SELECT tenant_id FROM tenants').all().map(r => r.tenant_id)
+}
+
 // ── Pending Registrations (Doppel-Opt-In) ────────────────────────────────────
 export function addPending({ token, tenantId, email, passwordHash, ttlMs }) {
   const ts = now()

@@ -1,9 +1,12 @@
 // LuxStage/server/history.js
 import { createHash, randomUUID } from 'node:crypto'
-import { getDb } from './db-context.js'
+import { getDb, runWithDb } from './db-context.js'
+import { openTenantDb } from './tenants.js'
+import { listTenantIds, purgeExpiredPending } from './registry.js'
 import * as db from './db.js'
 
 const INTERVAL_MS = 10 * 60 * 1000  // 10 Minuten
+const PURGE_INTERVAL_MS = 60 * 60 * 1000  // 1 Stunde
 const MAX_HISTORY = 50
 
 // Map<showId, lastSnapshotHash>
@@ -57,10 +60,30 @@ function takeSnapshots() {
   }
 }
 
+// Führt fn für jeden Mandanten im jeweiligen DB-Kontext aus. Gibt es keine
+// Mandanten (Self-Hosted/Single-Tenant), läuft fn einmal im globalen Fallback.
+function forEachTenant(fn) {
+  const ids = listTenantIds()
+  if (ids.length === 0) { fn(); return }
+  for (const id of ids) {
+    try {
+      runWithDb(openTenantDb(id), fn, id)
+    } catch (err) {
+      console.error(`[history] Mandant ${id} übersprungen:`, err.message)
+    }
+  }
+}
+
 export function startHistoryJob() {
-  initHashes()
+  forEachTenant(initHashes)
   // Automatische Snapshots laufen weiter als Fallback (z.B. für Änderungen via API ohne Browser)
-  setInterval(takeSnapshots, INTERVAL_MS)
+  setInterval(() => forEachTenant(takeSnapshots), INTERVAL_MS)
+
+  // Abgelaufene Registrierungen periodisch aufräumen (Doppel-Opt-In-TTL).
+  setInterval(() => {
+    const removed = purgeExpiredPending()
+    if (removed) console.log(`[register] ${removed} abgelaufene Registrierung(en) entfernt`)
+  }, PURGE_INTERVAL_MS)
 }
 
 /** Erzeugt sofort einen Snapshot für eine Show — unabhängig vom Hash-Vergleich.

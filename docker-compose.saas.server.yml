@@ -5,10 +5,9 @@
 #  - Ressourcen-Limits gegen RAM-/CPU-Amoklauf (schützt die anderen Dienste)
 services:
   luxstage-saas:
-    build:
-      context: .
-      dockerfile: Dockerfile.saas
-    image: luxstage-saas:latest
+    # Vorgebautes Image aus GHCR (GitHub Actions baut es bei jedem v*-Tag).
+    # Update auf dem Server: docker compose -f … pull && up -d
+    image: ghcr.io/plobli/luxstage-saas:latest
     container_name: luxstage-saas
     restart: unless-stopped
     networks:

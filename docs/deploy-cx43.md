@@ -60,8 +60,20 @@ OPERATOR_PASSWORD=<starkes Passwort>
 
 ## Schritt 3 — LuxStage-SaaS starten (noch ohne Domain)
 
+Das Image wird von GitHub Actions bei jedem `v*`-Tag nach GHCR gebaut
+(`ghcr.io/plobli/luxstage-saas`). Der Server **zieht** es nur — kein Build vor Ort.
+
+Einmalig am GHCR anmelden (privates Image):
 ```sh
-docker compose -f docker-compose.saas.server.yml up -d --build
+# GitHub → Settings → Developer settings → Personal access token (classic)
+# Scope: read:packages
+echo "<TOKEN>" | docker login ghcr.io -u Plobli --password-stdin
+```
+
+Starten:
+```sh
+docker compose -f docker-compose.saas.server.yml pull
+docker compose -f docker-compose.saas.server.yml up -d
 docker logs luxstage-saas | head
 ```
 
@@ -158,6 +170,23 @@ einloggen. Danach `testteam` im Panel wieder löschen.
 - Test-Mandant im Betreiber-Panel löschen.
 - `feature/saas` → `main` mergen, wenn alles läuft.
 - Erste echte Kunden einladen.
+
+## Updates einspielen
+
+1. Lokal: Version in `package.json` erhöhen, committen, Tag pushen:
+   ```sh
+   git tag v2026.6.14 && git push origin v2026.6.14
+   ```
+2. GitHub Actions baut das Image und pusht `ghcr.io/plobli/luxstage-saas:2026.6.14`
+   und `:latest`.
+3. Auf dem Server:
+   ```sh
+   cd /opt/luxstage-saas
+   docker compose -f docker-compose.saas.server.yml pull
+   docker compose -f docker-compose.saas.server.yml up -d
+   ```
+   Der Container startet mit dem neuen Image neu; das Datenvolume bleibt erhalten.
+   Schema-Migrationen laufen beim Start automatisch (idempotent).
 
 ## Betrieb
 

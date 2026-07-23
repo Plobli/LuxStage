@@ -50,16 +50,25 @@ Deutsch und Englisch verfügbar.
 
 ## Installation
 
-LuxStage wird auf einem Linux-Server (z.B. Raspberry Pi) installiert und läuft über den Browser.
+LuxStage läuft auf einem Linux-Server und wird über den Browser bedient. Es gibt
+zwei Wege, es selbst zu betreiben:
+
+- **Bare-Metal-Installer** — ein Script richtet alles ein (Node.js, Caddy, PM2).
+  Ideal für ein dediziertes Gerät wie einen Raspberry Pi.
+- **Docker** — via `docker-compose.yml`, falls du Docker bevorzugst.
+
+> Für den gehosteten Mehrmandanten-Betrieb (SaaS) siehe `docs/saas-betrieb.md`.
 
 ### Systemanforderungen
 
-- **Linux-System** (Debian/Ubuntu basiert, z.B. Raspberry Pi OS)
-- **Root-Zugriff** für Installation erforderlich
+- **Linux-System** (Debian/Ubuntu-basiert, z.B. Raspberry Pi OS)
+- **Root-Zugriff** für die Installation erforderlich
 - **Internetverbindung** während der Installation
 - **Mindestens 512 MB RAM**
 
-### Installation durchführen
+Datenhaltung: **SQLite** (eine Datei, kein separater Datenbankdienst nötig).
+
+### Variante A — Bare-Metal-Installer
 
 1. **Installer herunterladen und ausführen:**
 
@@ -81,6 +90,19 @@ sudo bash /tmp/luxstage-install.sh
 ```bash
 sudo reboot
 ```
+
+### Variante B — Docker
+
+```bash
+git clone https://github.com/Plobli/LuxStage.git
+cd LuxStage
+# JWT_SECRET und ADMIN_PASSWORD setzen (siehe .env.example)
+cp .env.example .env && nano .env
+docker compose up -d
+```
+
+Der Server läuft dann auf dem in `docker-compose.yml` gemappten Port hinter einem
+eigenen Reverse Proxy.
 
 ### Zugriff
 

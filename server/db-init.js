@@ -1,9 +1,13 @@
 // LuxStage/server/db-init.js
 import Database from 'better-sqlite3'
+import fs from 'node:fs'
 import path from 'node:path'
 import { config } from './config.js'
 
 export const dbContainer = { db: null }
+
+// Datenverzeichnis sicherstellen — bei frischem Deploy/Volume existiert es sonst nicht.
+fs.mkdirSync(config.dataPath, { recursive: true })
 
 const dbPath = path.join(config.dataPath, 'luxstage.db')
 dbContainer.db = new Database(dbPath)

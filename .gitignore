@@ -30,8 +30,8 @@ docs/superpowers/
 *.jpg
 !webapp-mockup.png
 
-# Interne Entwicklungsdokumente
-docs/
+# Interne Entwicklungsdokumente (Verzeichnisinhalt, aber Verzeichnis selbst begehbar)
+docs/*
 web-app/docs/
 # Ausnahme: Betriebs-Doku (für Deployment gedacht, nicht intern)
 !docs/saas-betrieb.md

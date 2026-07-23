@@ -68,6 +68,16 @@
       </table>
       <div id="empty" class="mut hidden" style="padding:16px 12px">Noch keine Mandanten.</div>
     </div>
+
+    <h1 style="font-size:16px; margin:28px 0 2px">Offene Registrierungen</h1>
+    <p class="sub" id="pendingCount"></p>
+    <div class="card">
+      <table>
+        <thead><tr><th>Team</th><th>E-Mail</th><th>Angefragt</th><th>Läuft ab</th></tr></thead>
+        <tbody id="pendingBody"></tbody>
+      </table>
+      <div id="pendingEmpty" class="mut hidden" style="padding:16px 12px">Keine offenen Registrierungen.</div>
+    </div>
   </div>
 
 </div>
@@ -89,6 +99,13 @@ async function api(method, path, body) {
 }
 
 function fmtDate(ms) { return new Date(ms).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric' }) }
+function fmtExpiry(ms) {
+  const diff = ms - Date.now()
+  if (diff <= 0) return 'abgelaufen'
+  const h = Math.floor(diff / 3600000)
+  if (h >= 1) return `in ${h} h`
+  return `in ${Math.max(1, Math.floor(diff / 60000))} min`
+}
 
 function show(view) {
   $('#loginView').classList.toggle('hidden', view !== 'login')
@@ -103,7 +120,7 @@ $('#loginForm').addEventListener('submit', async e => {
   try {
     const { token: t } = await api('POST', '/api/operator/login', { username: $('#u').value, password: $('#p').value })
     token = t; localStorage.setItem(TOKEN_KEY, t)
-    await loadTenants(); show('dash')
+    await refresh(); show('dash')
   } catch (err) {
     $('#loginErr').textContent = err.message; $('#loginErr').classList.remove('hidden')
   }
@@ -134,6 +151,25 @@ async function loadTenants() {
   }
 }
 
+async function loadPending() {
+  const { pending } = await api('GET', '/api/operator/pending')
+  $('#pendingCount').textContent = pending.length + ' offen'
+  $('#pendingEmpty').classList.toggle('hidden', pending.length > 0)
+  const body = $('#pendingBody'); body.innerHTML = ''
+  for (const p of pending) {
+    const tr = document.createElement('tr')
+    const expired = p.expiresAt <= Date.now()
+    tr.innerHTML = `
+      <td><strong>${p.tenantId}</strong></td>
+      <td class="mut">${p.email}</td>
+      <td class="mut">${fmtDate(p.createdAt)}</td>
+      <td class="${expired ? '' : 'mut'}">${fmtExpiry(p.expiresAt)}</td>`
+    body.appendChild(tr)
+  }
+}
+
+async function refresh() { await Promise.all([loadTenants(), loadPending()]) }
+
 $('#tbody').addEventListener('click', async e => {
   const btn = e.target.closest('button'); if (!btn) return
   const id = btn.dataset.id
@@ -145,13 +181,13 @@ $('#tbody').addEventListener('click', async e => {
       if (!confirm(`Mandant "${id}" endgültig löschen? Alle Daten werden entfernt.`)) return
       await api('DELETE', `/api/operator/tenants/${id}`)
     }
-    await loadTenants()
+    await refresh()
   } catch (err) { alert(err.message) }
 })
 
 // Auto-Login, falls Token vorhanden
 if (token) {
-  loadTenants().then(() => show('dash')).catch(() => show('login'))
+  refresh().then(() => show('dash')).catch(() => show('login'))
 } else {
   show('login')
 }

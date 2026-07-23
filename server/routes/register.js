@@ -51,7 +51,9 @@ export async function registerRoutes(req, res, pathname) {
     const passwordHash = await hashPassword(password)
     addPending({ token, tenantId, email, passwordHash, ttlMs: CONFIRM_TTL_MS })
 
-    const confirmUrl = `${tenantBaseUrl(tenantId)}/api/register/confirm?token=${token}`
+    // Bestätigung läuft auf der Root-Domain — der Mandant existiert noch nicht,
+    // seine Subdomain würde 404 liefern.
+    const confirmUrl = `${config.appUrl}/register/confirm?token=${token}`
     sendConfirmEmail(email, tenantId, confirmUrl)
       .catch(err => console.error('[register] Bestätigungsmail fehlgeschlagen:', err))
 

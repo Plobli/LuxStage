@@ -30,7 +30,14 @@ jobs:
         run: |
           # Wir zippen den Server-Quellcode (ohne node_modules wegen nativer Bindings)
           # und das fertig gebaute Web-App Dist-Verzeichnis.
-          zip -r luxstage-release.zip server web-app/dist package.json package-lock.json -x "server/node_modules/*" "*/.DS_Store"
+          # SaaS-Module werden ausgeschlossen — das Self-Hosted-ZIP enthält keinen
+          # SaaS-Code (der Kern lädt sie bedingt via saas.js, ohne BASE_DOMAIN inaktiv).
+          zip -r luxstage-release.zip server web-app/dist package.json package-lock.json \
+            -x "server/node_modules/*" "*/.DS_Store" \
+               "server/tenants.js" "server/registry.js" "server/operator.js" \
+               "server/tenant-resolve.js" "server/tenant-backup.js" \
+               "server/routes/operator.js" "server/routes/register.js" \
+               "server/operator-panel.html"
 
       - name: Generate Release Notes
         id: notes

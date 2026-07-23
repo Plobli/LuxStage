@@ -167,6 +167,13 @@ function _initSchema(database) {
       key   TEXT PRIMARY KEY,
       value TEXT NOT NULL DEFAULT ''
     );
+
+    CREATE TABLE IF NOT EXISTS password_resets (
+      token      TEXT PRIMARY KEY,
+      username   TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      expires_at INTEGER NOT NULL
+    );
   `)
 }
 

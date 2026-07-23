@@ -27,6 +27,35 @@ export function getUserEmail(username) {
   return row?.email || null
 }
 
+// Findet den Nutzernamen zu einer E-Mail (für Self-Service-Reset).
+export function findUserByEmail(email) {
+  const row = getDb().prepare('SELECT username FROM users WHERE email = ? COLLATE NOCASE').get(email)
+  return row?.username ?? null
+}
+
+// ── Passwort-Reset-Token (Self-Service) ──────────────────────────────────────
+export function createResetToken(token, username, ttlMs) {
+  const now = Date.now()
+  getDb().prepare(
+    'INSERT INTO password_resets (token, username, created_at, expires_at) VALUES (?, ?, ?, ?)'
+  ).run(token, username, now, now + ttlMs)
+}
+
+// Löst den Token ein (einmalig): gibt username zurück oder null.
+export function takeResetToken(token) {
+  const db = getDb()
+  const row = db.prepare('SELECT * FROM password_resets WHERE token = ?').get(token)
+  if (!row) return null
+  db.prepare('DELETE FROM password_resets WHERE token = ?').run(token)
+  if (row.expires_at < Date.now()) return null
+  return row.username
+}
+
+// Offene Reset-Token eines Nutzers verwerfen (bei neuem Request / nach Erfolg).
+export function clearResetTokens(username) {
+  getDb().prepare('DELETE FROM password_resets WHERE username = ?').run(username)
+}
+
 export async function createUser(username, password, role, email = '') {
   const hash = await hashPassword(password)
   getDb().prepare('INSERT INTO users (username, password, role, email, requires_password_change) VALUES (?, ?, ?, ?, 1) ON CONFLICT(username) DO UPDATE SET password = excluded.password, role = excluded.role, email = excluded.email, requires_password_change = 1')

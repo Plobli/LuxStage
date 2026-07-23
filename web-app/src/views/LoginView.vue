@@ -8,7 +8,7 @@
       <Card class="px-6 py-8 sm:px-12">
 
         <!-- Login-Formular -->
-        <form v-if="!showReset" class="space-y-6" @submit.prevent="handleLogin">
+        <form class="space-y-6" @submit.prevent="handleLogin">
           <div class="space-y-2">
             <Label for="username">{{ t('auth.username') }}</Label>
             <Input
@@ -44,9 +44,11 @@
           </Button>
 
           <div class="text-center space-y-2">
-            <Button variant="link" type="button" @click="showReset = true" class="text-sm text-muted-foreground hover:text-foreground">
-              {{ t('auth.reset') }}
-            </Button>
+            <div>
+              <RouterLink to="/forgot-password" class="text-sm text-muted-foreground hover:text-foreground">
+                {{ t('auth.reset') }}
+              </RouterLink>
+            </div>
             <div>
               <RouterLink to="/register" class="text-sm text-muted-foreground hover:text-foreground">
                 Neues Team registrieren
@@ -54,15 +56,6 @@
             </div>
           </div>
         </form>
-
-        <!-- Passwort-Reset-Hinweis -->
-        <div v-else class="space-y-6">
-          <h2 class="text-base/7 font-semibold text-foreground">{{ t('auth.reset.title') }}</h2>
-          <p class="text-sm text-muted-foreground">{{ t('auth.reset.hint') }}</p>
-          <Button variant="link" type="button" @click="showReset = false" class="text-sm p-0 h-auto text-primary hover:text-primary/80">
-            ← {{ t('auth.reset.back') }}
-          </Button>
-        </div>
 
       </Card>
     </div>
@@ -86,7 +79,6 @@ const username = ref('')
 const password = ref('')
 const error = ref(false)
 const loading = ref(false)
-const showReset = ref(false)
 
 async function pingServer() {
   try {

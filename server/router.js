@@ -170,6 +170,8 @@ export async function router(req, res) {
 // Öffentliche API-Endpunkte ohne Auth (im jeweiligen DB-Kontext ausgeführt).
 const PUBLIC_ENDPOINTS = new Set([
   '/api/auth/login',
+  '/api/auth/forgot-password',
+  '/api/auth/reset-password/confirm',
   '/api/health',
   '/api/register',
   '/api/register/confirm',

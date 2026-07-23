@@ -55,6 +55,14 @@ export async function sendConfirmEmail(email, tenantId, confirmUrl) {
   )
 }
 
+export async function sendPasswordResetLink(email, username, resetUrl) {
+  await sendMail(
+    email,
+    'LuxStage – Passwort zurücksetzen',
+    `Hallo ${username},\n\ndu hast angefragt, dein LuxStage-Passwort zurückzusetzen.\n\nÜber diesen Link kannst du ein neues Passwort vergeben:\n${resetUrl}\n\nDer Link ist 1 Stunde gültig. Wenn du das nicht warst, ignoriere diese Mail — dein Passwort bleibt unverändert.\n\nLuxStage`
+  )
+}
+
 export async function sendPasswordResetEmail(email, username, newPassword) {
   await sendMail(
     email,

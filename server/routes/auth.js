@@ -2,7 +2,8 @@ import { randomBytes } from 'node:crypto'
 import { login, signToken, requireAdmin, issueDownloadToken } from '../auth.js'
 import * as db from '../db.js'
 import { readJsonBody, json } from '../helpers.js'
-import { sendPasswordResetEmail } from '../email.js'
+import { sendPasswordResetEmail, sendPasswordResetLink } from '../email.js'
+import { config } from '../config.js'
 
 const loginAttempts = new Map()
 const MAX_LOGIN_ATTEMPTS = 10
@@ -68,6 +69,44 @@ export async function authRoutes(req, res, pathname) {
       : currentPassword === storedPassword
     if (!pwOk) return json(res, 403, { error: 'Aktuelles Passwort falsch' })
     await db.changePassword(user.username, newPassword, 0)
+    return json(res, 200, { ok: true })
+  }
+
+  // Self-Service: Passwort-Reset anfordern (öffentlich, im Mandanten-Kontext).
+  if (method === 'POST' && pathname === '/api/auth/forgot-password') {
+    let ip = req.socket.remoteAddress || 'unknown'
+    if ((ip === '127.0.0.1' || ip === '::1') && req.headers['x-forwarded-for']) {
+      ip = req.headers['x-forwarded-for'].split(',')[0].trim()
+    }
+    if (isRateLimited(ip)) return json(res, 429, { error: 'Zu viele Versuche. Bitte warten.' })
+    const body = await readJsonBody(req, res); if (body === null) return
+    const email = String(body.email || '').trim()
+    const username = email ? db.findUserByEmail(email) : null
+    if (username) {
+      db.clearResetTokens(username)
+      const token = randomBytes(32).toString('hex')
+      db.createResetToken(token, username, 60 * 60 * 1000) // 1 h
+      const resetUrl = `${config.appUrl}/reset-password?token=${token}`
+      sendPasswordResetLink(email, username, resetUrl)
+        .catch(err => console.error('[email] Reset-Link fehlgeschlagen:', err))
+      console.log(`[auth] Reset angefordert: user=${username} ip=${ip}`)
+    } else {
+      recordFailedLogin(ip) // bremst Enumeration
+    }
+    // Immer neutrale Antwort — kein Leak, ob die E-Mail existiert.
+    return json(res, 200, { ok: true, message: 'Falls die E-Mail existiert, wurde ein Link versendet.' })
+  }
+
+  // Self-Service: neues Passwort mit Reset-Token setzen (öffentlich).
+  if (method === 'POST' && pathname === '/api/auth/reset-password/confirm') {
+    const body = await readJsonBody(req, res); if (body === null) return
+    const token = String(body.token || '')
+    const newPassword = String(body.newPassword || '')
+    if (newPassword.length < 8) return json(res, 400, { error: 'Passwort zu kurz (min. 8 Zeichen)' })
+    const username = db.takeResetToken(token)
+    if (!username) return json(res, 400, { error: 'Link ungültig oder abgelaufen' })
+    await db.changePassword(username, newPassword, 0)
+    console.log(`[auth] Passwort zurückgesetzt: user=${username}`)
     return json(res, 200, { ok: true })
   }
 

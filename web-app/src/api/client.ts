@@ -89,6 +89,32 @@ export async function register(teamId: string, email: string, password: string):
   }
 }
 
+/** Fordert einen Passwort-Reset-Link an (neutrale Antwort, kein Existenz-Leak). */
+export async function requestPasswordReset(email: string): Promise<void> {
+  const res = await fetch(BASE() + '/api/auth/forgot-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || `HTTP ${res.status}`)
+  }
+}
+
+/** Setzt ein neues Passwort mit dem Reset-Token aus der Mail. */
+export async function confirmPasswordReset(token: string, newPassword: string): Promise<void> {
+  const res = await fetch(BASE() + '/api/auth/reset-password/confirm', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, newPassword }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || `HTTP ${res.status}`)
+  }
+}
+
 /** Bestätigt die Registrierung über den Token aus der Opt-In-Mail. */
 export async function confirmRegistration(token: string): Promise<{ tenantId: string, loginUrl: string }> {
   const res = await fetch(BASE() + '/api/register/confirm?token=' + encodeURIComponent(token))

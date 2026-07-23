@@ -4,6 +4,7 @@ dist/
 .env
 .env.*
 !.env.example
+!.env.saas.example
 
 # PocketBase
 pocketbase/pb_data/
@@ -32,6 +33,8 @@ docs/superpowers/
 # Interne Entwicklungsdokumente
 docs/
 web-app/docs/
+# Ausnahme: Betriebs-Doku (für Deployment gedacht, nicht intern)
+!docs/saas-betrieb.md
 
 # Heroku / sonstige Deployment-Artefakte
 Procfile

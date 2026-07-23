@@ -18,6 +18,14 @@ function hostname(req) {
   return raw.split(':')[0]
 }
 
+// Läuft der Request auf der Betreiber-Subdomain admin.<baseDomain>?
+// Dev (baseDomain leer): X-Operator-Host-Header als Override zum Testen.
+export function isOperatorHost(req) {
+  const base = config.baseDomain.toLowerCase()
+  if (!base) return req.headers['x-operator-host'] === '1'
+  return hostname(req) === 'admin.' + base
+}
+
 // Ermittelt die tenantId für diesen Request oder null (öffentlicher/Single-Tenant-Kontext).
 export function resolveTenantId(req) {
   const base = config.baseDomain.toLowerCase()

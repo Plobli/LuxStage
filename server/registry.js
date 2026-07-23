@@ -29,10 +29,16 @@ export function getRegistry() {
     CREATE TABLE IF NOT EXISTS tenants (
       tenant_id   TEXT PRIMARY KEY,
       email       TEXT NOT NULL,
-      created_at  INTEGER NOT NULL
+      created_at  INTEGER NOT NULL,
+      suspended   INTEGER NOT NULL DEFAULT 0
     );
     CREATE UNIQUE INDEX IF NOT EXISTS idx_tenants_email ON tenants(email);
   `)
+  // Migration: suspended-Spalte für bestehende Registry-DBs.
+  const cols = db.pragma('table_info(tenants)').map(c => c.name)
+  if (!cols.includes('suspended')) {
+    db.exec('ALTER TABLE tenants ADD COLUMN suspended INTEGER NOT NULL DEFAULT 0')
+  }
   return db
 }
 
@@ -56,6 +62,41 @@ export function recordTenant(tenantId, email) {
 // Alle bestätigten Mandanten — für mandantenübergreifende Jobs (z. B. History).
 export function listTenantIds() {
   return getRegistry().prepare('SELECT tenant_id FROM tenants').all().map(r => r.tenant_id)
+}
+
+// ── Betreiber-Panel: Mandanten-Verwaltung ────────────────────────────────────
+export function listTenants() {
+  return getRegistry().prepare(
+    'SELECT tenant_id, email, created_at, suspended FROM tenants ORDER BY created_at DESC'
+  ).all()
+}
+
+export function getTenant(tenantId) {
+  return getRegistry().prepare(
+    'SELECT tenant_id, email, created_at, suspended FROM tenants WHERE tenant_id = ?'
+  ).get(tenantId) || null
+}
+
+export function isSuspended(tenantId) {
+  const row = getRegistry().prepare('SELECT suspended FROM tenants WHERE tenant_id = ?').get(tenantId)
+  return row?.suspended === 1
+}
+
+export function setSuspended(tenantId, suspended) {
+  return getRegistry().prepare('UPDATE tenants SET suspended = ? WHERE tenant_id = ?')
+    .run(suspended ? 1 : 0, tenantId).changes
+}
+
+// Mandant aus dem Verzeichnis entfernen (die DB-Dateien löscht deleteTenant separat).
+export function removeTenant(tenantId) {
+  return getRegistry().prepare('DELETE FROM tenants WHERE tenant_id = ?').run(tenantId).changes
+}
+
+// Offene (unbestätigte) Registrierungen — ohne Passwort-Hash.
+export function listPending() {
+  return getRegistry().prepare(
+    'SELECT tenant_id, email, created_at, expires_at FROM pending_registrations ORDER BY created_at DESC'
+  ).all()
 }
 
 // ── Pending Registrations (Doppel-Opt-In) ────────────────────────────────────

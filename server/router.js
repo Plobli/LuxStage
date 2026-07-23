@@ -6,7 +6,9 @@ import { parseUrl, notFound, json } from './helpers.js'
 import { authenticate } from './auth.js'
 import { runWithDb, getTenantId } from './db-context.js'
 import { openTenantDb, tenantExists } from './tenants.js'
-import { resolveTenantId } from './tenant-resolve.js'
+import { resolveTenantId, isOperatorHost } from './tenant-resolve.js'
+import { isSuspended } from './registry.js'
+import { operatorRoutes } from './routes/operator.js'
 import { authRoutes } from './routes/auth.js'
 import { registerRoutes } from './routes/register.js'
 import { userRoutes } from './routes/users.js'
@@ -117,11 +119,24 @@ export async function router(req, res) {
 
   try {
     if (pathname.startsWith('/api/')) {
+      // Betreiber-Panel auf admin.<baseDomain>: eigener Kontext (globale/Registry-DB),
+      // getrennt von allen Mandanten. Nur Operator-Routen erlaubt.
+      if (isOperatorHost(req)) {
+        if (pathname === '/api/health') return systemRoutes(req, res, pathname)
+        if (pathname.startsWith('/api/operator/')) {
+          const r = await operatorRoutes(req, res, pathname)
+          if (r === null) return notFound(res)
+          return
+        }
+        return notFound(res)
+      }
+
       // Mandant aus dem Host ableiten (team-a.luxstage.app -> "team-a").
       // Steht damit VOR der Auth fest — der Login sucht im richtigen Kontext.
       const tenantId = resolveTenantId(req)
       if (tenantId) {
         if (!tenantExists(tenantId)) return json(res, 404, { error: 'Unbekannter Mandant' })
+        if (isSuspended(tenantId)) return json(res, 403, { error: 'Dieser Zugang wurde gesperrt' })
         return runWithDb(openTenantDb(tenantId), () => handleApi(req, res, pathname, params), tenantId)
       }
       // Kein Mandant: öffentlicher Kontext (Registrierung, Health) bzw.

@@ -17,6 +17,12 @@ export const config = {
   // SaaS: Basis-Domain, unter der Mandanten als Subdomain laufen (z. B. luxstage.app
   // für team-a.luxstage.app). Leer = Single-Tenant/Self-Hosted (keine Subdomain-Auflösung).
   baseDomain: process.env.BASE_DOMAIN || '',
+  // Betreiber-Panel (admin.<baseDomain>): eigener Zugang, getrennt von Mandanten-Admins.
+  // Ohne gesetztes Passwort ist das Panel deaktiviert (kein vorangelegter Zugang).
+  operator: {
+    user: process.env.OPERATOR_USER || 'operator',
+    password: process.env.OPERATOR_PASSWORD || '',
+  },
   // Rollen: admin (alles), techniker (shows lesen/schreiben, keine templates/backup/update)
   lockTimeout: 10 * 60 * 1000, // 10 Minuten in ms
   photoMaxWidth: 1500,

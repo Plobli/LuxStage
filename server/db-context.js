@@ -14,14 +14,20 @@ import { dbContainer } from './db-init.js'
 const storage = new AsyncLocalStorage()
 
 // Führt fn in einem Kontext aus, in dem getDb() die übergebene DB liefert.
-export function runWithDb(db, fn) {
-  return storage.run({ db }, fn)
+// tenantId (optional) bindet den Kontext an einen Mandanten — für Token-Ausstellung.
+export function runWithDb(db, fn, tenantId = null) {
+  return storage.run({ db, tenantId }, fn)
 }
 
 // Die DB des aktuellen Request-Kontexts — oder die globale DB als Fallback.
 export function getDb() {
   const store = storage.getStore()
   return store?.db ?? dbContainer.db
+}
+
+// Der Mandant des aktuellen Kontexts — oder null (öffentlich/Single-Tenant).
+export function getTenantId() {
+  return storage.getStore()?.tenantId ?? null
 }
 
 // Ob gerade ein Request-Kontext aktiv ist (v. a. für Tests/Diagnose).

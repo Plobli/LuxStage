@@ -4,7 +4,7 @@ import zlib from 'node:zlib'
 import { fileURLToPath } from 'node:url'
 import { parseUrl, notFound, json } from './helpers.js'
 import { authenticate } from './auth.js'
-import { runWithDb } from './db-context.js'
+import { runWithDb, getTenantId } from './db-context.js'
 import { openTenantDb, tenantExists } from './tenants.js'
 import { resolveTenantId } from './tenant-resolve.js'
 import { authRoutes } from './routes/auth.js'
@@ -122,7 +122,7 @@ export async function router(req, res) {
       const tenantId = resolveTenantId(req)
       if (tenantId) {
         if (!tenantExists(tenantId)) return json(res, 404, { error: 'Unbekannter Mandant' })
-        return runWithDb(openTenantDb(tenantId), () => handleApi(req, res, pathname, params))
+        return runWithDb(openTenantDb(tenantId), () => handleApi(req, res, pathname, params), tenantId)
       }
       // Kein Mandant: öffentlicher Kontext (Registrierung, Health) bzw.
       // Single-Tenant-Fallback über die globale DB.
@@ -150,6 +150,12 @@ async function handleApi(req, res, pathname, params) {
   if (!PUBLIC_ENDPOINTS.has(pathname)) {
     const user = authenticate(req)
     if (!user) return json(res, 401, { error: 'Nicht angemeldet' })
+    // Token an Subdomain binden: ein für Mandant A ausgestellter Token darf nicht
+    // auf der Subdomain von Mandant B gelten.
+    const tenantId = getTenantId()
+    if (tenantId && user.tenantId !== tenantId) {
+      return json(res, 403, { error: 'Token gilt nicht für diesen Mandanten' })
+    }
     req.user = user
   }
   return dispatchApi(req, res, pathname, params)

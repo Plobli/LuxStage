@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
-import { getDb } from './db-context.js'
+import { getDb, getTenantId } from './db-context.js'
 import { config } from './config.js'
 import { randomBytes, timingSafeEqual } from 'node:crypto'
 
@@ -49,7 +49,10 @@ async function verifyPassword(plain, stored) {
 }
 
 export function signToken(username, role) {
-  return jwt.sign({ username, role }, config.jwtSecret, { expiresIn: '72h' })
+  // Token an den aktuellen Mandanten binden (falls im Mandanten-Kontext ausgestellt).
+  const tenantId = getTenantId()
+  const payload = tenantId ? { username, role, tenantId } : { username, role }
+  return jwt.sign(payload, config.jwtSecret, { expiresIn: '72h' })
 }
 
 export async function login(username, password) {

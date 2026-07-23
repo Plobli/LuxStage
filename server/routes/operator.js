@@ -13,6 +13,10 @@ import { runWithDb } from '../db-context.js'
 import {
   listTenants, getTenant, setSuspended, removeTenant, listPending,
 } from '../registry.js'
+import {
+  createSnapshot, listSnapshots, restoreSnapshot, snapshotPath, deleteBackups,
+} from '../tenant-backup.js'
+import fs from 'node:fs'
 
 // Kennzahlen eines Mandanten aus seiner DB lesen (Shows, Nutzer).
 function tenantStats(tenantId) {
@@ -64,9 +68,53 @@ export async function operatorRoutes(req, res, pathname) {
     if (method === 'DELETE') {
       removeTenant(id)      // aus Verzeichnis
       deleteTenant(id)      // DB-Dateien löschen
+      deleteBackups(id)     // Snapshots löschen
       console.log(`[operator] Mandant gelöscht: ${id}`)
       return json(res, 200, { ok: true })
     }
+  }
+
+  // ── Backups pro Mandant ──────────────────────────────────────────────────
+  const backups = pathname.match(/^\/api\/operator\/tenants\/([a-z0-9-]+)\/backups$/)
+  if (backups) {
+    const id = backups[1]
+    if (!getTenant(id)) return json(res, 404, { error: 'Mandant nicht gefunden' })
+    if (method === 'GET') {
+      return json(res, 200, { snapshots: listSnapshots(id) })
+    }
+    if (method === 'POST') { // manuellen Snapshot erstellen
+      const name = await createSnapshot(id)
+      console.log(`[operator] Snapshot erstellt: ${id}/${name}`)
+      return json(res, 201, { ok: true, name })
+    }
+  }
+
+  const restore = pathname.match(/^\/api\/operator\/tenants\/([a-z0-9-]+)\/backups\/restore$/)
+  if (restore && method === 'POST') {
+    const id = restore[1]
+    if (!getTenant(id)) return json(res, 404, { error: 'Mandant nicht gefunden' })
+    const body = await readJsonBody(req, res); if (body === null) return
+    try {
+      restoreSnapshot(id, String(body.name || ''))
+      console.log(`[operator] Snapshot wiederhergestellt: ${id}/${body.name}`)
+      return json(res, 200, { ok: true })
+    } catch (err) {
+      return json(res, 400, { error: err.message })
+    }
+  }
+
+  const download = pathname.match(/^\/api\/operator\/tenants\/([a-z0-9-]+)\/backups\/([^/]+)\/download$/)
+  if (download && method === 'GET') {
+    const id = download[1]
+    const name = decodeURIComponent(download[2])
+    const p = snapshotPath(id, name)
+    if (!p) return json(res, 404, { error: 'Snapshot nicht gefunden' })
+    res.writeHead(200, {
+      'Content-Type': 'application/octet-stream',
+      'Content-Disposition': `attachment; filename="${id}-${name}"`,
+    })
+    fs.createReadStream(p).pipe(res)
+    return
   }
 
   const suspend = pathname.match(/^\/api\/operator\/tenants\/([a-z0-9-]+)\/suspend$/)

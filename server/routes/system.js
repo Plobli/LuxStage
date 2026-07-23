@@ -28,14 +28,18 @@ export async function systemRoutes(req, res, pathname) {
     return json(res, 200, { version, dataPath: config.dataPath, diskFree })
   }
 
+  // System-Backup/Restore ist Single-Tenant (globale DB, Prozess-Neustart).
+  // Im SaaS gesperrt — Backups laufen zentral pro Mandant über das Betreiber-Panel.
   if (method === 'GET' && pathname === '/api/backup') {
     const user = requireAdmin(req, res); if (!user) return
+    if (config.baseDomain) return json(res, 403, { error: 'Backups werden zentral verwaltet' })
     streamBackup(res)
     return
   }
 
   if (method === 'POST' && pathname === '/api/restore') {
     const user = requireAdmin(req, res); if (!user) return
+    if (config.baseDomain) return json(res, 403, { error: 'Restore wird zentral verwaltet' })
     restoreBackup(req, res)
     return
   }

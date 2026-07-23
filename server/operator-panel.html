@@ -80,6 +80,22 @@
     </div>
   </div>
 
+  <!-- Backup-Dialog -->
+  <div id="backupOverlay" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50">
+    <div class="card" style="max-width:560px;width:100%">
+      <div class="topbar" style="margin-bottom:12px">
+        <h1 style="font-size:16px">Backups · <span id="bkTenant"></span></h1>
+        <button class="ghost" id="bkClose">Schließen</button>
+      </div>
+      <div style="margin-bottom:12px"><button id="bkCreate">Jetzt sichern</button></div>
+      <table>
+        <thead><tr><th>Zeitpunkt</th><th>Größe</th><th></th></tr></thead>
+        <tbody id="bkBody"></tbody>
+      </table>
+      <div id="bkEmpty" class="mut hidden" style="padding:12px">Noch keine Snapshots.</div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -144,6 +160,7 @@ async function loadTenants() {
       <td>${t.users ?? '–'}</td>
       <td>${status}</td>
       <td><div class="row-actions">
+        <button class="ghost" data-act="backups" data-id="${t.tenantId}">Backups</button>
         <button class="ghost" data-act="toggle" data-id="${t.tenantId}" data-sus="${t.suspended}">${t.suspended ? 'Entsperren' : 'Sperren'}</button>
         <button class="danger" data-act="delete" data-id="${t.tenantId}">Löschen</button>
       </div></td>`
@@ -170,10 +187,73 @@ async function loadPending() {
 
 async function refresh() { await Promise.all([loadTenants(), loadPending()]) }
 
+// ── Backup-Dialog ────────────────────────────────────────────────────────────
+let bkCurrentTenant = null
+
+function fmtSize(b) {
+  if (b < 1024) return b + ' B'
+  if (b < 1048576) return (b / 1024).toFixed(0) + ' KB'
+  return (b / 1048576).toFixed(1) + ' MB'
+}
+
+async function openBackups(id) {
+  bkCurrentTenant = id
+  $('#bkTenant').textContent = id
+  $('#backupOverlay').classList.remove('hidden')
+  await loadBackups()
+}
+
+async function loadBackups() {
+  const { snapshots } = await api('GET', `/api/operator/tenants/${bkCurrentTenant}/backups`)
+  $('#bkEmpty').classList.toggle('hidden', snapshots.length > 0)
+  const body = $('#bkBody'); body.innerHTML = ''
+  for (const s of snapshots) {
+    const tr = document.createElement('tr')
+    tr.innerHTML = `
+      <td class="mut">${new Date(s.createdAt).toLocaleString('de-DE')}</td>
+      <td class="mut">${fmtSize(s.size)}</td>
+      <td><div class="row-actions">
+        <button class="ghost" data-bk="restore" data-name="${s.name}">Wiederherstellen</button>
+        <button class="ghost" data-bk="download" data-name="${s.name}">Download</button>
+      </div></td>`
+    body.appendChild(tr)
+  }
+}
+
+$('#bkClose').addEventListener('click', () => $('#backupOverlay').classList.add('hidden'))
+$('#bkCreate').addEventListener('click', async () => {
+  try { await api('POST', `/api/operator/tenants/${bkCurrentTenant}/backups`); await loadBackups() }
+  catch (err) { alert(err.message) }
+})
+$('#bkBody').addEventListener('click', async e => {
+  const btn = e.target.closest('button'); if (!btn) return
+  const name = btn.dataset.name
+  try {
+    if (btn.dataset.bk === 'restore') {
+      if (!confirm(`Snapshot "${name}" wiederherstellen? Der aktuelle Stand von "${bkCurrentTenant}" wird überschrieben.`)) return
+      await api('POST', `/api/operator/tenants/${bkCurrentTenant}/backups/restore`, { name })
+      alert('Wiederhergestellt.')
+    } else if (btn.dataset.bk === 'download') {
+      // Download mit Auth-Header: als Blob holen und speichern.
+      const res = await fetch(`/api/operator/tenants/${bkCurrentTenant}/backups/${encodeURIComponent(name)}/download`, {
+        headers: { Authorization: 'Bearer ' + token },
+      })
+      if (!res.ok) throw new Error('Download fehlgeschlagen')
+      const blob = await res.blob()
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob); a.download = `${bkCurrentTenant}-${name}`; a.click()
+      URL.revokeObjectURL(a.href)
+    }
+  } catch (err) { alert(err.message) }
+})
+
 $('#tbody').addEventListener('click', async e => {
   const btn = e.target.closest('button'); if (!btn) return
   const id = btn.dataset.id
   try {
+    if (btn.dataset.act === 'backups') {
+      await openBackups(id); return
+    }
     if (btn.dataset.act === 'toggle') {
       const suspend = btn.dataset.sus !== 'true'
       await api('POST', `/api/operator/tenants/${id}/suspend`, { suspended: suspend })

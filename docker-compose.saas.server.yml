@@ -1,0 +1,58 @@
+# LuxStage SaaS — für den geteilten CX43 (bestehender Caddy + andere Services).
+# Unterschiede zu docker-compose.saas.yml:
+#  - kein ports:-Mapping (nur intern erreichbar, ausschließlich über Caddy)
+#  - eigenes Netz luxstage-saas-net; Caddy wird separat hineingehängt
+#  - Ressourcen-Limits gegen RAM-/CPU-Amoklauf (schützt die anderen Dienste)
+services:
+  luxstage-saas:
+    build:
+      context: .
+      dockerfile: Dockerfile.saas
+    image: luxstage-saas:latest
+    container_name: luxstage-saas
+    restart: unless-stopped
+    networks:
+      - luxstage-saas-net
+    volumes:
+      - luxstage-saas-data:/app/data
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      JWT_SECRET: ${JWT_SECRET}
+      DATA_PATH: /app/data
+      BASE_DOMAIN: ${BASE_DOMAIN}
+      APP_URL: ${APP_URL}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM:-LuxStage <noreply@luxstage.app>}
+      OPERATOR_USER: ${OPERATOR_USER:-operator}
+      OPERATOR_PASSWORD: ${OPERATOR_PASSWORD}
+    # Ressourcen-Deckel: LuxStage kann den knappen Host-RAM nicht leerräumen.
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+          cpus: '1.5'
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get('http://localhost:3000/api/health', r =>
+          process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () =>
+          process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  luxstage-saas-data:
+
+networks:
+  luxstage-saas-net:
+    name: luxstage-saas-net

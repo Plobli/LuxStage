@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { requireAdmin } from '../auth.js'
+import { isKnownDomain } from '../tenant-resolve.js'
 import { json } from '../helpers.js'
 import { streamBackup, restoreBackup } from '../backup.js'
 import { config } from '../config.js'
@@ -19,6 +20,15 @@ export async function systemRoutes(req, res, pathname) {
 
   if (method === 'GET' && pathname === '/api/health') {
     return json(res, 200, { ok: true })
+  }
+
+  // Caddy On-Demand-TLS ask-Endpoint: 200 nur für bekannte Domains, sonst 403.
+  // Verhindert, dass beliebige Hostnamen Let's-Encrypt-Anfragen auslösen.
+  if (method === 'GET' && pathname === '/api/tls-check') {
+    const url = new URL(req.url, 'http://localhost')
+    const domain = url.searchParams.get('domain') || ''
+    if (isKnownDomain(domain)) return json(res, 200, { ok: true })
+    return json(res, 403, { error: 'unbekannte Domain' })
   }
 
   if (method === 'GET' && pathname === '/api/status') {

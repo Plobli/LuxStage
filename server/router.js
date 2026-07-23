@@ -130,6 +130,10 @@ export async function router(req, res) {
 
   try {
     if (pathname.startsWith('/api/')) {
+      // Caddy On-Demand-TLS ask-Endpoint: host-unabhängig, ohne DB-Kontext,
+      // muss vor jeder Host-/Mandanten-Auflösung bedient werden.
+      if (pathname === '/api/tls-check') return systemRoutes(req, res, pathname)
+
       // Betreiber-Panel auf admin.<baseDomain>: eigener Kontext (globale/Registry-DB),
       // getrennt von allen Mandanten. Nur Operator-Routen erlaubt.
       if (isOperatorHost(req)) {

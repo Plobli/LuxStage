@@ -8,7 +8,7 @@
 // Dev/Single-Tenant (baseDomain leer): keine Subdomain-Auflösung. Zum lokalen
 // Testen darf der Mandant per X-Tenant-Id-Header gesetzt werden.
 import { config } from './config.js'
-import { isValidTenantId } from './tenants.js'
+import { isValidTenantId, tenantExists } from './tenants.js'
 
 const RESERVED = new Set(['www', 'app', 'api', 'admin', 'static', 'assets'])
 
@@ -24,6 +24,22 @@ export function isOperatorHost(req) {
   const base = config.baseDomain.toLowerCase()
   if (!base) return req.headers['x-operator-host'] === '1'
   return hostname(req) === 'admin.' + base
+}
+
+// Für Caddy On-Demand-TLS: Darf für diese Domain ein Zertifikat geholt werden?
+// Erlaubt: Root-Domain, admin.<base>, und existierende Mandanten-Subdomains.
+// Verhindert, dass Fremd-Hostnamen Caddy zu Let's-Encrypt-Anfragen zwingen.
+export function isKnownDomain(domain) {
+  const base = config.baseDomain.toLowerCase()
+  if (!base || !domain) return false
+  const host = String(domain).toLowerCase().trim().split(':')[0]
+  if (host === base) return true            // Root
+  if (host === 'admin.' + base) return true // Betreiber-Panel
+  const suffix = '.' + base
+  if (!host.endsWith(suffix)) return false
+  const sub = host.slice(0, -suffix.length)
+  if (!sub || sub.includes('.') || RESERVED.has(sub)) return false
+  return isValidTenantId(sub) && tenantExists(sub)
 }
 
 // Ermittelt die tenantId für diesen Request oder null (öffentlicher/Single-Tenant-Kontext).

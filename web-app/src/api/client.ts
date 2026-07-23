@@ -76,6 +76,29 @@ export async function login(username: string, password: string): Promise<{ requi
 
 export async function logout(): Promise<void> { clearToken() }
 
+/** SaaS-Registrierung: legt eine unbestätigte Anmeldung an, Server verschickt Opt-In-Mail. */
+export async function register(teamId: string, email: string, password: string): Promise<void> {
+  const res = await fetch(BASE() + '/api/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ teamId, email, password }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || `HTTP ${res.status}`)
+  }
+}
+
+/** Bestätigt die Registrierung über den Token aus der Opt-In-Mail. */
+export async function confirmRegistration(token: string): Promise<{ tenantId: string, loginUrl: string }> {
+  const res = await fetch(BASE() + '/api/register/confirm?token=' + encodeURIComponent(token))
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || `HTTP ${res.status}`)
+  }
+  return res.json()
+}
+
 export async function changePassword(currentPassword: string, newPassword: string): Promise<any> {
   const res = await fetch(BASE() + '/api/auth/change-password', {
     method: 'POST',

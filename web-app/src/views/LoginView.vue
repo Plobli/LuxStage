@@ -43,10 +43,15 @@
             {{ loading ? '…' : t('auth.login.submit') }}
           </Button>
 
-          <div class="text-center">
+          <div class="text-center space-y-2">
             <Button variant="link" type="button" @click="showReset = true" class="text-sm text-muted-foreground hover:text-foreground">
               {{ t('auth.reset') }}
             </Button>
+            <div>
+              <RouterLink to="/register" class="text-sm text-muted-foreground hover:text-foreground">
+                Neues Team registrieren
+              </RouterLink>
+            </div>
           </div>
         </form>
 
@@ -66,7 +71,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, RouterLink } from 'vue-router'
 import { login, api, isOnline } from '../api/client.js'
 import { useLocale } from '../composables/useLocale.js'
 import { Button } from '@/components/ui/button'

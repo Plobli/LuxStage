@@ -17,6 +17,18 @@ const routes: RouteRecordRaw[] = [
     meta: { public: true },
   },
   {
+    path: '/register',
+    name: 'register',
+    component: () => import('../views/RegisterView.vue'),
+    meta: { public: true },
+  },
+  {
+    path: '/register/confirm',
+    name: 'register-confirm',
+    component: () => import('../views/ConfirmView.vue'),
+    meta: { public: true },
+  },
+  {
     path: '/',
     name: 'shows',
     component: () => import('../views/ShowsView.vue'),

@@ -11,6 +11,7 @@ import { json, readJsonBody } from '../helpers.js'
 import { hashPassword } from '../auth.js'
 import { config } from '../config.js'
 import { isValidTenantId, createTenant, tenantExists } from '../tenants.js'
+import { isReservedSubdomain } from '../tenant-resolve.js'
 import { getRegistry, tenantIdTaken, emailTaken, recordTenant, addPending, takePending, hasPendingForTenant } from '../registry.js'
 import { runWithDb } from '../db-context.js'
 import { sendConfirmEmail } from '../email.js'
@@ -34,6 +35,7 @@ export async function registerRoutes(req, res, pathname) {
     const password = String(body.password || '')
 
     if (!isValidTenantId(tenantId)) return json(res, 400, { error: 'Ungültiges Team-Kürzel (nur a-z, 0-9, Bindestrich)' })
+    if (isReservedSubdomain(tenantId)) return json(res, 409, { error: 'Dieses Team-Kürzel ist reserviert' })
     if (!EMAIL_RE.test(email)) return json(res, 400, { error: 'Ungültige E-Mail-Adresse' })
     if (password.length < 8) return json(res, 400, { error: 'Passwort zu kurz (min. 8 Zeichen)' })
 

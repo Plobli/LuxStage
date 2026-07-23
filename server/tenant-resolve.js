@@ -10,12 +10,27 @@
 import { config } from './config.js'
 import { isValidTenantId, tenantExists } from './tenants.js'
 
-const RESERVED = new Set(['www', 'app', 'api', 'admin', 'static', 'assets'])
+// Nicht als Mandant registrierbar: generische, bestehende feste Subdomains
+// (thema/appreview/docs zeigen bereits woanders hin) und typische Marketing/Mail-Namen.
+const RESERVED = new Set([
+  // generisch / infrastruktur
+  'www', 'app', 'api', 'admin', 'static', 'assets',
+  // bestehende feste Subdomains unter luxstage.app
+  'thema', 'appreview', 'docs',
+  // marketing / mail (reserviert für spätere Nutzung)
+  'mail', 'mx', 'smtp', 'imap', 'pop', 'cdn', 'blog', 'shop',
+  'help', 'support', 'status', 'dev', 'staging', 'test',
+])
 
 // Host-Header ohne Port. Gibt '' zurück, wenn keiner da ist.
 function hostname(req) {
   const raw = (req.headers['host'] || '').toLowerCase()
   return raw.split(':')[0]
+}
+
+// Ist dieser Name als Subdomain reserviert (nicht als Mandant registrierbar)?
+export function isReservedSubdomain(name) {
+  return RESERVED.has(String(name).toLowerCase())
 }
 
 // Läuft der Request auf der Betreiber-Subdomain admin.<baseDomain>?

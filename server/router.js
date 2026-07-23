@@ -28,6 +28,17 @@ import { towerRoutes } from './routes/towers.js'
 import { barRoutes } from './routes/bars.js'
 
 const distPath = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'web-app', 'dist')
+const operatorPanelPath = path.join(path.dirname(fileURLToPath(import.meta.url)), 'operator-panel.html')
+
+function serveOperatorPanel(res) {
+  try {
+    const html = fs.readFileSync(operatorPanelPath)
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' })
+    res.end(html)
+  } catch {
+    notFound(res)
+  }
+}
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -143,6 +154,9 @@ export async function router(req, res) {
       // Single-Tenant-Fallback über die globale DB.
       return handleApi(req, res, pathname, params)
     }
+
+    // Betreiber-Panel: eigenständige HTML-Oberfläche auf admin.<baseDomain>.
+    if (req.method === 'GET' && isOperatorHost(req)) return serveOperatorPanel(res)
 
     if (req.method === 'GET') return serveStatic(req, res, pathname)
 

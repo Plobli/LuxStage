@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>LuxStage · Betreiber</title>
+<style>
+  :root { --bg:#0f1115; --card:#1a1d24; --border:#2a2e38; --fg:#e6e8ec; --mut:#9aa0ac; --acc:#c9a86a; --danger:#e5484d; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.5 system-ui,sans-serif; background:var(--bg); color:var(--fg); }
+  .wrap { max-width:960px; margin:0 auto; padding:32px 20px; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--mut); margin:0 0 24px; font-size:14px; }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:24px; }
+  label { display:block; font-size:13px; color:var(--mut); margin:12px 0 4px; }
+  input { width:100%; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--fg); font-size:15px; }
+  button { padding:9px 16px; border:none; border-radius:8px; background:var(--acc); color:#1a1d24; font-weight:600; cursor:pointer; font-size:14px; }
+  button:hover { opacity:.9; }
+  button.ghost { background:transparent; border:1px solid var(--border); color:var(--fg); }
+  button.danger { background:var(--danger); color:#fff; }
+  button:disabled { opacity:.5; cursor:default; }
+  table { width:100%; border-collapse:collapse; margin-top:8px; }
+  th, td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--border); font-size:14px; }
+  th { color:var(--mut); font-weight:500; }
+  .tag { display:inline-block; padding:2px 8px; border-radius:6px; font-size:12px; }
+  .tag.ok { background:#1e3a2a; color:#6cd18e; }
+  .tag.sus { background:#3a1e1e; color:#e88; }
+  .err { color:var(--danger); font-size:14px; margin-top:12px; }
+  .row-actions { display:flex; gap:8px; }
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+  .mut { color:var(--mut); font-size:13px; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Login -->
+  <div id="loginView">
+    <h1>LuxStage · Betreiber</h1>
+    <p class="sub">Verwaltung aller Mandanten</p>
+    <div class="card" style="max-width:400px">
+      <form id="loginForm">
+        <label for="u">Benutzername</label>
+        <input id="u" autocomplete="username" required>
+        <label for="p">Passwort</label>
+        <input id="p" type="password" autocomplete="current-password" required>
+        <div style="margin-top:20px"><button type="submit">Anmelden</button></div>
+        <div id="loginErr" class="err hidden"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="dashView" class="hidden">
+    <div class="topbar">
+      <div>
+        <h1>Mandanten</h1>
+        <p class="sub" id="count"></p>
+      </div>
+      <button class="ghost" id="logoutBtn">Abmelden</button>
+    </div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Team</th><th>E-Mail</th><th>Registriert</th><th>Shows</th><th>Nutzer</th><th>Status</th><th></th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div id="empty" class="mut hidden" style="padding:16px 12px">Noch keine Mandanten.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const TOKEN_KEY = 'luxstage_operator_token'
+const $ = s => document.querySelector(s)
+let token = localStorage.getItem(TOKEN_KEY)
+
+async function api(method, path, body) {
+  const res = await fetch(path, {
+    method,
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  })
+  if (res.status === 401) { logout(); throw new Error('Nicht angemeldet') }
+  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'HTTP ' + res.status) }
+  return res.status === 204 ? null : res.json()
+}
+
+function fmtDate(ms) { return new Date(ms).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric' }) }
+
+function show(view) {
+  $('#loginView').classList.toggle('hidden', view !== 'login')
+  $('#dashView').classList.toggle('hidden', view !== 'dash')
+}
+
+function logout() { token = null; localStorage.removeItem(TOKEN_KEY); show('login') }
+
+$('#loginForm').addEventListener('submit', async e => {
+  e.preventDefault()
+  $('#loginErr').classList.add('hidden')
+  try {
+    const { token: t } = await api('POST', '/api/operator/login', { username: $('#u').value, password: $('#p').value })
+    token = t; localStorage.setItem(TOKEN_KEY, t)
+    await loadTenants(); show('dash')
+  } catch (err) {
+    $('#loginErr').textContent = err.message; $('#loginErr').classList.remove('hidden')
+  }
+})
+
+$('#logoutBtn').addEventListener('click', logout)
+
+async function loadTenants() {
+  const { tenants } = await api('GET', '/api/operator/tenants')
+  $('#count').textContent = tenants.length + ' Mandant(en)'
+  $('#empty').classList.toggle('hidden', tenants.length > 0)
+  const tbody = $('#tbody'); tbody.innerHTML = ''
+  for (const t of tenants) {
+    const tr = document.createElement('tr')
+    const status = t.suspended ? '<span class="tag sus">gesperrt</span>' : '<span class="tag ok">aktiv</span>'
+    tr.innerHTML = `
+      <td><strong>${t.tenantId}</strong></td>
+      <td class="mut">${t.email}</td>
+      <td class="mut">${fmtDate(t.createdAt)}</td>
+      <td>${t.shows ?? '–'}</td>
+      <td>${t.users ?? '–'}</td>
+      <td>${status}</td>
+      <td><div class="row-actions">
+        <button class="ghost" data-act="toggle" data-id="${t.tenantId}" data-sus="${t.suspended}">${t.suspended ? 'Entsperren' : 'Sperren'}</button>
+        <button class="danger" data-act="delete" data-id="${t.tenantId}">Löschen</button>
+      </div></td>`
+    tbody.appendChild(tr)
+  }
+}
+
+$('#tbody').addEventListener('click', async e => {
+  const btn = e.target.closest('button'); if (!btn) return
+  const id = btn.dataset.id
+  try {
+    if (btn.dataset.act === 'toggle') {
+      const suspend = btn.dataset.sus !== 'true'
+      await api('POST', `/api/operator/tenants/${id}/suspend`, { suspended: suspend })
+    } else if (btn.dataset.act === 'delete') {
+      if (!confirm(`Mandant "${id}" endgültig löschen? Alle Daten werden entfernt.`)) return
+      await api('DELETE', `/api/operator/tenants/${id}`)
+    }
+    await loadTenants()
+  } catch (err) { alert(err.message) }
+})
+
+// Auto-Login, falls Token vorhanden
+if (token) {
+  loadTenants().then(() => show('dash')).catch(() => show('login'))
+} else {
+  show('login')
+}
+</script>
+</body>
+</html>

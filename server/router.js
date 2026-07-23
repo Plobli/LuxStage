@@ -8,6 +8,7 @@ import { runWithDb } from './db-context.js'
 import { openTenantDb, tenantExists } from './tenants.js'
 import { resolveTenantId } from './tenant-resolve.js'
 import { authRoutes } from './routes/auth.js'
+import { registerRoutes } from './routes/register.js'
 import { userRoutes } from './routes/users.js'
 import { showRoutes } from './routes/shows.js'
 import { channelRoutes } from './routes/channels.js'
@@ -156,6 +157,7 @@ async function handleApi(req, res, pathname, params) {
 
 async function dispatchApi(req, res, pathname, params) {
       // Reihenfolge: spezifische Prefixe zuerst
+      if (pathname.startsWith('/api/register'))       { const r = await registerRoutes(req, res, pathname);      if (nil(r)) notFound(res); return }
       if (pathname.startsWith('/api/auth/'))         { const r = await authRoutes(req, res, pathname);          if (nil(r)) notFound(res); return }
       if (pathname.startsWith('/api/me/'))            { const r = await userRoutes(req, res, pathname);          if (nil(r)) notFound(res); return }
       if (pathname.startsWith('/api/users'))          { const r = await userRoutes(req, res, pathname);          if (nil(r)) notFound(res); return }

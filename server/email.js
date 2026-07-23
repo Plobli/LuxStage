@@ -47,6 +47,14 @@ export async function sendWelcomeEmail(email, username, initialPassword) {
   )
 }
 
+export async function sendConfirmEmail(email, tenantId, confirmUrl) {
+  await sendMail(
+    email,
+    'LuxStage – Registrierung bestätigen',
+    `Hallo,\n\ndu hast das Team "${tenantId}" bei LuxStage registriert.\n\nBitte bestätige deine E-Mail-Adresse über diesen Link:\n${confirmUrl}\n\nDer Link ist 24 Stunden gültig. Wenn du dich nicht registriert hast, ignoriere diese Mail.\n\nLuxStage`
+  )
+}
+
 export async function sendPasswordResetEmail(email, username, newPassword) {
   await sendMail(
     email,

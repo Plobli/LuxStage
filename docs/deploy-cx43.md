@@ -15,30 +15,32 @@ den riskanten Caddy-Umbau zuletzt und mit Rollback.
 
 ## Reservierte Subdomains
 
-`thema`, `appreview`, `docs` (bestehende feste Subdomains) sowie generische/Mail-Namen
-sind im Code gesperrt — kein Mandant kann sie kapern. `thema.luxstage.app`
-(aktueller Single-Tenant-LuxStage) läuft unberührt weiter.
+`thema`, `appreview`, `docs` (bestehende feste Subdomains) sowie generische
+(`www`, `app`, `api`, `admin`, …) und Marketing/Mail-Namen (`mail`, `mx`, `cdn`,
+`status`, …) sind im Code gesperrt (`RESERVED` in `tenant-resolve.js`) — kein
+Mandant kann sie registrieren. `thema.luxstage.app` (aktueller Single-Tenant-
+LuxStage) läuft unberührt weiter.
 
 ---
 
-## Schritt 1 — Repo auf den Server
+## Schritt 0 — GHCR-Login (einmalig)
 
+Das Image ist privat. Server einmal an der GitHub Container Registry anmelden:
 ```sh
-cd /opt   # oder wo deine Stacks liegen
-git clone -b feature/saas https://github.com/Plobli/LuxStage.git luxstage-saas
-cd luxstage-saas
+# GitHub → Settings → Developer settings → Personal access token (classic)
+# Scope: read:packages
+echo "<TOKEN>" | docker login ghcr.io -u Plobli --password-stdin
 ```
 
-(Oder als Dockge-Stack anlegen — dann Compose-Datei dort einhängen.)
+## Schritt 1 — Stack in Dockge anlegen
 
-## Schritt 2 — .env anlegen
+Kein Repo-Clone nötig — das Image kommt aus GHCR, es wird nur die Compose-Datei
+gebraucht. In Dockge einen neuen Stack `luxstage-saas` anlegen und den Inhalt von
+`docker-compose.saas.server.yml` (aus dem Repo) einfügen.
 
-```sh
-cp .env.saas.example .env
-nano .env
-```
+## Schritt 2 — .env im Dockge-Stack setzen
 
-Werte:
+Im Dockge-Stack die Umgebungsvariablen hinterlegen (Vorlage: `.env.saas.example`):
 
 ```
 JWT_SECRET=<openssl rand -hex 32>
@@ -60,26 +62,12 @@ OPERATOR_PASSWORD=<starkes Passwort>
 
 ## Schritt 3 — LuxStage-SaaS starten (noch ohne Domain)
 
-Das Image wird von GitHub Actions bei jedem `v*`-Tag nach GHCR gebaut
-(`ghcr.io/plobli/luxstage-saas`). Der Server **zieht** es nur — kein Build vor Ort.
+Stack in Dockge deployen (zieht das Image aus GHCR, startet den Container).
+Erwartung im Log: `LuxStage Server … läuft auf Port 3000` + `[backup] Täglicher … Job aktiv`.
 
-Einmalig am GHCR anmelden (privates Image):
-```sh
-# GitHub → Settings → Developer settings → Personal access token (classic)
-# Scope: read:packages
-echo "<TOKEN>" | docker login ghcr.io -u Plobli --password-stdin
-```
-
-Starten:
-```sh
-docker compose -f docker-compose.saas.server.yml pull
-docker compose -f docker-compose.saas.server.yml up -d
-docker logs luxstage-saas | head
-```
-
-Erwartung: `LuxStage Server … läuft auf Port 3000` + `[backup] Täglicher … Job aktiv`.
 Kein `ports:`-Mapping — der Container ist noch nicht von außen erreichbar. Das ist
-gewollt: erst Caddy macht ihn erreichbar.
+gewollt: erst Caddy macht ihn erreichbar. Beim Deploy entsteht das Netzwerk
+`luxstage-saas-net`.
 
 Interner Funktionstest (aus einem Container im selben Netz):
 ```sh
@@ -90,6 +78,7 @@ docker run --rm --network luxstage-saas-net curlimages/curl \
 
 ## Schritt 4 — Caddy ins LuxStage-Netz hängen
 
+Erst jetzt (nach Schritt 3) existiert das Netz `luxstage-saas-net`:
 ```sh
 docker network connect luxstage-saas-net caddy
 docker inspect caddy --format '{{range $k,$_ := .NetworkSettings.Networks}}{{$k}} {{end}}'
@@ -138,6 +127,10 @@ damit `thema/appreview/docs.luxstage.app` als spezifischere Blöcke gewinnen):
 
 > `header_up Host {host}` ist ZWINGEND — der Server leitet den Mandanten aus dem
 > Host-Header ab.
+>
+> Hinweis: Der Server hat einen `ask`-Endpoint (`/api/tls-check`) für On-Demand-TLS.
+> Bei diesem Wildcard-Setup wird er **nicht** gebraucht (ein Zertifikat deckt alle
+> Subdomains). Er schadet nicht — nur ungenutzt.
 
 **5d. Caddy-Image tauschen** (im Caddy-Stack/Compose: `caddy:2.8-alpine` →
 `caddy-inwx:2.8`), INWX-Env ergänzen, neu starten:
@@ -173,18 +166,13 @@ einloggen. Danach `testteam` im Panel wieder löschen.
 
 ## Updates einspielen
 
-1. Lokal: Version in `package.json` erhöhen, committen, Tag pushen:
+1. Lokal: Version in `package.json` erhöhen, committen, Tag pushen (Schema `v2026.6.X`):
    ```sh
-   git tag v2026.6.14 && git push origin v2026.6.14
+   git tag v2026.6.X && git push origin v2026.6.X
    ```
-2. GitHub Actions baut das Image und pusht `ghcr.io/plobli/luxstage-saas:2026.6.14`
+2. GitHub Actions baut das Image und pusht `ghcr.io/plobli/luxstage-saas:<version>`
    und `:latest`.
-3. Auf dem Server:
-   ```sh
-   cd /opt/luxstage-saas
-   docker compose -f docker-compose.saas.server.yml pull
-   docker compose -f docker-compose.saas.server.yml up -d
-   ```
+3. Auf dem Server: im Dockge-Stack **Pull + Redeploy** (zieht `:latest` neu).
    Der Container startet mit dem neuen Image neu; das Datenvolume bleibt erhalten.
    Schema-Migrationen laufen beim Start automatisch (idempotent).
 

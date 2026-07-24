@@ -2,16 +2,24 @@
  * sse.js — Server-Sent Events für Realtime Kanal-Updates + Presence
  * Clients abonnieren /api/shows/:id/events
  */
+import { getTenantId } from './db-context.js'
 
-// showId → Map<res, { username, device }>
+// tenantId:showId → Map<res, { username, device }>
+// Slugs sind nur pro Mandanten-DB eindeutig — der Tenant-Präfix verhindert,
+// dass Mandanten mit gleichnamiger Show sich gegenseitig Updates mithören.
 const clients = new Map()
+
+function scopedKey(showId) {
+  return `${getTenantId() ?? ''}:${showId}`
+}
 
 function initShow(showId) {
   if (!clients.has(showId)) clients.set(showId, new Map())
 }
 
 export function subscribe(showId, res, username, device, getChecksFn) {
-  initShow(showId)
+  const key = scopedKey(showId)
+  initShow(key)
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
@@ -19,7 +27,7 @@ export function subscribe(showId, res, username, device, getChecksFn) {
   })
   res.write(':\n\n') // Verbindung bestätigen
 
-  const map = clients.get(showId)
+  const map = clients.get(key)
   map.set(res, { username, device, lastActivityAt: new Date().toISOString() })
 
   // Aktuellen Check-State sofort an den neuen Client senden
@@ -39,7 +47,7 @@ export function subscribe(showId, res, username, device, getChecksFn) {
 }
 
 export function broadcast(showId, event, data) {
-  const map = clients.get(showId)
+  const map = clients.get(scopedKey(showId))
   if (!map?.size) return
   const msg = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
   for (const res of map.keys()) {
@@ -69,13 +77,13 @@ function aggregatePresence(map) {
 }
 
 function broadcastPresence(showId) {
-  const map = clients.get(showId)
+  const map = clients.get(scopedKey(showId))
   if (!map) return
   broadcast(showId, 'presence-updated', { users: aggregatePresence(map) })
 }
 
 export function getPresence(showId) {
-  const map = clients.get(showId)
+  const map = clients.get(scopedKey(showId))
   if (!map?.size) return []
   return aggregatePresence(map)
 }

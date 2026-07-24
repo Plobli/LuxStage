@@ -58,7 +58,7 @@ export const api = {
     })
     if (!res.ok) throw new Error('Download-Token konnte nicht ausgestellt werden')
     const { token } = await res.json()
-    return BASE() + path + '?token=' + token
+    return BASE() + path + (path.includes('?') ? '&' : '?') + 'token=' + token
   },
 }
 
@@ -166,17 +166,48 @@ export function setServerUrl(url: string): void {
 /**
  * Gemeinsame SSE-Verbindung pro Show.
  * Gibt { onChannels, onSections, onPresence, close } zurück.
+ * Nutzt pro Verbindungsversuch ein frisches kurzlebiges Einmal-Token (statt
+ * des langlebigen JWT), damit kein Dauer-Token in Server-/Proxy-Logs landet.
+ * EventSource kann bei einem Einmal-Token nicht selbst reconnecten (das Token
+ * ist nach dem ersten Connect verbraucht) — der Reconnect wird daher hier
+ * manuell mit neuem Token durchgeführt.
  */
 export function subscribeShow(showId: string, { onChannels, onSections, onPresence, onTowers, onBars }: { onChannels?: (data: any) => void, onSections?: (data: any) => void, onPresence?: (data: any) => void, onTowers?: (data: any) => void, onBars?: (data: any) => void } = {}): () => void {
-  const url = BASE() + `/api/shows/${showId}/events?token=${getToken()}&device=web`
-  const es = new EventSource(url)
-  if (onChannels) es.addEventListener('channels-updated', (e: any) => onChannels(JSON.parse(e.data)))
-  if (onSections) es.addEventListener('sections-updated', (e: any) => onSections(JSON.parse(e.data)))
-  if (onPresence) es.addEventListener('presence-updated', (e: any) => onPresence(JSON.parse(e.data)))
-  if (onTowers) es.addEventListener('towers-updated', (e: any) => onTowers(JSON.parse(e.data)))
-  if (onBars) es.addEventListener('bars-updated', (e: any) => onBars(JSON.parse(e.data)))
-  es.onerror = () => {} // reconnect automatically
-  return () => es.close()
+  let es: EventSource | null = null
+  let closed = false
+  let retryTimer: ReturnType<typeof setTimeout> | null = null
+
+  async function connect(): Promise<void> {
+    if (closed) return
+    let url: string
+    try {
+      url = await api.downloadUrl(`/api/shows/${showId}/events?device=web`)
+    } catch {
+      if (!closed) retryTimer = setTimeout(connect, 3000)
+      return
+    }
+    if (closed) return
+
+    es = new EventSource(url)
+    if (onChannels) es.addEventListener('channels-updated', (e: any) => onChannels(JSON.parse(e.data)))
+    if (onSections) es.addEventListener('sections-updated', (e: any) => onSections(JSON.parse(e.data)))
+    if (onPresence) es.addEventListener('presence-updated', (e: any) => onPresence(JSON.parse(e.data)))
+    if (onTowers) es.addEventListener('towers-updated', (e: any) => onTowers(JSON.parse(e.data)))
+    if (onBars) es.addEventListener('bars-updated', (e: any) => onBars(JSON.parse(e.data)))
+    es.onerror = () => {
+      es?.close()
+      es = null
+      if (!closed) retryTimer = setTimeout(connect, 3000)
+    }
+  }
+
+  connect()
+
+  return () => {
+    closed = true
+    if (retryTimer) clearTimeout(retryTimer)
+    es?.close()
+  }
 }
 
 

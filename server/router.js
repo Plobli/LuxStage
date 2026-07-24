@@ -175,6 +175,14 @@ export async function router(req, res) {
       return serveOperatorPanel(res)
     }
 
+    // api.<baseDomain>: nur der öffentliche Registrierungs-/Reset-Flow, kein
+    // Login, keine Show-Verwaltung — dort existiert (noch) kein Mandant.
+    if (saasEnabled && req.method === 'GET' && getSaas().isPublicRegistrationHost(req)) {
+      const isAsset = pathname.startsWith('/assets/') || /\.[a-zA-Z0-9]+$/.test(pathname)
+      if (!isAsset && !PUBLIC_SPA_PATHS.has(pathname)) return notFound(res)
+      return serveStatic(req, res, pathname)
+    }
+
     if (req.method === 'GET') return serveStatic(req, res, pathname)
 
     return notFound(res)
@@ -183,6 +191,16 @@ export async function router(req, res) {
     if (!res.headersSent) json(res, 500, { error: 'Interner Fehler' })
   }
 }
+
+// SPA-Routen, die auf api.<baseDomain> erreichbar bleiben (Registrierung/Reset).
+// Alles andere (Login, Shows, Settings, …) ergibt dort 404 — dort existiert kein Mandant.
+const PUBLIC_SPA_PATHS = new Set([
+  '/',
+  '/register',
+  '/register/confirm',
+  '/forgot-password',
+  '/reset-password',
+])
 
 // Öffentliche API-Endpunkte ohne Auth (im jeweiligen DB-Kontext ausgeführt).
 const PUBLIC_ENDPOINTS = new Set([

@@ -49,11 +49,6 @@
                 {{ t('auth.reset') }}
               </RouterLink>
             </div>
-            <div>
-              <RouterLink to="/register" class="text-sm text-muted-foreground hover:text-foreground">
-                Neues Team registrieren
-              </RouterLink>
-            </div>
           </div>
         </form>
 

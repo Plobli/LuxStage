@@ -41,6 +41,15 @@ export function isOperatorHost(req) {
   return hostname(req) === 'admin.' + base
 }
 
+// Läuft der Request auf api.<baseDomain>? Dort läuft nur der schmale, öffentliche
+// Registrierungs-/Reset-Flow (kein Mandant existiert zu diesem Zeitpunkt) — kein
+// Login, keine Show-Verwaltung. Dev (baseDomain leer): kein solcher Host.
+export function isPublicRegistrationHost(req) {
+  const base = config.baseDomain.toLowerCase()
+  if (!base) return false
+  return hostname(req) === 'api.' + base
+}
+
 // Für Caddy On-Demand-TLS: Darf für diese Domain ein Zertifikat geholt werden?
 // Erlaubt: Root-Domain, admin.<base>, und existierende Mandanten-Subdomains.
 // Verhindert, dass Fremd-Hostnamen Caddy zu Let's-Encrypt-Anfragen zwingen.

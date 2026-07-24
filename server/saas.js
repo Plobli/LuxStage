@@ -23,6 +23,7 @@ async function load() {
   mod = {
     resolveTenantId: tenantResolve.resolveTenantId,
     isOperatorHost: tenantResolve.isOperatorHost,
+    isPublicRegistrationHost: tenantResolve.isPublicRegistrationHost,
     openTenantDb: tenants.openTenantDb,
     tenantExists: tenants.tenantExists,
     isSuspended: registry.isSuspended,

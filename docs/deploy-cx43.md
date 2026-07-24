@@ -11,7 +11,7 @@ den riskanten Caddy-Umbau zuletzt und mit Rollback.
 
 - [x] Swap 4 GB aktiv (`swapon --show`)
 - [x] DNS: `luxstage.app` + `*.luxstage.app` → `188.245.171.222` (mit `dig` verifiziert)
-- [ ] SMTP-Dienst eingerichtet (z. B. Brevo — kostenlos bis 300 Mails/Tag)
+- [x] SMTP-Dienst eingerichtet (Netcup-Mailserver, `hello@luxstage.app`)
 
 ## Reservierte Subdomains
 
@@ -45,7 +45,7 @@ Im Dockge-Stack die Umgebungsvariablen hinterlegen (Vorlage: `.env.saas.example`
 ```
 JWT_SECRET=<openssl rand -hex 32>
 BASE_DOMAIN=luxstage.app
-APP_URL=https://luxstage.app
+APP_URL=https://api.luxstage.app
 CORS_ORIGINS=https://luxstage.app
 SMTP_HOST=<vom SMTP-Dienst>
 SMTP_PORT=587
@@ -57,8 +57,11 @@ OPERATOR_USER=operator
 OPERATOR_PASSWORD=<starkes Passwort>
 ```
 
-> Hinweis: `APP_URL` ist die **Root**-Domain — Registrierungs-/Reset-Links zeigen
-> dorthin (der Mandant existiert beim Confirm noch nicht).
+> Hinweis: `APP_URL` zeigt auf `api.<baseDomain>`, nicht auf die Root-Domain —
+> Root (`luxstage.app`) ist die Marketing-Website (`luxstage-website`), dort
+> läuft keine SPA. Registrierungs-/Reset-Links brauchen die SaaS-Oberfläche,
+> die unter `api.luxstage.app` läuft (der Mandant existiert beim Confirm noch
+> nicht, seine eigene Subdomain würde 404 liefern).
 
 ## Schritt 3 — LuxStage-SaaS starten (noch ohne Domain)
 
@@ -167,18 +170,24 @@ Zertifikate liegen im Caddy-Volume — alte Domains sind sofort wieder da.
 # Panel erreichbar?
 curl -s -o /dev/null -w '%{http_code}\n' https://admin.luxstage.app/
 # Registrierung (echte Mail an eine Adresse, die du prüfen kannst)
-curl -s -X POST https://luxstage.app/api/register \
+curl -s -X POST https://api.luxstage.app/api/register \
   -H 'Content-Type: application/json' \
   -d '{"teamId":"testteam","email":"DEINE@mail.de","password":"testpasswort1"}'
 ```
 
-Dann: Bestätigungsmail abrufen → Link klicken → auf `testteam.luxstage.app`
-einloggen. Danach `testteam` im Panel wieder löschen.
+Dann: Bestätigungsmail abrufen → Link klicken (führt auf
+`api.luxstage.app/register/confirm`, zeigt "Team aktiviert") → über den Link
+"Zur Anmeldung" auf `testteam.luxstage.app` mit E-Mail + Passwort einloggen.
+Danach `testteam` im Panel wieder löschen.
+
+Login läuft immer über die bei der Registrierung angegebene **E-Mail-Adresse**
+(nicht "admin") + Passwort.
 
 ## Schritt 7 — Aufräumen / Go-Live
 
 - Test-Mandant im Betreiber-Panel löschen.
-- `feature/saas` → `main` mergen, wenn alles läuft.
+- `feature/saas` ist bereits vollständig in `main` enthalten (kein Merge
+  nötig) — Branch kann gelöscht werden.
 - Erste echte Kunden einladen.
 
 ## Updates einspielen

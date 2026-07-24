@@ -36,6 +36,7 @@ web-app/docs/
 # Ausnahme: Betriebs-Doku (für Deployment gedacht, nicht intern)
 !docs/saas-betrieb.md
 !docs/deploy-cx43.md
+!docs/files.md
 
 # Heroku / sonstige Deployment-Artefakte
 Procfile

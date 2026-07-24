@@ -16,9 +16,6 @@
             Bitte klicke auf den Link darin, um dein Team <strong>{{ teamId }}</strong> zu aktivieren.
           </p>
           <p class="text-xs text-muted-foreground">Der Link ist 24 Stunden gültig.</p>
-          <RouterLink to="/login" class="inline-block text-sm text-primary hover:text-primary/80">
-            ← Zur Anmeldung
-          </RouterLink>
         </div>
 
         <!-- Registrierungs-Formular -->
@@ -68,12 +65,6 @@
           <Button type="submit" :disabled="loading" class="w-full">
             {{ loading ? '…' : 'Registrieren' }}
           </Button>
-
-          <div class="text-center">
-            <RouterLink to="/login" class="text-sm text-muted-foreground hover:text-foreground">
-              Bereits ein Team? Anmelden
-            </RouterLink>
-          </div>
         </form>
 
       </Card>
@@ -83,7 +74,6 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { RouterLink } from 'vue-router'
 import { register } from '../api/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'

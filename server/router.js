@@ -175,9 +175,10 @@ export async function router(req, res) {
       return serveOperatorPanel(res)
     }
 
-    // api.<baseDomain>: nur der öffentliche Registrierungs-/Reset-Flow, kein
-    // Login, keine Show-Verwaltung — dort existiert (noch) kein Mandant.
-    if (saasEnabled && req.method === 'GET' && getSaas().isPublicRegistrationHost(req)) {
+    // Root-Domain: Caddy reicht dort nur /register* durch (alles andere bleibt
+    // bei der Marketing-Website) — zur Verteidigung in der Tiefe hier zusätzlich
+    // serverseitig einschränken, falls Caddy je anders konfiguriert wird.
+    if (saasEnabled && req.method === 'GET' && getSaas().isRootHost(req)) {
       const isAsset = pathname.startsWith('/assets/') || /\.[a-zA-Z0-9]+$/.test(pathname)
       if (!isAsset && !PUBLIC_SPA_PATHS.has(pathname)) return notFound(res)
       return serveStatic(req, res, pathname)
@@ -192,14 +193,11 @@ export async function router(req, res) {
   }
 }
 
-// SPA-Routen, die auf api.<baseDomain> erreichbar bleiben (Registrierung/Reset).
-// Alles andere (Login, Shows, Settings, …) ergibt dort 404 — dort existiert kein Mandant.
+// SPA-Routen, die auf der Root-Domain erreichbar bleiben (nur Registrierung).
+// Login/Reset laufen ausschließlich pro Mandant auf <team>.<baseDomain>.
 const PUBLIC_SPA_PATHS = new Set([
-  '/',
   '/register',
   '/register/confirm',
-  '/forgot-password',
-  '/reset-password',
 ])
 
 // Öffentliche API-Endpunkte ohne Auth (im jeweiligen DB-Kontext ausgeführt).

@@ -41,13 +41,15 @@ export function isOperatorHost(req) {
   return hostname(req) === 'admin.' + base
 }
 
-// Läuft der Request auf api.<baseDomain>? Dort läuft nur der schmale, öffentliche
-// Registrierungs-/Reset-Flow (kein Mandant existiert zu diesem Zeitpunkt) — kein
-// Login, keine Show-Verwaltung. Dev (baseDomain leer): kein solcher Host.
-export function isPublicRegistrationHost(req) {
+// Läuft der Request auf der Root-Domain (luxstage.app selbst)? Dort läuft nur
+// der schmale, öffentliche Registrierungs-Flow (kein Mandant existiert zu
+// diesem Zeitpunkt) — kein Login, keine Show-Verwaltung. Caddy reicht dafür nur
+// bestimmte Pfade durch (/register, /register/confirm), alles andere bleibt bei
+// der Marketing-Website. Dev (baseDomain leer): kein solcher Host.
+export function isRootHost(req) {
   const base = config.baseDomain.toLowerCase()
   if (!base) return false
-  return hostname(req) === 'api.' + base
+  return hostname(req) === base
 }
 
 // Für Caddy On-Demand-TLS: Darf für diese Domain ein Zertifikat geholt werden?

@@ -80,7 +80,7 @@ export async function registerRoutes(req, res, pathname) {
     runWithDb(tdb, () => {
       tdb.prepare(
         'INSERT INTO users (username, password, role, email, requires_password_change) VALUES (?, ?, ?, ?, 0)'
-      ).run('admin', row.password_hash, 'admin', row.email)
+      ).run(row.email, row.password_hash, 'admin', row.email)
     })
     recordTenant(row.tenant_id, row.email)
 

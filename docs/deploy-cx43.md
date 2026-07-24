@@ -85,39 +85,58 @@ docker inspect caddy --format '{{range $k,$_ := .NetworkSettings.Networks}}{{$k}
 # luxstage-saas-net muss jetzt gelistet sein
 ```
 
-## Schritt 5 — Caddy-Image mit INWX-Plugin (RISKANTER SCHRITT)
+## Schritt 5 — Caddy-Konfiguration: On-Demand-TLS statt INWX-Wildcard
 
-Dein `caddy:2.8-alpine` hat kein DNS-Plugin. Für das Wildcard-Zertifikat
-`*.luxstage.app` (DNS-Challenge) braucht Caddy `caddy-dns/inwx`.
+Kein DNS-Plugin, kein INWX-API-Zugang nötig: statt eines Wildcard-Zertifikats
+per DNS-Challenge holt Caddy für jede Mandanten-Subdomain automatisch ein
+eigenes Zertifikat per HTTP/TLS-ALPN-Challenge (On-Demand-TLS), sobald sie das
+erste Mal aufgerufen wird. Dafür fragt Caddy vorher den bereits vorhandenen
+`ask`-Endpoint (`/api/tls-check`), der nur bekannte Domains (Root, `admin.`,
+existierende Mandanten) mit 200 bestätigt — verhindert, dass Fremd-Hostnamen
+Caddy zu Zertifikatsanfragen zwingen. `caddy:2.8-alpine` (Standard-Image)
+reicht, kein Image-Wechsel nötig.
 
-**5a. Neues Image bauen (ändert noch nichts am Laufenden):**
-```sh
-docker build -t caddy-inwx:2.8 - <<'EOF'
-FROM caddy:2.8-builder AS builder
-RUN xcaddy build --with github.com/caddy-dns/inwx
-FROM caddy:2.8-alpine
-COPY --from=builder /usr/bin/caddy /usr/bin/caddy
-EOF
-```
-
-**5b. INWX-API-Zugang bereitlegen.** Bei INWX einen eigenen API-/Sub-User anlegen
-(nicht das Haupt-Login). Als Env in den Caddy-Stack:
-```
-INWX_USER=<inwx-api-user>
-INWX_PASSWORD=<inwx-api-passwort>
-```
-
-**5c. Caddyfile ergänzen** — den Block **ans Ende** (nach den festen Subdomains,
-damit `thema/appreview/docs.luxstage.app` als spezifischere Blöcke gewinnen):
+**5a. Globalen `on_demand_tls`-Block ergänzen** (im obersten `{ admin off }`-Block):
 ```caddyfile
-# LuxStage SaaS — alle Mandanten-Subdomains + Root (Wildcard via INWX)
+{
+    admin off
+
+    on_demand_tls {
+        ask http://luxstage-saas:3000/api/tls-check
+    }
+}
+```
+
+**5b. Feste Blöcke für Panel und Registrierung** — direkt nach `docs.luxstage.app`
+einfügen (normales ACME-Zertifikat, wie bei `thema.`/`docs.`):
+```caddyfile
+# LuxStage SaaS — Betreiber-Panel (fest, normales ACME-Zertifikat)
+admin.luxstage.app {
+    import common_headers
+    reverse_proxy luxstage-saas:3000 {
+        header_up Host {host}
+    }
+}
+
+# LuxStage SaaS — Registrierung / öffentliche API (fest, normales ACME-Zertifikat)
+api.luxstage.app {
+    import common_headers
+    reverse_proxy luxstage-saas:3000 {
+        header_up Host {host}
+    }
+}
+```
+
+> Root-Domain `luxstage.app` bleibt unverändert bei `luxstage-website` (Marketing-
+> Seite). Registrierung/API laufen bewusst unter `api.luxstage.app`, nicht Root.
+
+**5c. Mandanten-Subdomains** — Wildcard-Matcher, aber On-Demand statt DNS-Challenge:
+```caddyfile
+# LuxStage SaaS — Mandanten-Subdomains (team.luxstage.app), On-Demand-TLS
 *.luxstage.app {
     import common_headers
     tls {
-        dns inwx {
-            username {env.INWX_USER}
-            password {env.INWX_PASSWORD}
-        }
+        on_demand
     }
     reverse_proxy luxstage-saas:3000 {
         header_up Host {host}
@@ -126,22 +145,20 @@ damit `thema/appreview/docs.luxstage.app` als spezifischere Blöcke gewinnen):
 ```
 
 > `header_up Host {host}` ist ZWINGEND — der Server leitet den Mandanten aus dem
-> Host-Header ab.
->
-> Hinweis: Der Server hat einen `ask`-Endpoint (`/api/tls-check`) für On-Demand-TLS.
-> Bei diesem Wildcard-Setup wird er **nicht** gebraucht (ein Zertifikat deckt alle
-> Subdomains). Er schadet nicht — nur ungenutzt.
+> Host-Header ab. `admin.`/`api.` matchen als spezifischere Blöcke vor dem
+> `*.luxstage.app`-Wildcard.
 
-**5d. Caddy-Image tauschen** (im Caddy-Stack/Compose: `caddy:2.8-alpine` →
-`caddy-inwx:2.8`), INWX-Env ergänzen, neu starten:
+**5d. Übernehmen:** Caddyfile im Stack-Verzeichnis bearbeiten, `caddy validate`
+gegen die Datei laufen lassen, dann Container neu starten (kein `caddy reload`
+möglich, da `admin off` die lokale Admin-API deaktiviert):
 ```sh
-# im Caddy-Stack-Verzeichnis
-docker compose up -d
-docker logs caddy --tail 30    # auf TLS-/Config-Fehler achten
+docker exec caddy caddy validate --config /etc/caddy/Caddyfile
+docker restart caddy
+docker logs caddy --tail 30    # auf "certificate obtained successfully" achten
 ```
 
-**5e. Rollback (falls etwas hängt):** Image zurück auf `caddy:2.8-alpine`,
-`*.luxstage.app`-Block auskommentieren, `docker compose up -d`. Die bestehenden
+**5e. Rollback (falls etwas hängt):** Backup der vorherigen Caddyfile
+(`Caddyfile.bak-<timestamp>`) zurückkopieren, `docker restart caddy`. Bestehende
 Zertifikate liegen im Caddy-Volume — alte Domains sind sofort wieder da.
 
 ## Schritt 6 — Betreiber-Panel & Registrierung testen

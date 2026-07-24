@@ -25,12 +25,23 @@ import { barRoutes } from './routes/bars.js'
 
 const distPath = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'web-app', 'dist')
 const operatorPanelPath = path.join(path.dirname(fileURLToPath(import.meta.url)), 'operator-panel.html')
+const operatorPanelScriptPath = path.join(path.dirname(fileURLToPath(import.meta.url)), 'operator-panel.js')
 
 function serveOperatorPanel(res) {
   try {
     const html = fs.readFileSync(operatorPanelPath)
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' })
     res.end(html)
+  } catch {
+    notFound(res)
+  }
+}
+
+function serveOperatorPanelScript(res) {
+  try {
+    const js = fs.readFileSync(operatorPanelScriptPath)
+    res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-cache' })
+    res.end(js)
   } catch {
     notFound(res)
   }
@@ -159,7 +170,10 @@ export async function router(req, res) {
     }
 
     // Betreiber-Panel: eigenständige HTML-Oberfläche auf admin.<baseDomain>.
-    if (saasEnabled && req.method === 'GET' && getSaas().isOperatorHost(req)) return serveOperatorPanel(res)
+    if (saasEnabled && req.method === 'GET' && getSaas().isOperatorHost(req)) {
+      if (pathname === '/operator-panel.js') return serveOperatorPanelScript(res)
+      return serveOperatorPanel(res)
+    }
 
     if (req.method === 'GET') return serveStatic(req, res, pathname)
 

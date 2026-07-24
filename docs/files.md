@@ -70,6 +70,7 @@ Mini-Doku aller relevanten Dateien im Projekt. Zweck: schnelles Verständnis fü
 | `./server/tenant-backup.js` | Tägliche Snapshots pro Mandant mit Retention-Policy. |
 | `./server/operator.js` | Separater Admin-Login für Betreiber-Panel mit JWT. |
 | `./server/operator-panel.html` | HTML-UI für Betreiber-Panel zur Mandantenverwaltung. |
+| `./server/operator-panel.js` | Client-Skript für Betreiber-Panel (ausgelagert wg. CSP `script-src 'self'`). |
 
 ### server/db/ (Datenbankzugriff)
 

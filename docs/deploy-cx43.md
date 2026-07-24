@@ -45,7 +45,7 @@ Im Dockge-Stack die Umgebungsvariablen hinterlegen (Vorlage: `.env.saas.example`
 ```
 JWT_SECRET=<openssl rand -hex 32>
 BASE_DOMAIN=luxstage.app
-APP_URL=https://api.luxstage.app
+APP_URL=https://luxstage.app
 CORS_ORIGINS=https://luxstage.app
 SMTP_HOST=<vom SMTP-Dienst>
 SMTP_PORT=587
@@ -57,11 +57,13 @@ OPERATOR_USER=operator
 OPERATOR_PASSWORD=<starkes Passwort>
 ```
 
-> Hinweis: `APP_URL` zeigt auf `api.<baseDomain>`, nicht auf die Root-Domain —
-> Root (`luxstage.app`) ist die Marketing-Website (`luxstage-website`), dort
-> läuft keine SPA. Registrierungs-/Reset-Links brauchen die SaaS-Oberfläche,
-> die unter `api.luxstage.app` läuft (der Mandant existiert beim Confirm noch
-> nicht, seine eigene Subdomain würde 404 liefern).
+> Hinweis: `APP_URL` ist die Root-Domain. Root (`luxstage.app`) zeigt normal auf
+> die Marketing-Website (`luxstage-website`), aber Caddy reicht die Pfade
+> `/register`, `/register/confirm`, `/api/register*` pfadbasiert an
+> `luxstage-saas` durch (kein eigener `api.`-Host — der wäre für Nutzer
+> sichtbar und unüblich für eine Weboberfläche). Der Mandant existiert beim
+> Confirm noch nicht, seine eigene Subdomain würde 404 liefern, daher läuft
+> die Bestätigungsseite auf Root.
 
 ## Schritt 3 — LuxStage-SaaS starten (noch ohne Domain)
 
@@ -110,9 +112,30 @@ reicht, kein Image-Wechsel nötig.
 }
 ```
 
-**5b. Feste Blöcke für Panel und Registrierung** — direkt nach `docs.luxstage.app`
-einfügen (normales ACME-Zertifikat, wie bei `thema.`/`docs.`):
+**5b. Root-Domain um Pfad-Matcher für Registrierung ergänzen**, restlicher
+Traffic bleibt bei der Marketing-Website. Betreiber-Panel bekommt einen festen
+Block wie `thema.`/`docs.` (normales ACME-Zertifikat):
 ```caddyfile
+# LuxStage Website + SaaS-Registrierung (nur /register* geht an luxstage-saas)
+luxstage.app {
+    import common_headers
+
+    @saas_register path /register /register/* /api/register /api/register/* /assets/* /favicon.png
+    handle @saas_register {
+        reverse_proxy luxstage-saas:3000 {
+            header_up Host {host}
+        }
+    }
+
+    handle {
+        reverse_proxy luxstage-website:80 {
+            header_up X-Forwarded-Proto {scheme}
+            header_up X-Forwarded-Host {host}
+            header_up X-Real-IP {remote_host}
+        }
+    }
+}
+
 # LuxStage SaaS — Betreiber-Panel (fest, normales ACME-Zertifikat)
 admin.luxstage.app {
     import common_headers
@@ -120,18 +143,17 @@ admin.luxstage.app {
         header_up Host {host}
     }
 }
-
-# LuxStage SaaS — Registrierung / öffentliche API (fest, normales ACME-Zertifikat)
-api.luxstage.app {
-    import common_headers
-    reverse_proxy luxstage-saas:3000 {
-        header_up Host {host}
-    }
-}
 ```
 
-> Root-Domain `luxstage.app` bleibt unverändert bei `luxstage-website` (Marketing-
-> Seite). Registrierung/API laufen bewusst unter `api.luxstage.app`, nicht Root.
+> Kein eigener `api.<baseDomain>`-Host: eine Nutzer-sichtbare `api.`-Subdomain
+> ist unüblich (dort erwartet man reine REST-Endpunkte, keine Weboberfläche).
+> Registrierung läuft stattdessen über Pfade auf der Root-Domain selbst.
+> `/assets/*` und `/favicon.png` müssen mit durchgereicht werden, sonst lädt
+> die Vue-SPA auf `/register` unvollständig (fehlende JS/CSS/Favicon). Die
+> Marketing-Website nutzt aktuell kein `/assets/`-Verzeichnis — bei künftigen
+> Website-Änderungen prüfen, ob das noch kollisionsfrei ist.
+> `/login`, `/forgot-password` etc. laufen bewusst NICHT auf Root — nur pro
+> Mandant auf `<team>.luxstage.app` (siehe `PUBLIC_SPA_PATHS` in `router.js`).
 
 **5c. Mandanten-Subdomains** — Wildcard-Matcher, aber On-Demand statt DNS-Challenge:
 ```caddyfile
@@ -170,15 +192,21 @@ Zertifikate liegen im Caddy-Volume — alte Domains sind sofort wieder da.
 # Panel erreichbar?
 curl -s -o /dev/null -w '%{http_code}\n' https://admin.luxstage.app/
 # Registrierung (echte Mail an eine Adresse, die du prüfen kannst)
-curl -s -X POST https://api.luxstage.app/api/register \
+curl -s -X POST https://luxstage.app/api/register \
   -H 'Content-Type: application/json' \
   -d '{"teamId":"testteam","email":"DEINE@mail.de","password":"testpasswort1"}'
 ```
 
 Dann: Bestätigungsmail abrufen → Link klicken (führt auf
-`api.luxstage.app/register/confirm`, zeigt "Team aktiviert") → über den Link
+`luxstage.app/register/confirm`, zeigt "Team aktiviert") → über den Link
 "Zur Anmeldung" auf `testteam.luxstage.app` mit E-Mail + Passwort einloggen.
 Danach `testteam` im Panel wieder löschen.
+
+Hinweis: der Bestätigungslink ist Single-Use — beim Neuladen der
+`/register/confirm`-Seite nach erfolgreicher Bestätigung erscheint "Link
+ungültig oder abgelaufen", obwohl der Mandant bereits angelegt wurde. Das ist
+beabsichtigt (verhindert doppeltes Anlegen desselben Mandanten), aber
+irreführend beim zufälligen Neuladen.
 
 Login läuft immer über die bei der Registrierung angegebene **E-Mail-Adresse**
 (nicht "admin") + Passwort.

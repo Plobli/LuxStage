@@ -31,6 +31,10 @@ function createTransport(cfg) {
     port: cfg.port,
     secure: cfg.secure,
     auth: cfg.user ? { user: cfg.user, pass: cfg.pass } : undefined,
+    // Container-Netzwerke haben oft kein funktionierendes IPv6, DNS liefert
+    // aber häufig AAAA zuerst — ohne Zwang auf IPv4 hängt die Verbindung
+    // bis zum Timeout (kein Happy-Eyeballs-Fallback in Nodemailer).
+    family: 4,
   })
 }
 

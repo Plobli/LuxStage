@@ -245,12 +245,14 @@ useTokenRefresh()
 const { t } = useLocale()
 const appVersion = __APP_VERSION__
 const serverVersion = ref(null)
+const saasMode = ref(false)
 
 async function pingServer() {
   try {
     const status = await api.get('/api/status')
     isOnline.value = true
     serverVersion.value = status.version
+    saasMode.value = !!status.saasEnabled
   } catch {
     isOnline.value = false
   }
@@ -316,10 +318,12 @@ const settingsNavItems = computed(() => [
   { to: '/settings/account', label: t('settings.account') },
   { to: '/settings/display', label: t('settings.display') },
   { to: '/settings/backup', label: t('settings.backup') },
-  ...(isAdmin.value ? [{ to: '/settings/server', label: t('settings.server') }] : []),
   ...(isAdmin.value ? [{ to: '/settings/users', label: 'Benutzerverwaltung' }] : []),
-  ...(isAdmin.value ? [{ to: '/settings/smtp', label: t('settings.smtp') }] : []),
-  ...(isAdmin.value ? [{ to: '/settings/update', label: t('settings.update') }] : []),
+  // Server/SMTP/Update sind Self-Hosted-Einstellungen: im SaaS-Modus liegen
+  // Server-Betrieb, zentrales SMTP und Updates beim Betreiber, nicht beim Mandanten.
+  ...(isAdmin.value && !saasMode.value ? [{ to: '/settings/server', label: t('settings.server') }] : []),
+  ...(isAdmin.value && !saasMode.value ? [{ to: '/settings/smtp', label: t('settings.smtp') }] : []),
+  ...(isAdmin.value && !saasMode.value ? [{ to: '/settings/update', label: t('settings.update') }] : []),
 ])
 
 function isSettingsItemActive(path) {

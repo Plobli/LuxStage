@@ -35,7 +35,7 @@ export async function systemRoutes(req, res, pathname) {
     const { execFileSync } = await import('node:child_process')
     let diskFree = null
     try { diskFree = execFileSync('df', ['-h', config.dataPath]).toString().split('\n')[1] } catch {}
-    return json(res, 200, { version, dataPath: config.dataPath, diskFree })
+    return json(res, 200, { version, dataPath: config.dataPath, diskFree, saasEnabled: !!config.baseDomain })
   }
 
   // System-Backup/Restore ist Single-Tenant (globale DB, Prozess-Neustart).

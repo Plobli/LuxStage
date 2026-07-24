@@ -25,6 +25,13 @@ function run(cmd, env = {}, maxBuffer = 1024 * 1024) {
 export async function updateRoutes(req, res, pathname, params) {
   const { method } = req
 
+  // Im SaaS-Modus verwaltet der Betreiber Updates zentral über den Docker-Image-
+  // Rollout — ein Mandant darf den geteilten Server nicht neu starten/ersetzen.
+  if (config.baseDomain) {
+    const admin = requireAdmin(req, res); if (!admin) return
+    return json(res, 403, { error: 'Updates werden zentral verwaltet' })
+  }
+
   if (method === 'GET' && pathname === '/api/update/branches') {
     const user = requireAdmin(req, res); if (!user) return
     try {

@@ -24,12 +24,16 @@ function headers(extra: Record<string, string> = {}): Record<string, string> {
 }
 
 async function request(method: string, path: string, body?: any): Promise<any> {
+  const hadToken = !!getToken()
   const res = await fetch(BASE() + path, {
     method,
     headers: headers(),
     body: body !== undefined ? JSON.stringify(body) : undefined,
   })
-  if (res.status === 401) { clearToken(); if (location.pathname !== '/login') location.href = '/login'; return }
+  // Nur bei tatsächlich abgelaufener/ungültiger Session umleiten — nicht wenn
+  // der Call von vornherein ohne Token lief (z. B. Pings auf öffentlichen
+  // Seiten wie /register/confirm), sonst reißt der Redirect diese Seiten weg.
+  if (res.status === 401) { clearToken(); if (hadToken && location.pathname !== '/login') location.href = '/login'; return }
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
     throw new Error(err.error || `HTTP ${res.status}`)

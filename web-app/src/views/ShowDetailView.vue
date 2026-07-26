@@ -100,7 +100,7 @@
                 quantity: t('field.quantity'),
                 notes: t('field.notes'),
                 editPosition: t('channel.position.edit'),
-                noCategory: t('channel.no_category'),
+                noPosition: t('channel.no_position'),
                 add: t('channel.add'),
                 delete: t('action.delete'),
                 empty: t('channel.list.empty'),
@@ -113,8 +113,8 @@
                 notesHelp: t('channel.help.notes'),
                 assign: t('channel.row.assign'),
                 assignHelp: t('channel.help.assign'),
-                addCategory: t('channel.category.add'),
-                categoryNamePlaceholder: t('channel.category.name.placeholder'),
+                addPosition: t('channel.position.add'),
+                positionNamePlaceholder: t('channel.position.name.placeholder'),
               }"
               @change="scheduleChannelsSave()"
               @recordFocus="recordFocus()"
@@ -312,7 +312,12 @@
         back: t('history.back'),
         empty: t('history.empty'),
         restore: t('history.restore'),
+        cancel: t('action.cancel'),
         channelCount: (n) => t('history.channel_count', { n }),
+        limit: t('history.limit'),
+        scope: t('history.scope'),
+        confirmTitle: t('history.confirm.title'),
+        confirmMessage: t('history.confirm.message'),
       }"
       @close="historyOpen = false"
       @restore="doRestoreHistory($event)"

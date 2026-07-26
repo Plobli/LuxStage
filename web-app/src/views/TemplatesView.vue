@@ -91,12 +91,14 @@
                   quantity: t('field.quantity'),
                   notes: t('field.notes'),
                   editPosition: t('channel.position.edit'),
-                  noCategory: t('channel.no_category'),
+                  noPosition: t('channel.no_position'),
                   add: t('channel.add'),
                   delete: t('action.delete'),
                   empty: t('channel.list.empty'),
                   channelNr: t('show.channel.nr'),
                   addressExample: t('show.channel.address.example'),
+                  addPosition: t('channel.position.add'),
+                  positionNamePlaceholder: t('channel.position.name.placeholder'),
                 }"
                 class="h-full"
                 @change="persist()"

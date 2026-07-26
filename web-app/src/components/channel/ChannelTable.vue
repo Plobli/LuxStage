@@ -42,7 +42,7 @@
                 class="h-auto shrink-0 rounded-sm px-2 text-center text-[13px] font-medium normal-case tracking-normal text-foreground hover:bg-accent hover:text-accent-foreground"
                 :title="labels.editPosition"
                 @click="startEditPosition(item.group.position)"
-              >{{ item.group.position || labels.noCategory }}</Button>
+              >{{ item.group.position || labels.noPosition }}</Button>
               <div class="h-px flex-1 bg-foreground/15"></div>
             </template>
           </div>
@@ -65,7 +65,7 @@
                 class="h-auto shrink-0 rounded-sm px-2 text-center text-[13px] font-medium normal-case tracking-normal text-foreground hover:bg-accent hover:text-accent-foreground"
                 :title="labels.editPosition"
                 @click="startEditPosition(item.group.position)"
-              >{{ item.group.position || labels.noCategory }}</Button>
+              >{{ item.group.position || labels.noPosition }}</Button>
               <div class="h-px flex-1 bg-foreground/15"></div>
             </template>
           </div>
@@ -111,14 +111,14 @@
               @click="startAdd(item.group.position)"
             >+ {{ labels.add }}</Button>
             <template v-if="item.isLast">
-              <div v-if="addingCategory" class="flex items-center gap-2">
+              <div v-if="addingNewPosition" class="flex items-center gap-2">
                 <Input
                   autofocus
-                  v-model="newCategoryName"
-                  :placeholder="labels.categoryNamePlaceholder"
-                  @keydown.enter="saveCategory"
-                  @keydown.escape="addingCategory = false"
-                  @blur="saveCategory"
+                  v-model="newPositionName"
+                  :placeholder="labels.positionNamePlaceholder"
+                  @keydown.enter="saveNewPosition"
+                  @keydown.escape="addingNewPosition = false"
+                  @blur="saveNewPosition"
                   class="h-7 w-48 rounded-sm border-0 border-b border-primary/30 bg-transparent px-1 text-[11px] font-semibold text-foreground shadow-none focus-visible:ring-0"
                 />
               </div>
@@ -127,8 +127,8 @@
                 variant="ghost"
                 size="sm"
                 class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground hover:text-accent-foreground"
-                @click="startAddCategory"
-              >+ {{ labels.addCategory }}</Button>
+                @click="startAddPosition"
+              >+ {{ labels.addPosition }}</Button>
             </template>
           </div>
         </template>
@@ -278,10 +278,10 @@ const props = defineProps({
     type: Object,
     default: () => ({
       channel: 'Kanal', color: 'Farbe', device: 'Gerät', quantity: 'Anz.', notes: 'Notizen',
-      editPosition: 'Bearbeiten', noCategory: '–', add: 'Kanal hinzufügen',
+      editPosition: 'Bearbeiten', noPosition: '–', add: 'Kanal hinzufügen',
       delete: 'Löschen', empty: 'Keine Kanäle', channelNr: 'Nr', addressExample: 'z.B. 1',
       channelHelp: '', colorHelp: '', quantityHelp: '', deviceHelp: '', notesHelp: '', assign: '', assignHelp: '',
-      addCategory: '+ Kategorie', categoryNamePlaceholder: 'Kategoriename …',
+      addPosition: 'Position', positionNamePlaceholder: 'Positionsname …',
     }),
   },
 })
@@ -321,24 +321,26 @@ function ensureStableChannelKey(ch) {
 const addingPosition = ref(null)
 const addForm = ref({})
 
-// ── Add category ───────────────────────────────────────────────────────────
-const addingCategory = ref(false)
-const newCategoryName = ref('')
+// ── Add position ───────────────────────────────────────────────────────────
+// Nicht mit addingPosition oben verwechseln: das hält die Position, zu der
+// gerade ein Kanal angelegt wird. Hier geht es um eine neue, noch leere Position.
+const addingNewPosition = ref(false)
+const newPositionName = ref('')
 
-function startAddCategory() {
-  addingCategory.value = true
-  newCategoryName.value = ''
+function startAddPosition() {
+  addingNewPosition.value = true
+  newPositionName.value = ''
 }
 
 const emptyPositions = ref([])
 
-function saveCategory() {
-  const name = newCategoryName.value.trim()
+function saveNewPosition() {
+  const name = newPositionName.value.trim()
   if (name) {
     const alreadyExists = props.groupedChannels.some(g => g.position === name) || emptyPositions.value.includes(name)
     if (!alreadyExists) emptyPositions.value.push(name)
   }
-  addingCategory.value = false
+  addingNewPosition.value = false
 }
 
 // ── Chunked rendering ──────────────────────────────────────────────────────

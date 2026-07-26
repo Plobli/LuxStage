@@ -24,7 +24,7 @@
             </div>
             <div class="flex items-center gap-2 mt-0.5">
               <span class="text-xs text-muted-foreground/80 shrink-0">{{ tower.slot_count }} Slots</span>
-              <HelpIcon text="Ein Slot ist ein Platz am Gestell. Weise jedem Slot einen Kanal zu – so siehst du auf einen Blick, welcher Scheinwerfer wo eingebaut ist." side="right" />
+              <HelpIcon :text="t('gassenturm.slot.help')" side="right" />
             </div>
           </div>
           <div class="flex items-center gap-0.5 shrink-0 ml-2 -mt-1">
@@ -127,7 +127,7 @@
         <div v-if="tower.notes || editingNoteId === tower.id" class="px-4 pt-3 pb-3 border-t border-border/30">
           <textarea
             :value="tower.notes"
-            placeholder="Notiz…"
+            :placeholder="t('gassenturm.notes.placeholder')"
             rows="1"
             class="w-full text-sm text-foreground/80 bg-transparent border border-border/40 rounded-lg px-3 py-2 resize-none outline-none placeholder:text-muted-foreground/60 focus:border-ring focus:ring-1 focus:ring-ring overflow-hidden"
             style="field-sizing: content; min-height: 2.25rem;"
@@ -163,19 +163,19 @@
       <DialogBody>
         <div class="flex flex-col gap-1.5">
           <label class="text-xs text-muted-foreground">{{ t('gassenturm.field.name') }}</label>
-          <Input size="lg" v-model="towerForm.name" placeholder="z. B. Beleuchtungsgestell 1" autofocus />
+          <Input size="lg" v-model="towerForm.name" :placeholder="t('gassenturm.field.name.placeholder')" autofocus />
         </div>
         <div class="flex flex-col gap-1.5">
           <label class="flex items-center gap-1.5 text-xs text-muted-foreground">
             {{ t('gassenturm.field.side') }}
-            <HelpIcon text="z. B. L oder R für links/rechts auf der Bühne." side="right" />
+            <HelpIcon :text="t('gassenturm.field.side.help')" side="right" />
           </label>
-          <Input size="lg" v-model="towerForm.side" placeholder="L / R" class="w-full" />
+          <Input size="lg" v-model="towerForm.side" :placeholder="t('gassenturm.field.side.placeholder')" class="w-full" />
         </div>
         <div class="flex flex-col gap-1.5">
           <label class="flex items-center gap-1.5 text-xs text-muted-foreground">
             {{ t('gassenturm.field.slot_count') }}
-            <HelpIcon text="Wie viele Gestellplätze hat dieses Beleuchtungsgestell?" side="right" />
+            <HelpIcon :text="t('gassenturm.field.slot_count.help')" side="right" />
           </label>
           <Input size="lg" v-model.number="towerForm.slot_count" type="number" min="1" max="20" />
         </div>
@@ -197,7 +197,7 @@
       </DialogBody>
       <DialogFooter>
         <Button v-if="!editingTower && props.fromTemplateFn && !slotReduceConfirm" variant="ghost" class="mr-auto text-xs text-muted-foreground" @click="towerDialogOpen = false; props.fromTemplateFn()">
-          Aus Vorlage einfügen…
+          {{ t('gassenturm.dialog.from_template') }}
         </Button>
         <Button variant="ghost" @click="towerDialogOpen = false">{{ t('action.cancel') }}</Button>
         <template v-if="slotReduceConfirm">
@@ -218,7 +218,7 @@
       <!-- Inline-Bestätigung bei belegtem Slot -->
       <!-- Kanalsuche -->
       <DialogBody>
-        <Input ref="pickerInputRef" size="lg" v-model="channelPickerSearch" placeholder="Kanalnummer suchen…" autofocus @keydown.enter="pickFirstResult" />
+        <Input ref="pickerInputRef" size="lg" v-model="channelPickerSearch" :placeholder="t('gassenturm.channel_picker.search.placeholder')" autofocus @keydown.enter="pickFirstResult" />
         <div class="max-h-64 overflow-y-auto flex flex-col">
           <button
             v-for="ch in filteredChannelsForPicker"
@@ -261,39 +261,39 @@
   <Dialog :open="saveDialogOpen" @update:open="saveDialogOpen = $event">
     <DialogContent class="sm:max-w-sm">
       <DialogHeader>
-        <DialogTitle>In Vorlage speichern</DialogTitle>
+        <DialogTitle>{{ t('gassenturm.save_dialog.title') }}</DialogTitle>
       </DialogHeader>
       <DialogBody>
         <!-- Ziel + Name -->
         <div class="rounded-lg bg-muted/40 px-3 py-2 flex items-baseline gap-2">
-          <span class="text-xs text-muted-foreground shrink-0">Vorlage</span>
+          <span class="text-xs text-muted-foreground shrink-0">{{ t('gassenturm.save_dialog.template_label') }}</span>
           <span class="text-sm font-medium text-foreground truncate">{{ props.templateName }}</span>
         </div>
         <div>
-          <Label class="text-xs text-muted-foreground">Name in der Vorlage</Label>
+          <Label class="text-xs text-muted-foreground">{{ t('gassenturm.save_dialog.name_label') }}</Label>
           <Input size="lg" v-model="saveName" autofocus />
         </div>
         <!-- Überschreiben-Warnung -->
         <div v-if="saveNameConflict" class="rounded-lg border border-destructive/50 bg-destructive/5 px-3.5 py-3 space-y-2">
-          <p class="text-sm font-medium text-foreground">„{{ saveName }}" existiert bereits in der Vorlage.</p>
-          <p class="text-xs text-muted-foreground">Der bestehende Eintrag wird überschrieben. Trotzdem fortfahren?</p>
+          <p class="text-sm font-medium text-foreground">{{ t('gassenturm.save_dialog.conflict', { name: saveName }) }}</p>
+          <p class="text-xs text-muted-foreground">{{ t('gassenturm.save_dialog.conflict.hint') }}</p>
           <div class="flex gap-2 pt-1">
-            <Button size="sm" variant="ghost" @click="saveNameConflict = false">Abbrechen</Button>
-            <Button size="sm" variant="destructive" @click="saveConfirmOverwrite = true; confirmSaveDialog()">Überschreiben</Button>
+            <Button size="sm" variant="ghost" @click="saveNameConflict = false">{{ t('action.cancel') }}</Button>
+            <Button size="sm" variant="destructive" @click="saveConfirmOverwrite = true; confirmSaveDialog()">{{ t('gassenturm.save_dialog.overwrite') }}</Button>
           </div>
         </div>
         <!-- Was wird gespeichert -->
         <div class="space-y-1">
           <div class="flex items-center gap-1.5 px-1 pb-1">
-            <span class="text-xs text-muted-foreground">Was wird gespeichert?</span>
-            <HelpIcon text="Wähle, welche Daten aus diesem Gestell in der Vorlage gespeichert werden sollen. Die Grundstruktur wird immer übernommen." side="right" />
+            <span class="text-xs text-muted-foreground">{{ t('gassenturm.save_dialog.what') }}</span>
+            <HelpIcon :text="t('gassenturm.save_dialog.what.help')" side="right" />
           </div>
           <!-- Struktur — immer aktiv -->
           <div class="flex items-start gap-3 py-2 opacity-60">
             <Checkbox :model-value="true" disabled class="mt-0.5" />
             <div>
-              <p class="text-sm font-medium text-foreground">Grundstruktur</p>
-              <p class="text-xs text-muted-foreground">Bezeichnung · Seite · Anzahl Slots</p>
+              <p class="text-sm font-medium text-foreground">{{ t('gassenturm.save_dialog.structure') }}</p>
+              <p class="text-xs text-muted-foreground">{{ t('gassenturm.save_dialog.structure.desc') }}</p>
             </div>
           </div>
           <div class="h-px bg-border/50 mx-1" />
@@ -301,22 +301,22 @@
           <label class="flex items-start gap-3 py-2 cursor-pointer hover:bg-muted/30 rounded px-1 transition-colors">
             <Checkbox v-model="saveFields.channel" class="mt-0.5" />
             <div>
-              <p class="text-sm font-medium text-foreground">Kanalnummer</p>
-              <p class="text-xs text-muted-foreground">Welche Kanalnr. in welchem Slot sitzt</p>
+              <p class="text-sm font-medium text-foreground">{{ t('gassenturm.save_dialog.field.channel') }}</p>
+              <p class="text-xs text-muted-foreground">{{ t('gassenturm.save_dialog.field.channel.desc') }}</p>
             </div>
           </label>
           <label class="flex items-start gap-3 py-2 cursor-pointer hover:bg-muted/30 rounded px-1 transition-colors">
             <Checkbox v-model="saveFields.device" class="mt-0.5" />
             <div>
-              <p class="text-sm font-medium text-foreground">Gerät</p>
-              <p class="text-xs text-muted-foreground">Gerätebezeichnung je Slot</p>
+              <p class="text-sm font-medium text-foreground">{{ t('gassenturm.save_dialog.field.device') }}</p>
+              <p class="text-xs text-muted-foreground">{{ t('gassenturm.save_dialog.field.device.desc') }}</p>
             </div>
           </label>
           <label class="flex items-start gap-3 py-2 cursor-pointer hover:bg-muted/30 rounded px-1 transition-colors">
             <Checkbox v-model="saveFields.color" class="mt-0.5" />
             <div>
-              <p class="text-sm font-medium text-foreground">Farbe</p>
-              <p class="text-xs text-muted-foreground">Farbfilter je Slot</p>
+              <p class="text-sm font-medium text-foreground">{{ t('gassenturm.save_dialog.field.color') }}</p>
+              <p class="text-xs text-muted-foreground">{{ t('gassenturm.save_dialog.field.color.desc') }}</p>
             </div>
           </label>
         </div>
@@ -324,7 +324,7 @@
       </DialogBody>
       <DialogFooter>
         <Button variant="ghost" @click="saveDialogOpen = false">{{ t('action.cancel') }}</Button>
-        <Button :disabled="!!savingTowerId || !saveName.trim()" @click="confirmSaveDialog">Speichern</Button>
+        <Button :disabled="!!savingTowerId || !saveName.trim()" @click="confirmSaveDialog">{{ t('action.save') }}</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>
@@ -333,7 +333,9 @@
 <script setup>
 import { ref, computed, watch, onBeforeUnmount, nextTick } from 'vue'
 import { useLocale } from '@/composables/useLocale.js'
+import { useConfirm } from '@/composables/useConfirm.js'
 const { t } = useLocale()
+const { confirm } = useConfirm()
 import { Plus, Pencil, Trash2, X, ChevronsUpDown, GripVertical, BookmarkPlus, Loader2, Layers } from 'lucide-vue-next'
 import HelpIcon from '@/components/ui/HelpIcon.vue'
 import Sortable from 'sortablejs'
@@ -491,8 +493,9 @@ async function confirmSlotReduce() {
   towerDialogOpen.value = false
 }
 
-function confirmDeleteTower(tower) {
-  if (confirm(t('gassenturm.delete.confirm', { name: tower.name }))) {
+async function confirmDeleteTower(tower) {
+  const ok = await confirm({ t, titleKey: 'gassenturm.delete.confirm', titleParams: { name: tower.name }, confirmKey: 'action.delete', cancelKey: 'action.cancel' })
+  if (ok) {
     props.pushSnapshotFn()
     props.deleteTowerFn(tower.id)
   }

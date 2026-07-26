@@ -43,12 +43,15 @@
             {{ loading ? '…' : t('auth.login.submit') }}
           </Button>
 
+          <!-- Ohne SMTP läuft der Self-Service ins Leere (Mail wird nie zugestellt),
+               deshalb dann stattdessen der Verweis auf den Administrator. -->
           <div class="text-center space-y-2">
-            <div>
+            <div v-if="smtpConfigured">
               <RouterLink to="/forgot-password" class="text-sm text-muted-foreground hover:text-foreground">
                 {{ t('auth.reset') }}
               </RouterLink>
             </div>
+            <p v-else class="text-xs text-muted-foreground">{{ t('auth.reset.hint') }}</p>
           </div>
         </form>
 
@@ -58,7 +61,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { login, api, isOnline } from '../api/client.js'
 import { useLocale } from '../composables/useLocale.js'
@@ -74,6 +77,16 @@ const username = ref('')
 const password = ref('')
 const error = ref(false)
 const loading = ref(false)
+// Bis der Status vorliegt (und wenn er nicht abrufbar ist) gilt „kein SMTP" —
+// dann steht der Admin-Hinweis da statt eines Links, der ins Leere führt.
+const smtpConfigured = ref(false)
+
+onMounted(async () => {
+  try {
+    const caps = await api.get('/api/auth/capabilities')
+    smtpConfigured.value = !!caps?.passwordReset
+  } catch { /* Server nicht erreichbar — Hinweis bleibt stehen */ }
+})
 
 async function pingServer() {
   try {

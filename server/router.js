@@ -203,6 +203,7 @@ const PUBLIC_SPA_PATHS = new Set([
 // Öffentliche API-Endpunkte ohne Auth (im jeweiligen DB-Kontext ausgeführt).
 const PUBLIC_ENDPOINTS = new Set([
   '/api/auth/login',
+  '/api/auth/capabilities',
   '/api/auth/forgot-password',
   '/api/auth/reset-password/confirm',
   '/api/health',

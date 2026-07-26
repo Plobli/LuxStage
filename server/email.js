@@ -24,6 +24,14 @@ function getSmtpCfg() {
   }
 }
 
+/**
+ * Ist ein Mailversand überhaupt möglich? Ohne Host gibt es keinen Transport.
+ * Öffentlich abfragbar über /api/status — verrät nur ja/nein, keine Zugangsdaten.
+ */
+export function isSmtpConfigured() {
+  return !!getSmtpCfg()?.host
+}
+
 function createTransport(cfg) {
   if (!cfg?.host) return null
   return nodemailer.createTransport({

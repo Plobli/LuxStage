@@ -398,6 +398,7 @@
   "zugstange.delete.confirm": "Delete bar \"{name}\"?",
   "zugstange.action.create": "Create",
   "zugstange.field.zug_nr": "Line number",
+  "zugstange.field.zug_nr.placeholder": "e.g. 12",
   "zugstange.field.height": "Height",
   "zugstange.field.height.help": "Distance of the bar above the stage floor. Optional — leave empty if the height varies.",
   "zugstange.field.zug_nr.help": "Number of the line in the stage's fly system, as labelled at the control station.",
@@ -564,6 +565,10 @@
   "template.bar.fixture.device": "Device",
   "template.bar.fixture.color": "Color",
   "template.bar.fixture.notes": "Notes",
+  "template.fixture.channel.placeholder": "e.g. 101",
+  "template.fixture.device.placeholder": "e.g. Robe Pointe",
+  "template.fixture.color.placeholder": "e.g. R80",
+  "template.osc_host.placeholder": "e.g. 192.168.1.10",
   "template.bar.fixture.position": "Position (cm, 0 = center)",
   "zugstange.hint": "Bars are not copied automatically when creating a show. Add them from the template via 'Insert' in the edit dialog.",
   "action.apply": "Apply"

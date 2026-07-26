@@ -45,7 +45,7 @@
           <Input
             id="oscHostInput"
             v-model="editingOscHost"
-            placeholder="z.B. 192.168.1.10"
+            :placeholder="t('template.osc_host.placeholder')"
             class="font-mono text-sm"
             @blur="persistOscHost"
             @keydown.enter.prevent="persistOscHost"
@@ -402,7 +402,7 @@
           <div class="grid grid-cols-2 gap-3">
             <div>
               <Label>{{ t('zugstange.field.zug_nr') }}</Label>
-              <Input size="lg" v-model="tbarForm.zug_nr" placeholder="z. B. 12" />
+              <Input size="lg" v-model="tbarForm.zug_nr" :placeholder="t('zugstange.field.zug_nr.placeholder')" />
             </div>
             <div>
               <Label>{{ t('zugstange.field.length') }} ({{ unit }})</Label>
@@ -426,7 +426,7 @@
         <DialogBody>
           <div>
             <Label>{{ t('gassenturm.field.name') }}</Label>
-            <Input size="lg" v-model="ttowerForm.name" placeholder="z. B. Beleuchtungsgestell 1" autofocus />
+            <Input size="lg" v-model="ttowerForm.name" :placeholder="t('gassenturm.field.name.placeholder')" autofocus />
           </div>
           <div class="grid grid-cols-1 gap-3">
             <div>
@@ -455,15 +455,15 @@
         <DialogBody>
           <div>
             <Label>{{ t('template.tower.slot.channel_label') }}</Label>
-            <Input size="lg" v-model="towerSlotForm.channel" placeholder="z. B. 101" />
+            <Input size="lg" v-model="towerSlotForm.channel" :placeholder="t('template.fixture.channel.placeholder')" />
           </div>
           <div>
             <Label>{{ t('template.tower.slot.device_label') }}</Label>
-            <Input size="lg" v-model="towerSlotForm.device" placeholder="z. B. Robe Pointe" />
+            <Input size="lg" v-model="towerSlotForm.device" :placeholder="t('template.fixture.device.placeholder')" />
           </div>
           <div>
             <Label>{{ t('template.tower.slot.color_label') }}</Label>
-            <Input size="lg" v-model="towerSlotForm.color" placeholder="z. B. R80" />
+            <Input size="lg" v-model="towerSlotForm.color" :placeholder="t('template.fixture.color.placeholder')" />
           </div>
           <p class="text-xs text-muted-foreground">{{ t('template.tower.slot.hint') }}</p>
         </DialogBody>
@@ -487,15 +487,15 @@
           </div>
           <div>
             <Label>{{ t('template.bar.fixture.channel') }}</Label>
-            <Input size="lg" v-model="barFixtureForm.channel" placeholder="z. B. 101" />
+            <Input size="lg" v-model="barFixtureForm.channel" :placeholder="t('template.fixture.channel.placeholder')" />
           </div>
           <div>
             <Label>{{ t('template.bar.fixture.device') }}</Label>
-            <Input size="lg" v-model="barFixtureForm.device" placeholder="z. B. Robe Pointe" />
+            <Input size="lg" v-model="barFixtureForm.device" :placeholder="t('template.fixture.device.placeholder')" />
           </div>
           <div>
             <Label>{{ t('template.bar.fixture.color') }}</Label>
-            <Input size="lg" v-model="barFixtureForm.color" placeholder="z. B. R80" />
+            <Input size="lg" v-model="barFixtureForm.color" :placeholder="t('template.fixture.color.placeholder')" />
           </div>
           <div>
             <Label>{{ t('template.bar.fixture.notes') }}</Label>

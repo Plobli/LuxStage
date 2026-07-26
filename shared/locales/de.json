@@ -398,6 +398,7 @@
   "zugstange.delete.confirm": "Zugstange \"{name}\" wirklich löschen?",
   "zugstange.action.create": "Anlegen",
   "zugstange.field.zug_nr": "Zugnummer",
+  "zugstange.field.zug_nr.placeholder": "z. B. 12",
   "zugstange.field.height": "Höhe",
   "zugstange.field.height.help": "Abstand der Stange über dem Bühnenboden. Optional — leer lassen, wenn die Höhe variabel ist.",
   "zugstange.field.zug_nr.help": "Nummer des Zuges im Zugsystem der Bühne, wie sie am Stellwerk steht.",
@@ -565,6 +566,10 @@
   "template.bar.fixture.device": "Gerät",
   "template.bar.fixture.color": "Farbe",
   "template.bar.fixture.notes": "Anmerkung",
+  "template.fixture.channel.placeholder": "z. B. 101",
+  "template.fixture.device.placeholder": "z. B. Robe Pointe",
+  "template.fixture.color.placeholder": "z. B. R80",
+  "template.osc_host.placeholder": "z.B. 192.168.1.10",
   "template.bar.fixture.position": "Position (cm, 0 = Mitte)",
   "zugstange.hint": "Zugstangen werden beim Erstellen einer Show nicht automatisch übernommen. Über 'Einfügen' im Bearbeiten-Dialog aus der Vorlage hinzufügen.",
   "action.apply": "Anwenden"

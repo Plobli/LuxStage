@@ -86,12 +86,12 @@
             <Input size="lg" id="showDate" v-model="form.datum" type="date" />
           </div>
           <div>
-            <Label for="showUntertitel">Untertitel</Label>
-            <Input size="lg" id="showUntertitel" v-model="form.untertitel" type="text" placeholder="Optionaler Untertitel" />
+            <Label for="showUntertitel">{{ t('show.meta.untertitel') }}</Label>
+            <Input size="lg" id="showUntertitel" v-model="form.untertitel" type="text" :placeholder="t('show.meta.untertitel.placeholder')" />
           </div>
           <div>
-            <Label for="showSpielzeit">Spielzeit</Label>
-            <Input size="lg" id="showSpielzeit" v-model="form.spielzeit" type="text" placeholder="z.B. 25/26" />
+            <Label for="showSpielzeit">{{ t('field.spielzeit') }}</Label>
+            <Input size="lg" id="showSpielzeit" v-model="form.spielzeit" type="text" :placeholder="t('show.meta.spielzeit.placeholder')" />
           </div>
           <div>
             <Label for="showTemplate">{{ t('show.template') }}</Label>
@@ -108,14 +108,14 @@
             </Select>
           </div>
           <div class="flex flex-col gap-2 pt-1">
-            <Label>Aufbau-Bereiche</Label>
+            <Label>{{ t('show.meta.areas') }}</Label>
             <label class="flex items-center gap-2 cursor-pointer select-none">
               <Checkbox v-model="form.use_towers" />
-              <span class="text-sm">Beleuchtungsgestelle</span>
+              <span class="text-sm">{{ t('tab.towers') }}</span>
             </label>
             <label class="flex items-center gap-2 cursor-pointer select-none">
               <Checkbox v-model="form.use_bars" />
-              <span class="text-sm">Zugstangen</span>
+              <span class="text-sm">{{ t('tab.bars') }}</span>
             </label>
           </div>
         </DialogBody>

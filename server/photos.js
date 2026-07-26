@@ -23,7 +23,7 @@ export async function savePhoto(slug, filename, buffer) {
   await ensureDir(dir)
 
   const safeName = path.basename(filename).replace(/[^a-zA-Z0-9._-]/g, '_')
-  const outName = safeName.replace(/\.[^.]+$/, '.jpg')
+  const outName = await uniqueName(dir, safeName.replace(/\.[^.]+$/, '.jpg'))
   const outPath = path.join(dir, outName)
   const tmpPath = `${outPath}.tmp`
 
@@ -47,6 +47,25 @@ export async function savePhoto(slug, filename, buffer) {
   await fs.rename(tmpThumb, thumbPath)
 
   return outName
+}
+
+// Kollisionen vermeiden: IMG_0001.jpg → IMG_0001_2.jpg → IMG_0001_3.jpg.
+// Auch der Thumbnail-Name muss frei sein, sonst überschreibt sich das Vorschaubild.
+async function uniqueName(dir, name) {
+  const stem = name.replace(/\.jpg$/i, '')
+  let candidate = name
+  for (let n = 2; ; n++) {
+    const taken = await Promise.all([
+      exists(path.join(dir, candidate)),
+      exists(path.join(dir, thumbName(candidate))),
+    ])
+    if (!taken.includes(true)) return candidate
+    candidate = `${stem}_${n}.jpg`
+  }
+}
+
+async function exists(p) {
+  try { await fs.access(p); return true } catch { return false }
 }
 
 function thumbName(filename) {

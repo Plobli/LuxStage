@@ -2,10 +2,20 @@ import { readJsonBody, json } from '../helpers.js'
 import { getDb } from '../db-context.js'
 
 const VALID_UNITS = ['m', 'cm', 'mm']
+const VALID_PHOTOS_PER_PAGE = [1, 2, 4, 6, 8, 9, 12]
+const DEFAULT_PHOTOS_PER_PAGE = 4
 
 function getUnit() {
   const row = getDb().prepare("SELECT value FROM settings WHERE key = 'display.measure_unit'").get()
   return row?.value ?? 'm'
+}
+
+// Serverseitig gespeichert, damit die Einstellung nicht am Browser klebt und
+// der PDF-Export sie ebenfalls lesen kann.
+function getPhotosPerPage() {
+  const row = getDb().prepare("SELECT value FROM settings WHERE key = 'display.photos_per_page'").get()
+  const n = parseInt(row?.value ?? '', 10)
+  return VALID_PHOTOS_PER_PAGE.includes(n) ? n : DEFAULT_PHOTOS_PER_PAGE
 }
 
 export async function displayRoutes(req, res, pathname) {
@@ -13,14 +23,23 @@ export async function displayRoutes(req, res, pathname) {
 
   if (pathname === '/api/settings/display') {
     if (method === 'GET') {
-      return json(res, 200, { measure_unit: getUnit() })
+      return json(res, 200, { measure_unit: getUnit(), photos_per_page: getPhotosPerPage() })
     }
     if (method === 'POST') {
       const body = await readJsonBody(req, res); if (body === null) return
-      const unit = body.measure_unit
-      if (!VALID_UNITS.includes(unit)) return json(res, 400, { error: 'Ungültige Einheit' })
-      getDb().prepare("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
-        .run('display.measure_unit', unit)
+      const set = getDb().prepare("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+
+      if (body.measure_unit !== undefined) {
+        if (!VALID_UNITS.includes(body.measure_unit)) return json(res, 400, { error: 'Ungültige Einheit' })
+        set.run('display.measure_unit', body.measure_unit)
+      }
+
+      if (body.photos_per_page !== undefined) {
+        const n = parseInt(body.photos_per_page, 10)
+        if (!VALID_PHOTOS_PER_PAGE.includes(n)) return json(res, 400, { error: 'Ungültiger Wert für Fotos pro Seite' })
+        set.run('display.photos_per_page', String(n))
+      }
+
       return json(res, 200, { ok: true })
     }
   }
@@ -28,4 +47,4 @@ export async function displayRoutes(req, res, pathname) {
   return null
 }
 
-export { getUnit as getDisplayUnit }
+export { getUnit as getDisplayUnit, getPhotosPerPage }

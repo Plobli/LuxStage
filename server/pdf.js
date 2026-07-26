@@ -62,7 +62,8 @@ function contrastColor(hex) {
 // templateSections: [{ id, title, order, type }]
 // photoEntries: [{ path, caption }]  — Fotos mit optionaler Beschreibung
 // floorplan: { imagePath, canvasData } — optionaler Grundriss
-export async function generatePDF(show, channels, sectionsMap, templateSections, photoEntries, res, floorplan = null, unit = 'm') {
+// photosPerPage: Fotos je Druckseite (1, 2, 4, 6, 8, 9 oder 12)
+export async function generatePDF(show, channels, sectionsMap, templateSections, photoEntries, res, floorplan = null, unit = 'm', photosPerPage = 4) {
   const fm = { name: show.name, datum: show.datum, venue: show.untertitel }
   const grouped = groupByPosition(channels)
 
@@ -311,9 +312,11 @@ export async function generatePDF(show, channels, sectionsMap, templateSections,
       .text('Fotos', PAGE_MARGIN, y)
     y += mm(10)
 
-    const PHOTOS_PER_PAGE = 4
-    const COLS = 2
-    const ROWS = 2
+    // Spaltenzahl wie in der Browser-Druckansicht (PhotoGallery.vue), damit
+    // dieselbe Einstellung in beiden Ausgaben dasselbe Raster ergibt.
+    const PHOTOS_PER_PAGE = photosPerPage
+    const COLS = PHOTOS_PER_PAGE === 1 ? 1 : PHOTOS_PER_PAGE <= 4 ? 2 : 3
+    const ROWS = Math.ceil(PHOTOS_PER_PAGE / COLS)
     const PHOTO_GAP = mm(6)
     const CAPTION_H = mm(8)
     const photoW = (usableW - PHOTO_GAP) / COLS

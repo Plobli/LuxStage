@@ -40,24 +40,6 @@
       </form>
     </div>
 
-    <!-- Fotos pro Druckseite -->
-    <div class="grid max-w-7xl grid-cols-1 gap-x-8 gap-y-10 px-4 py-16 sm:px-6 md:grid-cols-3 lg:px-8">
-      <div>
-        <h2 class="text-base/7 font-semibold text-foreground">{{ t('settings.photos_per_page') }}</h2>
-        <p class="mt-1 text-sm/6 text-muted-foreground">{{ t('settings.photos_per_page.hint') }}</p>
-      </div>
-      <div class="md:col-span-2 sm:max-w-xl">
-        <Select :model-value="String(photosPerPage)" @update:model-value="photosPerPage = Number($event)">
-          <SelectTrigger class="w-32">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem v-for="n in VALID" :key="n" :value="String(n)">{{ n }}</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-    </div>
-
     <!-- Abmelden -->
     <div class="grid max-w-7xl grid-cols-1 gap-x-8 gap-y-10 px-4 py-16 sm:px-6 md:grid-cols-3 lg:px-8">
       <div>
@@ -78,16 +60,14 @@
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useLocale } from '../../composables/useLocale.js'
-import { usePhotoSettings } from '../../composables/usePhotoSettings.js'
 import { logout, changePassword } from '../../api/client.js'
+import { PASSWORD_MIN_LENGTH } from '@shared/constants.js'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 
 const { t } = useLocale()
-const { photosPerPage, VALID } = usePhotoSettings()
 const router = useRouter()
 const route = useRoute()
 const forceChange = computed(() => route.query.forceChange === '1')
@@ -100,7 +80,7 @@ const pwLoading = ref(false)
 
 async function doChangePassword() {
   pwMsg.value = ''
-  if (pwNew.value.length < 8) { pwMsg.value = t('settings.account.change_password.error.short'); return }
+  if (pwNew.value.length < PASSWORD_MIN_LENGTH) { pwMsg.value = t('settings.account.change_password.error.short', { min: PASSWORD_MIN_LENGTH }); return }
   if (pwNew.value !== pwConfirm.value) { pwMsg.value = t('settings.account.change_password.error.mismatch'); return }
   pwLoading.value = true
   try {

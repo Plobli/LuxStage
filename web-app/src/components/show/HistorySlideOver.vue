@@ -37,6 +37,9 @@
         >
           {{ new Date(entry.created_at).toLocaleString() }}
         </Button>
+        <!-- Der Verlauf läuft automatisch und ist begrenzt — ohne diesen Hinweis
+             wirkt das Verschwinden alter Einträge wie Datenverlust. -->
+        <p class="px-4 py-3 text-xs text-muted-foreground/70">{{ labels.limit }}</p>
       </div>
 
       <!-- Snapshot detail -->
@@ -56,10 +59,11 @@
             <span class="text-muted-foreground/70 truncate ml-auto">{{ ch.notes }}</span>
           </div>
         </div>
-        <div class="px-4 py-3 border-t border-border shrink-0">
+        <div class="px-4 py-3 border-t border-border shrink-0 space-y-2">
+          <p class="text-xs text-muted-foreground/70">{{ labels.scope }}</p>
           <Button
             class="w-full"
-            @click="emit('restore', currentEntry)"
+            @click="confirmOpen = true"
           >
             {{ labels.restore }}
           </Button>
@@ -67,6 +71,18 @@
       </div>
     </SheetContent>
   </Sheet>
+
+  <!-- Wiederherstellen überschreibt Kanäle und Abschnitte ohne Undo,
+       deshalb Rückfrage mit klarer Angabe, was unberührt bleibt. -->
+  <ConfirmDialog
+    :open="confirmOpen"
+    :title="labels.confirmTitle"
+    :message="labels.confirmMessage"
+    :confirm-label="labels.restore"
+    :cancel-label="labels.cancel"
+    @cancel="confirmOpen = false"
+    @confirm="doRestore"
+  />
 </template>
 
 <script setup>
@@ -76,6 +92,7 @@ import { fetchHistory, fetchHistoryEntry } from '../../api/shows.js'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import Spinner from '@/components/Spinner.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
 const props = defineProps({
   open: { type: Boolean, default: false },
@@ -87,7 +104,12 @@ const props = defineProps({
       back: '← Zurück',
       empty: 'Keine Snapshots',
       restore: 'Wiederherstellen',
+      cancel: 'Abbrechen',
       channelCount: (n) => `${n} Kanäle`,
+      limit: 'Automatisch alle 10 Minuten, maximal 50 Versionen.',
+      scope: 'Setzt Kanäle und Abschnitte zurück. Fotos, Grundriss, Türme und Stammdaten bleiben unverändert.',
+      confirmTitle: 'Version wiederherstellen?',
+      confirmMessage: 'Kanäle und Abschnitte werden durch diese Version ersetzt. Fotos, Grundriss, Türme und Stammdaten bleiben unverändert. Der aktuelle Stand wird zuvor als Version gesichert.',
     }),
   },
 })
@@ -97,8 +119,15 @@ const emit = defineEmits(['close', 'restore'])
 const loading = ref(false)
 const entries = ref([])
 const currentEntry = ref(null)
+const confirmOpen = ref(false)
+
+function doRestore() {
+  confirmOpen.value = false
+  emit('restore', currentEntry.value)
+}
 
 watch(() => props.open, async (val) => {
+  confirmOpen.value = false
   if (!val) { currentEntry.value = null; return }
   loading.value = true
   currentEntry.value = null

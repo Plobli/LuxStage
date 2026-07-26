@@ -103,9 +103,14 @@ export async function startHistoryJob() {
 }
 
 /** Erzeugt sofort einen Snapshot für eine Show — unabhängig vom Hash-Vergleich.
- *  Wird beim Öffnen einer Show aufgerufen, um einen Ausgangspunkt zu sichern. */
-export function takeSnapshotNow(slug) {
-  const show = getDb().prepare('SELECT id, slug FROM shows WHERE slug = ? AND archived = 0').get(slug)
+ *  Wird beim Öffnen einer Show aufgerufen, um einen Ausgangspunkt zu sichern.
+ *  `includeArchived` nur für Fälle, in denen der aktuelle Stand gleich
+ *  überschrieben wird (Restore) — archivierte Shows sollen sonst keine
+ *  Snapshots sammeln. */
+export function takeSnapshotNow(slug, includeArchived = false) {
+  const show = includeArchived
+    ? getDb().prepare('SELECT id, slug FROM shows WHERE slug = ?').get(slug)
+    : getDb().prepare('SELECT id, slug FROM shows WHERE slug = ? AND archived = 0').get(slug)
   if (!show) return false
 
   let newHash = null
@@ -166,6 +171,13 @@ export function restoreHistoryEntry(slug, historyId) {
 
   const channels = JSON.parse(entry.channels)
   const sections = new Map(Object.entries(JSON.parse(entry.sections)))
+
+  // Der aktuelle Stand wird gleich überschrieben und ist sonst unwiederbringlich
+  // weg — der 10-Minuten-Takt hat ihn womöglich noch nicht erfasst. Bewusst vor
+  // der Transaktion: takeSnapshotNow öffnet eine eigene, und better-sqlite3
+  // erlaubt keine verschachtelten Transaktionen. Doppelte Einträge entstehen
+  // nicht, takeSnapshotNow vergleicht selbst gegen den letzten Snapshot.
+  takeSnapshotNow(slug, true)
 
   const tx = getDb().transaction(() => {
     db.writeChannels(slug, channels)

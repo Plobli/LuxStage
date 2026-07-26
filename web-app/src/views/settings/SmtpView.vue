@@ -47,6 +47,35 @@
         </div>
       </form>
     </div>
+
+    <Dialog :open="testDialogOpen" @update:open="testDialogOpen = $event">
+      <DialogContent class="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{{ t('settings.smtp.test.dialog.title') }}</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <div>
+            <Label for="smtp-test-to">{{ t('settings.smtp.test.dialog.label') }}</Label>
+            <Input
+              size="lg"
+              id="smtp-test-to"
+              v-model="testTo"
+              type="email"
+              autofocus
+              @keydown.enter.prevent="confirmTest"
+              @keydown.esc.prevent="testDialogOpen = false"
+            />
+            <p v-if="testToError" class="mt-2 text-sm text-destructive">{{ testToError }}</p>
+          </div>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="outline" type="button" @click="testDialogOpen = false">{{ t('action.cancel') }}</Button>
+          <Button type="button" :disabled="testLoading" @click="confirmTest">
+            {{ testLoading ? '…' : t('settings.smtp.test') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
@@ -57,6 +86,7 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
 import { useLocale } from '../../composables/useLocale.js'
 import { getSmtpConfig, saveSmtpConfig, testSmtpConfig } from '../../api/client.js'
 import { jwtDecode } from '../../api/jwtDecode.js'
@@ -68,6 +98,9 @@ const passPlaceholder = ref('')
 const msg = ref('')
 const loading = ref(false)
 const testLoading = ref(false)
+const testDialogOpen = ref(false)
+const testTo = ref('')
+const testToError = ref('')
 
 const userEmail = computed(() => {
   try {
@@ -98,9 +131,21 @@ async function doSave() {
   }
 }
 
-async function doTest() {
-  const to = prompt('Test-Mail senden an:', userEmail.value || '')
-  if (!to) return
+function doTest() {
+  testTo.value = userEmail.value || ''
+  testToError.value = ''
+  testDialogOpen.value = true
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+async function confirmTest() {
+  const to = testTo.value.trim()
+  if (!EMAIL_RE.test(to)) {
+    testToError.value = t('settings.smtp.test.dialog.error')
+    return
+  }
+  testDialogOpen.value = false
   msg.value = ''
   testLoading.value = true
   try {

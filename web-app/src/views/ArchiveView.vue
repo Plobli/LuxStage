@@ -38,10 +38,10 @@
     <template v-else>
       <!-- Spalten-Header -->
       <div class="grid grid-cols-[1fr_8rem_7rem_1fr_4.5rem] gap-0 px-4 mb-1 text-xs font-medium text-muted-foreground/60 uppercase tracking-wider select-none">
-        <span>Name</span>
-        <span class="hidden sm:block">Stand</span>
-        <span class="hidden lg:block">Spielzeit</span>
-        <span class="hidden md:block">Letzte Bearbeitung</span>
+        <span>{{ t('field.name') }}</span>
+        <span class="hidden sm:block">{{ t('field.date') }}</span>
+        <span class="hidden lg:block">{{ t('field.spielzeit') }}</span>
+        <span class="hidden md:block">{{ t('field.last_edited') }}</span>
         <span></span>
       </div>
 

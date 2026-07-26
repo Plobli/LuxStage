@@ -47,8 +47,8 @@
           <div class="flex items-center gap-3 px-4 py-3 border-b border-border">
             <Loader2 v-if="updating" class="size-4 shrink-0 animate-spin text-accent" />
             <span v-if="updating" class="text-sm font-medium text-foreground">{{ t('settings.update.run') }}…</span>
-            <span v-else-if="!updateError" class="text-sm font-medium text-green-600 dark:text-green-400">✓ {{ t('settings.update.success') }}</span>
-            <span v-else class="text-sm font-medium text-destructive">✗ Fehler</span>
+            <span v-else-if="!updateError" class="text-sm font-medium text-green-600 dark:text-green-400">{{ t('settings.update.success') }}</span>
+            <span v-else class="text-sm font-medium text-destructive">✗ {{ t('settings.update.failed') }}</span>
           </div>
 
           <!-- Fortschrittsbalken -->

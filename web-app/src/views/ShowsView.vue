@@ -23,16 +23,16 @@
     <template v-else>
       <div class="grid grid-cols-[1fr_2rem] sm:grid-cols-[1fr_10rem_0.5fr_2rem] lg:grid-cols-[1fr_10rem_10rem_0.5fr_2rem] gap-0 px-4 mb-1 text-xs font-medium text-muted-foreground/60 uppercase tracking-wider select-none">
         <button class="flex items-center gap-1 hover:text-muted-foreground transition-colors text-left" @click="setSort('name')">
-          Name <span class="opacity-60">{{ sortKey === 'name' ? (sortDir === 'asc' ? '↑' : '↓') : '' }}</span>
+          {{ t('field.name') }} <span class="opacity-60">{{ sortKey === 'name' ? (sortDir === 'asc' ? '↑' : '↓') : '' }}</span>
         </button>
         <button class="hidden sm:flex items-center gap-1 hover:text-muted-foreground transition-colors" @click="setSort('datum')">
-          Stand <span class="opacity-60">{{ sortKey === 'datum' ? (sortDir === 'asc' ? '↑' : '↓') : '' }}</span>
+          {{ t('field.date') }} <span class="opacity-60">{{ sortKey === 'datum' ? (sortDir === 'asc' ? '↑' : '↓') : '' }}</span>
         </button>
         <button class="hidden lg:flex items-center gap-1 hover:text-muted-foreground transition-colors" @click="setSort('spielzeit')">
-          Spielzeit <span class="opacity-60">{{ sortKey === 'spielzeit' ? (sortDir === 'asc' ? '↑' : '↓') : '' }}</span>
+          {{ t('field.spielzeit') }} <span class="opacity-60">{{ sortKey === 'spielzeit' ? (sortDir === 'asc' ? '↑' : '↓') : '' }}</span>
         </button>
         <button class="hidden sm:flex items-center gap-1 hover:text-muted-foreground transition-colors" @click="setSort('last_edited_by')">
-          Bearbeitung <span class="opacity-60">{{ sortKey === 'last_edited_by' ? (sortDir === 'asc' ? '↑' : '↓') : '' }}</span>
+          {{ t('field.last_edited') }} <span class="opacity-60">{{ sortKey === 'last_edited_by' ? (sortDir === 'asc' ? '↑' : '↓') : '' }}</span>
         </button>
         <div></div>
       </div>

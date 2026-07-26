@@ -3,10 +3,12 @@ import type { Channel } from '../api/channels'
 import type { Tower } from '../api/towers'
 import type { MeasureUnit } from '../composables/useMeasureUnit'
 
-export function formatHangPosition(cm: number, unit: MeasureUnit, cmToDisplay: (n: number) => number): string {
-  if (cm === 0) return 'Mitte'
+export function formatHangPosition(cm: number, unit: MeasureUnit, cmToDisplay: (n: number) => number, locale = 'de'): string {
+  const isEn = locale === 'en'
+  if (cm === 0) return isEn ? 'Centre' : 'Mitte'
   const val = cmToDisplay(Math.abs(cm))
-  return `${val}${unit} ${cm < 0 ? 'Links' : 'Rechts'}`
+  const side = isEn ? (cm < 0 ? 'Left' : 'Right') : (cm < 0 ? 'Links' : 'Rechts')
+  return `${val}${unit} ${side}`
 }
 
 function formatColor(color: string | undefined): string | undefined {
@@ -46,7 +48,7 @@ export function generateBarLine(
       ch?.device || undefined,
       ch?.address ? `#${ch.address}` : undefined,
       formatColor(ch?.color),
-      formatHangPosition(fx.position, unit, cmToDisplay),
+      formatHangPosition(fx.position, unit, cmToDisplay, locale),
       fx.notes || undefined,
     ].filter(Boolean)
     return tokens.join(' ')

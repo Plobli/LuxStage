@@ -8,27 +8,26 @@
       <Card class="px-6 py-8 sm:px-12 text-center space-y-4">
 
         <template v-if="loading">
-          <h2 class="text-base font-semibold text-foreground">Bestätige Registrierung …</h2>
+          <h2 class="text-base font-semibold text-foreground">{{ t('confirm.loading') }}</h2>
         </template>
 
         <template v-else-if="tenantId">
-          <h2 class="text-base font-semibold text-foreground">Team aktiviert 🎉</h2>
+          <h2 class="text-base font-semibold text-foreground">{{ t('confirm.success.title') }}</h2>
           <p class="text-sm text-muted-foreground">
-            Dein Team <strong>{{ tenantId }}</strong> ist einsatzbereit.
-            Melde dich mit deiner E-Mail und deinem Passwort an.
+            {{ t('confirm.success.message', { team: tenantId }) }}
           </p>
           <a :href="loginUrl" class="inline-block text-sm text-primary hover:text-primary/80">
-            → Zur Anmeldung
+            {{ t('confirm.success.login_link') }}
           </a>
         </template>
 
         <template v-else>
-          <h2 class="text-base font-semibold text-foreground">Bestätigung fehlgeschlagen</h2>
+          <h2 class="text-base font-semibold text-foreground">{{ t('confirm.error.title') }}</h2>
           <Alert variant="destructive" class="text-left">
             <AlertDescription>{{ error }}</AlertDescription>
           </Alert>
           <RouterLink to="/register" class="inline-block text-sm text-primary hover:text-primary/80">
-            ← Erneut registrieren
+            {{ t('confirm.error.retry_link') }}
           </RouterLink>
         </template>
 
@@ -41,8 +40,11 @@
 import { ref, onMounted } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { confirmRegistration } from '../api/client'
+import { useLocale } from '../composables/useLocale.js'
 import { Card } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+
+const { t } = useLocale()
 
 const route = useRoute()
 const loading = ref(true)
@@ -53,7 +55,7 @@ const error = ref('')
 onMounted(async () => {
   const token = String(route.query.token || '')
   if (!token) {
-    error.value = 'Kein Bestätigungs-Token in der URL.'
+    error.value = t('confirm.error.no_token')
     loading.value = false
     return
   }
@@ -62,7 +64,7 @@ onMounted(async () => {
     tenantId.value = res.tenantId
     if (res.loginUrl) loginUrl.value = res.loginUrl + '/login'
   } catch (e: any) {
-    error.value = e?.message || 'Bestätigungslink ungültig oder abgelaufen.'
+    error.value = e?.message || t('confirm.error.invalid')
   } finally {
     loading.value = false
   }

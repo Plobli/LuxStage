@@ -2,7 +2,7 @@
   <div class="flex min-h-full flex-1 flex-col justify-center py-12 sm:px-6 lg:px-8">
     <div class="sm:mx-auto sm:w-full sm:max-w-md">
       <img src="/favicon.png" alt="LuxStage" class="mx-auto h-16 w-16 rounded-2xl" />
-      <h1 class="mt-6 text-center text-xl font-semibold text-foreground">Team registrieren</h1>
+      <h1 class="mt-6 text-center text-xl font-semibold text-foreground">{{ t('register.title') }}</h1>
     </div>
 
     <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-[480px]">
@@ -10,33 +10,32 @@
 
         <!-- Erfolg: Opt-In-Hinweis -->
         <div v-if="done" class="space-y-4 text-center">
-          <h2 class="text-base font-semibold text-foreground">Fast geschafft</h2>
+          <h2 class="text-base font-semibold text-foreground">{{ t('register.done.title') }}</h2>
           <p class="text-sm text-muted-foreground">
-            Wir haben eine Bestätigungs-E-Mail an <strong>{{ email }}</strong> geschickt.
-            Bitte klicke auf den Link darin, um dein Team <strong>{{ teamId }}</strong> zu aktivieren.
+            {{ t('register.done.message', { email, team: teamId }) }}
           </p>
-          <p class="text-xs text-muted-foreground">Der Link ist 24 Stunden gültig.</p>
+          <p class="text-xs text-muted-foreground">{{ t('register.done.hint') }}</p>
         </div>
 
         <!-- Registrierungs-Formular -->
         <form v-else class="space-y-6" @submit.prevent="handleRegister">
           <div class="space-y-2">
-            <Label for="teamId">Team-Kürzel</Label>
+            <Label for="teamId">{{ t('register.team_id') }}</Label>
             <Input
               v-model="teamId"
               id="teamId"
               type="text"
               autocomplete="off"
-              placeholder="z. B. buehne-nord"
+              :placeholder="t('register.team_id.placeholder')"
               required
             />
             <p class="text-xs text-muted-foreground">
-              Wird zu deiner Adresse: <span class="font-mono">{{ teamId || 'kuerzel' }}.luxstage.app</span>
+              {{ t('register.team_id.domain_hint') }} <span class="font-mono">{{ teamId || t('register.team_id.placeholder_short') }}.luxstage.app</span>
             </p>
           </div>
 
           <div class="space-y-2">
-            <Label for="email">E-Mail</Label>
+            <Label for="email">{{ t('register.email') }}</Label>
             <Input
               v-model="email"
               id="email"
@@ -47,7 +46,7 @@
           </div>
 
           <div class="space-y-2">
-            <Label for="password">Passwort</Label>
+            <Label for="password">{{ t('register.password') }}</Label>
             <Input
               v-model="password"
               id="password"
@@ -55,7 +54,7 @@
               autocomplete="new-password"
               required
             />
-            <p class="text-xs text-muted-foreground">Mindestens {{ PASSWORD_MIN_LENGTH }} Zeichen.</p>
+            <p class="text-xs text-muted-foreground">{{ t('register.password.hint', { min: PASSWORD_MIN_LENGTH }) }}</p>
           </div>
 
           <Alert v-if="error" variant="destructive">
@@ -63,7 +62,7 @@
           </Alert>
 
           <Button type="submit" :disabled="loading" class="w-full">
-            {{ loading ? '…' : 'Registrieren' }}
+            {{ loading ? '…' : t('register.submit') }}
           </Button>
         </form>
 
@@ -76,11 +75,14 @@
 import { ref } from 'vue'
 import { register } from '../api/client'
 import { PASSWORD_MIN_LENGTH } from '@shared/constants.js'
+import { useLocale } from '../composables/useLocale.js'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+
+const { t } = useLocale()
 
 const teamId = ref('')
 const email = ref('')
@@ -97,14 +99,14 @@ function normalizeTeamId(v: string): string {
 async function handleRegister() {
   error.value = ''
   teamId.value = normalizeTeamId(teamId.value)
-  if (teamId.value.length < 2) { error.value = 'Team-Kürzel zu kurz (min. 2 Zeichen).'; return }
-  if (password.value.length < PASSWORD_MIN_LENGTH) { error.value = `Passwort zu kurz (min. ${PASSWORD_MIN_LENGTH} Zeichen).`; return }
+  if (teamId.value.length < 2) { error.value = t('register.error.team_id_short'); return }
+  if (password.value.length < PASSWORD_MIN_LENGTH) { error.value = t('register.error.password_short', { min: PASSWORD_MIN_LENGTH }); return }
   loading.value = true
   try {
     await register(teamId.value, email.value, password.value)
     done.value = true
   } catch (e: any) {
-    error.value = e?.message || 'Registrierung fehlgeschlagen.'
+    error.value = e?.message || t('register.error.generic')
   } finally {
     loading.value = false
   }

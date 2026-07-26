@@ -2,7 +2,7 @@
   <div class="flex min-h-full flex-1 flex-col justify-center py-12 sm:px-6 lg:px-8">
     <div class="sm:mx-auto sm:w-full sm:max-w-md">
       <img src="/favicon.png" alt="LuxStage" class="mx-auto h-16 w-16 rounded-2xl" />
-      <h1 class="mt-6 text-center text-xl font-semibold text-foreground">Passwort vergessen</h1>
+      <h1 class="mt-6 text-center text-xl font-semibold text-foreground">{{ t('forgot.title') }}</h1>
     </div>
 
     <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-[480px]">
@@ -10,22 +10,20 @@
 
         <div v-if="done" class="space-y-4 text-center">
           <p class="text-sm text-muted-foreground">
-            Falls ein Konto mit <strong>{{ email }}</strong> existiert, haben wir einen
-            Link zum Zurücksetzen verschickt. Bitte prüfe dein Postfach.
+            {{ t('forgot.done.message', { email }) }}
           </p>
-          <p class="text-xs text-muted-foreground">Der Link ist 1 Stunde gültig.</p>
+          <p class="text-xs text-muted-foreground">{{ t('forgot.done.hint') }}</p>
           <RouterLink to="/login" class="inline-block text-sm text-primary hover:text-primary/80">
-            ← Zur Anmeldung
+            {{ t('forgot.back_to_login') }}
           </RouterLink>
         </div>
 
         <form v-else class="space-y-6" @submit.prevent="handleSubmit">
           <p class="text-sm text-muted-foreground">
-            Gib deine E-Mail-Adresse ein. Wir schicken dir einen Link, um ein neues
-            Passwort zu vergeben.
+            {{ t('forgot.intro') }}
           </p>
           <div class="space-y-2">
-            <Label for="email">E-Mail</Label>
+            <Label for="email">{{ t('register.email') }}</Label>
             <Input v-model="email" id="email" type="email" autocomplete="email" required />
           </div>
 
@@ -34,12 +32,12 @@
           </Alert>
 
           <Button type="submit" :disabled="loading" class="w-full">
-            {{ loading ? '…' : 'Link anfordern' }}
+            {{ loading ? '…' : t('forgot.submit') }}
           </Button>
 
           <div class="text-center">
             <RouterLink to="/login" class="text-sm text-muted-foreground hover:text-foreground">
-              Zurück zur Anmeldung
+              {{ t('forgot.back_to_login.inline') }}
             </RouterLink>
           </div>
         </form>
@@ -53,11 +51,14 @@
 import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { requestPasswordReset } from '../api/client'
+import { useLocale } from '../composables/useLocale.js'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+
+const { t } = useLocale()
 
 const email = ref('')
 const error = ref('')
@@ -71,7 +72,7 @@ async function handleSubmit() {
     await requestPasswordReset(email.value)
     done.value = true
   } catch (e: any) {
-    error.value = e?.message || 'Anfrage fehlgeschlagen.'
+    error.value = e?.message || t('forgot.error.generic')
   } finally {
     loading.value = false
   }

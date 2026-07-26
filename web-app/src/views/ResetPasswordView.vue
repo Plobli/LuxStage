@@ -29,7 +29,7 @@
           <div class="space-y-2">
             <Label for="pw">Neues Passwort</Label>
             <Input v-model="password" id="pw" type="password" autocomplete="new-password" required />
-            <p class="text-xs text-muted-foreground">Mindestens 8 Zeichen.</p>
+            <p class="text-xs text-muted-foreground">Mindestens {{ PASSWORD_MIN_LENGTH }} Zeichen.</p>
           </div>
           <div class="space-y-2">
             <Label for="pw2">Passwort wiederholen</Label>
@@ -54,6 +54,7 @@
 import { ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { confirmPasswordReset } from '../api/client'
+import { PASSWORD_MIN_LENGTH } from '@shared/constants.js'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -70,7 +71,7 @@ const done = ref(false)
 
 async function handleSubmit() {
   error.value = ''
-  if (password.value.length < 8) { error.value = 'Passwort zu kurz (min. 8 Zeichen).'; return }
+  if (password.value.length < PASSWORD_MIN_LENGTH) { error.value = `Passwort zu kurz (min. ${PASSWORD_MIN_LENGTH} Zeichen).`; return }
   if (password.value !== password2.value) { error.value = 'Passwörter stimmen nicht überein.'; return }
   loading.value = true
   try {

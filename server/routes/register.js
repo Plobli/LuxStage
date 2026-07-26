@@ -15,6 +15,7 @@ import { isReservedSubdomain } from '../tenant-resolve.js'
 import { getRegistry, tenantIdTaken, emailTaken, recordTenant, addPending, takePending, hasPendingForTenant } from '../registry.js'
 import { runWithDb } from '../db-context.js'
 import { sendConfirmEmail } from '../email.js'
+import { PASSWORD_MIN_LENGTH } from '../../shared/constants.js'
 
 const CONFIRM_TTL_MS = 24 * 60 * 60 * 1000 // 24 h
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -37,7 +38,7 @@ export async function registerRoutes(req, res, pathname) {
     if (!isValidTenantId(tenantId)) return json(res, 400, { error: 'Ungültiges Team-Kürzel (nur a-z, 0-9, Bindestrich)' })
     if (isReservedSubdomain(tenantId)) return json(res, 409, { error: 'Dieses Team-Kürzel ist reserviert' })
     if (!EMAIL_RE.test(email)) return json(res, 400, { error: 'Ungültige E-Mail-Adresse' })
-    if (password.length < 8) return json(res, 400, { error: 'Passwort zu kurz (min. 8 Zeichen)' })
+    if (password.length < PASSWORD_MIN_LENGTH) return json(res, 400, { error: `Passwort zu kurz (min. ${PASSWORD_MIN_LENGTH} Zeichen)` })
 
     // Konflikte: Subdomain schon vergeben, offene Anmeldung dafür läuft, oder
     // E-Mail schon Admin eines Mandanten. Der pending-Check verhindert, dass

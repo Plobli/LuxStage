@@ -55,7 +55,7 @@
               autocomplete="new-password"
               required
             />
-            <p class="text-xs text-muted-foreground">Mindestens 8 Zeichen.</p>
+            <p class="text-xs text-muted-foreground">Mindestens {{ PASSWORD_MIN_LENGTH }} Zeichen.</p>
           </div>
 
           <Alert v-if="error" variant="destructive">
@@ -75,6 +75,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { register } from '../api/client'
+import { PASSWORD_MIN_LENGTH } from '@shared/constants.js'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -97,7 +98,7 @@ async function handleRegister() {
   error.value = ''
   teamId.value = normalizeTeamId(teamId.value)
   if (teamId.value.length < 2) { error.value = 'Team-Kürzel zu kurz (min. 2 Zeichen).'; return }
-  if (password.value.length < 8) { error.value = 'Passwort zu kurz (min. 8 Zeichen).'; return }
+  if (password.value.length < PASSWORD_MIN_LENGTH) { error.value = `Passwort zu kurz (min. ${PASSWORD_MIN_LENGTH} Zeichen).`; return }
   loading.value = true
   try {
     await register(teamId.value, email.value, password.value)

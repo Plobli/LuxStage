@@ -91,36 +91,36 @@
   <Dialog :open="metaDialogOpen" @update:open="metaDialogOpen = $event">
     <DialogContent class="sm:max-w-md">
       <DialogHeader>
-        <DialogTitle>Show-Info</DialogTitle>
+        <DialogTitle>{{ t('show.meta.title') }}</DialogTitle>
       </DialogHeader>
       <DialogBody>
         <div>
-          <Label for="meta-datum">Datum</Label>
+          <Label for="meta-datum">{{ t('field.date') }}</Label>
           <Input id="meta-datum" v-model="editMeta.datum" type="date" size="lg" />
         </div>
         <div>
-          <Label for="meta-untertitel">Untertitel</Label>
-          <Input id="meta-untertitel" v-model="editMeta.untertitel" type="text" size="lg" placeholder="Optionaler Untertitel" />
+          <Label for="meta-untertitel">{{ t('show.meta.untertitel') }}</Label>
+          <Input id="meta-untertitel" v-model="editMeta.untertitel" type="text" size="lg" :placeholder="t('show.meta.untertitel.placeholder')" />
         </div>
         <div>
-          <Label for="meta-spielzeit">Spielzeit</Label>
-          <Input id="meta-spielzeit" v-model="editMeta.spielzeit" type="text" size="lg" placeholder="z.B. 25/26" />
+          <Label for="meta-spielzeit">{{ t('field.spielzeit') }}</Label>
+          <Input id="meta-spielzeit" v-model="editMeta.spielzeit" type="text" size="lg" :placeholder="t('show.meta.spielzeit.placeholder')" />
         </div>
         <div class="flex flex-col gap-2 pt-1">
-          <Label>Aufbau-Bereiche</Label>
+          <Label>{{ t('show.meta.areas') }}</Label>
           <label class="flex items-center gap-2 cursor-pointer select-none">
             <Checkbox v-model="editMeta.use_towers" />
-            <span class="text-sm">Beleuchtungsgestelle</span>
+            <span class="text-sm">{{ t('tab.towers') }}</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer select-none">
             <Checkbox v-model="editMeta.use_bars" />
-            <span class="text-sm">Zugstangen</span>
+            <span class="text-sm">{{ t('tab.bars') }}</span>
           </label>
         </div>
       </DialogBody>
       <DialogFooter>
-        <Button variant="outline" @click="metaDialogOpen = false">Abbrechen</Button>
-        <Button @click="commitMeta">Speichern</Button>
+        <Button variant="outline" @click="metaDialogOpen = false">{{ t('action.cancel') }}</Button>
+        <Button @click="commitMeta">{{ t('action.save') }}</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>

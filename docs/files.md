@@ -40,6 +40,7 @@ Mini-Doku aller relevanten Dateien im Projekt. Zweck: schnelles Verständnis fü
 | `./shared/locales/de.json` | Übersetzungen für deutsche Oberfläche. |
 | `./shared/locales/en.json` | Übersetzungen für englische Oberfläche. |
 | `./shared/filters.json` | Farbfilter-Datenbank (Lee, Rosco etc.) mit Hex-Codes. |
+| `./shared/constants.js` | Gemeinsame Konstanten für Server und Web-App (z. B. `PASSWORD_MIN_LENGTH`). |
 
 ## server/ (Node.js Backend)
 
@@ -48,13 +49,13 @@ Mini-Doku aller relevanten Dateien im Projekt. Zweck: schnelles Verständnis fü
 | `./server/index.js` | HTTP-Server-Einstieg mit CORS, Security-Headern und Job-Starter. |
 | `./server/router.js` | HTTP-Router für API-Endpunkte und Datei-Serving. |
 | `./server/config.js` | Lädt Umgebungsvariablen und Konfigurationsdefaults. |
-| `./server/bootstrap.js` | Einmaliges Setup-Skript zur Admin/Tech-Benutzer-Anlage. |
+| `./server/bootstrap.js` | Einmaliges Setup-Skript; legt den ersten Admin an (Login = `ADMIN_EMAIL`). |
 | `./server/db.js` | Re-Export der Datenbank-Funktionen aus `db/index.js`. |
 | `./server/db-init.js` | Datenbankverbindung und Schema-Initialisierung. |
 | `./server/db-context.js` | Request-gebundener DB-Kontext für Multi-Tenancy (AsyncLocalStorage). |
 | `./server/auth.js` | JWT-Token, Passwort-Hashing und kurzlebige Download-Token-Verwaltung. |
 | `./server/helpers.js` | Utility-Funktionen für Body-Parsing, JSON, Fehlerbehandlung. |
-| `./server/history.js` | Periodische Snapshots von Show-State zur Versionierung. |
+| `./server/history.js` | Periodische Snapshots von Show-State zur Versionierung; sichert vor dem Wiederherstellen den aktuellen Stand. |
 | `./server/backup.js` | ZIP-basierte Backup- und Wiederherstellungsfunktionen. |
 | `./server/photos.js` | Foto-Upload mit Skalierung und Thumbnail-Generierung. |
 | `./server/floorplan.js` | Grundrissbild-Verwaltung mit Format-Validierung. |
@@ -201,7 +202,7 @@ Mini-Doku aller relevanten Dateien im Projekt. Zweck: schnelles Verständnis fü
 | `./web-app/src/views/settings/UsersView.vue` | Benutzerverwaltung, Rollen, Passwort-Reset für Admin. |
 | `./web-app/src/views/settings/DisplayView.vue` | Sprach- und Maßeinheit-Einstellungen (Deutsch/Englisch). |
 | `./web-app/src/views/settings/ServerView.vue` | Server-URL, Versionsinformationen und Speicherstatus. |
-| `./web-app/src/views/settings/BackupView.vue` | Datenbank-Backup-Download und Admin-Wiederherstellung. |
+| `./web-app/src/views/settings/BackupView.vue` | Datenbank-Backup-Download und Wiederherstellung, beides Admin-only. |
 | `./web-app/src/views/settings/SmtpView.vue` | Konfiguration von SMTP-Einstellungen und Test-E-Mails. |
 | `./web-app/src/views/settings/UpdateView.vue` | Software-Update-Check und -Durchführung mit Live-Log. |
 | `./web-app/src/views/NotFoundView.vue` | 404-Fehlerseite mit Navigation zur Startseite. |
@@ -221,7 +222,7 @@ Mini-Doku aller relevanten Dateien im Projekt. Zweck: schnelles Verständnis fü
 | `./web-app/src/components/show/ShowActionBar.vue` | Undo/Redo, Live-Präsenz-Avatare und Kanal-Datenqualitäts-Badges oben. |
 | `./web-app/src/components/show/ShowHealthBadge.vue` | Dropdown-Anzeige fehlender Geräte-, Positions-, Noten- und Adressdaten in Kanälen. |
 | `./web-app/src/components/show/PhotoGallery.vue` | Fotogalerie mit Upload, Beschriftungen, Kanalnummern und Lightbox-Vorschau. |
-| `./web-app/src/components/show/HistorySlideOver.vue` | Snapshots älterer Kanalkonfigurationen zum Durchsuchen und Wiederherstellen. |
+| `./web-app/src/components/show/HistorySlideOver.vue` | Snapshots älterer Kanalkonfigurationen zum Durchsuchen und Wiederherstellen; nennt Snapshot-Limit und Umfang, Wiederherstellen mit Rückfrage. |
 | `./web-app/src/components/show/ZugstangenView.vue` | Drag-Drop-Liste für Obermaschinerie-Stangen mit Scheinwerfer-Positionen und Vorlagen. |
 | `./web-app/src/components/show/SectionEditor.vue` | Bearbeitbare Markdown- oder Tabellen-Abschnitte mit Drag-Drop und Migrations-Fallback. |
 | `./web-app/src/components/show/GassenturmView.vue` | Beleuchtungsgestelle mit Slots und Kanalbelegung, Vorlagen und Drag-Drop. |

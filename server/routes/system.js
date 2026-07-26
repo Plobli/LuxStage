@@ -40,6 +40,9 @@ export async function systemRoutes(req, res, pathname) {
 
   // System-Backup/Restore ist Single-Tenant (globale DB, Prozess-Neustart).
   // Im SaaS gesperrt — Backups laufen zentral pro Mandant über das Betreiber-Panel.
+  // Admin-exklusiv: der ZIP enthält die komplette luxstage.db, also auch die
+  // users-Tabelle mit allen Passwort-Hashes und die Reset-Tokens. Ein Techniker
+  // mit Backup-Zugriff könnte die Hashes offline angreifen und so Admin werden.
   if (method === 'GET' && pathname === '/api/backup') {
     const user = requireAdmin(req, res); if (!user) return
     if (config.baseDomain) return json(res, 403, { error: 'Backups werden zentral verwaltet' })

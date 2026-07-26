@@ -1,8 +1,9 @@
 <template>
   <div class="divide-y divide-border">
 
-    <!-- Backup herunterladen -->
-    <div class="grid max-w-7xl grid-cols-1 gap-x-8 gap-y-10 px-4 py-16 sm:px-6 md:grid-cols-3 lg:px-8">
+    <!-- Backup herunterladen — Admin-only, weil das ZIP die komplette DB samt
+         Passwort-Hashes enthält. Der Server lehnt sonst mit 403 ab. -->
+    <div v-if="isAdmin" class="grid max-w-7xl grid-cols-1 gap-x-8 gap-y-10 px-4 py-16 sm:px-6 md:grid-cols-3 lg:px-8">
       <div>
         <h2 class="text-base/7 font-semibold text-foreground">{{ t('settings.backup') }}</h2>
         <p class="mt-1 text-sm/6 text-muted-foreground">{{ t('settings.backup.hint') }}</p>

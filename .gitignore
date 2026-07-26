@@ -52,6 +52,11 @@ Dev-Server-App/
 # Laufzeit-Daten
 data/
 
+# In-App-Updater: temporäre Backup-/Testdateien (siehe server/routes/update.js)
+tmp-release.zip
+.update-backup/
+.update-smoketest-data/
+
 # Logs
 *.log
 **/.server.log

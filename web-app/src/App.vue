@@ -317,7 +317,7 @@ const isAdmin = computed(() => {
 const settingsNavItems = computed(() => [
   { to: '/settings/account', label: t('settings.account') },
   { to: '/settings/display', label: t('settings.display') },
-  { to: '/settings/backup', label: t('settings.backup') },
+  ...(isAdmin.value ? [{ to: '/settings/backup', label: t('settings.backup') }] : []),
   ...(isAdmin.value ? [{ to: '/settings/users', label: 'Benutzerverwaltung' }] : []),
   // Server/SMTP/Update sind Self-Hosted-Einstellungen: im SaaS-Modus liegen
   // Server-Betrieb, zentrales SMTP und Updates beim Betreiber, nicht beim Mandanten.

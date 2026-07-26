@@ -25,11 +25,22 @@ function headers(extra: Record<string, string> = {}): Record<string, string> {
 
 async function request(method: string, path: string, body?: any): Promise<any> {
   const hadToken = !!getToken()
-  const res = await fetch(BASE() + path, {
-    method,
-    headers: headers(),
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  })
+  let res: Response
+  try {
+    res = await fetch(BASE() + path, {
+      method,
+      headers: headers(),
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    })
+  } catch (e) {
+    // fetch wirft nur bei echten Netzwerkfehlern — ein HTTP-Fehlercode landet
+    // hier nicht. Ohne diesen Zweig fiele der Banner erst beim nächsten Ping
+    // auf, also bis zu 30 s später; solange tippt der Nutzer ins Leere.
+    isOnline.value = false
+    throw e
+  }
+  // Der Server hat geantwortet, also besteht Verbindung — auch bei 4xx/5xx.
+  isOnline.value = true
   // Nur bei tatsächlich abgelaufener/ungültiger Session umleiten — nicht wenn
   // der Call von vornherein ohne Token lief (z. B. Pings auf öffentlichen
   // Seiten wie /register/confirm), sonst reißt der Redirect diese Seiten weg.

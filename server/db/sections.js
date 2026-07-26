@@ -18,12 +18,12 @@ export function readShowSectionDefs(slug) {
   return defs.map(def => {
     if (def.type === 'kv-table') {
       return {
-        id: def.id, title: def.title, type: def.type, order: def.sort_order,
+        id: def.id, title: def.title, type: def.type, icon: def.icon ?? '', order: def.sort_order,
         rows: (rowsBySection.get(def.id) ?? []).map(r => ({ id: r.id, label: r.label, value: r.value, sort_order: r.sort_order })),
       }
     }
     return {
-      id: def.id, title: def.title, type: def.type, order: def.sort_order,
+      id: def.id, title: def.title, type: def.type, icon: def.icon ?? '', order: def.sort_order,
       fields: (fieldsBySection.get(def.id) ?? []).map(f => ({ id: f.id, key: f.key, label: f.label, unit: f.unit })),
     }
   })
@@ -32,7 +32,7 @@ export function readShowSectionDefs(slug) {
 export function writeShowSectionDefs(slug, defs, editedBy = null) {
   const show = readShow(slug)
   if (!show) throw new Error(`Show not found: ${slug}`)
-  const insertDef     = getDb().prepare('INSERT INTO section_defs (id, show_id, title, type, sort_order) VALUES (?, ?, ?, ?, ?)')
+  const insertDef     = getDb().prepare('INSERT INTO section_defs (id, show_id, title, type, icon, sort_order) VALUES (?, ?, ?, ?, ?, ?)')
   const insertKvRow   = getDb().prepare('INSERT INTO section_kv_rows (id, section_id, label, value, sort_order) VALUES (?, ?, ?, ?, ?)')
   const insertField   = getDb().prepare('INSERT INTO section_fields (id, section_id, key, label, unit, sort_order) VALUES (?, ?, ?, ?, ?, ?)')
   const insertContent = getDb().prepare('INSERT INTO section_contents (section_id, show_id, content) VALUES (?, ?, ?)')
@@ -42,7 +42,7 @@ export function writeShowSectionDefs(slug, defs, editedBy = null) {
     getDb().prepare('DELETE FROM section_defs WHERE show_id = ?').run(show.id)
     for (let i = 0; i < defs.length; i++) {
       const def = defs[i]
-      insertDef.run(def.id, show.id, def.title, def.type, def.order ?? i)
+      insertDef.run(def.id, show.id, def.title, def.type, def.icon ?? '', def.order ?? i)
       if (def.type === 'kv-table') {
         const rows = def.rows ?? []
         for (let j = 0; j < rows.length; j++) {

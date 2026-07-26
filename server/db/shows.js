@@ -68,14 +68,14 @@ function _copyTemplateToShow(templateId, showId, opts = { withChannels: false })
   const tRowsBySection   = Map.groupBy(tRowsAll, r => r.section_id)
   const tFieldsBySection = Map.groupBy(tFieldsAll, f => f.section_id)
 
-  const insertDef     = getDb().prepare('INSERT INTO section_defs (id, show_id, title, type, sort_order) VALUES (?, ?, ?, ?, ?)')
+  const insertDef     = getDb().prepare('INSERT INTO section_defs (id, show_id, title, type, icon, sort_order) VALUES (?, ?, ?, ?, ?, ?)')
   const insertKvRow   = getDb().prepare('INSERT INTO section_kv_rows (id, section_id, label, value, sort_order) VALUES (?, ?, ?, ?, ?)')
   const insertField   = getDb().prepare('INSERT INTO section_fields (id, section_id, key, label, unit, sort_order) VALUES (?, ?, ?, ?, ?, ?)')
   const insertContent = getDb().prepare('INSERT INTO section_contents (section_id, show_id, content) VALUES (?, ?, ?)')
 
   for (const tDef of tDefs) {
     const newDefId = randomUUID()
-    insertDef.run(newDefId, showId, tDef.title, tDef.type, tDef.sort_order)
+    insertDef.run(newDefId, showId, tDef.title, tDef.type, tDef.icon ?? '', tDef.sort_order)
     if (tDef.type === 'kv-table') {
       for (const tRow of (tRowsBySection.get(tDef.id) ?? [])) {
         insertKvRow.run(randomUUID(), newDefId, tRow.label, tRow.value, tRow.sort_order)

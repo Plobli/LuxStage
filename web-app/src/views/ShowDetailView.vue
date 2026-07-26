@@ -513,6 +513,15 @@ const GassenturmView = defineAsyncComponent(() => import('../components/show/Gas
 const ZugstangenView = defineAsyncComponent(() => import('../components/show/ZugstangenView.vue'))
 const GeneratedTextAccordion = defineAsyncComponent(() => import('../components/show/GeneratedTextAccordion.vue'))
 
+// Abschnitts-Symbole über den stabilen icon-Bezeichner aus der DB, nicht über
+// den Titel: der ist frei editierbar und sprachabhängig. Unbekannte oder leere
+// Werte fallen auf IconAufbau zurück.
+const SECTION_ICONS = {
+  warning: IconHinweise,
+  room: IconRaum,
+  setup: IconAufbau,
+}
+
 const props = defineProps({ id: { type: String, required: true } })
 const { t, locale } = useLocale()
 const { setNav, clearNav, navigate: navNavigate } = useShowNav()
@@ -569,7 +578,7 @@ const {
 } = useShowSections(props.id, meta)
 
 const aufbauFixedTabs = computed(() => [
-  ...(meta.value.use_towers !== false ? [{ key: 'gassenturm', label: t('tab.buehne') }] : []),
+  ...(meta.value.use_towers !== false ? [{ key: 'gassenturm', label: t('tab.towers') }] : []),
   ...(meta.value.use_bars !== false ? [{ key: 'zugstangen', label: t('tab.obermaschinerie') }] : []),
 ])
 const aufbauSubTabs = computed(() => {
@@ -631,7 +640,9 @@ const channelByIdForHangerei = computed(() => new Map(channels.value.map(c => [c
 const hangerei = computed(() => generateHangereiEntries(bars.value, channelByIdForHangerei.value, unit.value, cmToDisplay, locale.value))
 const gassenturmGenerated = computed(() => generateGassenturmEntries(towers.value, channelByIdForHangerei.value, locale.value))
 
-const aufbauSectionId = computed(() => sectionDefs.value.find(s => s.title === 'Aufbau')?.id ?? null)
+// Über icon, nicht über den Titel: benennt der Nutzer den Abschnitt um, soll der
+// generierte Text (Beleuchtungsgestelle/Obermaschinerie) weiter dort erscheinen.
+const aufbauSectionId = computed(() => sectionDefs.value.find(s => s.icon === 'setup')?.id ?? null)
 
 function debounce(fn, ms) {
   let timer = null
@@ -776,7 +787,7 @@ const sidebarNavItems = computed(() => {
   if (meta.value.use_towers !== false) {
     items.push({
       key: 'gassenturm',
-      label: t('tab.buehne'),
+      label: t('tab.towers'),
       icon: IconBeleuchtungsgestelle,
       iconClass: 'size-6',
       active: activeTab === 'gassenturm' && activeSubTab === 'gassenturm',
@@ -796,9 +807,9 @@ const sidebarNavItems = computed(() => {
   for (const s of [...sectionDefs.value].sort((a, b) => a.order - b.order)) {
     items.push({
       key: `section:${s.id}`,
-      label: s.title || '(kein Titel)',
-      icon: s.title === 'Hinweise' ? IconHinweise : s.title === 'Raum' ? IconRaum : IconAufbau,
-      iconClass: s.title === 'Hinweise' ? 'size-5' : 'size-6',
+      label: s.title || t('sections.untitled'),
+      icon: SECTION_ICONS[s.icon] ?? IconAufbau,
+      iconClass: s.icon === 'warning' ? 'size-5' : 'size-6',
       active: activeTab === 'gassenturm' && activeSubTab === `section:${s.id}`,
       navigate: () => onSidebarNavigate({ tab: 'gassenturm', subTab: `section:${s.id}` }),
     })
@@ -1009,10 +1020,12 @@ onMounted(async () => {
     setupMarkdown.value = showData.setupMarkdown ?? ''
     eosActiveChannels.value = showData.eosActiveChannels ?? null
 
-    // Aufbau-Section automatisch anlegen falls nicht vorhanden
-    if (!sectionDefs.value.some(s => s.title === 'Aufbau')) {
+    // Aufbau-Section automatisch anlegen falls nicht vorhanden.
+    // Erkennung über icon: beim Titelvergleich entstand bei jedem Öffnen ein
+    // neuer Abschnitt, sobald der Nutzer den vorhandenen umbenannt hatte.
+    if (!sectionDefs.value.some(s => s.icon === 'setup')) {
       const id = uuid()
-      const newDefs = [...sectionDefs.value, { id, title: 'Aufbau', type: 'markdown', order: sectionDefs.value.length }]
+      const newDefs = [...sectionDefs.value, { id, title: 'Aufbau', type: 'markdown', icon: 'setup', order: sectionDefs.value.length }]
       sectionDefs.value = newDefs
       await saveShowSectionDefs(props.id, newDefs)
     }

@@ -86,7 +86,7 @@ Mini-Doku aller relevanten Dateien im Projekt. Zweck: schnelles Verständnis fü
 | `./server/db/sections.js` | DB-Zugriff für Show-Sections und deren Definitionen. |
 | `./server/db/photos.js` | DB-Zugriff für Fotos, Beschreibungen, Reihenfolge, Channel-Fotos. |
 | `./server/db/floorplan.js` | DB-Zugriff für Template- und Show-Grundrisse (Bilder, Canvas-Daten). |
-| `./server/db/templates.js` | DB-Zugriff für Bühnen-Templates und deren Komponenten (Kanäle, Bars, Towers). |
+| `./server/db/templates.js` | DB-Zugriff für Spielort-Vorlagen und deren Komponenten (Kanäle, Bars, Towers). |
 | `./server/db/locks.js` | DB-Zugriff für Bearbeitungs-Sperren (Optimistic Locking). |
 
 ### server/routes/ (API-Endpunkte)
@@ -103,7 +103,7 @@ Mini-Doku aller relevanten Dateien im Projekt. Zweck: schnelles Verständnis fü
 | `./server/routes/sections.js` | API-Routen für Show-Sections und deren Definitionen. |
 | `./server/routes/photos.js` | API-Routen für Foto-Upload, Beschreibungen, Channel-Fotos. |
 | `./server/routes/floorplan.js` | API-Routen für Show- und Template-Grundrisse (Bilder, Snapshots). |
-| `./server/routes/templates.js` | API-Routen für Bühnen-Templates (Kanäle, Sections, Bars, Towers). |
+| `./server/routes/templates.js` | API-Routen für Spielort-Vorlagen (Kanäle, Sections, Bars, Towers). |
 | `./server/routes/history.js` | API-Routen für Show-Verlauf und Snapshot-Restore. |
 | `./server/routes/pdf.js` | API-Route für PDF-Export von Shows. |
 | `./server/routes/display.js` | API-Routen für Anzeige-Einstellungen (Maßeinheiten). |

@@ -85,19 +85,19 @@ export function readTemplateSections(name) {
   return defs.map(def => {
     if (def.type === 'kv-table') {
       return {
-        id: def.id, title: def.title, type: def.type, order: def.sort_order,
+        id: def.id, title: def.title, type: def.type, icon: def.icon ?? '', order: def.sort_order,
         rows: (rowsBySection.get(def.id) ?? []).map(r => ({ id: r.id, label: r.label, value: r.value, sort_order: r.sort_order })),
       }
     }
     return {
-      id: def.id, title: def.title, type: def.type, order: def.sort_order,
+      id: def.id, title: def.title, type: def.type, icon: def.icon ?? '', order: def.sort_order,
       fields: (fieldsBySection.get(def.id) ?? []).map(f => ({ id: f.id, key: f.key, label: f.label, unit: f.unit })),
     }
   })
 }
 
 export function writeTemplateSections(name, defs) {
-  const insertDef   = getDb().prepare('INSERT INTO template_section_defs (id, template_id, title, type, sort_order) VALUES (?, ?, ?, ?, ?)')
+  const insertDef   = getDb().prepare('INSERT INTO template_section_defs (id, template_id, title, type, icon, sort_order) VALUES (?, ?, ?, ?, ?, ?)')
   const insertKvRow = getDb().prepare('INSERT INTO template_section_kv_rows (id, section_id, label, value, sort_order) VALUES (?, ?, ?, ?, ?)')
   const insertField = getDb().prepare('INSERT INTO template_section_fields (id, section_id, key, label, unit, sort_order) VALUES (?, ?, ?, ?, ?, ?)')
   const tx = getDb().transaction(() => {
@@ -113,7 +113,7 @@ export function writeTemplateSections(name, defs) {
     getDb().prepare('DELETE FROM template_section_defs WHERE template_id = ?').run(tpl.id)
     for (let i = 0; i < defs.length; i++) {
       const def = defs[i]
-      insertDef.run(def.id ?? randomUUID(), tpl.id, def.title, def.type, def.order ?? i)
+      insertDef.run(def.id ?? randomUUID(), tpl.id, def.title, def.type, def.icon ?? '', def.order ?? i)
       if (def.type === 'kv-table') {
         for (let j = 0; j < (def.rows ?? []).length; j++) {
           const r = def.rows[j]
@@ -494,7 +494,7 @@ export function applyTemplateToAllShows(templateName, scope) {
   const insertBar     = getDb().prepare('INSERT INTO bars (id, show_id, name, zug_nr, length_cm, sort_order, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
   const insertTower   = getDb().prepare('INSERT INTO towers (id, show_id, name, side, stage_area, slot_count, sort_order, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
   const insertSlot    = getDb().prepare('INSERT OR IGNORE INTO tower_slots (id, tower_id, slot_index, channel_id) VALUES (?, ?, ?, NULL)')
-  const insertDef     = getDb().prepare('INSERT INTO section_defs (id, show_id, title, type, sort_order) VALUES (?, ?, ?, ?, ?)')
+  const insertDef     = getDb().prepare('INSERT INTO section_defs (id, show_id, title, type, icon, sort_order) VALUES (?, ?, ?, ?, ?, ?)')
   const insertKvRow   = getDb().prepare('INSERT INTO section_kv_rows (id, section_id, label, value, sort_order) VALUES (?, ?, ?, ?, ?)')
   const insertField   = getDb().prepare('INSERT INTO section_fields (id, section_id, key, label, unit, sort_order) VALUES (?, ?, ?, ?, ?, ?)')
   const insertContent = getDb().prepare('INSERT INTO section_contents (section_id, show_id, content) VALUES (?, ?, ?)')
@@ -541,7 +541,7 @@ export function applyTemplateToAllShows(templateName, scope) {
       for (const tDef of tDefs) {
         if (!existingTitles.has(tDef.title)) {
           const newDefId = randomUUID()
-          insertDef.run(newDefId, show.id, tDef.title, tDef.type, existingDefCount + secIdx)
+          insertDef.run(newDefId, show.id, tDef.title, tDef.type, tDef.icon ?? '', existingDefCount + secIdx)
           if (tDef.type === 'kv-table') {
             for (const tRow of (tRowsBySection.get(tDef.id) ?? [])) {
               insertKvRow.run(randomUUID(), newDefId, tRow.label, tRow.value, tRow.sort_order)

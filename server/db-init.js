@@ -51,11 +51,16 @@ function _initSchema(database) {
 
     CREATE INDEX IF NOT EXISTS idx_channels_show ON channels(show_id);
 
+    -- icon: stabiler Bezeichner für das Sidebar-Symbol ('warning', 'room', '').
+    -- Bewusst getrennt von type: type ist die Darstellungsart (markdown/kv-table),
+    -- icon die Bedeutung. Vorher hing das Symbol am deutschen Titel-Literal und
+    -- verschwand beim Umbenennen oder Sprachwechsel.
     CREATE TABLE IF NOT EXISTS section_defs (
       id         TEXT PRIMARY KEY,
       show_id    TEXT NOT NULL REFERENCES shows(id) ON DELETE CASCADE,
       title      TEXT,
       type       TEXT,
+      icon       TEXT NOT NULL DEFAULT '',
       sort_order INTEGER NOT NULL DEFAULT 0
     );
 
@@ -103,6 +108,7 @@ function _initSchema(database) {
       template_id TEXT NOT NULL REFERENCES templates(id) ON DELETE CASCADE,
       title       TEXT,
       type        TEXT,
+      icon        TEXT NOT NULL DEFAULT '',
       sort_order  INTEGER NOT NULL DEFAULT 0
     );
 
@@ -461,6 +467,26 @@ if (!templateBarsTableExists) {
       UPDATE template_section_defs SET title = 'Raum'     WHERE title = 'Stände';
       UPDATE template_section_defs SET title = 'Hinweise' WHERE title = 'Besonderheiten';
       INSERT INTO settings (key, value) VALUES ('migration_section_rename_2026', '1');
+    `)
+  }
+}
+
+// icon: stabiler Bezeichner für das Sidebar-Symbol. Vorher wurde es aus dem
+// deutschen Titel abgeleitet — beim Umbenennen oder auf Englisch war es weg.
+// Muss nach der Titel-Umbenennung oben laufen, weil aus den Titeln abgeleitet wird.
+for (const table of ['section_defs', 'template_section_defs']) {
+  const cols = database.pragma(`table_info(${table})`).map(c => c.name)
+  if (!cols.includes('icon')) {
+    database.exec(`ALTER TABLE ${table} ADD COLUMN icon TEXT NOT NULL DEFAULT ''`)
+    // Einmalige Zuordnung nach dem heutigen Stand. Danach bleibt icon stabil,
+    // auch wenn der Nutzer den Abschnitt umbenennt.
+    // 'setup' ist mehr als ein Symbol: daran hängt auch der generierte Text
+    // (Beleuchtungsgestelle/Obermaschinerie) und die Erkennung, ob der
+    // Aufbau-Abschnitt schon existiert.
+    database.exec(`
+      UPDATE ${table} SET icon = 'warning' WHERE title = 'Hinweise';
+      UPDATE ${table} SET icon = 'room'    WHERE title = 'Raum';
+      UPDATE ${table} SET icon = 'setup'   WHERE title = 'Aufbau';
     `)
   }
 }

@@ -108,7 +108,7 @@ Mini-Doku aller relevanten Dateien im Projekt. Zweck: schnelles Verständnis fü
 | `./server/routes/pdf.js` | API-Route für PDF-Export von Shows. |
 | `./server/routes/display.js` | API-Routen für Anzeige-Einstellungen (Maßeinheiten). |
 | `./server/routes/system.js` | API-Routen für System-Status, Health-Check, Backup, Restore. |
-| `./server/routes/update.js` | API-Routen für Versions-Check und Server-Update. |
+| `./server/routes/update.js` | API-Routen für Versions-Check und Server-Update; entpackt Release-ZIP streamend, spart Infrastruktur-Dateien (docker-compose.yml, Dockerfile, .env) aus. |
 | `./server/routes/smtp.js` | API-Routen für SMTP-Konfiguration und Test-E-Mails. |
 | `./server/routes/operator.js` | API-Routen für Betreiber-Panel (Mandanten-Verwaltung). |
 

@@ -112,11 +112,32 @@ export async function updateRoutes(req, res, pathname, params) {
       await fsp.writeFile(tmpZip, Buffer.from(buffer))
       
       step('Entpacke Dateien über das aktuelle Verzeichnis...')
-      await new Promise((resolve, reject) => {
-         fs.createReadStream(tmpZip).pipe(unzipper.Extract({ path: repoDir }))
-           .on('close', resolve)
-           .on('error', reject)
-      })
+      // Kein unzipper.Extract: das würde blind alles überschreiben, inklusive
+      // umgebungsspezifischer Infrastruktur-Dateien wie docker-compose.yml oder
+      // Dockerfile — lokale Anpassungen (z.B. Netzwerke, Ports) wären nach jedem
+      // Update weg. Diese Dateien werden hier bewusst übersprungen, das Release-Zip
+      // enthält ohnehin nur Anwendungscode (siehe .github/workflows/release.yml).
+      const PROTECTED_FILES = new Set([
+        'docker-compose.yml', 'docker-compose.yaml', 'Dockerfile',
+        '.env', '.env.example', 'entrypoint.sh',
+      ])
+      const zip = fs.createReadStream(tmpZip).pipe(unzipper.Parse({ forceStream: true }))
+      for await (const entry of zip) {
+        const relPath = entry.path.replace(/\\/g, '/')
+        if (!relPath || relPath.endsWith('/') || entry.type === 'Directory') { entry.autodrain(); continue }
+        if (relPath.includes('..') || path.isAbsolute(relPath)) { entry.autodrain(); continue }
+        if (PROTECTED_FILES.has(relPath)) { entry.autodrain(); continue }
+        const destPath = path.resolve(repoDir, relPath)
+        if (!destPath.startsWith(repoDir + path.sep)) { entry.autodrain(); continue }
+        await fsp.mkdir(path.dirname(destPath), { recursive: true })
+        await new Promise((resolve, reject) => {
+          const out = fs.createWriteStream(destPath)
+          entry.pipe(out)
+          out.on('finish', resolve)
+          out.on('error', (err) => { out.destroy(); reject(err) })
+          entry.on('error', (err) => { out.destroy(); reject(err) })
+        })
+      }
       step('Dateien erfolgreich entpackt.')
 
       step('Installiere Server-Abhängigkeiten...')

@@ -32,7 +32,7 @@ jobs:
           # und das fertig gebaute Web-App Dist-Verzeichnis.
           # SaaS-Module werden ausgeschlossen — das Self-Hosted-ZIP enthält keinen
           # SaaS-Code (der Kern lädt sie bedingt via saas.js, ohne BASE_DOMAIN inaktiv).
-          zip -r luxstage-release.zip server web-app/dist package.json package-lock.json \
+          zip -r luxstage-release.zip server web-app/dist shared package.json package-lock.json \
             -x "server/node_modules/*" "*/.DS_Store" \
                "server/tenants.js" "server/registry.js" "server/operator.js" \
                "server/tenant-resolve.js" "server/tenant-backup.js" \

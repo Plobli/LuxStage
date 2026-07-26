@@ -387,17 +387,17 @@
     <Dialog :open="fromTemplateDialogOpen" @update:open="fromTemplateDialogOpen = $event">
       <DialogContent class="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{{ fromTemplateScope === 'bars' ? 'Zugstangen aus Vorlage' : 'Beleuchtungsgestelle aus Vorlage' }}</DialogTitle>
+          <DialogTitle>{{ fromTemplateScope === 'bars' ? t('from_template.bars.title') : t('from_template.towers.title') }}</DialogTitle>
         </DialogHeader>
         <DialogBody>
           <div v-if="fromTemplateItemsLoading" class="text-sm text-muted-foreground">…</div>
           <template v-else>
             <!-- Auswahl-Kopfzeile -->
             <div class="flex items-center justify-between pb-1 border-b border-border">
-              <span class="text-xs text-muted-foreground">{{ fromTemplateSelectedIds.size }} / {{ fromTemplateItems.length }} ausgewählt</span>
+              <span class="text-xs text-muted-foreground">{{ t('from_template.selected', { selected: fromTemplateSelectedIds.size, total: fromTemplateItems.length }) }}</span>
               <div class="flex gap-2">
-                <button class="text-xs text-accent hover:underline" @click="fromTemplateSelectAll">Alle</button>
-                <button class="text-xs text-muted-foreground hover:underline" @click="fromTemplateSelectNone">Keine</button>
+                <button class="text-xs text-accent hover:underline" @click="fromTemplateSelectAll">{{ t('from_template.select_all') }}</button>
+                <button class="text-xs text-muted-foreground hover:underline" @click="fromTemplateSelectNone">{{ t('from_template.select_none') }}</button>
               </div>
             </div>
 
@@ -416,12 +416,12 @@
                 <span class="flex-1 min-w-0">
                   <span class="text-sm font-medium text-foreground">{{ item.name }}</span>
                   <span v-if="fromTemplateScope === 'bars'" class="text-xs text-muted-foreground ml-2">
-                    <span v-if="item.zug_nr">Zug {{ item.zug_nr }} · </span>{{ formatLength(item.length_cm) }}
-                    <span v-if="item._fixtureCount" class="ml-1">· {{ item._fixtureCount }} Scheinwerfer</span>
+                    <span v-if="item.zug_nr">{{ t('from_template.bar.zug', { nr: item.zug_nr }) }} · </span>{{ formatLength(item.length_cm) }}
+                    <span v-if="item._fixtureCount" class="ml-1">· {{ t('from_template.bar.fixtures', { count: item._fixtureCount }) }}</span>
                   </span>
                   <span v-else class="text-xs text-muted-foreground ml-2">
                     <span v-if="item.side">{{ item.side }} · </span>
-                    {{ item.slot_count }} Slots
+                    {{ t('from_template.tower.slots', { count: item.slot_count }) }}
                   </span>
                 </span>
               </label>
@@ -434,18 +434,18 @@
                 class="mt-0.5"
               />
               <label for="withChannelsCb" class="flex flex-col gap-0.5 cursor-pointer">
-                <span class="text-sm font-medium text-foreground">Mit Kanalzuordnung</span>
+                <span class="text-sm font-medium text-foreground">{{ t('from_template.with_channels') }}</span>
                 <span class="text-xs text-muted-foreground">
                   {{ fromTemplateScope === 'bars'
-                    ? 'Scheinwerfer werden nach Kanalnummer den passenden Show-Kanälen zugeordnet.'
-                    : 'Slot-Belegungen werden nach Kanalnummer den passenden Show-Kanälen zugeordnet.' }}
+                    ? t('from_template.with_channels.bars.desc')
+                    : t('from_template.with_channels.towers.desc') }}
                 </span>
               </label>
             </div>
           </template>
         </DialogBody>
         <DialogFooter>
-          <Button variant="ghost" @click="fromTemplateDialogOpen = false">Abbrechen</Button>
+          <Button variant="ghost" @click="fromTemplateDialogOpen = false">{{ t('action.cancel') }}</Button>
           <Button :disabled="fromTemplateLoading || fromTemplateSelectedIds.size === 0" @click="confirmFromTemplate">
             {{ fromTemplateLoading ? '…' : `${fromTemplateSelectedIds.size} einfügen` }}
           </Button>
@@ -816,7 +816,7 @@ const sidebarNavItems = computed(() => {
   }
   items.push({ type: 'addSection', label: t('sections.add') })
 
-  items.push({ type: 'group', label: 'Medien' })
+  items.push({ type: 'group', label: t('show.nav.media') })
 
   items.push({
     key: 'photos',
@@ -1025,7 +1025,7 @@ onMounted(async () => {
     // neuer Abschnitt, sobald der Nutzer den vorhandenen umbenannt hatte.
     if (!sectionDefs.value.some(s => s.icon === 'setup')) {
       const id = uuid()
-      const newDefs = [...sectionDefs.value, { id, title: 'Aufbau', type: 'markdown', icon: 'setup', order: sectionDefs.value.length }]
+      const newDefs = [...sectionDefs.value, { id, title: t('section.setup.default_title'), type: 'markdown', icon: 'setup', order: sectionDefs.value.length }]
       sectionDefs.value = newDefs
       await saveShowSectionDefs(props.id, newDefs)
     }

@@ -29,7 +29,6 @@ export const config = {
   photoQuality: 70,
   photoThumbWidth: 400,
   photoThumbQuality: 60,
-  anthropicApiKey: process.env.ANTHROPIC_API_KEY || null,
   smtp: {
     host: process.env.SMTP_HOST || '',
     port: parseInt(process.env.SMTP_PORT || '587'),

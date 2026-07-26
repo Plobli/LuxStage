@@ -71,6 +71,15 @@
         <AlertTriangle class="size-3 mr-1" />{{ labels.dupChannel }}
       </Badge>
 
+      <!-- Farb-Legende der Kanalnummer. Dauerhaft sichtbar, weil sie den
+           Arbeitsstand erklärt — vorher nur im Tooltip des Spalten-Hilfeicons.
+           Erst ab lg, sonst wird die Zeile zu voll. -->
+      <div v-if="activeTab === 'channels'" class="hidden lg:flex items-center gap-3 text-[11px] text-muted-foreground/70">
+        <span class="flex items-center gap-1"><span class="size-1.5 rounded-full bg-current" /><span>{{ labels.legendDefault }}</span></span>
+        <span class="flex items-center gap-1 text-green-600 dark:text-green-400"><span class="size-1.5 rounded-full bg-current" /><span>{{ labels.legendActive }}</span></span>
+        <span class="flex items-center gap-1 text-amber-400"><span class="size-1.5 rounded-full bg-current" /><span>{{ labels.legendEos }}</span></span>
+      </div>
+
       <!-- Health Badge -->
       <ShowHealthBadge
         v-if="healthLabels && activeTab === 'channels'"

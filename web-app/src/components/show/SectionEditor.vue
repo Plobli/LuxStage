@@ -146,6 +146,7 @@
   <div v-if="!singleSectionId" class="flex items-center gap-2 border-b border-border/60 px-4 py-2">
     <Button variant="ghost" size="sm" class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground" @click="addMarkdownSection">{{ labels.addMarkdown }}</Button>
     <Button v-if="!hasKvTableType()" variant="ghost" size="sm" class="h-7 rounded-sm px-2 text-[11px] text-muted-foreground" @click="addKvTableSection">{{ labels.addFields }}</Button>
+    <HelpIcon :text="labels.addHelp" side="right" />
   </div>
 </template>
 
@@ -154,6 +155,7 @@ import { ref, computed, watch, nextTick, onBeforeUnmount, defineAsyncComponent }
 import { GripVertical, X, FileText, Table2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import HelpIcon from '@/components/ui/HelpIcon.vue'
 import Sortable from 'sortablejs'
 const MarkdownEditor = defineAsyncComponent(() => import('../MarkdownEditor.vue'))
 import { useConfirm } from '../../composables/useConfirm.js'

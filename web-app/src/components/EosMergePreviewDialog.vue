@@ -64,6 +64,12 @@
         <p v-if="newActive.length === 0 && nowGone.length === 0 && untouched.length === 0" class="text-sm text-muted-foreground">
           {{ t('eos.preview.empty') }}
         </p>
+
+        <!-- Folge des Imports benennen: der Dialog zeigte bisher nur, welche
+             Kanäle betroffen sind, nicht was mit ihren Daten passiert. -->
+        <p v-else class="text-xs text-muted-foreground/70 border-t border-border/50 pt-3">
+          {{ t('eos.preview.consequence') }}
+        </p>
       </DialogBody>
 
       <DialogFooter class="gap-3 flex-wrap">

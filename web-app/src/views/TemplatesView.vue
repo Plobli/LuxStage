@@ -575,6 +575,51 @@
       </DialogContent>
     </Dialog>
 
+    <!-- Auf alle Shows anwenden: Vorschau der betroffenen Shows -->
+    <Dialog :open="applyDialogOpen" @update:open="applyDialogOpen = $event">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{{ applyDialogTitle }}</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <p v-if="applyShowsLoading" class="text-sm text-muted-foreground">{{ t('template.apply_to_shows.dialog.loading') }}</p>
+          <template v-else>
+            <div v-if="applyShows.length">
+              <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60 mb-1.5">
+                {{ t('template.apply_to_shows.dialog.shows', { count: applyShows.length }) }}
+              </p>
+              <ul class="max-h-48 overflow-y-auto flex flex-col divide-y divide-border/50">
+                <li v-for="show in applyShows" :key="show.id" class="py-1.5 text-sm text-foreground truncate">{{ show.name }}</li>
+              </ul>
+            </div>
+            <p v-else class="text-sm text-muted-foreground">{{ t('template.apply_to_shows.dialog.none') }}</p>
+            <p class="text-xs text-muted-foreground/70 pt-1">{{ t('template.apply_to_shows.dialog.safe') }}</p>
+          </template>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="ghost" @click="applyDialogOpen = false">{{ t('action.cancel') }}</Button>
+          <Button :disabled="applyShowsLoading || applyShows.length === 0 || !!applyingToShows" @click="confirmApplyToAllShows">
+            {{ applyingToShows ? '…' : t('action.apply') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Ergebnis der Übertragung -->
+    <Dialog :open="applyResultOpen" @update:open="applyResultOpen = $event">
+      <DialogContent class="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{{ t('template.apply_to_shows.result.title') }}</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <p class="text-sm text-muted-foreground">{{ applyResultText }}</p>
+        </DialogBody>
+        <DialogFooter>
+          <Button @click="applyResultOpen = false">{{ t('action.close') }}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
   <!-- FAB -->
   <Button variant="accent" @click="openNewDialog" class="fixed bottom-6 right-6 h-11 px-5 shadow-lg border-0 flex items-center gap-2">
     <Plus class="size-4" /> {{ t('template.new') }}
@@ -590,6 +635,7 @@ import { useMeasureUnit } from '../composables/useMeasureUnit'
 import { useConfirm } from '../composables/useConfirm.js'
 import { fetchTemplates, fetchTemplateChannels, saveTemplate, uploadTemplate, deleteTemplate, saveTemplateOscHost, renameTemplate, applyTemplateToAllShows } from '../api/templates.js'
 import { fetchTemplateSections, saveTemplateSections } from '../api/sections.js'
+import { fetchShows } from '../api/shows.js'
 import { templateDisplayName } from '../utils/templateName.js'
 import { uuid } from '../utils/uuid.js'
 import ChannelTable from '../components/channel/ChannelTable.vue'
@@ -668,6 +714,16 @@ const tbarFormDisplay = computed({
 
 const emptySet = new Set()
 const applyingToShows = ref('')
+// Vorschau vor der Massenoperation: welche Shows hängen an dieser Vorlage?
+const applyDialogOpen = ref(false)
+const applyScope = ref('')
+const applyShows = ref([])
+const applyShowsLoading = ref(false)
+const applyResultOpen = ref(false)
+const applyResultText = ref('')
+const applyDialogTitle = computed(() =>
+  applyScope.value ? t(`template.apply_to_shows.${applyScope.value}.confirm`, { name: editingName.value }) : ''
+)
 
 // Template-Towers
 const templateTowers = ref([])
@@ -1155,13 +1211,37 @@ function onTypeChange(section, newType) {
 
 // ── Auf alle Shows anwenden ─────────────────────────────────────────────────
 
+// Öffnet die Vorschau. Die betroffenen Shows sind die, deren template-Feld auf
+// diese Vorlage zeigt. Deckt sich mit der Server-Bedingung beim Übertragen
+// (template = ? AND archived = 0) — /api/shows liefert ohnehin nur unarchivierte.
 async function handleApplyToAllShows(scope) {
-  const ok = await confirm({ t, titleKey: `template.apply_to_shows.${scope}.confirm`, titleParams: { name: editingName.value }, confirmKey: 'action.apply', cancelKey: 'action.cancel' })
-  if (!ok) return
+  applyScope.value = scope
+  applyShows.value = []
+  applyShowsLoading.value = true
+  applyDialogOpen.value = true
+  try {
+    const shows = await fetchShows()
+    applyShows.value = shows.filter(s => s.template === editingName.value)
+  } catch {
+    applyShows.value = []
+  } finally {
+    applyShowsLoading.value = false
+  }
+}
+
+async function confirmApplyToAllShows() {
+  const scope = applyScope.value
   applyingToShows.value = scope
   try {
     const result = await applyTemplateToAllShows(editingName.value, scope)
-    alert(t(`template.apply_to_shows.${scope}.result`, { shows: result.shows, bars: result.barsAdded, sections: result.sectionsAdded }))
+    applyResultText.value = t(`template.apply_to_shows.${scope}.result`, {
+      shows: result.shows,
+      bars: result.barsAdded,
+      towers: result.towersAdded,
+      sections: result.sectionsAdded,
+    })
+    applyDialogOpen.value = false
+    applyResultOpen.value = true
   } finally {
     applyingToShows.value = ''
   }

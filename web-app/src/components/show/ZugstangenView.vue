@@ -184,11 +184,17 @@
           <Input size="lg" v-model="barForm.name" :placeholder="t('zugstange.name.placeholder')" autofocus />
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-xs text-muted-foreground">{{ t('zugstange.field.length_unit', { unit }) }}</label>
+          <label class="flex items-center gap-1.5 text-xs text-muted-foreground">
+            {{ t('zugstange.field.length_unit', { unit }) }}
+            <HelpIcon :text="t('zugstange.field.length.help')" side="right" />
+          </label>
           <Input size="lg" :modelValue="barFormDisplay.length" type="number" :min="lengthMin" :max="lengthMax" :step="inputStep" @update:modelValue="barForm.length_cm = parseToCm(Number($event))" />
         </div>
         <button type="button" class="flex items-center justify-between w-full rounded-lg border border-border px-4 py-3 text-left transition-colors hover:bg-muted/40" @click="barForm.hide_scale = !barForm.hide_scale">
-          <span class="text-sm text-foreground">{{ t('zugstange.scale.hide') }}</span>
+          <span class="flex items-center gap-1.5 text-sm text-foreground">
+            {{ t('zugstange.scale.hide') }}
+            <HelpIcon :text="t('zugstange.scale.help')" side="right" />
+          </span>
           <div class="relative shrink-0 w-9 h-5 rounded-full transition-colors" :class="barForm.hide_scale ? 'bg-accent' : 'bg-muted'">
             <div class="absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow transition-transform" :class="barForm.hide_scale ? 'translate-x-4' : 'translate-x-0'" />
           </div>
@@ -392,6 +398,7 @@ import { Plus, Pencil, Trash2, BookmarkPlus, Loader2, AlignJustify } from 'lucid
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import HelpIcon from '@/components/ui/HelpIcon.vue'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
 import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 

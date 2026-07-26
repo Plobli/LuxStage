@@ -481,7 +481,7 @@
       <DialogContent class="sm:max-w-lg flex flex-col max-h-[80vh]">
         <DialogHeader><DialogTitle>{{ t('floorplan.reassign.title') }}</DialogTitle></DialogHeader>
         <DialogBody class="flex-1 overflow-y-auto">
-          <Input v-model="channelSearch" placeholder="Suchen…" autofocus />
+          <Input v-model="channelSearch" :placeholder="t('action.search')" autofocus />
           <div class="flex flex-col gap-1">
             <Button v-for="ch in filteredChannels" :key="ch.channel" variant="ghost" :disabled="usedChannels.includes(ch.channel)" @click="reassignChannel(ch)" class="w-full justify-start h-auto py-2" :class="usedChannels.includes(ch.channel) && 'opacity-50'">
               <div class="text-left"><div class="font-semibold">{{ ch.channel }}</div><div class="text-xs text-muted-foreground">{{ ch.device }}</div></div>
@@ -529,8 +529,9 @@
       <DialogContent class="sm:max-w-sm">
         <DialogHeader><DialogTitle>{{ t('floorplan.ruler.title') }}</DialogTitle></DialogHeader>
         <DialogBody>
-          <p class="text-sm text-muted-foreground mb-3">{{ t('floorplan.ruler.hint') }}</p>
-          <Input v-model="rulerDistanceInput" type="text" inputmode="decimal" placeholder="z. B. 6" autofocus @keydown.enter="commitRuler" />
+          <p class="text-sm text-muted-foreground mb-1">{{ t('floorplan.ruler.hint') }}</p>
+          <p class="text-xs text-muted-foreground/70 mb-3">{{ t('floorplan.ruler.purpose') }}</p>
+          <Input v-model="rulerDistanceInput" type="text" inputmode="decimal" :placeholder="t('floorplan.ruler.placeholder')" autofocus @keydown.enter="commitRuler" />
         </DialogBody>
         <DialogFooter>
           <Button variant="outline" @click="cancelRuler">{{ t('action.cancel') }}</Button>
@@ -544,7 +545,7 @@
       <DialogContent class="sm:max-w-lg flex flex-col max-h-[80vh]">
         <DialogHeader><DialogTitle>{{ t('floorplan.channel.title') }}</DialogTitle></DialogHeader>
         <DialogBody class="flex-1 overflow-y-auto">
-          <Input v-model="channelSearch" placeholder="Suchen…" autofocus />
+          <Input v-model="channelSearch" :placeholder="t('action.search')" autofocus />
           <div class="flex flex-col gap-1">
             <Button v-for="ch in filteredChannels" :key="ch.channel" variant="ghost" :disabled="usedChannels.includes(ch.channel)" @click="placeChannelCircle(ch)" class="w-full justify-start h-auto py-2" :class="usedChannels.includes(ch.channel) && 'opacity-50'">
               <div class="text-left"><div class="font-semibold">{{ ch.channel }}</div><div class="text-xs text-muted-foreground">{{ ch.device }}</div></div>

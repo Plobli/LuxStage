@@ -62,6 +62,9 @@
           dupAddress: t('channel.dup_address'),
           dupChannel: t('channel.dup_channel'),
           search: t('channel.search'),
+          legendDefault: t('channel.legend.default'),
+          legendActive: t('channel.legend.active'),
+          legendEos: t('channel.legend.eos'),
         }"
         @undo="undo()"
         @redo="redo()"
@@ -224,6 +227,7 @@
                   fieldAdd: t('sections.field.add'),
                   addMarkdown: t('sections.add.markdown'),
                   addFields: t('sections.add.fields'),
+                  addHelp: t('section.add.help'),
                 }"
                 @update:sectionDefs="sectionDefs = $event"
                 @update:sectionContents="sectionContents = $event"

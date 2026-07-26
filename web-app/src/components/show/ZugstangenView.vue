@@ -28,7 +28,7 @@
           <div class="min-w-0">
             <!-- Länge -->
             <div class="relative w-32">
-              <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-medium text-muted-foreground/40 uppercase tracking-wider pointer-events-none">Länge</span>
+              <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-medium text-muted-foreground/40 uppercase tracking-wider pointer-events-none">{{ t('zugstange.field.length') }}</span>
               <input
                 type="text"
                 inputmode="decimal"
@@ -40,7 +40,7 @@
             </div>
             <!-- Höhe -->
             <div class="relative mt-1.5 w-32">
-              <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-medium text-muted-foreground/40 uppercase tracking-wider pointer-events-none">Höhe</span>
+              <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-medium text-muted-foreground/40 uppercase tracking-wider pointer-events-none">{{ t('zugstange.field.height') }}</span>
               <input
                 type="text"
                 inputmode="decimal"
@@ -85,7 +85,7 @@
                 v-if="bar.fixtures.length === 0 && hoverBarId !== bar.id"
                 class="absolute left-1/2 -translate-x-1/2 pointer-events-none select-none whitespace-nowrap text-xs text-muted-foreground/60"
                 style="top: 34px;"
-              >Klicken zum Hinzufügen</div>
+              >{{ t('zugstange.scale.click_to_add') }}</div>
               <!-- Ghost-Marker bei Hover -->
               <div
                 v-if="hoverBarId === bar.id && hoverPct !== null && !hoverOnFixture"
@@ -138,7 +138,7 @@
           <input
             type="text"
             :value="bar.notes ?? ''"
-            placeholder="Anmerkung …"
+            :placeholder="t('zugstange.notes.placeholder')"
             class="w-full h-8 mt-5 rounded-md border border-transparent bg-white/3 px-2.5 text-sm text-foreground placeholder:text-muted-foreground/25 hover:bg-white/5 focus:outline-none focus:border-accent/60 focus:bg-white/5 transition-colors"
             @change="saveInlineField(bar, 'notes', $event.target.value)"
           />
@@ -150,7 +150,7 @@
           <Button
             v-if="props.saveToTemplateFn"
             variant="ghost" size="icon" class="size-7 text-muted-foreground/60"
-            :title="savingBarId === bar.id ? '…' : 'Als Vorlage speichern'"
+            :title="savingBarId === bar.id ? '…' : t('zugstange.save_to_template')"
             @click.stop="openSaveDialog(bar)"
           >
             <Loader2 v-if="savingBarId === bar.id" class="size-3.5 animate-spin" />
@@ -181,7 +181,7 @@
       <DialogBody>
         <div class="flex flex-col gap-1.5">
           <label class="text-xs text-muted-foreground">{{ t('zugstange.field.name') }}</label>
-          <Input size="lg" v-model="barForm.name" placeholder="z. B. Maschinenzug 1" autofocus />
+          <Input size="lg" v-model="barForm.name" :placeholder="t('zugstange.name.placeholder')" autofocus />
         </div>
         <div class="flex flex-col gap-1.5">
           <label class="text-xs text-muted-foreground">{{ t('zugstange.field.length_unit', { unit }) }}</label>
@@ -196,7 +196,7 @@
       </DialogBody>
       <DialogFooter>
         <Button v-if="!editingBar && props.fromTemplateFn" variant="ghost" class="mr-auto text-xs text-muted-foreground" @click="barDialogOpen = false; props.fromTemplateFn()">
-          Aus Vorlage einfügen…
+          {{ t('zugstange.dialog.from_template') }}
         </Button>
         <Button variant="ghost" @click="barDialogOpen = false">{{ t('action.cancel') }}</Button>
         <Button @click="saveBarForm">{{ editingBar ? t('action.save') : t('zugstange.action.create') }}</Button>
@@ -208,14 +208,14 @@
   <Dialog :open="removeConfirmOpen" @update:open="removeConfirmOpen = $event">
     <DialogContent class="sm:max-w-sm">
       <DialogHeader>
-        <DialogTitle>Scheinwerfer entfernen</DialogTitle>
+        <DialogTitle>{{ t('zugstange.fixture.remove.title') }}</DialogTitle>
       </DialogHeader>
       <DialogBody>
         <p class="text-sm text-muted-foreground">{{ removeConfirmText }}</p>
       </DialogBody>
       <DialogFooter>
         <Button variant="ghost" @click="removeConfirmOpen = false">{{ t('action.cancel') }}</Button>
-        <Button variant="destructive" @click="doRemoveFixture">Entfernen</Button>
+        <Button variant="destructive" @click="doRemoveFixture">{{ t('zugstange.fixture.remove.action') }}</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>
@@ -228,12 +228,12 @@
       </DialogHeader>
       <DialogBody>
         <div class="flex flex-col gap-1.5">
-          <label class="text-xs text-muted-foreground">Anmerkung</label>
-          <Input size="lg" v-model="fixtureEditNotes" placeholder="z. B. 3m Seil, Sonderfarbe…" autofocus @keydown.enter="saveFixtureEdit" />
+          <label class="text-xs text-muted-foreground">{{ t('zugstange.fixture.notes.label') }}</label>
+          <Input size="lg" v-model="fixtureEditNotes" :placeholder="t('zugstange.fixture.notes.placeholder')" autofocus @keydown.enter="saveFixtureEdit" />
         </div>
       </DialogBody>
       <DialogFooter>
-        <Button variant="ghost" class="mr-auto text-xs text-muted-foreground" @click="goToChannel(fixtureEditFx?.channel_id); fixtureEditOpen = false">Zum Kanal →</Button>
+        <Button variant="ghost" class="mr-auto text-xs text-muted-foreground" @click="goToChannel(fixtureEditFx?.channel_id); fixtureEditOpen = false">{{ t('zugstange.fixture.channel_link') }}</Button>
         <Button variant="ghost" @click="fixtureEditOpen = false">{{ t('action.cancel') }}</Button>
         <Button @click="saveFixtureEdit">{{ t('action.save') }}</Button>
       </DialogFooter>
@@ -247,7 +247,7 @@
         <DialogTitle>{{ t('zugstange.fixture.add') }}</DialogTitle>
       </DialogHeader>
       <DialogBody>
-        <Input v-if="!pickerChannel" size="lg" v-model="fixtureSearch" placeholder="Kanal suchen…" autofocus @keydown.enter="selectFirstAndConfirm" />
+        <Input v-if="!pickerChannel" size="lg" v-model="fixtureSearch" :placeholder="t('zugstange.fixture.search.placeholder')" autofocus @keydown.enter="selectFirstAndConfirm" />
         <div v-if="!pickerChannel" class="max-h-64 overflow-y-auto flex flex-col">
           <button
             v-for="ch in filteredChannelsForPicker"
@@ -296,31 +296,31 @@
   <Dialog :open="saveDialogOpen" @update:open="saveDialogOpen = $event">
     <DialogContent class="sm:max-w-sm">
       <DialogHeader>
-        <DialogTitle>In Vorlage speichern</DialogTitle>
+        <DialogTitle>{{ t('zugstange.save_dialog.title') }}</DialogTitle>
       </DialogHeader>
       <DialogBody>
         <!-- Ziel + Item-Info -->
         <div class="rounded-lg bg-muted/40 px-3 py-2 space-y-0.5">
           <div class="flex items-baseline gap-2">
-            <span class="text-xs text-muted-foreground shrink-0">Vorlage</span>
+            <span class="text-xs text-muted-foreground shrink-0">{{ t('zugstange.save_dialog.template_label') }}</span>
             <span class="text-sm font-medium text-foreground truncate">{{ props.templateName }}</span>
           </div>
           <div class="flex items-baseline gap-2">
-            <span class="text-xs text-muted-foreground shrink-0">Länge</span>
+            <span class="text-xs text-muted-foreground shrink-0">{{ t('zugstange.save_dialog.length_label') }}</span>
             <span class="text-xs text-muted-foreground">{{ formatLength(saveDialogBar?.length_cm) }}</span>
           </div>
         </div>
         <div>
-          <Label class="text-xs text-muted-foreground">Name in der Vorlage</Label>
+          <Label class="text-xs text-muted-foreground">{{ t('zugstange.save_dialog.name_label') }}</Label>
           <Input size="lg" v-model="saveName" autofocus />
         </div>
         <!-- Überschreiben-Warnung -->
         <div v-if="saveNameConflict" class="rounded-lg border border-destructive/50 bg-destructive/5 px-3.5 py-3 space-y-2">
-          <p class="text-sm font-medium text-foreground">„{{ saveName }}" existiert bereits in der Vorlage.</p>
-          <p class="text-xs text-muted-foreground">Der bestehende Eintrag wird überschrieben. Trotzdem fortfahren?</p>
+          <p class="text-sm font-medium text-foreground">{{ t('zugstange.save_dialog.conflict', { name: saveName }) }}</p>
+          <p class="text-xs text-muted-foreground">{{ t('zugstange.save_dialog.conflict.hint') }}</p>
           <div class="flex gap-2 pt-1">
-            <Button size="sm" variant="ghost" @click="saveNameConflict = false">Abbrechen</Button>
-            <Button size="sm" variant="destructive" @click="saveConfirmOverwrite = true; confirmSaveDialog()">Überschreiben</Button>
+            <Button size="sm" variant="ghost" @click="saveNameConflict = false">{{ t('action.cancel') }}</Button>
+            <Button size="sm" variant="destructive" @click="saveConfirmOverwrite = true; confirmSaveDialog()">{{ t('zugstange.save_dialog.overwrite') }}</Button>
           </div>
         </div>
         <!-- Was wird gespeichert -->
@@ -329,51 +329,51 @@
           <div class="flex items-start gap-3 py-2 opacity-60">
             <Checkbox :model-value="true" disabled class="mt-0.5" />
             <div>
-              <p class="text-sm font-medium text-foreground">Grundstruktur</p>
-              <p class="text-xs text-muted-foreground">Name · Zugnummer · Länge</p>
+              <p class="text-sm font-medium text-foreground">{{ t('zugstange.save_dialog.structure') }}</p>
+              <p class="text-xs text-muted-foreground">{{ t('zugstange.save_dialog.structure.desc') }}</p>
             </div>
           </div>
           <!-- Scheinwerfer-Trennlinie -->
           <div v-if="saveDialogBar?.fixtures?.length" class="pt-1">
             <p class="text-xs font-semibold text-muted-foreground px-1 pb-1">
-              {{ saveDialogBar.fixtures.length }} Scheinwerfer
+              {{ t('zugstange.save_dialog.fixtures_count', { count: saveDialogBar.fixtures.length }) }}
             </p>
             <div class="h-px bg-border/50 mx-1 mb-1" />
             <label class="flex items-start gap-3 py-2 cursor-pointer hover:bg-muted/30 rounded px-1 transition-colors">
               <Checkbox v-model="saveFields.position" class="mt-0.5" />
               <div>
-                <p class="text-sm font-medium text-foreground">Position</p>
-                <p class="text-xs text-muted-foreground">Wo auf der Stange (cm von Mitte)</p>
+                <p class="text-sm font-medium text-foreground">{{ t('zugstange.save_dialog.field.position') }}</p>
+                <p class="text-xs text-muted-foreground">{{ t('zugstange.save_dialog.field.position.desc') }}</p>
               </div>
             </label>
             <label class="flex items-start gap-3 py-2 cursor-pointer hover:bg-muted/30 rounded px-1 transition-colors">
               <Checkbox v-model="saveFields.channel" class="mt-0.5" />
               <div>
-                <p class="text-sm font-medium text-foreground">Kanalnummer</p>
-                <p class="text-xs text-muted-foreground">Zugeordnete Kanalnr. je Scheinwerfer</p>
+                <p class="text-sm font-medium text-foreground">{{ t('zugstange.save_dialog.field.channel') }}</p>
+                <p class="text-xs text-muted-foreground">{{ t('zugstange.save_dialog.field.channel.desc') }}</p>
               </div>
             </label>
             <label class="flex items-start gap-3 py-2 cursor-pointer hover:bg-muted/30 rounded px-1 transition-colors">
               <Checkbox v-model="saveFields.device" class="mt-0.5" />
               <div>
-                <p class="text-sm font-medium text-foreground">Gerät</p>
-                <p class="text-xs text-muted-foreground">Gerätebezeichnung je Scheinwerfer</p>
+                <p class="text-sm font-medium text-foreground">{{ t('zugstange.save_dialog.field.device') }}</p>
+                <p class="text-xs text-muted-foreground">{{ t('zugstange.save_dialog.field.device.desc') }}</p>
               </div>
             </label>
             <label class="flex items-start gap-3 py-2 cursor-pointer hover:bg-muted/30 rounded px-1 transition-colors">
               <Checkbox v-model="saveFields.notes" class="mt-0.5" />
               <div>
-                <p class="text-sm font-medium text-foreground">Anmerkungen</p>
-                <p class="text-xs text-muted-foreground">Freitext-Notiz je Scheinwerfer</p>
+                <p class="text-sm font-medium text-foreground">{{ t('zugstange.save_dialog.field.notes') }}</p>
+                <p class="text-xs text-muted-foreground">{{ t('zugstange.save_dialog.field.notes.desc') }}</p>
               </div>
             </label>
           </div>
-          <p v-else class="text-xs text-muted-foreground px-1 pt-1">Keine Scheinwerfer auf dieser Stange.</p>
+          <p v-else class="text-xs text-muted-foreground px-1 pt-1">{{ t('zugstange.save_dialog.no_fixtures') }}</p>
         </div>
       </DialogBody>
       <DialogFooter>
         <Button variant="ghost" @click="saveDialogOpen = false">{{ t('action.cancel') }}</Button>
-        <Button :disabled="!!savingBarId || !saveName.trim()" @click="confirmSaveDialog">Speichern</Button>
+        <Button :disabled="!!savingBarId || !saveName.trim()" @click="confirmSaveDialog">{{ t('action.save') }}</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>
@@ -383,7 +383,9 @@
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { useLocale } from '@/composables/useLocale.js'
 import { useMeasureUnit } from '@/composables/useMeasureUnit'
+import { useConfirm } from '@/composables/useConfirm.js'
 const { t } = useLocale()
+const { confirm } = useConfirm()
 
 const { unit, unitLabel, formatLength, cmToDisplay, parseToCm, inputStep, lengthMin, lengthMax } = useMeasureUnit()
 import { Plus, Pencil, Trash2, BookmarkPlus, Loader2, AlignJustify } from 'lucide-vue-next'
@@ -574,10 +576,9 @@ async function saveInlineField(bar, field, value) {
 
 
 
-function confirmDeleteBar(bar) {
-  if (confirm(t('zugstange.delete.confirm', { name: bar.name }))) {
-    props.deleteBarFn(bar.id)
-  }
+async function confirmDeleteBar(bar) {
+  const ok = await confirm({ t, titleKey: 'zugstange.delete.confirm', titleParams: { name: bar.name }, confirmKey: 'action.delete', cancelKey: 'action.cancel' })
+  if (ok) props.deleteBarFn(bar.id)
 }
 
 // Fixture Edit Dialog

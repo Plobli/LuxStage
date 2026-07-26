@@ -118,6 +118,8 @@
   "photo.caption.placeholder": "Beschreibung …",
   "photo.delete": "Foto löschen",
   "photo.empty": "Noch keine Fotos vorhanden.",
+  "photo.channel_label": "Kanal:",
+  "photo.channel_placeholder": "z. B. 42",
   "color.picker.label": "Farbe / Filter",
   "color.picker.custom": "Freitext",
   "color.picker.text": "Freitext",

@@ -97,21 +97,7 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue'
 const props = defineProps({
   open: { type: Boolean, default: false },
   showId: { type: String, required: true },
-  labels: {
-    type: Object,
-    default: () => ({
-      title: 'Verlauf',
-      back: '← Zurück',
-      empty: 'Keine Snapshots',
-      restore: 'Wiederherstellen',
-      cancel: 'Abbrechen',
-      channelCount: (n) => `${n} Kanäle`,
-      limit: 'Automatisch alle 10 Minuten, maximal 50 Versionen.',
-      scope: 'Setzt Kanäle und Abschnitte zurück. Fotos, Grundriss, Türme und Stammdaten bleiben unverändert.',
-      confirmTitle: 'Version wiederherstellen?',
-      confirmMessage: 'Kanäle und Abschnitte werden durch diese Version ersetzt. Fotos, Grundriss, Türme und Stammdaten bleiben unverändert. Der aktuelle Stand wird zuvor als Version gesichert.',
-    }),
-  },
+  labels: { type: Object, required: true },
 })
 
 const emit = defineEmits(['close', 'restore'])

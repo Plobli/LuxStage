@@ -146,8 +146,8 @@
                 empty: t('photo.empty'),
                 delete: t('action.delete'),
                 captionPlaceholder: t('photo.caption.placeholder'),
-                channelLabel: 'Kanal:',
-                channelPlaceholder: 'z. B. 42',
+                channelLabel: t('photo.channel_label'),
+                channelPlaceholder: t('photo.channel_placeholder'),
               }"
               @update:photos="photos = $event"
             />

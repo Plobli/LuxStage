@@ -146,15 +146,7 @@ const props = defineProps({
   showName: { type: String, default: '' },
   showDate: { type: String, default: '' },
   showMeta: { type: Object, default: () => ({}) },
-  labels: {
-    type: Object,
-    default: () => ({
-      history: 'Verlauf',
-      import: 'Importieren', export: 'Exportieren',
-      eosImport: 'EOS importieren', csvImport: 'CSV importieren',
-      pdf: 'PDF', csvExport: 'CSV exportieren',
-    }),
-  },
+  labels: { type: Object, required: true },
 })
 
 const emit = defineEmits([

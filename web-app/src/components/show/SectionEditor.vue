@@ -167,17 +167,7 @@ const props = defineProps({
   sectionContents: { type: Map, required: true },
   setupMarkdown: { type: String, default: '' },
   singleSectionId: { type: String, default: null },
-  labels: {
-    type: Object,
-    default: () => ({
-      titlePlaceholder: 'Abschnitt',
-      fieldLabel: 'Feld',
-      fieldValue: 'Wert',
-      fieldAdd: '+ Feld hinzufügen',
-      addMarkdown: '+ Textabschnitt',
-      addFields: '+ Felder',
-    }),
-  },
+  labels: { type: Object, required: true },
 })
 
 const emit = defineEmits([

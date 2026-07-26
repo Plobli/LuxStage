@@ -274,16 +274,7 @@ const props = defineProps({
   channelStatusFn: { type: Function, required: true },
   toggleChannelStatusFn: { type: Function, required: true },
   onKeydownFn: { type: Function, default: null },
-  labels: {
-    type: Object,
-    default: () => ({
-      channel: 'Kanal', color: 'Farbe', device: 'Gerät', quantity: 'Anz.', notes: 'Notizen',
-      editPosition: 'Bearbeiten', noPosition: '–', add: 'Kanal hinzufügen',
-      delete: 'Löschen', empty: 'Keine Kanäle', channelNr: 'Nr', addressExample: 'z.B. 1',
-      channelHelp: '', colorHelp: '', quantityHelp: '', deviceHelp: '', notesHelp: '', assign: '', assignHelp: '',
-      addPosition: 'Position', positionNamePlaceholder: 'Positionsname …',
-    }),
-  },
+  labels: { type: Object, required: true },
 })
 
 const rootEl = ref(null)

@@ -112,14 +112,7 @@ const props = defineProps({
   healthStats: { type: Object, default: () => ({ noNotes: 0, noDevice: 0, noPosition: 0, noAddress: 0 }) },
   healthLabels: { type: Object, default: null },
   activeHealthFilter: { type: String, default: null },
-  labels: {
-    type: Object,
-    default: () => ({
-      undo: 'Rückgängig', redo: 'Wiederholen',
-      dupAddress: 'Doppelte Adresse', dupChannel: 'Doppelter Kanal',
-      search: 'In Kanälen suchen …',
-    }),
-  },
+  labels: { type: Object, required: true },
 })
 
 const emit = defineEmits(['update:search', 'undo', 'redo', 'healthFilter'])

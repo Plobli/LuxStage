@@ -137,17 +137,7 @@ import { getPhotoUrl } from '../../api/photos.js'
 const props = defineProps({
   showId: { type: String, required: true },
   photos: { type: Array, required: true },
-  labels: {
-    type: Object,
-    default: () => ({
-      add: 'Foto hinzufügen',
-      empty: 'Keine Fotos',
-      delete: 'Löschen',
-      captionPlaceholder: 'Beschriftung',
-      channelLabel: 'Kanal:',
-      channelPlaceholder: 'z. B. 42',
-    }),
-  },
+  labels: { type: Object, required: true },
 })
 
 const emit = defineEmits(['update:photos'])

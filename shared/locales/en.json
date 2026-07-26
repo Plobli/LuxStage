@@ -115,6 +115,8 @@
   "photo.caption.placeholder": "Description …",
   "photo.delete": "Delete photo",
   "photo.empty": "No photos yet.",
+  "photo.channel_label": "Channel:",
+  "photo.channel_placeholder": "e.g. 42",
   "color.picker.label": "Color / Filter",
   "color.picker.custom": "Custom",
   "color.picker.text": "Custom",

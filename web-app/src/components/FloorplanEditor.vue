@@ -1444,7 +1444,7 @@ function handleKeyDown(e) {
     if (e.key === 'r' || e.key === 'R') { activeTool.value = 'rect'; return }
     if (e.key === 'e' || e.key === 'E') { activeTool.value = 'ellipse'; return }
     if (e.key === 't' || e.key === 'T') { activeTool.value = 'text'; return }
-    if (e.key === 'c' && activeTool.value !== 'select') { activeTool.value = 'channel'; return }
+    if (e.key === 'c' || e.key === 'C') { activeTool.value = 'channel'; return }
     if (e.key === 'g' || e.key === 'G') { showGrid.value = !showGrid.value; return }
     if (e.key === 'f' || e.key === 'F') { resetView(); return }
     if (e.key === 'Escape') { if(activeTool.value==='channel-direction') pendingDirectionId.value=null; if(activeTool.value==='channel-pending') { pendingChannelForPlacement.value=null; ghostPos.value=null } activeTool.value = 'select'; selectedIds.value = new Set(); return }

@@ -2,8 +2,9 @@ import { randomBytes } from 'node:crypto'
 import { login, signToken, requireAdmin, issueDownloadToken } from '../auth.js'
 import * as db from '../db.js'
 import { readJsonBody, json } from '../helpers.js'
-import { sendPasswordResetEmail, sendPasswordResetLink } from '../email.js'
+import { sendPasswordResetEmail, sendPasswordResetLink, isSmtpConfigured } from '../email.js'
 import { config } from '../config.js'
+import { PASSWORD_MIN_LENGTH } from '../../shared/constants.js'
 
 const loginAttempts = new Map()
 const MAX_LOGIN_ATTEMPTS = 10
@@ -29,6 +30,14 @@ function recordFailedLogin(ip) {
 
 export async function authRoutes(req, res, pathname) {
   const { method } = req
+
+  // Öffentlich: die Login-Seite muss vor der Anmeldung wissen, ob der
+  // Self-Service-Reset überhaupt möglich ist (ohne SMTP wird nie eine Mail
+  // zugestellt). Bewusst getrennt von /api/status, das dataPath und diskFree
+  // preisgibt und deshalb Auth verlangt.
+  if (method === 'GET' && pathname === '/api/auth/capabilities') {
+    return json(res, 200, { passwordReset: isSmtpConfigured() })
+  }
 
   if (method === 'POST' && pathname === '/api/auth/login') {
     let ip = req.socket.remoteAddress || 'unknown'
@@ -62,7 +71,7 @@ export async function authRoutes(req, res, pathname) {
     const user = req.user
     const body = await readJsonBody(req, res); if (body === null) return
     const { currentPassword, newPassword } = body
-    if (!newPassword || newPassword.length < 8) return json(res, 400, { error: 'Passwort zu kurz (min. 8 Zeichen)' })
+    if (!newPassword || newPassword.length < PASSWORD_MIN_LENGTH) return json(res, 400, { error: `Passwort zu kurz (min. ${PASSWORD_MIN_LENGTH} Zeichen)` })
     const storedPassword = db.getDbPassword(user.username)
     const pwOk = storedPassword?.startsWith('$2')
       ? await (await import('bcrypt')).compare(currentPassword, storedPassword)
@@ -102,7 +111,7 @@ export async function authRoutes(req, res, pathname) {
     const body = await readJsonBody(req, res); if (body === null) return
     const token = String(body.token || '')
     const newPassword = String(body.newPassword || '')
-    if (newPassword.length < 8) return json(res, 400, { error: 'Passwort zu kurz (min. 8 Zeichen)' })
+    if (newPassword.length < PASSWORD_MIN_LENGTH) return json(res, 400, { error: `Passwort zu kurz (min. ${PASSWORD_MIN_LENGTH} Zeichen)` })
     const username = db.takeResetToken(token)
     if (!username) return json(res, 400, { error: 'Link ungültig oder abgelaufen' })
     await db.changePassword(username, newPassword, 0)

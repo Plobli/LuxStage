@@ -5,12 +5,13 @@ set -e
 if [ ! -f /app/data/.bootstrap-done ]; then
   echo "Initializing database..."
 
-  # ADMIN_PASSWORD ist erforderlich
-  if [ -z "$ADMIN_PASSWORD" ] || [ "$ADMIN_PASSWORD" = "" ]; then
+  # ADMIN_EMAIL und ADMIN_PASSWORD sind erforderlich — die E-Mail ist der Login-Name.
+  if [ -z "$ADMIN_EMAIL" ] || [ -z "$ADMIN_PASSWORD" ]; then
     echo ""
-    echo "❌ ERROR: ADMIN_PASSWORD is not set!"
+    echo "❌ ERROR: ADMIN_EMAIL and/or ADMIN_PASSWORD are not set!"
     echo ""
-    echo "Please set the ADMIN_PASSWORD environment variable in your .env file:"
+    echo "Please set both environment variables in your .env file:"
+    echo "  ADMIN_EMAIL=you@example.com"
     echo "  ADMIN_PASSWORD=your_secure_password"
     echo ""
     echo "Then restart the container:"
@@ -18,8 +19,6 @@ if [ ! -f /app/data/.bootstrap-done ]; then
     echo ""
     exit 1
   fi
-
-  export TECH_PASSWORD="${TECH_PASSWORD:-}"
 
   cd /app/server
   node bootstrap.js

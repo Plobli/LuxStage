@@ -41,6 +41,20 @@ if [[ -n "$EXTERNAL_DOMAIN" ]]; then
   [[ $EXTERNAL_DOMAIN =~ ^https?:// ]] || fail "Domain muss mit http:// oder https:// beginnen."
 fi
 
+# Die E-Mail-Adresse ist zugleich der Login-Name — die Web-App erwartet überall
+# E-Mail-Adressen (Benutzerverwaltung, Registrierung, Passwort-Reset).
+ADMIN_EMAIL=""
+for i in 1 2 3; do
+  read -rp "Admin-E-Mail (dient als Login): " ADMIN_EMAIL
+  if [[ "$ADMIN_EMAIL" =~ ^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$ ]]; then
+    ok "E-Mail gespeichert"
+    break
+  fi
+  echo "  Keine gültige E-Mail-Adresse."
+  ADMIN_EMAIL=""
+  [[ $i -eq 3 ]] && fail "Zu viele Fehlversuche."
+done
+
 MIN_PW_LEN=8
 set +e
 ADMIN_PASSWORD=""
@@ -67,7 +81,6 @@ set -e
 PW1=""; PW2=""
 
 JWT_SECRET=$(openssl rand -hex 32)
-TECH_PASSWORD=$(openssl rand -hex 16)
 
 SERVICE_HOME="/home/$SERVICE_USER"
 INSTALL_DIR="$SERVICE_HOME/LuxStage"
@@ -194,8 +207,8 @@ chmod 755 "$BOOTSTRAPSCRIPT"
 cat > "$BOOTSTRAPSCRIPT" << BSEOF
 #!/usr/bin/env bash
 set -e
+export ADMIN_EMAIL='$ADMIN_EMAIL'
 export ADMIN_PASSWORD='$ADMIN_PASSWORD'
-export TECH_PASSWORD='$TECH_PASSWORD'
 export JWT_SECRET='$JWT_SECRET'
 export DATA_PATH='$DATA_DIR'
 . "\$HOME/.nvm/nvm.sh"
@@ -266,8 +279,10 @@ echo ""
 echo "     Erreichbar unter:  http://$HOSTNAME.local"
 [ -n "$EXTERNAL_DOMAIN" ] && echo "                        $EXTERNAL_DOMAIN"
 [ -n "$SERVER_IP" ]       && echo "                        http://$SERVER_IP"
-echo "     Login:             admin / $ADMIN_PASSWORD"
-echo "     Tech-Login:        tech  / $TECH_PASSWORD"
+echo "     Login:             $ADMIN_EMAIL"
+echo ""
+echo "  Weitere Nutzer legst du nach der Anmeldung unter"
+echo "  Einstellungen → Benutzer an."
 echo ""
 echo "  Hinweis: Neustart empfohlen damit der neue Hostname aktiv wird:"
 echo "           sudo reboot"

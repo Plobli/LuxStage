@@ -1,47 +1,46 @@
 // LuxStage/server/bootstrap.js
-// Einmaliges Setup-Skript: legt admin + tech in der users-Tabelle an.
+// Einmaliges Setup-Skript: legt den ersten Admin in der users-Tabelle an.
 // Idempotent: bestehende Nutzer werden nicht überschrieben.
 //
-// Benötigt: JWT_SECRET, ADMIN_PASSWORD, TECH_PASSWORD
+// Der Login-Name ist die E-Mail-Adresse — so wie es Benutzerverwaltung,
+// Registrierung und Passwort-Reset ohnehin voraussetzen. Weitere Konten legt
+// der Admin danach über die Benutzerverwaltung an.
+//
+// Benötigt: JWT_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD
 // Optional: DATA_PATH (Standard: ../data)
 //
 // Aufruf:
-//   ADMIN_PASSWORD="..." TECH_PASSWORD="..." JWT_SECRET="..." node bootstrap.js
+//   ADMIN_EMAIL="..." ADMIN_PASSWORD="..." JWT_SECRET="..." node bootstrap.js
 
 import bcrypt from 'bcrypt'
 import { dbContainer } from './db-init.js'
 
 const BCRYPT_COST = 12
 
+const adminEmail = (process.env.ADMIN_EMAIL || '').trim()
 const adminPassword = process.env.ADMIN_PASSWORD
-const techPassword  = process.env.TECH_PASSWORD
 
 if (!adminPassword) {
   console.error('FEHLER: ADMIN_PASSWORD fehlt.')
   process.exit(1)
 }
 
+if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail)) {
+  console.error('FEHLER: ADMIN_EMAIL fehlt oder ist keine gültige E-Mail-Adresse.')
+  process.exit(1)
+}
+
 const insert = dbContainer.db.prepare(
-  'INSERT OR IGNORE INTO users (username, password, role) VALUES (?, ?, ?)'
+  'INSERT OR IGNORE INTO users (username, password, role, email) VALUES (?, ?, ?, ?)'
 )
 
 const adminHash = await bcrypt.hash(adminPassword, BCRYPT_COST)
-const adminResult = insert.run('admin', adminHash, 'admin')
+const adminResult = insert.run(adminEmail, adminHash, 'admin', adminEmail)
 
 if (adminResult.changes > 0) {
-  console.log('  ✓  Nutzer "admin" angelegt (Rolle: admin)')
+  console.log(`  ✓  Nutzer "${adminEmail}" angelegt (Rolle: admin)`)
 } else {
-  console.log('  –  Nutzer "admin" existiert bereits, wird nicht überschrieben')
-}
-
-if (techPassword) {
-  const techHash = await bcrypt.hash(techPassword, BCRYPT_COST)
-  const techResult = insert.run('tech', techHash, 'techniker')
-  if (techResult.changes > 0) {
-    console.log('  ✓  Nutzer "tech" angelegt (Rolle: techniker)')
-  } else {
-    console.log('  –  Nutzer "tech" existiert bereits, wird nicht überschrieben')
-  }
+  console.log(`  –  Nutzer "${adminEmail}" existiert bereits, wird nicht überschrieben`)
 }
 
 dbContainer.db.close()
